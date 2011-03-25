@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:ServerRuntime
+	xmlns:tns="http://eclipse.org/jst/server/generic/ServerTypeDefinition"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://eclipse.org/jst/server/generic/ServerTypeDefinition ServerTypeDefinitionSchema.xsd "
+	name="ODE" version="v0.1">
+	<property id="odeHome"
+		label="%odeHome"
+		type="directory"
+		context="runtime"
+		default="/your_ode_install/" />
+
+	<property id="port"
+		label="%port"
+		type="string"
+		context="runtime"
+		default="8080" />
+		
+	<port>
+		<no>${port}</no>
+		<name>Http</name>
+		<protocol>http</protocol>
+	</port>
+
+	<module>
+		<type>bpel.module</type>
+		<publishDir>${%odeHome}/deploy</publishDir>
+		<publisherReference>org.apache.ode.eclipse.runtime.bpel.publisher</publisherReference>
+	</module>
+
+<!--  	
+	<module>
+		<type>wsht.module</type>
+		<publishDir>${%odeHome}/deploy</publishDir>
+		<publisherReference>org.apache.ode.eclipse.runtime.wsht.publisher</publisherReference>
+	</module>
+-->
+	
+	<project>
+		<classpathReference>ode.project</classpathReference>
+	</project>
+
+	<start>
+		<mainClass>org.apache.ode.runtime.Server</mainClass>
+		<workingDirectory>${odeHome}</workingDirectory>
+		<programArguments>start</programArguments>
+		<vmParameters></vmParameters>
+		<classpathReference>ode</classpathReference>
+	</start>
+
+	<stop>
+		<mainClass>org.apache.ode.runtime.Server</mainClass>
+		<workingDirectory>${odeHome}</workingDirectory>
+		<programArguments>stop</programArguments>
+		<vmParameters></vmParameters>
+		<classpathReference>ode</classpathReference>
+	</stop>
+
+ 	<classpath id="ode">
+		<archive path="${odeHome}/lib" />
+	</classpath>
+	
+</tns:ServerRuntime>

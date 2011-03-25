@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://ode.apache.org/server" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:tns="http://ode.apache.org/server">
+
+	<complexType name="serverType">
+		<sequence>
+			<element name="handlers" type="tns:handlersType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="datasources" type="tns:dataSourceType" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
+
+	<complexType name="dataSourceType">
+		<sequence>
+			<element name="pool-class" type="string" minOccurs="1" maxOccurs="1" />
+			<element name="url" type="string" minOccurs="1" maxOccurs="1" />
+		</sequence>
+		<attribute name="jndi-name" type="string" />
+	</complexType>
+
+	<complexType name="handlersType">
+		<sequence>
+			<element name="handler-class" type="string" minOccurs="0" maxOccurs="1" />
+		</sequence>
+	</complexType>
+
+	<element name="server" type="tns:serverType" />
+</schema>
