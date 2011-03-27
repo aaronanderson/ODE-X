@@ -26,21 +26,40 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectName;
 
-import org.apache.ode.repo.RepositoryImpl;
+import org.apache.ode.api.Repository;
+import org.apache.ode.repo.RepositoryAPIImpl;
+import org.apache.ode.repo.RepositorySPIImpl;
+import org.apache.ode.server.JMXServer;
 import org.apache.ode.spi.repo.RepoCommandMap;
 import org.apache.ode.spi.repo.RepoFileTypeMap;
 
-public class RepoHandler extends Handler{
+public class RepoHandler extends Handler {
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(RepoFileTypeMap.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(RepoCommandMap.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(RepositoryImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(RepositorySPIImpl.class));
 
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
-		
+		Set<Bean<?>> beans = bm.getBeans(JMXServer.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			Bean<?> bean = beans.iterator().next();
+			JMXServer server = (JMXServer) bm.getReference(bean, JMXServer.class, bm.createCreationalContext(bean));
+			try {
+				server.getMBeanServer().registerMBean(new RepositoryAPIImpl(), ObjectName.getInstance(Repository.OBJECTNAME));
+			} catch (Exception e) {
+				e.printStackTrace();
+				adv.addDeploymentProblem(e);
+			} 
+		}
 	}
 
 	protected void start(Class clazz, BeanManager bm) {

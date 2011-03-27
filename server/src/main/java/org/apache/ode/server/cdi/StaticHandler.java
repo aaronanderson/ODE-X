@@ -33,9 +33,9 @@ import javax.enterprise.inject.spi.ProcessInjectionTarget;
 import javax.enterprise.inject.spi.ProcessObserverMethod;
 import javax.enterprise.inject.spi.ProcessProducer;
 
-import org.junit.Ignore;
+//import org.junit.Ignore;
 
-@Ignore
+//@Ignore
 public class StaticHandler extends Handler {
 
 	private static List<Handler> delegates = new ArrayList<Handler>();

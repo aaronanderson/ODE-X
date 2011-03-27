@@ -31,7 +31,7 @@ import javax.xml.namespace.QName;
 import org.apache.ode.spi.repo.Repository;
 
 
-public class RepositoryImpl implements Repository {
+public class RepositorySPIImpl implements Repository {
 	
 	@PersistenceContext(unitName = "repo")
 	private EntityManager mgr;

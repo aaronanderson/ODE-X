@@ -83,7 +83,7 @@ public class CLITest {
 	@Test
 	public void testImport() {
 		StringBuilder out = new StringBuilder();
-		CLI.execute(new String[] { "--port",String.valueOf(port), "import","--file","target/test-classes/import.txt	" }, out);
+		CLI.execute(new String[] { "--port",String.valueOf(port), "import","--file","target/test-classes/import.txt" }, out);
 		assertTrue(out.toString().contains("Sucessfull"));
 		out = new StringBuilder();
 

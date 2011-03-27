@@ -1,0 +1,26 @@
+Objectives of the ODE-X Prototype:
+
+1) Repository
+   a) Import/Export of all referenced artifact into the repository
+   b) Use of activation to simplify file operations
+
+2) Dependency Injection
+  a) Platform agnostic DI
+  b) JPA injection  
+  
+3) Eventing
+  a) Use of events to avoid thread management
+  b) External event integration
+  c) Event scheduling
+
+4) Interpreter
+  a) Compile BPM into XML based instruction set
+  b) Execute platform and extended instructions
+
+5) Continuations
+  a) Prove the continuation concept is a viable and simplictic means of persisting execution state.
+
+5) Eclipse Integration
+  a) Deployment from eclipse
+  b) debugging support - attach, break points, call stack popping, variables
+

@@ -19,47 +19,77 @@
 package org.apache.ode.server;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.xml.ws.spi.http.HttpContext;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-import org.jvnet.jax_ws_commons.transport.grizzly_httpspi.GrizzlyHttpContextFactory;
+import org.apache.ode.server.xml.ServerType;
 
 import com.sun.grizzly.http.embed.GrizzlyWebServer;
 
+@Singleton
 public class WebServer {
+	@Inject
+	ServerType serverConfig;
 	GrizzlyWebServer server;
-	
+	int httpPort = -1;
+	boolean sslEnabled = false;
+
 	@PostConstruct
-	void init(){
+	void init() {
 		String contextPath = "/ctxt";
-	    String path = "/echo";
-	    int port = 12345;
+		String path = "/echo";
 
-	    String address = "http://localhost:"+port+contextPath+path;
+		httpPort = serverConfig.getHttpPort().intValue();
+		sslEnabled = serverConfig.isSslEnabled();
 
-	    server = new GrizzlyWebServer(port);
-	    //SSLConfig cfg = new SSLConfig();
-	    //server.setSSLConfiguration(sslConfiguration)
-	    //HttpContext context = GrizzlyHttpContextFactory.createHttpContext(server, contextPath, path)t(server, contextPath, path)pContext(server, contextPath, path)ontext(server, contextPath, path);
-	    //context.setHandler(new JAXWSHandler());
-	    //Endpoint endpoint = Endpoint.create(new Object());
-	    //endpoint.publish(context);      // Use grizzly HTTP context for publishing
+		try {
+			if (httpPort == 0) {
+				ServerSocket server = new ServerSocket(0);
+				httpPort = server.getLocalPort();
+				server.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-	    try {
-	    	System.out.println("Starting webServer");
+		String address = "http://localhost:" + httpPort + contextPath + path;
+
+		server = new GrizzlyWebServer(httpPort);
+		// SSLConfig cfg = new SSLConfig();
+		// server.setSSLConfiguration(sslConfiguration)
+		// HttpContext context =
+		// GrizzlyHttpContextFactory.createHttpContext(server, contextPath,
+		// path)t(server, contextPath, path)pContext(server, contextPath,
+		// path)ontext(server, contextPath, path);
+		// context.setHandler(new JAXWSHandler());
+		// Endpoint endpoint = Endpoint.create(new Object());
+		// endpoint.publish(context); // Use grizzly HTTP context for publishing
+
+		try {
+			System.out.println("Starting webServer");
 			server.start();
 			System.out.println("Started webServer");
-		} catch (IOException e) { 
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
+	public int getHttpPort() {
+		return httpPort;
+	}
+
+	public boolean isSSLEnabled() {
+		return isSSLEnabled();
+	}
+
 	@PreDestroy
-	void shutdown(){
+	void shutdown() {
 		System.out.println("Shutting down webServer");
-			server.stop();
+		server.stop();
 	}
 
 }

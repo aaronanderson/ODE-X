@@ -28,7 +28,7 @@
 	</parent>
 
 	<groupId>org.apache.ode</groupId>
-	<artifactId>cli</artifactId>
+	<artifactId>ode-cli</artifactId>
 	<name>ODE Command Line Interface</name>
 	<description>ODE Command Line Interface.</description>
 	<packaging>jar</packaging>

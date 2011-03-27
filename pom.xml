@@ -43,6 +43,7 @@
 	<module>server</module>
 	<module>sca</module>
 	<module>distro</module>
+	<module>tests</module>
 	
 	<!--<module>eclipse</module>-->
     </modules>

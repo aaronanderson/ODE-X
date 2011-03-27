@@ -16,48 +16,61 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.server.cdi;
+package org.apache.ode.tests;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
 import java.util.Set;
 
 import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.util.AnnotationLiteral;
 
-import org.apache.ode.server.JMXServer;
 import org.apache.ode.server.WebServer;
-import org.apache.ode.spi.repo.RepoCommandMap;
-import org.apache.ode.spi.repo.RepoFileTypeMap;
+import org.apache.ode.server.cdi.Handler;
+import org.apache.ode.server.cdi.JPAHandler;
+import org.apache.ode.server.cdi.RepoHandler;
+import org.apache.ode.server.cdi.StaticHandler;
+import org.jboss.weld.environment.se.Weld;
+import org.jboss.weld.environment.se.WeldContainer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class WebServerHandler extends Handler{
-	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
-		bbd.addAnnotatedType(bm.createAnnotatedType(WebServer.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(JMXServer.class));
-	}
-
-	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
+public class Base {
+	private Weld weld;
+	protected WeldContainer container;
+	protected int port;
+	
+	@BeforeClass
+	public void setUpBeforeClass() throws Exception {
+		weld = new Weld();
+		container = weld.initialize();
 		
-		Set<Bean<?>> beans = bm.getBeans(WebServer.class, new AnnotationLiteral<Any>() {
+		Set<Bean<?>> beans = container.getBeanManager().getBeans(WebServer.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
 			Bean<?> bean = beans.iterator().next();
-			bm.getReference(bean, WebServer.class, bm.createCreationalContext(bean));
+			WebServer webserver = (WebServer)container.getBeanManager().getReference(bean, WebServer.class, container.getBeanManager().createCreationalContext(bean));
+			port = webserver.getHttpPort();
 		} else {
 			System.out.println("Can't find class " + WebServer.class);
 		}
-		beans = bm.getBeans(JMXServer.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			Bean<?> bean = beans.iterator().next();
-			bm.getReference(bean, JMXServer.class, bm.createCreationalContext(bean));
-		} else {
-			System.out.println("Can't find class " + JMXServer.class);
-		}
-
 	}
-	
 
+	@AfterClass
+	public void tearDownAfterClass() throws Exception {
+		try {
+			weld.shutdown();
+		} catch (NullPointerException e) {
+		}
+	}
+
+	
+	
 }
