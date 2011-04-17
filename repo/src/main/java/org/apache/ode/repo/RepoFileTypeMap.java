@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.repo;
+package org.apache.ode.repo;
 
 import java.io.File;
 import java.util.HashMap;

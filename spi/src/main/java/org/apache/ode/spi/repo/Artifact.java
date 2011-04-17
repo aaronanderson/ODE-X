@@ -16,15 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.repo;
+package org.apache.ode.spi.repo;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
+import javax.xml.namespace.QName;
 
-public class ContentDataHandler extends DataHandler {
+public interface Artifact {
+	
+	public QName getQName();
 
-	public ContentDataHandler(DataSource ds) {
-		super(ds);
-	}
+	public String getContentType();
+	
+	public String getVersion();
+	
+	public String getCheckSum();
+    
+	public byte [] getContent();
 
 }

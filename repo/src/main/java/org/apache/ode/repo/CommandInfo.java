@@ -20,35 +20,32 @@ package org.apache.ode.repo;
 
 import java.io.IOException;
 
-import org.apache.ode.api.Repository;
+import javax.activation.CommandObject;
+import javax.activation.DataHandler;
+import javax.inject.Provider;
 
-public class RepositoryAPIImpl implements Repository {
+public class CommandInfo<T> extends javax.activation.CommandInfo {
+	Provider<T> provider;
+	boolean preferred;
+
+	public CommandInfo(String verb, String className, boolean isPreferred, Provider<T> provider) {
+		super(verb, className);
+		this.provider = provider;
+		this.preferred = isPreferred;
+	}
 
 	@Override
-	public ArtifactId importFile(String name, String version, String fileName, byte[] contents) throws IOException {
-		if (contents == null || contents.length == 0) {
-			throw new IOException("File contents is empty");
+	public Object getCommandObject(DataHandler dh, ClassLoader loader)
+			throws IOException, ClassNotFoundException {
+		Object o = provider.get();
+		if (o instanceof CommandObject){
+			((CommandObject)o).setCommandContext(getCommandName(), dh);
 		}
-		System.out.println("IMport "+fileName);
-		return new ArtifactId(fileName.substring(fileName.indexOf('.')), name != null ? name : fileName.substring(0,fileName.indexOf('.')), version);
+		return o;
 	}
-
-	@Override
-	public byte[] exportFile(ArtifactId artifact) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Type[] listTypes() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ArtifactId[] list(String type, int resultLimit) {
-		// TODO Auto-generated method stub
-		return null;
+	
+	boolean isPreferred(){
+		return preferred;
 	}
 
 }

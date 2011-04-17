@@ -23,10 +23,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import org.apache.ode.repo.CommandInfo;
+import org.apache.ode.repo.RepoCommandMap;
+import org.apache.ode.repo.RepoFileTypeMap;
 import org.apache.ode.spi.Plugin;
-import org.apache.ode.spi.repo.CommandInfo;
-import org.apache.ode.spi.repo.RepoCommandMap;
-import org.apache.ode.spi.repo.RepoFileTypeMap;
 
 @Named("BPELPlugin")
 public class BPELPlugin implements Plugin {

@@ -26,12 +26,14 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Singleton;
 
+import org.apache.ode.repo.RepoCommandMap;
+import org.apache.ode.repo.RepoFileTypeMap;
 import org.apache.ode.server.JMXServer;
 import org.apache.ode.server.WebServer;
-import org.apache.ode.spi.repo.RepoCommandMap;
-import org.apache.ode.spi.repo.RepoFileTypeMap;
 
+@Singleton
 public class WebServerHandler extends Handler{
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(WebServer.class));

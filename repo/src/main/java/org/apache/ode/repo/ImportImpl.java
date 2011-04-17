@@ -16,31 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.repo;
+package org.apache.ode.repo;
 
 import java.io.IOException;
 
+import javax.activation.CommandObject;
 import javax.activation.DataHandler;
-import javax.inject.Provider;
 
-public class CommandInfo<T> extends javax.activation.CommandInfo {
-	Provider<T> provider;
-	boolean preferred;
-
-	public CommandInfo(String verb, String className, boolean isPreferred, Provider<T> provider) {
-		super(verb, className);
-		this.provider = provider;
-		this.preferred = isPreferred;
-	}
+public class ImportImpl implements CommandObject {
 
 	@Override
-	public Object getCommandObject(DataHandler dh, ClassLoader loader)
-			throws IOException, ClassNotFoundException {
-		return provider.get();
+	public void setCommandContext(String command, DataHandler handler) throws IOException {
+		handler.getInputStream();
 	}
-	
-	boolean isPreferred(){
-		return preferred;
-	}
-
 }

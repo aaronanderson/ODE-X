@@ -18,65 +18,141 @@
  */
 package org.apache.ode.server.plugin;
 
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
+import javax.activation.ActivationDataFlavor;
 import javax.activation.CommandObject;
 import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
+import javax.activation.DataSource;
+import javax.activation.MimeTypeParseException;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
 import org.apache.ode.spi.Plugin;
-import org.apache.ode.spi.repo.CommandInfo;
-import org.apache.ode.spi.repo.RepoCommandMap;
-import org.apache.ode.spi.repo.RepoFileTypeMap;
+import org.apache.ode.spi.repo.DataContentHandler;
+import org.apache.ode.spi.repo.ArtifactDataSource;
+import org.apache.ode.spi.repo.Repository;
 
 @Named("BarPlugin")
 public class BarPlugin implements Plugin {
-	
-	public static String BAR_MIMETYPE= "application/bar";
-	//@Inject WSDLPlugin wsdlPlugin;
-	@Inject RepoFileTypeMap fileTypes;
-	@Inject RepoCommandMap commandMap;
-	@Inject Provider<BarValidation> barProvider;
-	
+
+	public static String BAR_MIMETYPE = "application/bar";
+	// @Inject WSDLPlugin wsdlPlugin;
+	@Inject
+	Repository repository;
+	@Inject
+	Provider<BarValidation> barProvider;
+	@Inject
+	Provider<ArtifactDataSource> dsProvider;
+
 	@PostConstruct
-	public void init(){
+	public void init() {
 		System.out.println("Initializing BPELPlugin");
-		fileTypes.registerExtension("bar", BAR_MIMETYPE);
-		fileTypes.registerExtension("bar2", BAR_MIMETYPE);
-		commandMap.registerCommandInfo(BAR_MIMETYPE,new CommandInfo<BarValidation>("validate",BarValidation.class.getName(),true,barProvider));
+		repository.registerExtension("bar", BAR_MIMETYPE);
+		repository.registerExtension("bar2", BAR_MIMETYPE);
+		repository.registerCommandInfo(BAR_MIMETYPE, "validate", true, barProvider);
+		repository.registerHandler(BAR_MIMETYPE, new BarDataContentHandler());
 		System.out.println("BPELPlugin Initialized");
-		
-	}
-	
 
-	public String getContentType(String fileName ){
-		return fileTypes.getContentType(fileName);
 	}
 
-	public BarValidation getCommand(File f, String command ) throws Exception{
-		FileDataSource fds = new FileDataSource(f);
-		fds.setFileTypeMap(fileTypes);
-		DataHandler handler = new DataHandler(fds);
-		handler.setCommandMap(commandMap);
-		javax.activation.CommandInfo info = handler.getCommand(command);
-		if (info == null){
-			return null;
-		}
-		return (BarValidation)info.getCommandObject(handler, getClass().getClassLoader());
+	public ArtifactDataSource getArtifactDataSource(String fileName) throws MimeTypeParseException {
+		ArtifactDataSource ds = dsProvider.get();
+		ds.configure(new byte[0], fileName);
+		return ds;
 	}
-	
-	static public class BarValidation implements CommandObject{
+
+	public DataHandler getDataHandler(File file) throws MimeTypeParseException, IOException {
+		ArtifactDataSource ds = dsProvider.get();
+		byte[] contents = DataContentHandler.readStream(new FileInputStream(file));
+		/*
+		 * FileInputStream fis = new FileInputStream(file); byte[] buffer = new
+		 * byte[4096]; int index = 0; while (index > -1){ fis.read(b); }
+		 * fis.getChannel().;
+		 */
+		ds.configure(contents, file.getName());
+		return repository.getDataHandler(ds);
+	}
+
+	public Repository getRepository() {
+		return repository;
+	}
+
+	static public class BarValidation implements CommandObject {
+
+		DataHandler handler;
 
 		@Override
-		public void setCommandContext(String command, DataHandler handler)
-				throws IOException {
-			
+		public void setCommandContext(String command, DataHandler handler) throws IOException {
+			this.handler = handler;
+		}
+
+		public boolean isValid() throws Exception {
+
+			Bar bar = (Bar) handler.getContent();
+			return "Foo".equals(bar.getPayload());
 		}
 	}
- 
+
+	static public class BarDataContentHandler extends DataContentHandler {
+
+		@Override
+		public Object getContent(DataSource ds) throws IOException {
+			byte[] payload = DataContentHandler.read(ds);
+			return new Bar(new String(payload));
+		}
+
+		@Override
+		public Object getTransferData(DataFlavor df, DataSource ds) throws UnsupportedFlavorException, IOException {
+			if (Bar.class.isAssignableFrom(df.getRepresentationClass())) {
+				return getContent(ds);
+			}
+			return null;
+		}
+
+		@Override
+		public DataFlavor[] getTransferDataFlavors() {
+			DataFlavor[] flavors = new DataFlavor[1];
+			flavors[0] = new ActivationDataFlavor(Bar.class, BAR_MIMETYPE + "; x-java-class=Bar", "Bar Representation");
+			return flavors;
+		}
+
+		@Override
+		public byte[] toContent(Object content, String mimeType) throws IOException {
+			if (content instanceof Bar) {
+				return ((Bar) content).getPayload().getBytes();
+			}
+			throw new IOException(String.format("%s is not an instance of Bar", content.getClass()));
+		}
+
+	}
+
+	static public class Bar {
+		private String payload;
+
+		public Bar() {
+		}
+
+		public Bar(String payload) {
+			this.payload = payload;
+		}
+
+		public void setPayload(String payload) {
+			this.payload = payload;
+		}
+
+		public String getPayload() {
+			return payload;
+		}
+	}
+
+
 }

@@ -25,17 +25,22 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.Set;
 
+import javax.activation.CommandInfo;
+import javax.activation.DataHandler;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.xml.namespace.QName;
 
 import org.apache.ode.server.WebServer;
 import org.apache.ode.server.cdi.Handler;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.StaticHandler;
+import org.apache.ode.server.plugin.BarPlugin.Bar;
+import org.apache.ode.spi.repo.Repository;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
@@ -46,6 +51,7 @@ public class PluginTest {
 	private static Weld weld;
 	protected static WeldContainer container;
 	protected static BarPlugin barPlugin;
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		StaticHandler.clear();
@@ -61,12 +67,12 @@ public class PluginTest {
 		});
 		weld = new Weld();
 		container = weld.initialize();
-		
+
 		Set<Bean<?>> beans = container.getBeanManager().getBeans(BarPlugin.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
 			Bean<?> bean = beans.iterator().next();
-			barPlugin = (BarPlugin)container.getBeanManager().getReference(bean, WebServer.class, container.getBeanManager().createCreationalContext(bean));
+			barPlugin = (BarPlugin) container.getBeanManager().getReference(bean, WebServer.class, container.getBeanManager().createCreationalContext(bean));
 		} else {
 			System.out.println("Can't find class " + BarPlugin.class);
 		}
@@ -81,20 +87,47 @@ public class PluginTest {
 	}
 
 	@Test
-	public void testPlugin() throws Exception{
-		assertNotNull(barPlugin);		
-	}
-	
-	@Test
-	public void testMimeType() throws Exception{
-		assertEquals("application/bar",barPlugin.getContentType("test.bar"));		
-		assertEquals("application/bar",barPlugin.getContentType("test.bar2"));
+	public void testPlugin() throws Exception {
+		assertNotNull(barPlugin);
 	}
 
 	@Test
-	public void testCommand() throws Exception{
+	public void testMimeType() throws Exception {
+		assertEquals("application/bar", barPlugin.getArtifactDataSource("test.bar").getContentType());
+		assertEquals("application/bar", barPlugin.getArtifactDataSource("test.bar2").getContentType());
+	}
+
+	@Test
+	public void testCommand() throws Exception {
 		File f = new File("target/test-classes/plugin/test.bar");
-		assertTrue(barPlugin.getCommand(f, "validate") instanceof BarPlugin.BarValidation);
+		DataHandler dh = barPlugin.getDataHandler(f);
+		assertNotNull(dh);
+		CommandInfo ci = dh.getCommand("validate");
+		assertNotNull(ci);
+		Object o = dh.getBean(ci);
+		assertTrue(o instanceof BarPlugin.BarValidation);
+		BarPlugin.BarValidation val = (BarPlugin.BarValidation) o;
+		assertTrue(val.isValid());
+	}
+
+	@Test
+	public void testStore() throws Exception {
+		Repository repo = barPlugin.getRepository();
+		assertNotNull(repo);
+		BarPlugin.Bar bar = new BarPlugin.Bar("Baz");
+		repo.store(new QName("{http://bar/store}"), "1.0", "application/bar", bar);
+	}
+
+	@Test
+	public void testLoad() throws Exception {
+		Repository repo = barPlugin.getRepository();
+		assertNotNull(repo);
+		BarPlugin.Bar bar = new BarPlugin.Bar();
+		bar.setPayload("Foo");
+		repo.store(new QName("{http://bar/load}"), "1.0", "application/bar", bar);
+		bar = repo.load(new QName("{http://bar/load}"), "1.0", "application/bar", Bar.class);
+		assertNotNull(bar);
+		assertEquals("Foo",bar.getPayload());
 	}
 
 }

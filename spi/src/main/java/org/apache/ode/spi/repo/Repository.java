@@ -20,31 +20,37 @@ package org.apache.ode.spi.repo;
 
 import java.util.Observable;
 
-import javax.activation.DataSource;
+import javax.activation.CommandObject;
+import javax.inject.Provider;
 import javax.xml.namespace.QName;
-//import javax.xml.stream.XMLStreamReader;
-//import org.w3c.dom.Document;
 
 public interface Repository {
 
-    //byte[] load(QName qname, String version, String type);
-    <C> C load(QName qname, String version, String type, Class<C> javaType);
- 
-    //XMLStreamReader loadXmlStream(QName qname, String version, String type);
+	<T extends CommandObject> void registerCommandInfo(String mimeType, String commandName, boolean preferred, Provider<T> provider);
 
-    //Document loadXmlDom(QName qname, String version, String type);
+	void registerExtension(String fileExtension, String mimeType);
 
-    //void store(QName qname, String version, String type, byte[] content);
-    <C> void store(QName qname, String version, String type, C content);
-    
-    //void store(QName qname, String version, String type, XMLStreamReader content);
+	void registerHandler(String mimeType, DataContentHandler handler);
 
-    //void store(QName qname, String version, String type, Document content);
+	DataHandler getDataHandler(ArtifactDataSource ds);
 
-    Observable watch (QName qname, String version, String type);
+	<C> DataHandler getDataHandler(C content, String mimeType);
 
+	// byte[] load(QName qname, String version, String type);
+	<C> C load(QName qname, String version, String type, Class<C> javaType) throws RepositoryException;
 
+	// XMLStreamReader loadXmlStream(QName qname, String version, String type);
 
+	// Document loadXmlDom(QName qname, String version, String type);
 
+	// void store(QName qname, String version, String type, byte[] content);
+	<C> void store(QName qname, String version, String type, C content) throws RepositoryException;
+
+	// void store(QName qname, String version, String type, XMLStreamReader
+	// content);
+
+	// void store(QName qname, String version, String type, Document content);
+
+	Observable watch(QName qname, String version, String type);
 
 }

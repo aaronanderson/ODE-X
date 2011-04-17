@@ -26,24 +26,22 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.util.AnnotationLiteral;
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.apache.ode.api.Repository;
-import org.apache.ode.repo.RepositoryAPIImpl;
-import org.apache.ode.repo.RepositorySPIImpl;
+import org.apache.ode.repo.ArtifactDataSourceImpl;
+import org.apache.ode.repo.RepoCommandMap;
+import org.apache.ode.repo.RepoFileTypeMap;
+import org.apache.ode.repo.RepositoryImpl;
+import org.apache.ode.repo.RepositoryMBean;
 import org.apache.ode.server.JMXServer;
-import org.apache.ode.spi.repo.RepoCommandMap;
-import org.apache.ode.spi.repo.RepoFileTypeMap;
 
 public class RepoHandler extends Handler {
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(RepoFileTypeMap.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(RepoCommandMap.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(RepositorySPIImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(ArtifactDataSourceImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(RepositoryImpl.class));
 
 	}
 
@@ -54,7 +52,7 @@ public class RepoHandler extends Handler {
 			Bean<?> bean = beans.iterator().next();
 			JMXServer server = (JMXServer) bm.getReference(bean, JMXServer.class, bm.createCreationalContext(bean));
 			try {
-				server.getMBeanServer().registerMBean(new RepositoryAPIImpl(), ObjectName.getInstance(Repository.OBJECTNAME));
+				server.getMBeanServer().registerMBean(new RepositoryMBean(), ObjectName.getInstance(Repository.OBJECTNAME));
 			} catch (Exception e) {
 				e.printStackTrace();
 				adv.addDeploymentProblem(e);
