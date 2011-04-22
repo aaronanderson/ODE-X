@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import org.apache.ode.bpel.repo.BPELValidation;
 import org.apache.ode.repo.CommandInfo;
 import org.apache.ode.repo.RepoCommandMap;
 import org.apache.ode.repo.RepoFileTypeMap;

@@ -16,42 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.plugin;
+package org.apache.ode.bpel.repo;
 
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
-import java.io.OutputStream;
 
-import javax.activation.DataContentHandler;
-import javax.activation.DataSource;
+import javax.activation.CommandObject;
+import javax.activation.DataHandler;
 
-public class BPELContentHandler implements DataContentHandler{
-
-	@Override
-	public Object getContent(DataSource ds) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+public class BPELValidation implements CommandObject{
 
 	@Override
-	public Object getTransferData(DataFlavor arg0, DataSource ds)
-			throws UnsupportedFlavorException, IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public DataFlavor[] getTransferDataFlavors() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void writeTo(Object arg0, String arg1, OutputStream arg2)
+	public void setCommandContext(String arg0, DataHandler arg1)
 			throws IOException {
 		// TODO Auto-generated method stub
 		
 	}
+	
 
 }

@@ -16,11 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.plugin;
+package org.apache.ode.bpel.plugin.cdi;
 
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 
+import org.apache.ode.bpel.plugin.BPELPlugin;
+import org.apache.ode.bpel.repo.BPELValidation;
 import org.apache.ode.server.cdi.Handler;
 
 public class BPELHandler extends Handler {
@@ -28,8 +30,6 @@ public class BPELHandler extends Handler {
 	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(BPELExport.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(BPELImport.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELValidation.class));
 	}
 

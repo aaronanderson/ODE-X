@@ -69,7 +69,7 @@ public class RepoTest {
 		});
 		if (beans.size() > 0) {
 			Bean<?> bean = beans.iterator().next();
-			repo = (Repository)container.getBeanManager().getReference(bean, WebServer.class, container.getBeanManager().createCreationalContext(bean));
+			repo = (Repository)container.getBeanManager().getReference(bean, Repository.class, container.getBeanManager().createCreationalContext(bean));
 		} else {
 			System.out.println("Can't find class " + Repository.class);
 		}

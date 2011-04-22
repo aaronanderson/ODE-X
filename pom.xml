@@ -42,8 +42,8 @@
 	<module>cli</module>
 	<module>server</module>
 	<module>sca</module>
-	<module>distro</module>
 	<module>tests</module>
+	<module>distro</module>
 	
 	<!--<module>eclipse</module>-->
     </modules>

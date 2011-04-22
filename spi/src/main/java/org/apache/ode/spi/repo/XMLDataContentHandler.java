@@ -21,17 +21,15 @@ package org.apache.ode.spi.repo;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import javax.activation.ActivationDataFlavor;
-import javax.activation.DataContentHandler;
 import javax.activation.DataSource;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.w3c.dom.Document;
 
-public class XMLDataContentHandler implements DataContentHandler {
+public class XMLDataContentHandler extends DataContentHandler {
 
 	@Override
 	 public Object getContent(DataSource dataSource) throws IOException {
@@ -56,10 +54,17 @@ public class XMLDataContentHandler implements DataContentHandler {
 	}
 
 	@Override
-	public void writeTo(Object stream, String mimeType, OutputStream os) throws IOException {
-		XMLStreamReader reader = (XMLStreamReader)stream;
-		//todo iterate events to stream
-		
+	public byte[] toContent(Object content, String contentType) throws IOException {
+		if (content instanceof XMLStreamReader){
+			XMLStreamReader reader = (XMLStreamReader)content;
+			//TODO if reader is at start serialize it
+			throw new IOException("Unable to serialize XMLStreamReader");
+		} else if (content instanceof Document){
+			
+		}
+		return null;
 	}
+
+	
 
 }

@@ -16,17 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.tests;
+package org.apache.ode.tests.bpel;
 
 import org.junit.Test;
 
-import com.eviware.soapui.tools.SoapUITestCaseRunner;
+//import com.eviware.soapui.tools.SoapUITestCaseRunner;
 
-public class HelloWorld  extends Base{
+public class HelloWorldIT{
 	
 	@Test
 	public void testHelloWorld() throws Exception{
-		SoapUITestCaseRunner runner = new SoapUITestCaseRunner(); 
+		//SoapUITestCaseRunner runner = new SoapUITestCaseRunner(); 
 		//runner.setEndpoint(endpoint);
 		//  runner.setProjectFile( "src/test/resources/tests/helloworld/helloworld.xml" );
 		//  runner.run(); 			

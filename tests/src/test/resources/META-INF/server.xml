@@ -17,12 +17,12 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-  <server  xmlns="http://ode.apache.org/server" httpPort="0" jmxPort="0xx">
+  <server  xmlns="http://ode.apache.org/server" httpPort="9090" jmxPort="9696">
   <handlers>
   <handler-class>org.apache.ode.server.cdi.EventHandler</handler-class>
   <handler-class>org.apache.ode.server.cdi.JPAHandler</handler-class>
   <handler-class>org.apache.ode.server.cdi.RepoHandler</handler-class>
   <handler-class>org.apache.ode.server.cdi.WebServerHandler</handler-class>
-  <handler-class>org.apache.ode.bpel.plugin.BPELHandler</handler-class>
+  <handler-class>org.apache.ode.bpel.plugin.cdi.BPELHandler</handler-class>
   </handlers>
 </server>

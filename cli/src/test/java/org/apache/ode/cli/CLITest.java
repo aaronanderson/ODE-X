@@ -50,6 +50,7 @@ public class CLITest {
 		port = server.getLocalPort();
 		server.close();
 		LocateRegistry.createRegistry(port); 
+		System.out.println("Registry created");
 		JMXServiceURL address = new JMXServiceURL("service:jmx:rmi://localhost:"+port+"/jndi/rmi://localhost:"+port+"/jmxrmi"); 
 		System.out.println("JMXServer address: " + address);
 		Map environment = null;

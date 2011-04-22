@@ -19,7 +19,9 @@
 package org.apache.ode.server;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
+import java.rmi.registry.LocateRegistry;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -48,18 +50,10 @@ public class JMXServer {
 			System.out.println("Starting jmxServer");
 			Map environment = null;
 			mbeanServer = MBeanServerFactory.createMBeanServer();
-			JMXServiceURL address = null;
-			if (serverConfig.getJmxURL() != null) {
-				address = new JMXServiceURL(serverConfig.getJmxURL());
-			} else {
-				port = serverConfig.getJmxPort().intValue();
-				if (port == 0) {
-					ServerSocket server = new ServerSocket(0);
-					port = server.getLocalPort();
-					server.close();
-				}
-				address = new JMXServiceURL("service:jmx:rmi://localhost:" + port + "/jndi/rmi://localhost:" + port + "/jmxrmi");
-			}
+			port = serverConfig.getJmxPort().intValue();
+			JMXServiceURL address = buildJMXAddress(serverConfig);
+			LocateRegistry.createRegistry(port); 
+			System.out.println("Registry created");
 			// JMXServiceURL address = new
 			// JMXServiceURL("service:jmx:rmi://localhost:"+port+"/jndi/rmi://localhost:"+port+"/jmxrmi");
 			cntorServer = JMXConnectorServerFactory.newJMXConnectorServer(address, environment, mbeanServer);
@@ -67,6 +61,16 @@ public class JMXServer {
 			System.out.println("Started jmxServer");
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static JMXServiceURL buildJMXAddress(ServerType serverConfig) throws MalformedURLException {
+		if (serverConfig.getJmxURL() != null) {
+			return new JMXServiceURL(serverConfig.getJmxURL());
+		} else {
+			int port = serverConfig.getJmxPort().intValue();
+			String host = serverConfig.getHost();
+			return new JMXServiceURL("service:jmx:rmi://" + host + ":" + port + "/jndi/rmi://" + host + ":" + port + "/jmxrmi");
 		}
 	}
 

@@ -18,7 +18,22 @@
  */
 package org.apache.ode.server;
 
-import org.jboss.weld.environment.se.ShutdownManager;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.management.JMX;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerConnection;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+
+import org.apache.ode.server.xml.ServerType;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 
@@ -26,76 +41,190 @@ import org.jboss.weld.environment.se.WeldContainer;
 //import org.apache.webbeans.spi.ContainerLifecycle;
 
 public class Server {
-	//ContainerLifecycle lifecycle;
-	Weld weld;
-	WeldContainer container;
-	
-	public static void main (String [] args){
-		Server server = new Server();
-		server.start();
-		server.stop();
-		
-		
-	}
-	
-	
-	public void start() {    
-		//ServiceLoader<ContentType> sl = ServiceLoader.load(ContentType.class);
-		//.getSystemResources(fullName);
-	    //else
-		//configs = Thread.currentThread().getclassloader().getResources(fullName);
-	
-		//TODO register RepoFileType mapper and RepoCommandMap with guice
-		//org.jboss.weld.environment.se.StartMain.main(new String[]{"JSR","299"});
-		weld = new Weld();
-		container =weld.initialize();
-		//container.instance().select(WebServer.class).get();
-		/*lifecycle = LifecycleFactory.getInstance().getLifecycle(); 
-		try {
-			lifecycle.startApplication(null);
-		} catch (Exception e1) {
-			e1.printStackTrace();
+	public static String OBJECTNAME = "org.apache.ode:type=ServerStop";
+
+	public static void main(String[] args) {
+		final Server server = new Server();
+		if (args.length == 0 || "start".equalsIgnoreCase(args[0])) {
+			if (args.length == 2 && "daemon".equals(args[1])) {
+				Thread daemonThread = new Thread(new Runnable() {
+
+					@Override
+					public void run() {
+						server.start();
+
+					}
+
+				}, "ODE Daemon Thread");
+				daemonThread.setDaemon(true);
+				daemonThread.start();
+				try {
+					daemonThread.join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			} else {
+				server.start();
+			}
+		} else if ("stop".equalsIgnoreCase(args[0])) {
+			server.stop();
+		} else {
+			System.err.println("Invalid arguements. Usage: Server <start | stop>");
+			System.exit(-1);
 		}
-		
-		//Set<Bean<?>> beans  = lifecycle.getBeanManager().getBeans("webServer");
-		Set<Bean<?>> beans =lifecycle.getBeanManager().getBeans(Object.class,new AnnotationLiteral<Any>(){});
-		System.out.println("All beans: "+beans.size());
-		Iterator<Bean<?>> i = beans.iterator();
-		while(i.hasNext()){
-			Bean<?> b = i.next();
-			System.out.println("name: "+ b.getName() + " type: " + b.getBeanClass().getCanonicalName());
-			
-		}*/
+	}
+
+	public void start() {
+		// ServiceLoader<ContentType> sl =
+		// ServiceLoader.load(ContentType.class);
+		// .getSystemResources(fullName);
+		// else
+		// configs =
+		// Thread.currentThread().getclassloader().getResources(fullName);
+
+		// TODO register RepoFileType mapper and RepoCommandMap with guice
+		// org.jboss.weld.environment.se.StartMain.main(new
+		// String[]{"JSR","299"});
+		Weld weld = new Weld();
+		WeldContainer container = weld.initialize();
+		JMXServer server = container.instance().select(JMXServer.class).get();
+		MBeanServer mserver = server.getMBeanServer();
+		try {
+			mserver.registerMBean(new ServerStop(weld), new ObjectName(OBJECTNAME));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		System.out.println("Server Started");
 		/*
-		if (beans.size()>0){
-			 Bean<?> bean =beans.iterator().next();
-	        
-	        WebServer webServer = (WebServer) lifecycle.getBeanManager().getReference(bean, WebServer.class, lifecycle.getBeanManager().createCreationalContext(bean));
-	        System.out.println("Retrieved the Web Server!! " +webServer);
-		 }else{
-			 System.out.println("Web Server not available!! ");
-		 }
-		*/
-	
+		 * lifecycle = LifecycleFactory.getInstance().getLifecycle(); try {
+		 * lifecycle.startApplication(null);We } catch (Exception e1) {
+		 * e1.printStackTrace(); }
+		 * 
+		 * //Set<Bean<?>> beans =
+		 * lifecycle.getBeanManager().getBeans("webServer"); Set<Bean<?>> beans
+		 * =lifecycle.getBeanManager().getBeans(Object.class,new
+		 * AnnotationLiteral<Any>(){});
+		 * System.out.println("All beans: "+beans.size()); Iterator<Bean<?>> i =
+		 * beans.iterator(); while(i.hasNext()){ Bean<?> b = i.next();
+		 * System.out.println("name: "+ b.getName() + " type: " +
+		 * b.getBeanClass().getCanonicalName());
+		 * 
+		 * }
+		 */
+		/*
+		 * if (beans.size()>0){ Bean<?> bean =beans.iterator().next();
+		 * 
+		 * WebServer webServer = (WebServer)
+		 * lifecycle.getBeanManager().getReference(bean, WebServer.class,
+		 * lifecycle.getBeanManager().createCreationalContext(bean));
+		 * System.out.println("Retrieved the Web Server!! " +webServer); }else{
+		 * System.out.println("Web Server not available!! "); }
+		 */
 
-	    
-	    //endpoint.stop();
+		// endpoint.stop();
 
-	    //server.stop();
+		// server.stop();
 	}
-	
-	public void stop() {  
-		weld.shutdown();
-		 //ShutdownManager shutdownManager = container.instance().select(ShutdownManager.class).get();
-	     // shutdownManager.shutdown();
 
-		/*try {
-			lifecycle.stopApplication(null);
-		} catch (Exception e1) {
-			e1.printStackTrace();
-		}*/
+	public void stop() {
+		try {
+			ServerType serverConfig = readConfig();
+			JMXServiceURL url = JMXServer.buildJMXAddress(serverConfig);
+			JMXConnector jmxc = JMXConnectorFactory.connect(url, null);
+			MBeanServerConnection jmxConnection = jmxc.getMBeanServerConnection();
+			ServerStopMBean stopServer = JMX.newMBeanProxy(jmxConnection, new ObjectName(OBJECTNAME), ServerStopMBean.class);
+			stopServer.stop();
+			jmxc.close();
+			for (int i=0; i< 15; i ++){
+				try{
+				jmxc = JMXConnectorFactory.connect(url, null);
+				jmxc.close();
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					break;
+				}
+				}catch (IOException ie){
+					break;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		// ShutdownManager shutdownManager =
+		// container.instance().select(ShutdownManager.class).get();
+		// shutdownManager.shutdown();
+
+		/*
+		 * try { lifecycle.stopApplication(null); } catch (Exception e1) {
+		 * e1.printStackTrace(); }
+		 */
 
 	}
 
+	public static ServerType readConfig() throws IOException {
+
+		String configName = System.getProperty("ode.config");
+		if (configName == null) {
+			configName = "META-INF/server.xml";
+		} else {
+			configName = "META-INF/" + configName + ".xml";
+		}
+		ClassLoader currentCL = Thread.currentThread().getContextClassLoader();
+		InputStream is = currentCL.getResourceAsStream(configName);
+		if (is != null) {
+			try {
+				JAXBContext jc = JAXBContext.newInstance("org.apache.ode.server.xml");
+				Unmarshaller u = jc.createUnmarshaller();
+				JAXBElement<ServerType> element = (JAXBElement<ServerType>) u.unmarshal(is);
+				return element.getValue();
+
+			} catch (JAXBException je) {
+				throw new IOException(je);
+			}
+		} else {
+			throw new IOException(String.format("Unable to locate config file %s on classpath\n", configName));
+		}
+
+	}
+
+	public static interface ServerStopMBean {
+	
+		public void stop();
+	}
+
+	public class ServerStop implements ServerStopMBean {
+		Weld weld;
+
+		public ServerStop(Weld weld) {
+			this.weld = weld;
+		}
+
+		public void stop() {
+			//We will shutdown the server in a seperate thread so 
+			//the JMX client can gracefully close it's connection before
+			//The JMX server closes the listener
+			Thread shutdownThread = new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(3000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					System.out.println("Shutting down ODE Server");
+					weld.shutdown();
+					System.out.println("ODE Server Stopped");
+
+				}
+
+			}, "ODE Shutdown Thread");
+			shutdownThread.setDaemon(false);
+			shutdownThread.start();
+		}
+	}
 
 }

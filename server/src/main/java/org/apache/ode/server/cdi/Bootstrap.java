@@ -18,13 +18,14 @@
  */
 package org.apache.ode.server.cdi;
 
-import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-import javax.enterprise.context.spi.Context;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
@@ -34,23 +35,16 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.inject.spi.Extension;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.inject.spi.ProcessBean;
 import javax.enterprise.inject.spi.ProcessInjectionTarget;
 import javax.enterprise.inject.spi.ProcessObserverMethod;
 import javax.enterprise.inject.spi.ProcessProducer;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PersistenceContext;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
+import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Singleton;
 
-import org.apache.ode.server.xml.HandlersType;
+import org.apache.ode.server.Server;
+import org.apache.ode.server.WebServer;
 import org.apache.ode.server.xml.ServerType;
 
 public class Bootstrap implements Extension {
@@ -65,48 +59,27 @@ public class Bootstrap implements Extension {
 
 	}
 
-	@Produces
-	public ServerType create() {
-		return server;
-
-	}
-
 	public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager bm) {
-		String configName = System.getProperty("ode.config");
-		if (configName == null) {
-			configName = "META-INF/server.xml";
-		} else {
-			configName = "META-INF/" + configName + ".xml";
-		}
-		ClassLoader currentCL = Thread.currentThread().getContextClassLoader();
-		InputStream is = currentCL.getResourceAsStream(configName);
-		if (is != null) {
-			try {
-				JAXBContext jc = JAXBContext.newInstance("org.apache.ode.server.xml");
-				Unmarshaller u = jc.createUnmarshaller();
-				JAXBElement<ServerType> element = (JAXBElement<ServerType>) u.unmarshal(is);
-				server = element.getValue();
-				for (HandlersType h : server.getHandlers()) {
-					try {
-						Class<Handler> handler = (Class<Handler>) Class.forName(h.getHandlerClass());
-						if (handler != null) {
-							this.handlers.add(handler.newInstance());
-							System.out.format("Added handler %s\n", h.getHandlerClass());
-						}
-
-					} catch (Exception ce) {
-						ce.printStackTrace();
+		try {
+			server = Server.readConfig();
+			for (String h : server.getHandlers().getHandlerClass()) {
+				try {
+					Class<Handler> handler = (Class<Handler>) Class.forName(h);
+					if (handler != null) {
+						handlers.add(handler.newInstance());
+						System.out.format("Added handler %s\n", h);
 					}
-				}
 
-			} catch (JAXBException je) {
-				je.printStackTrace();
+				} catch (Exception ce) {
+					ce.printStackTrace();
+				}
 			}
-		} else {
-			System.out.format("Unable to locate config file %s on classpath\n", configName);
+		} catch (Exception ce) {
+			ce.printStackTrace();
 		}
 
 		System.out.format("BeforeBeanDiscovery \n");
+		bbd.addAnnotatedType(bm.createAnnotatedType(ServerConfigProducer.class));
 		BeforeBeanDiscovery bbdImpl = new BeforeBeanDiscoveryImpl(bbd);
 		for (Handler h : handlers) {
 			h.beforeBeanDiscovery(bbdImpl, bm);
@@ -141,8 +114,17 @@ public class Bootstrap implements Extension {
 		}
 	}
 
-	public void afterDeploymentValidation(@Observes AfterDeploymentValidation adv, BeanManager bm) {
-		System.out.format("AfterDeploymentValidation \n");
+	public void afterDeployment(@Observes AfterDeploymentValidation adv, BeanManager bm) {
+		System.out.format("^^^^^^^^^^^^^^^^^^^^^^^^^AfterDeploymentValidation ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		Set<Bean<?>> beans = bm.getBeans(ServerConfigProducer.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			Bean<?> bean = beans.iterator().next();
+			ServerConfigProducer sp = (ServerConfigProducer)bm.getReference(bean, ServerConfigProducer.class, bm.createCreationalContext(bean));
+			sp.setServerConfig(server);
+		} else {
+			System.out.println("Can't find class " + ServerConfigProducer.class);
+		}
 		for (Handler h : handlers) {
 			h.afterDeploymentValidation(adv, bm);
 		}
@@ -229,6 +211,23 @@ public class Bootstrap implements Extension {
 
 		}
 
+	}
+
+	@Singleton
+	public static class ServerConfigProducer {
+
+		private ServerType serverConfig;
+
+		public void setServerConfig(ServerType serverConfig) {
+			this.serverConfig = serverConfig;
+		}
+
+		@Produces
+		@Dependent
+		public ServerType create() {
+			return serverConfig;
+
+		}
 	}
 
 }

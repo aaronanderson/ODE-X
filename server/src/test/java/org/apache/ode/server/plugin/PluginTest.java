@@ -72,7 +72,7 @@ public class PluginTest {
 		});
 		if (beans.size() > 0) {
 			Bean<?> bean = beans.iterator().next();
-			barPlugin = (BarPlugin) container.getBeanManager().getReference(bean, WebServer.class, container.getBeanManager().createCreationalContext(bean));
+			barPlugin = (BarPlugin) container.getBeanManager().getReference(bean, BarPlugin.class, container.getBeanManager().createCreationalContext(bean));
 		} else {
 			System.out.println("Can't find class " + BarPlugin.class);
 		}
