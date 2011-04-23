@@ -46,6 +46,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PersistenceContext;
 
+import org.apache.ode.spi.cdi.Handler;
+
 public class JPAHandler extends Handler {
 	Bean<EntityManagerProducer> emfpBean;
 	CreationalContext<EntityManagerProducer> emfpCtx;

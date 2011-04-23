@@ -35,12 +35,14 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 
 import org.apache.ode.spi.Plugin;
 import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.Repository;
 
+@Singleton
 @Named("BarPlugin")
 public class BarPlugin implements Plugin {
 

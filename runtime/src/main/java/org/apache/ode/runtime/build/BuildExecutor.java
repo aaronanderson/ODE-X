@@ -16,20 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.tests.bpel;
+package org.apache.ode.runtime.build;
 
-import org.junit.Test;
+import java.io.IOException;
 
-import com.eviware.soapui.tools.SoapUITestCaseRunner;
+import javax.activation.CommandObject;
+import javax.activation.DataHandler;
 
-public class HelloWorldIT{
+
+public class BuildExecutor implements CommandObject  {
 	
-	@Test
-	public void testHelloWorld() throws Exception{
-		SoapUITestCaseRunner runner = new SoapUITestCaseRunner(); 
-		//runner.setEndpoint(endpoint);
-		//  runner.setProjectFile( "src/test/resources/tests/helloworld/helloworld.xml" );
-		//  runner.run(); 			
+	DataHandler handler;
+
+	@Override
+	public void setCommandContext(String command, DataHandler handler) throws IOException {
+		this.handler = handler;
 	}
-	
+
+	public void build() throws Exception {
+
+		//Bar bar = (Bar) handler.getContent();
+		//return "Foo".equals(bar.getPayload());
+	}
+
 }

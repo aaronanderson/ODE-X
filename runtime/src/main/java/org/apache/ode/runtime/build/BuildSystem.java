@@ -16,40 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.plugin;
+package org.apache.ode.runtime.build;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 
-import org.apache.ode.bpel.repo.BPELValidation;
-import org.apache.ode.spi.Plugin;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 
 @Singleton
-@Named("BPELPlugin")
-public class BPELPlugin implements Plugin {
-	
-	public static String BPEL_MIMETYPE= "application/bpel";
-	//@Inject WSDLPlugin wsdlPlugin;
+public class BuildSystem {
+	public static String BUILDPLAN_MIMETYPE="application/ode-build-plan";
 	@Inject
 	Repository repository;
-	@Inject 
-	Provider<BPELValidation> validateProvider;
-	
+	@Inject
+	Provider<BuildExecutor> buildProvider;
+
 	@PostConstruct
-	public void init(){
-		System.out.println("Initializing BPELPlugin");
-		repository.registerExtension("bpel", BPEL_MIMETYPE);
-		repository.registerCommandInfo(BPEL_MIMETYPE, "validate", true, validateProvider);
-		repository.registerHandler(BPEL_MIMETYPE, new XMLDataContentHandler(null));
-		System.out.println("BPELPlugin Initialized");
-		
+	public void init() {
+		System.out.println("Initializing BuildExecutor");
+		repository.registerExtension("plan", BUILDPLAN_MIMETYPE);
+		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, "build", true, buildProvider);
+		try {
+			JAXBContext jc = JAXBContext.newInstance("org.apache.ode.runtime.build.xml");
+			repository.registerHandler(BUILDPLAN_MIMETYPE, new XMLDataContentHandler(jc));
+		} catch (JAXBException je) {
+			je.printStackTrace();
+		}
+
+		System.out.println("BuildExecutor Initialized");
+
 	}
-	
-	
 
 }

@@ -35,11 +35,11 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.server.WebServer;
-import org.apache.ode.server.cdi.Handler;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.StaticHandler;
 import org.apache.ode.server.plugin.BarPlugin.Bar;
+import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.repo.Repository;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;

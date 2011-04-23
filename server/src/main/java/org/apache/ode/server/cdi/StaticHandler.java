@@ -33,6 +33,8 @@ import javax.enterprise.inject.spi.ProcessInjectionTarget;
 import javax.enterprise.inject.spi.ProcessObserverMethod;
 import javax.enterprise.inject.spi.ProcessProducer;
 
+import org.apache.ode.spi.cdi.Handler;
+
 //import org.junit.Ignore;
 
 //@Ignore

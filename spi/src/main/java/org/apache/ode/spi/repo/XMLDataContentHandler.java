@@ -20,51 +20,118 @@ package org.apache.ode.spi.repo;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataSource;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 
 public class XMLDataContentHandler extends DataContentHandler {
+	JAXBContext jc;
+
+	public XMLDataContentHandler(JAXBContext jc) {
+		this.jc = jc;
+	}
 
 	@Override
-	 public Object getContent(DataSource dataSource) throws IOException {
-		try {
-			return XMLInputFactory.newInstance().createXMLStreamReader(dataSource.getInputStream());
-		} catch (Exception e) {
-			throw new IOException(e);
-		} 
+	public Object getContent(DataSource dataSource) throws IOException {
+		if (jc != null) {
+			try {
+				Unmarshaller u = jc.createUnmarshaller();
+				return (JAXBElement) u.unmarshal(dataSource.getInputStream());
+			} catch (JAXBException je) {
+				throw new IOException(je);
+			}
+		} else {
+			try {
+				return XMLInputFactory.newInstance().createXMLStreamReader(dataSource.getInputStream());
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
+		}
 	}
 
 	@Override
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
-		return null;
+		if (JAXBElement.class.equals(flavor.getDefaultRepresentationClass())) {
+			try {
+				Unmarshaller u = jc.createUnmarshaller();
+				return (JAXBElement) u.unmarshal(dataSource.getInputStream());
+			} catch (JAXBException je) {
+				throw new IOException(je);
+			}
+		} else if (XMLStreamReader.class.equals(flavor.getDefaultRepresentationClass())) {
+			try {
+				return XMLInputFactory.newInstance().createXMLStreamReader(dataSource.getInputStream());
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
+		} else if (Document.class.equals(flavor.getDefaultRepresentationClass())) {
+			try {
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				factory.setNamespaceAware(true);
+				DocumentBuilder parser = factory.newDocumentBuilder();
+				return parser.parse(dataSource.getInputStream());
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
+		}
+		throw new IOException(String.format("Unsupported dataflavor %s", flavor));
 	}
 
 	@Override
 	public DataFlavor[] getTransferDataFlavors() {
-		DataFlavor [] flavors = new DataFlavor[2]; 
-		flavors[0] = new ActivationDataFlavor(XMLStreamReader.class, "application/xml; x-java-class=XMLStreamReader","Stax XML Stream Reader");
-		flavors[1] = new ActivationDataFlavor(Document.class, "application/xml; x-java-class=W3CDom","W3C DOM");
-		return flavors;
+		ActivationDataFlavor xsd = new ActivationDataFlavor(XMLStreamReader.class, "application/xml; x-java-class=XMLStreamReader", "Stax XML Stream Reader");
+		ActivationDataFlavor dd = new ActivationDataFlavor(Document.class, "application/xml; x-java-class=W3CDom", "W3C DOM");
+		if (jc != null) {
+			ActivationDataFlavor jd = new ActivationDataFlavor(JAXBElement.class, "application/xml; x-java-class=JAXB", "JAXB");
+			return new DataFlavor[] { jd, xsd, dd };
+		} else {
+			return new DataFlavor[] { xsd, dd };
+		}
 	}
 
 	@Override
 	public byte[] toContent(Object content, String contentType) throws IOException {
-		if (content instanceof XMLStreamReader){
-			XMLStreamReader reader = (XMLStreamReader)content;
-			//TODO if reader is at start serialize it
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		if (content instanceof JAXBElement) {
+			try {
+				Marshaller u = jc.createMarshaller();
+				u.marshal((JAXBElement) content, bos);
+				return bos.toByteArray();
+			} catch (JAXBException je) {
+				throw new IOException(je);
+			}
+		} else if (content instanceof Document) {
+			try {
+				TransformerFactory xformFactory = TransformerFactory.newInstance();
+				Transformer transformer = xformFactory.newTransformer();
+				transformer.transform(new DOMSource((Document) content), new StreamResult(bos));
+				return bos.toByteArray();
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
+		} else if (content instanceof XMLStreamReader) {
+			XMLStreamReader reader = (XMLStreamReader) content;
+			// TODO if reader is at start serialize it
 			throw new IOException("Unable to serialize XMLStreamReader");
-		} else if (content instanceof Document){
-			
 		}
-		return null;
+		throw new IOException(String.format("Unsupported object class %s", content.getClass()));
 	}
-
-	
 
 }

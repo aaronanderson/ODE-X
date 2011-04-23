@@ -46,11 +46,20 @@
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>eviware</groupId>
-			<artifactId>soapui</artifactId>
+			<!-- the plugin has all the maven dependencies defined wheras the library 
+				does not <artifactId>soapui</artifactId> -->
+			<artifactId>maven-soapui-plugin</artifactId>
 			<version>3.6.1</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.3.152</version>
 			<scope>test</scope>
 		</dependency>
 

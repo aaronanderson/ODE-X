@@ -27,17 +27,25 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
+
 		<dependency>
-			<groupId>org.apache.ode</groupId>
-			<artifactId>ode-repo</artifactId>
-			<version>${project.version}</version>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-atinject_1.0_spec</artifactId>
+			<version>1.0</version>
+			<scope>provided</scope>
 		</dependency>
 		
 		<dependency>
-			<groupId>org.apache.ode</groupId>
-			<artifactId>ode-server</artifactId>
-			<version>${project.version}</version>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jcdi_1.0_spec</artifactId>
+			<version>1.0</version>
 			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.ode</groupId>
+			<artifactId>ode-spi</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>

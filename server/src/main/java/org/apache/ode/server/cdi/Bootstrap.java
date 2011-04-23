@@ -46,6 +46,7 @@ import javax.inject.Singleton;
 import org.apache.ode.server.Server;
 import org.apache.ode.server.WebServer;
 import org.apache.ode.server.xml.ServerType;
+import org.apache.ode.spi.cdi.Handler;
 
 public class Bootstrap implements Extension {
 	// We will bootstrap all CDI beans rather than using beans.xml for
@@ -96,13 +97,18 @@ public class Bootstrap implements Extension {
 		 * Maybe this will be fixed in five years when CDI 1.1 is released,
 		 * haha.
 		 */
-		for (Handler h : handlers) {
-			for (AnnotatedType<?> t : addedTypes) {
-				ProcessAnnotatedTypeImpl type = new ProcessAnnotatedTypeImpl(t);
+		for (AnnotatedType<?> t : addedTypes) {
+			boolean vetoed= false;
+			ProcessAnnotatedTypeImpl type = new ProcessAnnotatedTypeImpl(t);
+			for (Handler h : handlers) {
 				h.processAnnotatedType(type, bm);
-				if (!type.isVeto()) {
-					bbd.addAnnotatedType(type.getAnnotatedType());
+				if (type.isVeto()) {
+					vetoed = true;
+					break;
 				}
+			}
+			if (!vetoed){
+			   bbd.addAnnotatedType(type.getAnnotatedType());
 			}
 		}
 	}

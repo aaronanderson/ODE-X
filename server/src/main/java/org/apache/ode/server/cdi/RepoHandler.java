@@ -35,13 +35,22 @@ import org.apache.ode.repo.RepoFileTypeMap;
 import org.apache.ode.repo.RepositoryImpl;
 import org.apache.ode.repo.RepositoryMBean;
 import org.apache.ode.server.JMXServer;
+import org.apache.ode.spi.cdi.Handler;
 
 public class RepoHandler extends Handler {
+	
+	public static class Dependent extends AnnotationLiteral<javax.enterprise.context.Dependent> implements javax.enterprise.context.Dependent {
+	};
+	
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(RepoFileTypeMap.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(RepoCommandMap.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(ArtifactDataSourceImpl.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(RepositoryImpl.class));
+		//RepositoryImpl should have the dependent CDI scope so a new instance is bound
+		//to the object it's being injected into's lifecycle
+		AnnotatedTypeImpl<?> at = new AnnotatedTypeImpl(bm.createAnnotatedType(RepositoryImpl.class));
+		at.getAnnotations().add(new Dependent());
+		bbd.addAnnotatedType(at);
 
 	}
 
@@ -59,17 +68,6 @@ public class RepoHandler extends Handler {
 			} 
 		}
 	}
-
-	protected void start(Class clazz, BeanManager bm) {
-		Set<Bean<?>> beans = bm.getBeans(clazz, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			Bean<?> bean = beans.iterator().next();
-			bm.getReference(bean, clazz, bm.createCreationalContext(bean));
-		} else {
-			System.out.println("Can't find class " + clazz);
-		}
-
-	}
-
+	
+	
 }

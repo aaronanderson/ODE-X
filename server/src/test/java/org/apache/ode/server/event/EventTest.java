@@ -33,9 +33,9 @@ import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 
 import org.apache.ode.server.cdi.EventHandler;
-import org.apache.ode.server.cdi.Handler;
 import org.apache.ode.server.cdi.ProcessAnnotatedTypeImpl;
 import org.apache.ode.server.cdi.StaticHandler;
+import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.event.Channel;
 import org.apache.ode.spi.event.Publisher;
 import org.apache.ode.spi.event.Subscriber;

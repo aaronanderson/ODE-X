@@ -35,6 +35,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.util.AnnotationLiteral;
 
+import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.event.Channel;
 import org.apache.ode.spi.event.Publisher;
 import org.apache.ode.spi.event.Subscriber;

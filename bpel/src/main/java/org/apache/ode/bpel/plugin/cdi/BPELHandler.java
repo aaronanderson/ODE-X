@@ -18,19 +18,52 @@
  */
 package org.apache.ode.bpel.plugin.cdi;
 
+import java.util.Set;
+
+import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.spi.AfterDeploymentValidation;
+import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
+import javax.enterprise.inject.spi.BeforeShutdown;
+import javax.enterprise.util.AnnotationLiteral;
 
 import org.apache.ode.bpel.plugin.BPELPlugin;
 import org.apache.ode.bpel.repo.BPELValidation;
-import org.apache.ode.server.cdi.Handler;
+import org.apache.ode.spi.cdi.Handler;
 
 public class BPELHandler extends Handler {
+	
+	Bean<BPELPlugin> pluginBean;
+	CreationalContext<BPELPlugin> pluginCtx;
+	BPELPlugin pluginSys;
 
 	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELValidation.class));
 	}
+	
+	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
+		Set<Bean<?>> beans = bm.getBeans(BPELPlugin.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			pluginBean = (Bean<BPELPlugin>)beans.iterator().next();
+			pluginCtx = bm.createCreationalContext(pluginBean);
+			bm.getReference(pluginBean, BPELPlugin.class, pluginCtx);
+		} else {
+			System.out.println("Can't find class " + BPELPlugin.class);
+		}
+
+	}
+	
+	@Override
+	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
+	  if (pluginSys!=null){
+		  pluginBean.destroy(pluginSys, pluginCtx);
+	  }
+	}
+
 
 }

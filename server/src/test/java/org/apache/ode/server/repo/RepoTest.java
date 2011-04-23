@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 
 import java.util.Set;
 
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -33,11 +34,11 @@ import org.apache.ode.api.Repository;
 import org.apache.ode.api.Repository.ArtifactId;
 import org.apache.ode.runtime.jmx.RepositoryImpl;
 import org.apache.ode.server.WebServer;
-import org.apache.ode.server.cdi.Handler;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.StaticHandler;
 import org.apache.ode.server.plugin.BarPlugin;
+import org.apache.ode.spi.cdi.Handler;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
@@ -47,7 +48,9 @@ import org.junit.Test;
 public class RepoTest {
 	private static Weld weld;
 	protected static WeldContainer container;
-	protected static Repository repo = null;
+	protected  static Bean<Repository> repoBean;
+	protected  static CreationalContext<Repository> repoCtx;
+	protected  static Repository repo;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -58,8 +61,6 @@ public class RepoTest {
 
 			public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 				bbd.addAnnotatedType(bm.createAnnotatedType(RepositoryImpl.class));
-				bbd.addAnnotatedType(bm.createAnnotatedType(BarPlugin.class));
-
 			}
 		});
 		weld = new Weld();
@@ -68,8 +69,9 @@ public class RepoTest {
 		Set<Bean<?>> beans = container.getBeanManager().getBeans(Repository.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			Bean<?> bean = beans.iterator().next();
-			repo = (Repository)container.getBeanManager().getReference(bean, Repository.class, container.getBeanManager().createCreationalContext(bean));
+			repoBean = (Bean<Repository>)beans.iterator().next();
+			repoCtx = container.getBeanManager().createCreationalContext(repoBean);
+			repo = (Repository)container.getBeanManager().getReference(repoBean, Repository.class, repoCtx);
 		} else {
 			System.out.println("Can't find class " + Repository.class);
 		}
@@ -77,6 +79,9 @@ public class RepoTest {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
+		if (repo!=null){
+			repoBean.destroy(repo, repoCtx);
+		}
 		try {
 			weld.shutdown();
 		} catch (NullPointerException e) {
