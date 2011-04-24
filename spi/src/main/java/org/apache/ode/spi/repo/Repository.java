@@ -28,7 +28,9 @@ public interface Repository {
 
 	<T extends CommandObject> void registerCommandInfo(String mimeType, String commandName, boolean preferred, Provider<T> provider);
 
-	void registerExtension(String fileExtension, String mimeType);
+	void registerFileExtension(String fileExtension, String mimeType);
+	
+	void registerNamespace(String namespace, String mimeType);
 
 	void registerHandler(String mimeType, DataContentHandler handler);
 

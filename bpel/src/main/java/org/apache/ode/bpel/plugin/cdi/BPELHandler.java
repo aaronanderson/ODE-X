@@ -30,7 +30,7 @@ import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
 
 import org.apache.ode.bpel.plugin.BPELPlugin;
-import org.apache.ode.bpel.repo.BPELValidation;
+import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.cdi.Handler;
 
 public class BPELHandler extends Handler {
@@ -42,7 +42,7 @@ public class BPELHandler extends Handler {
 	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(BPELValidation.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BPELExecValidation.class));
 	}
 	
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {

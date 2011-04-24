@@ -24,7 +24,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.apache.ode.bpel.repo.BPELValidation;
+import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.Plugin;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
@@ -33,19 +33,21 @@ import org.apache.ode.spi.repo.XMLDataContentHandler;
 @Named("BPELPlugin")
 public class BPELPlugin implements Plugin {
 	
-	public static String BPEL_MIMETYPE= "application/bpel";
+	public static String BPEL_EXEC_MIMETYPE= "application/bpel-exec";
+	public static String BPEL_EXEC_NAMESPACE ="http://docs.oasis-open.org/wsbpel/2.0/process/executable";
 	//@Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
 	@Inject 
-	Provider<BPELValidation> validateProvider;
+	Provider<BPELExecValidation> validateProvider;
 	
 	@PostConstruct
 	public void init(){
 		System.out.println("Initializing BPELPlugin");
-		repository.registerExtension("bpel", BPEL_MIMETYPE);
-		repository.registerCommandInfo(BPEL_MIMETYPE, "validate", true, validateProvider);
-		repository.registerHandler(BPEL_MIMETYPE, new XMLDataContentHandler(null));
+		repository.registerFileExtension("bpel", BPEL_EXEC_MIMETYPE);
+		repository.registerNamespace(BPEL_EXEC_NAMESPACE, BPEL_EXEC_MIMETYPE);
+		repository.registerCommandInfo(BPEL_EXEC_MIMETYPE, "validate", true, validateProvider);
+		repository.registerHandler(BPEL_EXEC_MIMETYPE, new XMLDataContentHandler());
 		System.out.println("BPELPlugin Initialized");
 		
 	}

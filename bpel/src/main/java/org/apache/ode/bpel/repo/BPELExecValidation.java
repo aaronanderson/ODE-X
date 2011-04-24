@@ -16,39 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.repo;
+package org.apache.ode.bpel.repo;
 
 import java.io.IOException;
 
-import org.apache.ode.api.Repository;
+import javax.activation.CommandObject;
+import javax.activation.DataHandler;
 
-public class RepositoryMBean implements Repository {
-
-	@Override
-	public ArtifactId importFile(String name, String version, String fileName, byte[] contents) throws IOException {
-		if (contents == null || contents.length == 0) {
-			throw new IOException("File contents is empty");
-		}
-		System.out.println("IMport "+fileName);
-		return new ArtifactId(fileName.substring(fileName.indexOf('.')), name != null ? name : fileName.substring(0,fileName.indexOf('.')), version);
-	}
+public class BPELExecValidation implements CommandObject{
 
 	@Override
-	public byte[] exportFile(ArtifactId artifact) throws IOException {
+	public void setCommandContext(String arg0, DataHandler arg1)
+			throws IOException {
 		// TODO Auto-generated method stub
-		return null;
+		
 	}
-
-	@Override
-	public Type[] listTypes() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ArtifactId[] list(String type, int resultLimit) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 
 }

@@ -18,27 +18,20 @@
  */
 package org.apache.ode.server.repo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Set;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Inject;
 
 import org.apache.ode.api.Repository;
 import org.apache.ode.api.Repository.ArtifactId;
-import org.apache.ode.runtime.jmx.RepositoryImpl;
-import org.apache.ode.server.WebServer;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.StaticHandler;
-import org.apache.ode.server.plugin.BarPlugin;
-import org.apache.ode.spi.cdi.Handler;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
@@ -48,30 +41,37 @@ import org.junit.Test;
 public class RepoTest {
 	private static Weld weld;
 	protected static WeldContainer container;
-	protected  static Bean<Repository> repoBean;
-	protected  static CreationalContext<Repository> repoCtx;
-	protected  static Repository repo;
+	protected  static Bean<Repository> jmxRepoBean;
+	protected  static CreationalContext<Repository> jmxRepoCtx;
+	protected  static Repository jmxRepo;
+	protected  static Bean<org.apache.ode.spi.repo.Repository> repoBean;
+	protected  static CreationalContext<org.apache.ode.spi.repo.Repository> repoCtx;
+	protected  static org.apache.ode.spi.repo.Repository repo;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		StaticHandler.clear();
 		StaticHandler.addDelegate(new JPAHandler());
 		StaticHandler.addDelegate(new RepoHandler());
-		StaticHandler.addDelegate(new Handler() {
-
-			public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
-				bbd.addAnnotatedType(bm.createAnnotatedType(RepositoryImpl.class));
-			}
-		});
-		weld = new Weld();
+	    weld = new Weld();
 		container = weld.initialize();
 		
-		Set<Bean<?>> beans = container.getBeanManager().getBeans(Repository.class, new AnnotationLiteral<Any>() {
+		Set<Bean<?>> beans = container.getBeanManager().getBeans(org.apache.ode.spi.repo.Repository.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			repoBean = (Bean<Repository>)beans.iterator().next();
+			repoBean = (Bean<org.apache.ode.spi.repo.Repository>)beans.iterator().next();
 			repoCtx = container.getBeanManager().createCreationalContext(repoBean);
-			repo = (Repository)container.getBeanManager().getReference(repoBean, Repository.class, repoCtx);
+			repo = (org.apache.ode.spi.repo.Repository)container.getBeanManager().getReference(repoBean, org.apache.ode.spi.repo.Repository.class, repoCtx);
+		} else {
+			System.out.println("Can't find class " + org.apache.ode.spi.repo.Repository.class);
+		}
+		
+		beans = container.getBeanManager().getBeans(Repository.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			jmxRepoBean = (Bean<Repository>)beans.iterator().next();
+			jmxRepoCtx = container.getBeanManager().createCreationalContext(jmxRepoBean);
+			jmxRepo = (Repository)container.getBeanManager().getReference(jmxRepoBean, Repository.class, jmxRepoCtx);
 		} else {
 			System.out.println("Can't find class " + Repository.class);
 		}
@@ -82,6 +82,9 @@ public class RepoTest {
 		if (repo!=null){
 			repoBean.destroy(repo, repoCtx);
 		}
+		if (jmxRepo!=null){
+			jmxRepoBean.destroy(jmxRepo, jmxRepoCtx);
+		}
 		try {
 			weld.shutdown();
 		} catch (NullPointerException e) {
@@ -90,9 +93,10 @@ public class RepoTest {
 
 	@Test
 	public void testImportExport() throws Exception{
-		
 		assertNotNull(repo);
-		ArtifactId id = repo.importFile("{http://foo.com/foo}", "1.0", "foo.bar", "this is some foo".getBytes());
+		repo.registerFileExtension("bar", "application/bar");
+		assertNotNull(jmxRepo);
+		ArtifactId id = jmxRepo.importFile("{http://bar.com/bar}",null, "1.0", "foo.bar", "this is some bar".getBytes());
 		//assertNotNull(id);
 		//assertEquals(id.getName(), "{http://foo.com/foo}");
 		//assertEquals(id.getVersion(), "1.0");

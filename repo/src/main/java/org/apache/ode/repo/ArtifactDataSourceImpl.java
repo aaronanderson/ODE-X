@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import javax.activation.DataSource;
 import javax.activation.MimeTypeParseException;
 import javax.inject.Inject;
 
@@ -33,7 +32,7 @@ import org.apache.ode.spi.repo.ArtifactDataSource;
 
 public class ArtifactDataSourceImpl implements ArtifactDataSource {
 
-	private ArtifactImpl artifact;
+	ArtifactImpl artifact;
 	/*
 	 * From activation spec: Also note that the class that implements the
 	 * DataSource interface is responsible for typing the data.
@@ -84,10 +83,30 @@ public class ArtifactDataSourceImpl implements ArtifactDataSource {
 		String mimeType = fileTypes.getContentType(fileName);
 		if (mimeType != null) {
 			artifact.setContentType(mimeType);
-
 		} else {
 			throw new MimeTypeParseException(String.format("Unable to identify supported mime type for file %s", fileName));
 		}
+	}
+
+	@Override
+	public void configure(String mimeType, byte[] content) throws MimeTypeParseException {
+		this.artifact = new ArtifactImpl();
+		artifact.setContent(content);
+		if (!fileTypes.isValid(mimeType)) {
+			throw new MimeTypeParseException(String.format("Unable to identify supported mime type %s", mimeType));
+		}
+		artifact.setContentType(mimeType);
+	}
+
+	@Override
+	public void configure(byte[] content) throws MimeTypeParseException {
+		this.artifact = new ArtifactImpl();
+		artifact.setContent(content);
+		String contentType = fileTypes.getContentType(content);
+		if (contentType == null) {
+			throw new MimeTypeParseException(String.format("Unable to identify supported mime type for contents"));
+		}
+		artifact.setContentType(contentType);
 	}
 
 	@Override

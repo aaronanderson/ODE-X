@@ -18,20 +18,18 @@
  */
 package org.apache.ode.spi.repo;
 
-import javax.activation.DataSource;
-import javax.activation.MimeTypeParseException;
+/**
+ * 
+ * Represents a DataSource that is dependent upon other DataSources in order to
+ * read/write to it.
+ * 
+ */
+public interface DependentArtifactDataSource extends ArtifactDataSource {
 
+	public void configure(ArtifactDataSource dataSource);
 
-public interface ArtifactDataSource extends DataSource {
-	
-	public void configure(Artifact artifact) throws MimeTypeParseException;
-	
-	public void configure(byte[]content, String fileName) throws MimeTypeParseException;
-	
-	public void configure(String mimeType,  byte[]content) throws MimeTypeParseException;
-	
-	public void configure(byte[]content) throws MimeTypeParseException;
+	public <K> void addDependency(K mappedKey, ArtifactDataSource dataSource);
 
-	public byte [] getContent();
+	public <K> ArtifactDataSource getDependency(K mappedKey);
 
 }

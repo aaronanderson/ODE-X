@@ -98,9 +98,21 @@ public class PluginTest {
 	}
 
 	@Test
+	public void testMimeMatching() throws Exception {
+		File f = new File("target/test-classes/plugin/test.bar");
+		DataHandler dh = barPlugin.getDataHandlerByFilename(f);
+		assertNotNull(dh);
+		assertEquals(BarPlugin.BAR_MIMETYPE, dh.getContentType());
+		f = new File("target/test-classes/plugin/test.foo");
+		dh = barPlugin.getDataHandlerByContent(f);
+		assertNotNull(dh);
+		assertEquals(BarPlugin.FOO_MIMETYPE, dh.getContentType());
+	}
+
+	@Test
 	public void testCommand() throws Exception {
 		File f = new File("target/test-classes/plugin/test.bar");
-		DataHandler dh = barPlugin.getDataHandler(f);
+		DataHandler dh = barPlugin.getDataHandlerByFilename(f);
 		assertNotNull(dh);
 		CommandInfo ci = dh.getCommand("validate");
 		assertNotNull(ci);

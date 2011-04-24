@@ -47,6 +47,7 @@ import org.apache.ode.spi.repo.Repository;
 public class BarPlugin implements Plugin {
 
 	public static String BAR_MIMETYPE = "application/bar";
+	public static String FOO_MIMETYPE = "application/foo";
 	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
@@ -58,8 +59,9 @@ public class BarPlugin implements Plugin {
 	@PostConstruct
 	public void init() {
 		System.out.println("Initializing BPELPlugin");
-		repository.registerExtension("bar", BAR_MIMETYPE);
-		repository.registerExtension("bar2", BAR_MIMETYPE);
+		repository.registerFileExtension("bar", BAR_MIMETYPE);
+		repository.registerFileExtension("bar2", BAR_MIMETYPE);
+		repository.registerNamespace("http://foo", FOO_MIMETYPE);
 		repository.registerCommandInfo(BAR_MIMETYPE, "validate", true, barProvider);
 		repository.registerHandler(BAR_MIMETYPE, new BarDataContentHandler());
 		System.out.println("BPELPlugin Initialized");
@@ -72,15 +74,17 @@ public class BarPlugin implements Plugin {
 		return ds;
 	}
 
-	public DataHandler getDataHandler(File file) throws MimeTypeParseException, IOException {
+	public DataHandler getDataHandlerByFilename(File file) throws MimeTypeParseException, IOException {
 		ArtifactDataSource ds = dsProvider.get();
 		byte[] contents = DataContentHandler.readStream(new FileInputStream(file));
-		/*
-		 * FileInputStream fis = new FileInputStream(file); byte[] buffer = new
-		 * byte[4096]; int index = 0; while (index > -1){ fis.read(b); }
-		 * fis.getChannel().;
-		 */
 		ds.configure(contents, file.getName());
+		return repository.getDataHandler(ds);
+	}
+
+	public DataHandler getDataHandlerByContent(File file) throws MimeTypeParseException, IOException {
+		ArtifactDataSource ds = dsProvider.get();
+		byte[] contents = DataContentHandler.readStream(new FileInputStream(file));
+		ds.configure(contents);
 		return repository.getDataHandler(ds);
 	}
 

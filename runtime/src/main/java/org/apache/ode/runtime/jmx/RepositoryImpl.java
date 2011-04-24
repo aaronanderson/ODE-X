@@ -20,23 +20,46 @@ package org.apache.ode.runtime.jmx;
 
 import java.io.IOException;
 
-import javax.activation.CommandMap;
+import javax.activation.MimeTypeParseException;
 import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.RepositoryException;
 
 public class RepositoryImpl implements org.apache.ode.api.Repository {
 	
 	@Inject
-	private Repository repo;
-	
+	Repository repo;
+	@Inject
+	Provider<ArtifactDataSource> dsProvider;
+
 	@Override
-	public ArtifactId importFile(String name, String version, String fileName, byte[] contents) throws IOException {
+	public ArtifactId importFile(String name, String type, String version, String fileName, byte[] contents) throws IOException {
 		if (contents == null || contents.length == 0) {
 			throw new IOException("File contents is empty");
 		}
-		System.out.println("Import "+fileName);
-		return new ArtifactId(fileName.substring(fileName.indexOf('.')), name != null ? name : fileName.substring(0,fileName.indexOf('.')), version);
+		System.out.println("Import " + fileName);
+		ArtifactDataSource ds = dsProvider.get();
+		try {
+			if (fileName!=null){
+				ds.configure(contents, fileName);
+			}else{
+				ds.configure(contents);
+			}
+		} catch (MimeTypeParseException e) {
+			throw new IOException(e);
+		}
+		String mtype = type != null ? type : ds.getContentType();
+		QName qname = new QName(name);
+		try {
+			repo.store(qname, version, mtype, ds);
+		} catch (RepositoryException e) {
+			throw new IOException(e);
+		}
+		return new ArtifactId(qname.toString(), mtype, version);
 	}
 
 	@Override

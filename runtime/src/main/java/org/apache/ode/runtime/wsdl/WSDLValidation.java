@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.repo;
+package org.apache.ode.runtime.wsdl;
 
 import java.io.IOException;
 
 import javax.activation.CommandObject;
 import javax.activation.DataHandler;
 
-public class BPELValidation implements CommandObject{
+public class WSDLValidation implements CommandObject{
 
 	@Override
 	public void setCommandContext(String arg0, DataHandler arg1)

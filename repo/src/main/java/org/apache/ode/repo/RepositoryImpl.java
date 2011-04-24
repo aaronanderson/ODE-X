@@ -57,12 +57,13 @@ public class RepositoryImpl implements Repository {
 		q.setParameter("version", version);
 
 		ArtifactImpl artifact;
-		try{
-		   artifact = (ArtifactImpl) q.getSingleResult();
-		}catch  (NoResultException nr){
-			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s does not exists", qname, contentType, version),nr);
+		try {
+			artifact = (ArtifactImpl) q.getSingleResult();
+			mgr.detach(artifact);
+		} catch (NoResultException nr) {
+			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s does not exists", qname, contentType, version), nr);
 		}
-		
+
 		ArtifactDataSourceImpl ds = new ArtifactDataSourceImpl();
 		try {
 			ds.configure(artifact);
@@ -106,15 +107,22 @@ public class RepositoryImpl implements Repository {
 		if (count.intValue() > 0) {
 			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s already exists", qname, contentType, version));
 		}
-		ArtifactImpl artifact = new ArtifactImpl();
-		artifact.setQName(qname);
-		artifact.setVersion(version);
-		artifact.setContentType(contentType);
-		DataHandler dh = getDataHandler(content, contentType);
-		try {
-			artifact.setContent(dh.toContent());
-		} catch (IOException e) {
-			throw new RepositoryException(e);
+		ArtifactImpl artifact = null;
+		if (content instanceof ArtifactDataSourceImpl) {
+			artifact = ((ArtifactDataSourceImpl) content).artifact;
+			artifact.setQName(qname);
+			artifact.setVersion(version);
+		} else {
+			artifact = new ArtifactImpl();
+			artifact.setQName(qname);
+			artifact.setVersion(version);
+			artifact.setContentType(contentType);
+			DataHandler dh = getDataHandler(content, contentType);
+			try {
+				artifact.setContent(dh.toContent());
+			} catch (IOException e) {
+				throw new RepositoryException(e);
+			}
 		}
 		mgr.getTransaction().begin();
 		mgr.persist(artifact);
@@ -141,8 +149,14 @@ public class RepositoryImpl implements Repository {
 	}
 
 	@Override
-	public void registerExtension(String fileExtension, String mimeType) {
-		fileTypes.registerExtension(fileExtension, mimeType);
+	public void registerFileExtension(String fileExtension, String mimeType) {
+		fileTypes.registerFileExtension(fileExtension, mimeType);
+	}
+
+	@Override
+	public void registerNamespace(String namespace, String mimeType) {
+		fileTypes.registerNamespace(namespace, mimeType);
+
 	}
 
 	@Override

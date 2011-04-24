@@ -18,11 +18,28 @@
  */
 package org.apache.ode.tests.bpel;
 
+import org.apache.ode.cli.CLI;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.eviware.soapui.tools.SoapUITestCaseRunner;
 
 public class HelloWorldIT{
+	
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+		StringBuilder output = new StringBuilder();
+		if (!CLI.execute(output,"--port","9696", "import","--name","http://ode/bpel/unit-test.wsdl","--version","1.0","--file","target/test-classes/bpel/HelloWorld/HelloWorld.wsdl")){
+			throw new Exception(output.toString());
+		}
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+	}
+
+	
 	
 	@Test
 	public void testHelloWorld() throws Exception{

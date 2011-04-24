@@ -18,7 +18,8 @@
  */
 package org.apache.ode.cli;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
@@ -26,13 +27,11 @@ import java.rmi.registry.LocateRegistry;
 import java.util.Map;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.apache.ode.api.Machine;
 import org.apache.ode.api.Repository;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -84,7 +83,7 @@ public class CLITest {
 	@Test
 	public void testImport() {
 		StringBuilder out = new StringBuilder();
-		CLI.execute(new String[] { "--port",String.valueOf(port), "import","--file","target/test-classes/import.txt" }, out);
+		CLI.execute(out,  "--port",String.valueOf(port), "import","--file","target/test-classes/import.txt" );
 		assertTrue(out.toString().contains("Sucessfull"));
 		out = new StringBuilder();
 

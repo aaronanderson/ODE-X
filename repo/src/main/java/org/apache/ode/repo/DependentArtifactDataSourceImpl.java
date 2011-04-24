@@ -16,22 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.repo;
+package org.apache.ode.repo;
 
-import javax.activation.DataSource;
-import javax.activation.MimeTypeParseException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.ode.spi.repo.ArtifactDataSource;
+import org.apache.ode.spi.repo.DependentArtifactDataSource;
 
-public interface ArtifactDataSource extends DataSource {
-	
-	public void configure(Artifact artifact) throws MimeTypeParseException;
-	
-	public void configure(byte[]content, String fileName) throws MimeTypeParseException;
-	
-	public void configure(String mimeType,  byte[]content) throws MimeTypeParseException;
-	
-	public void configure(byte[]content) throws MimeTypeParseException;
+public class DependentArtifactDataSourceImpl extends ArtifactDataSourceImpl implements DependentArtifactDataSource {
 
-	public byte [] getContent();
+	private Map<Object, ArtifactDataSource> dependencies = new HashMap<Object, ArtifactDataSource>();
+
+	@Override
+	public void configure(ArtifactDataSource dataSource) {
+		this.artifact = ((ArtifactDataSourceImpl) dataSource).artifact;
+
+	}
+
+	@Override
+	public <K> void addDependency(K mappedKey, ArtifactDataSource dataSource) {
+		dependencies.put(mappedKey, dataSource);
+
+	}
+
+	@Override
+	public <K> ArtifactDataSource getDependency(K mappedKey) {
+		return dependencies.get(mappedKey);
+	}
 
 }

@@ -42,7 +42,7 @@ public class ImportCommand extends AbstractCommand {
 		super(connection, out);
 	}
 
-	@Parameter(names = "--file",description = "The file to import", converter = FileConverter.class, required=true)
+	@Parameter(names = "--file", description = "The file to import", converter = FileConverter.class, required = true)
 	public File file;
 
 	@Parameter(names = "--type", description = "Override the artifact type")
@@ -56,22 +56,15 @@ public class ImportCommand extends AbstractCommand {
 
 	@Override
 	public void execute() throws IOException, MalformedObjectNameException {
-		Repository repo = JMX.newMXBeanProxy(connection.getConnection(), ObjectName.getInstance(Repository.OBJECTNAME),
-				Repository.class);
+		Repository repo = JMX.newMXBeanProxy(connection.getConnection(), ObjectName.getInstance(Repository.OBJECTNAME), Repository.class);
 		FileInputStream fis = new FileInputStream(file);
 		FileChannel channel = fis.getChannel();
 		ByteBuffer bb = ByteBuffer.allocate((int) channel.size());
 		channel.read(bb);
 		byte[] contents = bb.array();
 		channel.close();
-		try{
-		ArtifactId id = repo.importFile(name, version, file.getName(), contents);
+		ArtifactId id = repo.importFile(name, type, version, file.getName(), contents);
 		out.format("Sucessfully imported file %s\n", file.getAbsoluteFile());
-		out.format("\tArtifactId: type: %s name: %s version: %s\n", id.getType(),id.getName(),id.getVersion());
-		
-		}catch (IOException ie){
-			
-		}
-
+		out.format("\tArtifactId: type: %s name: %s version: %s\n", id.getType(), id.getName(), id.getVersion());
 	}
 }

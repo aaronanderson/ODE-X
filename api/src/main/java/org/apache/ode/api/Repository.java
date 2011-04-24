@@ -28,7 +28,7 @@ public interface Repository {
 
 	public static String OBJECTNAME = "org.apache.ode:type=Machine.Repository";
 
-	public ArtifactId importFile(String name, String version, String fileName, byte[] contents) throws IOException;
+	public ArtifactId importFile(String name, String contentType, String version, String fileName, byte[] contents) throws IOException;
 
 	public byte[] exportFile(ArtifactId artifact) throws IOException;
 
@@ -50,8 +50,8 @@ public interface Repository {
 			return version;
 		}
 
-		@ConstructorProperties({ "type", "name", "version" })
-		public ArtifactId(String type, String name, String version) {
+		@ConstructorProperties({ "name", "type", "version" })
+		public ArtifactId(String name, String type, String version) {
 			this.type = type;
 			this.name = name;
 			this.version = version;

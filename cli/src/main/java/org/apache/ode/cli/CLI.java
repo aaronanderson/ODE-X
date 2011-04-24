@@ -18,14 +18,13 @@
  */
 package org.apache.ode.cli;
 
-import java.io.IOException;
 import java.util.Formatter;
 
 import com.beust.jcommander.JCommander;
 
 public class CLI {
 	
-	public static void execute(String [] args, StringBuilder output){
+	public static boolean execute( StringBuilder output, String ... args){
 		Connection con = new Connection();
 		JCommander jc = new JCommander(con);
 		
@@ -54,20 +53,21 @@ public class CLI {
 				if (o instanceof AbstractCommand) {
 					try{
 					((AbstractCommand)o).execute();
+					return true;
 					}catch (Exception e){
 						output.append(e.getMessage());
-						e.printStackTrace();
 					}
 				}
 			}
 		}else{
 			jc.usage(output);
 		}
+		return false;
 	}
 
 	public static void main(String[] args) {
 		StringBuilder out = new StringBuilder();
-		execute(args,out);
+		execute(out,args);
 		System.out.print(out.toString());
 	}
 

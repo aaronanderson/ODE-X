@@ -28,17 +28,24 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
+
 import org.apache.ode.runtime.build.BuildSystem;
+import org.apache.ode.runtime.wsdl.WSDL;
 import org.apache.ode.spi.cdi.Handler;
 
 public class RuntimeHandler extends Handler {
-	
+
 	Bean<BuildSystem> buildSysBean;
 	CreationalContext<BuildSystem> buildSysCtx;
 	BuildSystem buildSys;
-	
+
+	Bean<WSDL> wsdlBean;
+	CreationalContext<WSDL> wsdlCtx;
+	WSDL wsdl;
+
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BuildSystem.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(WSDL.class));
 
 	}
 
@@ -46,21 +53,33 @@ public class RuntimeHandler extends Handler {
 		Set<Bean<?>> beans = bm.getBeans(BuildSystem.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			buildSysBean = (Bean<BuildSystem>)beans.iterator().next();
+			buildSysBean = (Bean<BuildSystem>) beans.iterator().next();
 			buildSysCtx = bm.createCreationalContext(buildSysBean);
-			bm.getReference(buildSysBean, BuildSystem.class, buildSysCtx);
+			buildSys = (BuildSystem) bm.getReference(buildSysBean, BuildSystem.class, buildSysCtx);
 		} else {
 			System.out.println("Can't find class " + BuildSystem.class);
 		}
 
+		beans = bm.getBeans(WSDL.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			wsdlBean = (Bean<WSDL>) beans.iterator().next();
+			wsdlCtx = bm.createCreationalContext(wsdlBean);
+			wsdl = (WSDL) bm.getReference(wsdlBean, WSDL.class, wsdlCtx);
+		} else {
+			System.out.println("Can't find class " + WSDL.class);
+		}
+
 	}
-	
+
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-	  if (buildSys!=null){
-		  buildSysBean.destroy(buildSys, buildSysCtx);
-	  }
+		if (buildSys != null) {
+			buildSysBean.destroy(buildSys, buildSysCtx);
+		}
+		if (wsdl != null) {
+			wsdlBean.destroy(wsdl, wsdlCtx);
+		}
 	}
-	
-	
+
 }

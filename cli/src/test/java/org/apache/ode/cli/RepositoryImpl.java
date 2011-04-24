@@ -25,7 +25,7 @@ import org.apache.ode.api.Repository;
 public class RepositoryImpl implements Repository {
 
 	@Override
-	public ArtifactId importFile(String name, String version, String fileName, byte[] contents) throws IOException {
+	public ArtifactId importFile(String name, String type, String version, String fileName, byte[] contents) throws IOException {
 		if (contents == null || contents.length == 0) {
 			throw new IOException("File contents is empty");
 		}
