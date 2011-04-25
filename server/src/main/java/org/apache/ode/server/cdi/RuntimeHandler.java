@@ -31,33 +31,60 @@ import javax.enterprise.util.AnnotationLiteral;
 
 import org.apache.ode.runtime.build.BuildSystem;
 import org.apache.ode.runtime.wsdl.WSDL;
+import org.apache.ode.runtime.xml.XML;
+import org.apache.ode.runtime.xsd.XSD;
+import org.apache.ode.runtime.xsl.XSL;
 import org.apache.ode.spi.cdi.Handler;
 
 public class RuntimeHandler extends Handler {
 
-	Bean<BuildSystem> buildSysBean;
-	CreationalContext<BuildSystem> buildSysCtx;
-	BuildSystem buildSys;
+	Bean<XSD> xsdBean;
+	CreationalContext<XSD> xsdCtx;
+	XSD xsd;
+
+	Bean<XML> xmlBean;
+	CreationalContext<XML> xmlCtx;
+	XML xml;
 
 	Bean<WSDL> wsdlBean;
 	CreationalContext<WSDL> wsdlCtx;
 	WSDL wsdl;
 
-	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
-		bbd.addAnnotatedType(bm.createAnnotatedType(BuildSystem.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(WSDL.class));
+	Bean<XSL> xslBean;
+	CreationalContext<XSL> xslCtx;
+	XSL xsl;
 
+	Bean<BuildSystem> buildSysBean;
+	CreationalContext<BuildSystem> buildSysCtx;
+	BuildSystem buildSys;
+
+	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
+		bbd.addAnnotatedType(bm.createAnnotatedType(XSD.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(XML.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(WSDL.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(XSL.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BuildSystem.class));
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
-		Set<Bean<?>> beans = bm.getBeans(BuildSystem.class, new AnnotationLiteral<Any>() {
+		Set<Bean<?>> beans = bm.getBeans(XSD.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			buildSysBean = (Bean<BuildSystem>) beans.iterator().next();
-			buildSysCtx = bm.createCreationalContext(buildSysBean);
-			buildSys = (BuildSystem) bm.getReference(buildSysBean, BuildSystem.class, buildSysCtx);
+			xsdBean = (Bean<XSD>) beans.iterator().next();
+			xsdCtx = bm.createCreationalContext(xsdBean);
+			xsd = (XSD) bm.getReference(xsdBean, XSD.class, xsdCtx);
 		} else {
-			System.out.println("Can't find class " + BuildSystem.class);
+			System.out.println("Can't find class " + XSD.class);
+		}
+
+		beans = bm.getBeans(XML.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			xmlBean = (Bean<XML>) beans.iterator().next();
+			xmlCtx = bm.createCreationalContext(xmlBean);
+			xml = (XML) bm.getReference(xmlBean, XML.class, xmlCtx);
+		} else {
+			System.out.println("Can't find class " + XML.class);
 		}
 
 		beans = bm.getBeans(WSDL.class, new AnnotationLiteral<Any>() {
@@ -70,15 +97,48 @@ public class RuntimeHandler extends Handler {
 			System.out.println("Can't find class " + WSDL.class);
 		}
 
+		beans = bm.getBeans(XSL.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			xslBean = (Bean<XSL>) beans.iterator().next();
+			xslCtx = bm.createCreationalContext(xslBean);
+			xsl = (XSL) bm.getReference(xslBean, XSL.class, xslCtx);
+		} else {
+			System.out.println("Can't find class " + XSL.class);
+		}
+
+		beans = bm.getBeans(BuildSystem.class, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			buildSysBean = (Bean<BuildSystem>) beans.iterator().next();
+			buildSysCtx = bm.createCreationalContext(buildSysBean);
+			buildSys = (BuildSystem) bm.getReference(buildSysBean, BuildSystem.class, buildSysCtx);
+		} else {
+			System.out.println("Can't find class " + BuildSystem.class);
+		}
+
 	}
 
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-		if (buildSys != null) {
-			buildSysBean.destroy(buildSys, buildSysCtx);
+		if (xsd != null) {
+			xsdBean.destroy(xsd, xsdCtx);
 		}
+
+		if (xml != null) {
+			xmlBean.destroy(xml, xmlCtx);
+		}
+
 		if (wsdl != null) {
 			wsdlBean.destroy(wsdl, wsdlCtx);
+		}
+
+		if (xsl != null) {
+			xslBean.destroy(xsl, xslCtx);
+		}
+
+		if (buildSys != null) {
+			buildSysBean.destroy(buildSys, buildSysCtx);
 		}
 	}
 

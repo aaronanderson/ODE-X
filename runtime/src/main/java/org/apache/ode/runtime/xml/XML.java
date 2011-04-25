@@ -16,40 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.build;
+package org.apache.ode.runtime.xml;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 
-import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.XMLDataContentHandler;
 
 @Singleton
-public class BuildSystem {
-	public static final String BUILDPLAN_MIMETYPE="application/ode-build-plan";
+public class XML {
+
+	public static final String XML_MIMETYPE = "application/xml";
+
 	@Inject
 	Repository repository;
 	@Inject
-	Provider<BuildExecutor> buildProvider;
-
+	Provider<XMLValidation> validateProvider;
+	
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing BuildSystem");
-		repository.registerFileExtension("plan", BUILDPLAN_MIMETYPE);
-		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, "build", true, buildProvider);
-		try {
-			JAXBContext jc = JAXBContext.newInstance("org.apache.ode.runtime.build.xml");
-			repository.registerHandler(BUILDPLAN_MIMETYPE, new JAXBDataContentHandler(jc));
-		} catch (JAXBException je) {
-			je.printStackTrace();
-		}
-
-		System.out.println("BuildSystem Initialized");
-
+		System.out.println("Initializing XML support");
+		repository.registerFileExtension("xml", XML_MIMETYPE);
+		repository.registerCommandInfo(XML_MIMETYPE, "validate", true, validateProvider);
+		repository.registerHandler(XML_MIMETYPE, new XMLDataContentHandler());
+		System.out.println("XML support Initialized");
 	}
 
 }

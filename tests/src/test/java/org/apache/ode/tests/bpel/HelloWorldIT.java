@@ -25,12 +25,15 @@ import org.junit.Test;
 
 import com.eviware.soapui.tools.SoapUITestCaseRunner;
 
-public class HelloWorldIT{
-	
+public class HelloWorldIT {
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		StringBuilder output = new StringBuilder();
-		if (!CLI.execute(output,"--port","9696", "import","--name","http://ode/bpel/unit-test.wsdl","--version","1.0","--file","target/test-classes/bpel/HelloWorld/HelloWorld.wsdl")){
+		if (!CLI.execute(output, "--port", "9696", "import", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.wsdl")) {
+			throw new Exception(output.toString());
+		}
+		if (!CLI.execute(output, "--port", "9696", "import", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.bpel")) {
 			throw new Exception(output.toString());
 		}
 	}
@@ -39,14 +42,13 @@ public class HelloWorldIT{
 	public static void tearDownAfterClass() throws Exception {
 	}
 
-	
-	
 	@Test
-	public void testHelloWorld() throws Exception{
-		SoapUITestCaseRunner runner = new SoapUITestCaseRunner(); 
-		//runner.setEndpoint(endpoint);
-		//  runner.setProjectFile( "src/test/resources/tests/helloworld/helloworld.xml" );
-		//  runner.run(); 			
+	public void testHelloWorld() throws Exception {
+		SoapUITestCaseRunner runner = new SoapUITestCaseRunner();
+		// runner.setEndpoint(endpoint);
+		// runner.setProjectFile(
+		// "src/test/resources/tests/helloworld/helloworld.xml" );
+		// runner.run();
 	}
-	
+
 }

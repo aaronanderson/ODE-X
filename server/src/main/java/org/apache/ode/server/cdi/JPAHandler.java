@@ -52,7 +52,6 @@ public class JPAHandler extends Handler {
 	Bean<EntityManagerProducer> emfpBean;
 	CreationalContext<EntityManagerProducer> emfpCtx;
 	EntityManagerProducer emfp;
-	
 
 	public static class Inject extends AnnotationLiteral<javax.inject.Inject> implements javax.inject.Inject {
 	};
@@ -111,20 +110,20 @@ public class JPAHandler extends Handler {
 		Set<Bean<?>> beans = bm.getBeans(EntityManagerProducer.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			emfpBean = (Bean<EntityManagerProducer>)beans.iterator().next();
+			emfpBean = (Bean<EntityManagerProducer>) beans.iterator().next();
 			emfpCtx = bm.createCreationalContext(emfpBean);
-			bm.getReference(emfpBean, EntityManagerProducer.class, emfpCtx);
+			emfp = (EntityManagerProducer) bm.getReference(emfpBean, EntityManagerProducer.class, emfpCtx);
 		} else {
 			System.out.println("Can't find class " + JPAHandler.class);
 		}
 
 	}
-	
+
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-	  if (emfp!=null){
-		  emfpBean.destroy(emfp, emfpCtx);
-	  }
+		if (emfp != null) {
+			emfpBean.destroy(emfp, emfpCtx);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

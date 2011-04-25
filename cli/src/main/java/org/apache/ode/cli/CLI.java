@@ -33,6 +33,10 @@ public class CLI {
 		jc.addCommand("import", importCmd);
 		ExportCommand exportCmd = new ExportCommand(con,out);
 		jc.addCommand("export", exportCmd);
+		RefreshCommand refreshCmd = new RefreshCommand(con,out);
+		jc.addCommand("refresh", refreshCmd);
+		DeleteCommand deleteCmd = new DeleteCommand(con,out);
+		jc.addCommand("delete", deleteCmd);
 		ListTypesCommand listTypesCmd = new ListTypesCommand(con,out);
 		jc.addCommand("listTypes", listTypesCmd);
 		ListArtifactsCommand listArtifactsCmd = new ListArtifactsCommand(con,out);

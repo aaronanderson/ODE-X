@@ -24,6 +24,7 @@ import java.net.URL;
 
 import javax.activation.CommandMap;
 import javax.activation.DataSource;
+import javax.xml.namespace.QName;
 
 public class DataHandler extends javax.activation.DataHandler {
 	private DataSource ds;
@@ -70,6 +71,14 @@ public class DataHandler extends javax.activation.DataHandler {
 			}
 		}
 		throw new IOException("Unable to obtain content");
+	}
+
+	public QName getDefaultQName() {
+		javax.activation.DataContentHandler dch = commandMap.createDataContentHandler(getContentType());
+		if (dch instanceof DataContentHandler) {
+			return ((DataContentHandler) dch).getDefaultQName(getDataSource());
+		}
+		return null;
 	}
 
 }

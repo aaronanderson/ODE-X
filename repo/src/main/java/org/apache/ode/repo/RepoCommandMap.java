@@ -93,8 +93,8 @@ public class RepoCommandMap extends CommandMap {
 		} else {
 			index = currentInfos.length;
 			CommandInfo<?>[] oldCurrentInfos = currentInfos;
-			currentInfos = new CommandInfo<?>[currentInfos.length];
-			System.arraycopy(oldCurrentInfos, 0, currentInfos, 0, index - 1);
+			currentInfos = new CommandInfo<?>[currentInfos.length+1];
+			System.arraycopy(oldCurrentInfos, 0, currentInfos, 0, index);
 		}
 		currentInfos[index] = info;
 		commandInfos.put(mimeType, currentInfos);

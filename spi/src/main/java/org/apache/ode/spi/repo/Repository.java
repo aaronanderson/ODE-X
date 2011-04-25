@@ -18,8 +18,6 @@
  */
 package org.apache.ode.spi.repo;
 
-import java.util.Observable;
-
 import javax.activation.CommandObject;
 import javax.inject.Provider;
 import javax.xml.namespace.QName;
@@ -29,7 +27,7 @@ public interface Repository {
 	<T extends CommandObject> void registerCommandInfo(String mimeType, String commandName, boolean preferred, Provider<T> provider);
 
 	void registerFileExtension(String fileExtension, String mimeType);
-	
+
 	void registerNamespace(String namespace, String mimeType);
 
 	void registerHandler(String mimeType, DataContentHandler handler);
@@ -38,21 +36,16 @@ public interface Repository {
 
 	<C> DataHandler getDataHandler(C content, String mimeType);
 
-	// byte[] load(QName qname, String version, String type);
-	<C> C load(QName qname, String version, String type, Class<C> javaType) throws RepositoryException;
+	<C> void create(QName qname, String version, String type, C content) throws RepositoryException;
 
-	// XMLStreamReader loadXmlStream(QName qname, String version, String type);
+	<C> C read(QName qname, String type, String version, Class<C> javaType) throws RepositoryException;
 
-	// Document loadXmlDom(QName qname, String version, String type);
+	<C> void update(QName qname, String type, String version, C content) throws RepositoryException;
 
-	// void store(QName qname, String version, String type, byte[] content);
-	<C> void store(QName qname, String version, String type, C content) throws RepositoryException;
+	<C> void delete(QName qname, String type, String version) throws RepositoryException;
+
+	boolean exists(QName qname, String type, String version) throws RepositoryException;
 
 	// void store(QName qname, String version, String type, XMLStreamReader
-	// content);
-
-	// void store(QName qname, String version, String type, Document content);
-
-	Observable watch(QName qname, String version, String type);
 
 }

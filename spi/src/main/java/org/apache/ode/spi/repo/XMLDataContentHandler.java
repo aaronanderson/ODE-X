@@ -22,14 +22,11 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataSource;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
@@ -38,20 +35,24 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.w3c.dom.Document;
 
 public class XMLDataContentHandler extends DataContentHandler {
-	public static final ActivationDataFlavor STREAM_FLAVOR = new ActivationDataFlavor(XMLStreamReader.class, "application/xml; x-java-class=XMLStreamReader", "Stax XML Stream Reader");
+	public static final ActivationDataFlavor STREAM_FLAVOR = new ActivationDataFlavor(XMLStreamReader.class, "application/xml; x-java-class=XMLStreamReader",
+			"Stax XML Stream Reader");
 	public static final ActivationDataFlavor DOM_FLAVOR = new ActivationDataFlavor(Document.class, "application/xml; x-java-class=W3CDom", "W3C DOM");
-	
+	public static final ActivationDataFlavor XSL_SOURCE_FLAVOR = new ActivationDataFlavor(StreamSource.class, "application/xml; x-java-class=W3CDom",
+			"XSL Stream Source");
+
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
-			try {
-				return XMLInputFactory.newInstance().createXMLStreamReader(dataSource.getInputStream());
-			} catch (Exception e) {
-				throw new IOException(e);
-			}
+		try {
+			return XMLInputFactory.newInstance().createXMLStreamReader(dataSource.getInputStream());
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
@@ -68,6 +69,12 @@ public class XMLDataContentHandler extends DataContentHandler {
 				factory.setNamespaceAware(true);
 				DocumentBuilder parser = factory.newDocumentBuilder();
 				return parser.parse(dataSource.getInputStream());
+			} catch (Exception e) {
+				throw new IOException(e);
+			}
+		} else if (StreamSource.class.equals(flavor.getDefaultRepresentationClass())) {
+			try {
+				return new StreamSource(dataSource.getInputStream());
 			} catch (Exception e) {
 				throw new IOException(e);
 			}
@@ -96,8 +103,30 @@ public class XMLDataContentHandler extends DataContentHandler {
 			XMLStreamReader reader = (XMLStreamReader) content;
 			// TODO if reader is at start serialize it
 			throw new IOException("Unable to serialize XMLStreamReader");
+		} else if (content instanceof StreamSource) {
+			XMLStreamReader reader = (XMLStreamReader) content;
+			// TODO if reader is at start serialize it
+			throw new IOException("Unable to serialize StreamSource");
 		}
 		throw new IOException(String.format("Unsupported object class %s", content.getClass()));
+	}
+
+	@Override
+	public QName getDefaultQName(DataSource dataSource) {
+		QName defaultName = null;
+		try {
+			InputStream is = dataSource.getInputStream();
+			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
+			reader.nextTag();
+			String tns = reader.getAttributeValue(null,"targetNamespace");
+			reader.close();
+			if (tns != null) {
+				defaultName = QName.valueOf("{"+tns+"}");
+			}
+			return defaultName;
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 }

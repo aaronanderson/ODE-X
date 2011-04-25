@@ -18,11 +18,17 @@
  */
 package org.apache.ode.bpel.plugin;
 
+import java.io.InputStream;
+
+import javax.activation.DataSource;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.Plugin;
@@ -32,26 +38,44 @@ import org.apache.ode.spi.repo.XMLDataContentHandler;
 @Singleton
 @Named("BPELPlugin")
 public class BPELPlugin implements Plugin {
-	
-	public static String BPEL_EXEC_MIMETYPE= "application/bpel-exec";
-	public static String BPEL_EXEC_NAMESPACE ="http://docs.oasis-open.org/wsbpel/2.0/process/executable";
-	//@Inject WSDLPlugin wsdlPlugin;
+
+	public static final String BPEL_EXEC_MIMETYPE = "application/bpel-exec";
+	public static final String BPEL_EXEC_NAMESPACE = "http://docs.oasis-open.org/wsbpel/2.0/process/executable";
+	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
-	@Inject 
+	@Inject
 	Provider<BPELExecValidation> validateProvider;
-	
+
 	@PostConstruct
-	public void init(){
+	public void init() {
 		System.out.println("Initializing BPELPlugin");
 		repository.registerFileExtension("bpel", BPEL_EXEC_MIMETYPE);
 		repository.registerNamespace(BPEL_EXEC_NAMESPACE, BPEL_EXEC_MIMETYPE);
 		repository.registerCommandInfo(BPEL_EXEC_MIMETYPE, "validate", true, validateProvider);
-		repository.registerHandler(BPEL_EXEC_MIMETYPE, new XMLDataContentHandler());
+		repository.registerHandler(BPEL_EXEC_MIMETYPE, new XMLDataContentHandler() {
+
+			@Override
+			public QName getDefaultQName(DataSource dataSource) {
+				QName defaultName = null;
+				try {
+					InputStream is = dataSource.getInputStream();
+					XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
+					reader.nextTag();
+					String tns = reader.getAttributeValue(null, "targetNamespace");
+					String name = reader.getAttributeValue(null, "name");
+					reader.close();
+					if (name != null && tns != null) {
+						defaultName = new QName(tns, name);
+					}
+					return defaultName;
+				} catch (Exception e) {
+					return null;
+				}
+			}
+		});
 		System.out.println("BPELPlugin Initialized");
-		
+
 	}
-	
-	
 
 }

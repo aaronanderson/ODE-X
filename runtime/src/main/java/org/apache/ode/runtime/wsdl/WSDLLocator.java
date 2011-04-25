@@ -69,7 +69,7 @@ public class WSDLLocator implements javax.wsdl.xml.WSDLLocator {
 		return null;
 
 	}
-
+	
 	@Override
 	public String getLatestImportURI() {
 		return lastResolved;

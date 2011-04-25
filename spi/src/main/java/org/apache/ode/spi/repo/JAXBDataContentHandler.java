@@ -81,7 +81,7 @@ public class JAXBDataContentHandler extends XMLDataContentHandler {
 
 	@Override
 	public DataFlavor[] getTransferDataFlavors() {
-		return new DataFlavor[] { JAXB_FLAVOR, STREAM_FLAVOR, DOM_FLAVOR };
+		return new DataFlavor[] { JAXB_FLAVOR, STREAM_FLAVOR, DOM_FLAVOR, XSL_SOURCE_FLAVOR };
 	}
 
 	@Override

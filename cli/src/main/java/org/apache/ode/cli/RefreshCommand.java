@@ -36,26 +36,23 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
 @Parameters(separators = "=", commandDescription = "Imports a file into the repository")
-public class ImportCommand extends AbstractCommand {
+public class RefreshCommand extends AbstractCommand {
 
-	public ImportCommand(Connection connection, Formatter out) {
+	public RefreshCommand(Connection connection, Formatter out) {
 		super(connection, out);
 	}
 
 	@Parameter(names = "--file", description = "The file to import", converter = FileConverter.class, required = true)
 	public File file;
 
-	@Parameter(names = "--type", description = "Override the artifact type")
+	@Parameter(names = "--type", description = "Override the artifact type", required = true)
 	public String type;
 
-	@Parameter(names = "--name", description = "Override the artifact name")
+	@Parameter(names = "--name", description = "Override the artifact name", required = true)
 	public String name;
 
-	@Parameter(names = "--version", description = "Specify the artifact version")
+	@Parameter(names = "--version", description = "Specify the artifact version", required = true)
 	public String version;
-
-	@Parameter(names = "--overwrite", description = "Overwrite the artifact if it exists")
-	public boolean overwrite = false;
 
 	@Parameter(names = "--novalidate", description = "Do not validate the artifact on import")
 	public boolean noValidate = false;
@@ -70,8 +67,8 @@ public class ImportCommand extends AbstractCommand {
 		byte[] contents = bb.array();
 		channel.close();
 		ArtifactId id = new ArtifactId(name, type, version);
-		id = repo.importArtifact(id, file.getName(), overwrite, noValidate, contents);
+		repo.refreshArtifact(id, noValidate, contents);
 		out.format("Sucessfully imported file %s\n", file.getAbsoluteFile());
-		out.format("\t%s\n", id);
+		out.format("\tArtifactId: type: %s name: %s version: %s\n", id.getType(), id.getName(), id.getVersion());
 	}
 }

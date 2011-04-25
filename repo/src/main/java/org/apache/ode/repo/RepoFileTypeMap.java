@@ -87,7 +87,9 @@ public class RepoFileTypeMap extends FileTypeMap {
 		try{
 			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(contents);
 			reader.nextTag();
-			return namespaceMappings.get(reader.getNamespaceURI());
+			String ns= namespaceMappings.get(reader.getNamespaceURI());
+			contents.close();
+			return ns;
 		}catch (Exception e){
 			return null;
 		}

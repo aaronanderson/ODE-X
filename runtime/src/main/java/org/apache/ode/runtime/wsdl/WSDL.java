@@ -28,9 +28,8 @@ import org.apache.ode.spi.repo.Repository;
 @Singleton
 public class WSDL {
 
-	
-	public static String WSDL_MIMETYPE= "application/wsdl";
-	public static String WSDL_NAMESPACE ="http://schemas.xmlsoap.org/wsdl/";
+	public static final String WSDL_MIMETYPE= "application/wsdl";
+	public static final String WSDL_NAMESPACE ="http://schemas.xmlsoap.org/wsdl/";
 	//@Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;

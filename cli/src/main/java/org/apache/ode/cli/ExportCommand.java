@@ -33,7 +33,7 @@ public class ExportCommand extends AbstractCommand{
 		super(connection, out);
 	}
 
-@Parameter(description = "The file to export to", required = true)
+@Parameter(names = "--file", description = "The file to export to", required = true)
   public String file;
   
   @Parameter(names = "--type", description = "Override the type", required = true)

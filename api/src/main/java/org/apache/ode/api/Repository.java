@@ -28,13 +28,17 @@ public interface Repository {
 
 	public static String OBJECTNAME = "org.apache.ode:type=Machine.Repository";
 
-	public ArtifactId importFile(String name, String contentType, String version, String fileName, byte[] contents) throws IOException;
+	public ArtifactId importArtifact(ArtifactId artifactId, String fileName, boolean overwrite, boolean noValidate, byte[] contents) throws IOException;
 
-	public byte[] exportFile(ArtifactId artifact) throws IOException;
+	public void refreshArtifact(ArtifactId artifactId, boolean noValidate, byte[] contents) throws IOException;
 
-	public Type[] listTypes();
+	public byte[] exportArtifact(ArtifactId artifact) throws IOException;
 
-	public ArtifactId[] list(String type, int resultLimit);
+	public void removeArtifact(ArtifactId artifact) throws IOException;
+
+	public String[] listContentTypes();
+
+	public ArtifactId[] listArtifacts(String contentType, int resultLimit);
 
 	public static class ArtifactId {
 
@@ -57,30 +61,21 @@ public interface Repository {
 			this.version = version;
 		}
 
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("ArtifactId: name: ");
+			sb.append(name);
+			sb.append(" type: ");
+			sb.append(type);
+			sb.append(" version: ");
+			sb.append(version);
+			return sb.toString();
+		}
+
 		private final String type;
 		private final String name;
 		private final String version;
-
-	}
-
-	public class Type {
-
-		public String getName() {
-			return name;
-		}
-
-		public String getQname() {
-			return qname;
-		}
-
-		@ConstructorProperties({ "name", "qname" })
-		public Type(String name, String qname) {
-			this.name = name;
-			this.qname = qname;
-		}
-
-		private final String name;
-		private final String qname;
 
 	}
 

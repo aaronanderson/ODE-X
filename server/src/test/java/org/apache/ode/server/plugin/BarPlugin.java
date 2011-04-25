@@ -46,8 +46,8 @@ import org.apache.ode.spi.repo.Repository;
 @Named("BarPlugin")
 public class BarPlugin implements Plugin {
 
-	public static String BAR_MIMETYPE = "application/bar";
-	public static String FOO_MIMETYPE = "application/foo";
+	public static final String BAR_MIMETYPE = "application/bar";
+	public static final String FOO_MIMETYPE = "application/foo";
 	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
@@ -58,13 +58,13 @@ public class BarPlugin implements Plugin {
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing BPELPlugin");
+		System.out.println("Initializing BARPlugin");
 		repository.registerFileExtension("bar", BAR_MIMETYPE);
 		repository.registerFileExtension("bar2", BAR_MIMETYPE);
 		repository.registerNamespace("http://foo", FOO_MIMETYPE);
 		repository.registerCommandInfo(BAR_MIMETYPE, "validate", true, barProvider);
 		repository.registerHandler(BAR_MIMETYPE, new BarDataContentHandler());
-		System.out.println("BPELPlugin Initialized");
+		System.out.println("BARPlugin Initialized");
 
 	}
 

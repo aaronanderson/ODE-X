@@ -27,10 +27,13 @@ import java.util.Set;
 
 import javax.activation.CommandInfo;
 import javax.activation.DataHandler;
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
+import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.xml.namespace.QName;
 
@@ -38,6 +41,7 @@ import org.apache.ode.server.WebServer;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.StaticHandler;
+import org.apache.ode.server.cdi.JPAHandler.EntityManagerProducer;
 import org.apache.ode.server.plugin.BarPlugin.Bar;
 import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.repo.Repository;
@@ -59,11 +63,39 @@ public class PluginTest {
 		StaticHandler.addDelegate(new RepoHandler());
 		StaticHandler.addDelegate(new Handler() {
 
+			Bean<BarPlugin> pluginBean;
+			CreationalContext<BarPlugin> pluginCtx;
+			BarPlugin plugin;
+
+			@Override
 			public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 				bbd.addAnnotatedType(bm.createAnnotatedType(BarPlugin.class));
 				bbd.addAnnotatedType(bm.createAnnotatedType(BarPlugin.BarValidation.class));
 
 			}
+
+			@Override
+			public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
+
+				Set<Bean<?>> beans = bm.getBeans(BarPlugin.class, new AnnotationLiteral<Any>() {
+				});
+				if (beans.size() > 0) {
+					pluginBean = (Bean<BarPlugin>) beans.iterator().next();
+					pluginCtx = bm.createCreationalContext(pluginBean);
+					plugin = (BarPlugin) bm.getReference(pluginBean, BarPlugin.class, pluginCtx);
+				} else {
+					System.out.println("Can't find class " + BarPlugin.class);
+				}
+
+			}
+
+			@Override
+			public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
+				if (plugin != null) {
+					pluginBean.destroy(plugin, pluginCtx);
+				}
+			}
+
 		});
 		weld = new Weld();
 		container = weld.initialize();
@@ -123,23 +155,23 @@ public class PluginTest {
 	}
 
 	@Test
-	public void testStore() throws Exception {
+	public void testCreate() throws Exception {
 		Repository repo = barPlugin.getRepository();
 		assertNotNull(repo);
 		BarPlugin.Bar bar = new BarPlugin.Bar("Baz");
-		repo.store(new QName("{http://bar/store}"), "1.0", "application/bar", bar);
+		repo.create(QName.valueOf("{http://bar/store}"), BarPlugin.BAR_MIMETYPE, "1.0", bar);
 	}
 
 	@Test
-	public void testLoad() throws Exception {
+	public void testRead() throws Exception {
 		Repository repo = barPlugin.getRepository();
 		assertNotNull(repo);
 		BarPlugin.Bar bar = new BarPlugin.Bar();
 		bar.setPayload("Foo");
-		repo.store(new QName("{http://bar/load}"), "1.0", "application/bar", bar);
-		bar = repo.load(new QName("{http://bar/load}"), "1.0", "application/bar", Bar.class);
+		repo.create(QName.valueOf("{http://bar/load}"), BarPlugin.BAR_MIMETYPE, "1.0", bar);
+		bar = repo.read(QName.valueOf("{http://bar/load}"), BarPlugin.BAR_MIMETYPE, "1.0", Bar.class);
 		assertNotNull(bar);
-		assertEquals("Foo",bar.getPayload());
+		assertEquals("Foo", bar.getPayload());
 	}
 
 }

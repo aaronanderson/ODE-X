@@ -35,43 +35,27 @@ import org.apache.ode.api.Repository.ArtifactId;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
-@Parameters(separators = "=", commandDescription = "Imports a file into the repository")
-public class ImportCommand extends AbstractCommand {
+@Parameters(separators = "=", commandDescription = "Deletes an artifact the repository")
+public class DeleteCommand extends AbstractCommand {
 
-	public ImportCommand(Connection connection, Formatter out) {
+	public DeleteCommand(Connection connection, Formatter out) {
 		super(connection, out);
 	}
 
-	@Parameter(names = "--file", description = "The file to import", converter = FileConverter.class, required = true)
-	public File file;
-
-	@Parameter(names = "--type", description = "Override the artifact type")
+	@Parameter(names = "--type", description = "The contentType to delete", required = true)
 	public String type;
 
-	@Parameter(names = "--name", description = "Override the artifact name")
+	@Parameter(names = "--name", description = "The QName to delete", required = true)
 	public String name;
 
-	@Parameter(names = "--version", description = "Specify the artifact version")
+	@Parameter(names = "--version", description = "The version to delete", required = true)
 	public String version;
-
-	@Parameter(names = "--overwrite", description = "Overwrite the artifact if it exists")
-	public boolean overwrite = false;
-
-	@Parameter(names = "--novalidate", description = "Do not validate the artifact on import")
-	public boolean noValidate = false;
 
 	@Override
 	public void execute() throws IOException, MalformedObjectNameException {
 		Repository repo = JMX.newMXBeanProxy(connection.getConnection(), ObjectName.getInstance(Repository.OBJECTNAME), Repository.class);
-		FileInputStream fis = new FileInputStream(file);
-		FileChannel channel = fis.getChannel();
-		ByteBuffer bb = ByteBuffer.allocate((int) channel.size());
-		channel.read(bb);
-		byte[] contents = bb.array();
-		channel.close();
 		ArtifactId id = new ArtifactId(name, type, version);
-		id = repo.importArtifact(id, file.getName(), overwrite, noValidate, contents);
-		out.format("Sucessfully imported file %s\n", file.getAbsoluteFile());
-		out.format("\t%s\n", id);
+		repo.removeArtifact(id);
+		out.format("Sucessfully deleted artifact %s\n", id);
 	}
 }

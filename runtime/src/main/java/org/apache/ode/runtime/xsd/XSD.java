@@ -16,40 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.build;
+package org.apache.ode.runtime.xsd;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 
-import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.XMLDataContentHandler;
 
 @Singleton
-public class BuildSystem {
-	public static final String BUILDPLAN_MIMETYPE="application/ode-build-plan";
+public class XSD {
+
+	public static final String XSD_MIMETYPE = "application/xsd";
+	public static final String XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema";
+
 	@Inject
 	Repository repository;
-	@Inject
-	Provider<BuildExecutor> buildProvider;
-
+	
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing BuildSystem");
-		repository.registerFileExtension("plan", BUILDPLAN_MIMETYPE);
-		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, "build", true, buildProvider);
-		try {
-			JAXBContext jc = JAXBContext.newInstance("org.apache.ode.runtime.build.xml");
-			repository.registerHandler(BUILDPLAN_MIMETYPE, new JAXBDataContentHandler(jc));
-		} catch (JAXBException je) {
-			je.printStackTrace();
-		}
-
-		System.out.println("BuildSystem Initialized");
-
+		System.out.println("Initializing XSD support");
+		repository.registerFileExtension("xsd", XSD_MIMETYPE);
+		repository.registerNamespace(XSD_NAMESPACE, XSD_MIMETYPE);
+		repository.registerHandler(XSD_MIMETYPE, new XMLDataContentHandler());
+		System.out.println("XSD support Initialized");
 	}
 
 }

@@ -26,36 +26,51 @@ import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.repo.ArtifactDataSource;
+import org.apache.ode.spi.repo.DataHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
 
 public class RepositoryImpl implements org.apache.ode.api.Repository {
-	
+
 	@Inject
 	Repository repo;
 	@Inject
 	Provider<ArtifactDataSource> dsProvider;
 
 	@Override
-	public ArtifactId importFile(String name, String type, String version, String fileName, byte[] contents) throws IOException {
+	public ArtifactId importArtifact(ArtifactId artifactId, String fileName, boolean overwrite, boolean noValidate, byte[] contents) throws IOException {
 		if (contents == null || contents.length == 0) {
 			throw new IOException("File contents is empty");
 		}
 		System.out.println("Import " + fileName);
 		ArtifactDataSource ds = dsProvider.get();
 		try {
-			if (fileName!=null){
+			if (fileName != null) {
 				ds.configure(contents, fileName);
-			}else{
+			} else {
 				ds.configure(contents);
 			}
 		} catch (MimeTypeParseException e) {
 			throw new IOException(e);
 		}
-		String mtype = type != null ? type : ds.getContentType();
-		QName qname = new QName(name);
+		QName qname = null;
+		if (artifactId.getName() == null) {
+			DataHandler dh = repo.getDataHandler(ds);
+			qname = dh.getDefaultQName();
+			if (qname == null){
+				throw new IOException("Unable to establish default QName");
+			}
+		} else {
+			qname = QName.valueOf(artifactId.getName());
+		}
+		String mtype = artifactId.getType() != null ? artifactId.getType() : ds.getContentType();
+		String version = artifactId.getVersion() != null ? artifactId.getVersion() : "1.0";
 		try {
-			repo.store(qname, version, mtype, ds);
+			if (overwrite && repo.exists(qname, mtype, version)) {
+				repo.update(qname, mtype, version, ds);
+			} else {
+				repo.create(qname, mtype, version, ds);
+			}
 		} catch (RepositoryException e) {
 			throw new IOException(e);
 		}
@@ -63,21 +78,55 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 	}
 
 	@Override
-	public byte[] exportFile(ArtifactId artifact) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+	public void refreshArtifact(ArtifactId artifactId, boolean noValidate, byte[] contents) throws IOException {
+		if (contents == null || contents.length == 0) {
+			throw new IOException("File contents is empty");
+		}
+		System.out.println("Refresh " + artifactId);
+		ArtifactDataSource ds = dsProvider.get();
+		try {
+			ds.configure(artifactId.getType(), contents);
+		} catch (MimeTypeParseException e) {
+			throw new IOException(e);
+		}
+		QName qname = QName.valueOf(artifactId.getName());
+		try {
+			repo.update(qname, artifactId.getType(), artifactId.getVersion(), ds);
+		} catch (RepositoryException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
-	public Type[] listTypes() {
-		// TODO Auto-generated method stub
-		return null;
+	public byte[] exportArtifact(ArtifactId artifactId) throws IOException {
+		System.out.println("Export " + artifactId);
+		QName qname = QName.valueOf(artifactId.getName());
+		try {
+			return repo.read(qname, artifactId.getType(), artifactId.getVersion(), byte[].class);
+		} catch (RepositoryException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
-	public ArtifactId[] list(String type, int resultLimit) {
-		// TODO Auto-generated method stub
-		return null;
+	public void removeArtifact(ArtifactId artifactId) throws IOException {
+		System.out.println("Remove " + artifactId);
+		QName qname = QName.valueOf(artifactId.getName());
+		try {
+			repo.delete(qname, artifactId.getType(), artifactId.getVersion());
+		} catch (RepositoryException e) {
+			throw new IOException(e);
+		}
+	}
+
+	@Override
+	public String[] listContentTypes() {
+		return new String[0];
+	}
+
+	@Override
+	public ArtifactId[] listArtifacts(String contentType, int resultLimit) {
+		return new ArtifactId[0];
 	}
 
 }

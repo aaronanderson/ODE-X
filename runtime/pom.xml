@@ -91,6 +91,10 @@
 					</execution>
 				</executions>
 				<configuration>
+					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
+					<schemaIncludes>
+						<schemaInclude>build_plan.xsd</schemaInclude>
+					</schemaIncludes>
 					<generatePackage>org.apache.ode.runtime.build.xml</generatePackage>
 				</configuration>
 			</plugin>

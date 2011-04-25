@@ -34,7 +34,7 @@ import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.cdi.Handler;
 
 public class BPELHandler extends Handler {
-	
+
 	Bean<BPELPlugin> pluginBean;
 	CreationalContext<BPELPlugin> pluginCtx;
 	BPELPlugin pluginSys;
@@ -44,12 +44,12 @@ public class BPELHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELExecValidation.class));
 	}
-	
+
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
 		Set<Bean<?>> beans = bm.getBeans(BPELPlugin.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			pluginBean = (Bean<BPELPlugin>)beans.iterator().next();
+			pluginBean = (Bean<BPELPlugin>) beans.iterator().next();
 			pluginCtx = bm.createCreationalContext(pluginBean);
 			bm.getReference(pluginBean, BPELPlugin.class, pluginCtx);
 		} else {
@@ -57,13 +57,12 @@ public class BPELHandler extends Handler {
 		}
 
 	}
-	
+
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-	  if (pluginSys!=null){
-		  pluginBean.destroy(pluginSys, pluginCtx);
-	  }
+		if (pluginSys != null) {
+			pluginBean.destroy(pluginSys, pluginCtx);
+		}
 	}
-
 
 }

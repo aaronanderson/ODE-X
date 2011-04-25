@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.wsdl;
+package org.apache.ode.runtime.xsl;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -25,47 +25,38 @@ import java.io.IOException;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataSource;
-import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
-import javax.wsdl.factory.WSDLFactory;
-import javax.wsdl.xml.WSDLReader;
-import javax.wsdl.xml.WSDLWriter;
-import javax.xml.bind.JAXBException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamSource;
 
-import org.apache.ode.spi.repo.DependentArtifactDataSource;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 
-public class WSDLDataContentHandler extends XMLDataContentHandler {
+public class XSLDataContentHandler extends XMLDataContentHandler {
 
-	public static final ActivationDataFlavor WSDL_FLAVOR = new ActivationDataFlavor(Definition.class, "application/wsdl; x-java-class=WSDL4J", "WSDL");
+	public static final ActivationDataFlavor XSL_FLAVOR = new ActivationDataFlavor(Transformer.class, "application/xsl; x-java-class=XSL", "XSL");
 
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
-		if (dataSource instanceof DependentArtifactDataSource){
-			try {
-				WSDLFactory factory = WSDLFactory.newInstance();
-				WSDLReader reader = factory.newWSDLReader();
-				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource)dataSource));
-			} catch (WSDLException je) {
-				throw new IOException(je);
-			}
+		try {
+			TransformerFactory xformFactory = TransformerFactory.newInstance();
+			Transformer transformer = xformFactory.newTransformer(new StreamSource(dataSource.getInputStream()));
+			return transformer;
+		} catch (TransformerConfigurationException te) {
+			throw new IOException(te);
 		}
-		throw new IOException("Unable to process WSDL without dependencies");
-		
 	}
 
 	@Override
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
-		if (Definition.class.equals(flavor.getDefaultRepresentationClass())) {
-			if (!(dataSource instanceof DependentArtifactDataSource)){
-				throw new IOException("Unable to process WSDL without dependencies");
-			}
+		if (Transformer.class.equals(flavor.getDefaultRepresentationClass())) {
 			try {
-				WSDLFactory factory = WSDLFactory.newInstance();
-				WSDLReader reader = factory.newWSDLReader();
-				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource)dataSource));
-			} catch (WSDLException je) {
-				throw new IOException(je);
+				TransformerFactory xformFactory = TransformerFactory.newInstance();
+				Transformer transformer = xformFactory.newTransformer(new StreamSource(dataSource.getInputStream()));
+				return transformer;
+			} catch (TransformerConfigurationException te) {
+				throw new IOException(te);
 			}
 		} else {
 			return super.getTransferData(flavor, dataSource);
@@ -74,21 +65,14 @@ public class WSDLDataContentHandler extends XMLDataContentHandler {
 
 	@Override
 	public DataFlavor[] getTransferDataFlavors() {
-		return new DataFlavor[] { WSDL_FLAVOR, STREAM_FLAVOR, DOM_FLAVOR, XSL_SOURCE_FLAVOR };
+		return new DataFlavor[] { XSL_FLAVOR, STREAM_FLAVOR, DOM_FLAVOR, XSL_SOURCE_FLAVOR };
 	}
 
 	@Override
 	public byte[] toContent(Object content, String contentType) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		if (content instanceof Definition) {
-			try {
-				WSDLFactory factory = WSDLFactory.newInstance();
-				WSDLWriter writer = factory.newWSDLWriter();
-				writer.writeWSDL((Definition) content, bos);
-				return bos.toByteArray();
-			} catch (WSDLException je) {
-				throw new IOException(je);
-			}
+		if (content instanceof Transformer) {
+			throw new IOException("Unable to serialize Transformer");
 		} else {
 			return super.toContent(content, contentType);
 		}

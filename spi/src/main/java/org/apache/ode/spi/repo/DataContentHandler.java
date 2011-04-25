@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.activation.DataSource;
+import javax.xml.namespace.QName;
 
 /**
  * 
@@ -38,6 +39,10 @@ public abstract class DataContentHandler implements javax.activation.DataContent
 		byte[] data = toContent(content, contentType);
 		os.write(data, 0, data.length);
 
+	}
+	
+	public QName getDefaultQName(DataSource dataSource) {
+		return null;
 	}
 
 	public abstract byte[] toContent(Object content, String contentType) throws IOException;

@@ -16,41 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.cli;
+package org.apache.ode.runtime.xsl;
 
 import java.io.IOException;
 
-import org.apache.ode.api.Repository;
-import org.apache.ode.api.Repository.ArtifactId;
+import javax.activation.CommandObject;
+import javax.activation.DataHandler;
 
-public class RepositoryImpl implements Repository {
-
-	@Override
-	public ArtifactId importArtifact(ArtifactId artifactId, String fileName, boolean overwrite, boolean noValidate, byte[] contents) throws IOException {
-		return null;
-	}
+public class XSLValidation implements CommandObject{
 
 	@Override
-	public void refreshArtifact(ArtifactId artifactId, boolean noValidate, byte[] contents) throws IOException {
+	public void setCommandContext(String arg0, DataHandler arg1)
+			throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
-
-	@Override
-	public byte[] exportArtifact(ArtifactId artifact) throws IOException {
-		return null;
-	}
-
-	@Override
-	public void removeArtifact(ArtifactId artifact) throws IOException {
-	}
-
-	@Override
-	public String[] listContentTypes() {
-		return new String[0];
-	}
-
-	@Override
-	public ArtifactId[] listArtifacts(String contentType, int resultLimit) {
-		return new ArtifactId[0];
-	}
+	
 
 }

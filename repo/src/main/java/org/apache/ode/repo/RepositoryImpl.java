@@ -49,26 +49,64 @@ public class RepositoryImpl implements Repository {
 	RepoFileTypeMap fileTypes;
 	@Inject
 	RepoCommandMap commandMap;
+	@Inject
+	Provider<ArtifactDataSourceImpl> dsProvider;
 
-	public <C> C load(QName qname, String version, String contentType, Class<C> javaType) throws RepositoryException {
+	@Override
+	public <C> void create(QName qname, String contentType, String version, C content) throws RepositoryException {
+		ArtifactImpl artifact = null;
+		if (content instanceof ArtifactDataSourceImpl) {
+			artifact = ((ArtifactDataSourceImpl) content).artifact;
+			if (mgr.contains(artifact)) {
+				throw new RepositoryException("ArtifactDataSource already attached to an existing artifact");
+			}
+			artifact.setQName(qname);
+			artifact.setVersion(version);
+		} else {
+			artifact = new ArtifactImpl();
+			artifact.setQName(qname);
+			artifact.setVersion(version);
+			artifact.setContentType(contentType);
+			DataHandler dh = getDataHandler(content, contentType);
+			try {
+				artifact.setContent(dh.toContent());
+			} catch (IOException e) {
+				throw new RepositoryException(e);
+			}
+		}
+		mgr.getTransaction().begin();
+		mgr.persist(artifact);
+		mgr.getTransaction().commit();
+	}
+
+	protected ArtifactImpl loadArtifact(QName qname, String contentType, String version) throws RepositoryException {
 		Query q = mgr.createNamedQuery("lookupArtifact");
 		q.setParameter("qname", qname.toString());
 		q.setParameter("type", contentType);
 		q.setParameter("version", version);
 
-		ArtifactImpl artifact;
 		try {
-			artifact = (ArtifactImpl) q.getSingleResult();
-			mgr.detach(artifact);
+			return (ArtifactImpl) q.getSingleResult();
 		} catch (NoResultException nr) {
 			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s does not exists", qname, contentType, version), nr);
 		}
 
-		ArtifactDataSourceImpl ds = new ArtifactDataSourceImpl();
+	}
+
+	@Override
+	public <C> C read(QName qname, String contentType, String version, Class<C> javaType) throws RepositoryException {
+		ArtifactImpl artifact = loadArtifact(qname, contentType, version);
+		ArtifactDataSourceImpl ds = dsProvider.get();
 		try {
 			ds.configure(artifact);
 		} catch (MimeTypeParseException e) {
 			throw new RepositoryException(e);
+		}
+		if (ArtifactDataSource.class.isAssignableFrom(javaType)) {
+			return (C) ds;
+		}
+		if (byte[].class.isAssignableFrom(javaType)) {
+			return (C) ds.getContent();
 		}
 		DataHandler dh = getDataHandler(ds);
 		DataFlavor[] flavors = dh.getTransferDataFlavors();
@@ -90,33 +128,21 @@ public class RepositoryImpl implements Repository {
 		}
 	}
 
-	/*
-	 * DataHandler load(QName qname, String version, String type){
-	 * 
-	 * }
-	 */
-
-	public <C> void store(QName qname, String version, String contentType, C content) throws RepositoryException {
-		// Check if artifact already exists
-		Query q = mgr.createNamedQuery("uniqueArtifact");
-		q.setParameter("qname", qname.toString());
-		q.setParameter("type", contentType);
-		q.setParameter("version", version);
-
-		Long count = (Long) q.getSingleResult();
-		if (count.intValue() > 0) {
-			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s already exists", qname, contentType, version));
-		}
+	@Override
+	public <C> void update(QName qname, String contentType, String version, C content) throws RepositoryException {
 		ArtifactImpl artifact = null;
 		if (content instanceof ArtifactDataSourceImpl) {
-			artifact = ((ArtifactDataSourceImpl) content).artifact;
-			artifact.setQName(qname);
-			artifact.setVersion(version);
+			ArtifactDataSourceImpl ds = (ArtifactDataSourceImpl) content;
+			artifact = ds.artifact;
+			if (!mgr.contains(artifact)) {
+				artifact = loadArtifact(qname, contentType, version);
+			}
+			artifact.setContent(ds.getContent());
+		} else if (content instanceof byte[]) {
+			artifact = loadArtifact(qname, contentType, version);
+			artifact.setContent((byte[]) content);
 		} else {
-			artifact = new ArtifactImpl();
-			artifact.setQName(qname);
-			artifact.setVersion(version);
-			artifact.setContentType(contentType);
+			artifact = loadArtifact(qname, contentType, version);
 			DataHandler dh = getDataHandler(content, contentType);
 			try {
 				artifact.setContent(dh.toContent());
@@ -124,22 +150,43 @@ public class RepositoryImpl implements Repository {
 				throw new RepositoryException(e);
 			}
 		}
+
 		mgr.getTransaction().begin();
-		mgr.persist(artifact);
+		mgr.merge(artifact);
 		mgr.getTransaction().commit();
 	}
 
-	/*
-	 * void store(QName qname, String version, String type, DataHandler
-	 * content){ String mime_type = null; //ObjectType <=> mimtype
-	 * mappingqo.getType(); DataHandler my_dh = new DataHandler(content,
-	 * mime_type); //my_dh.getInputStream() }
-	 */
+	@Override
+	public void delete(QName qname, String contentType, String version) throws RepositoryException {
+		ArtifactImpl artifact = null;
+		Query q = mgr.createNamedQuery("lookupArtifact");
+		q.setParameter("qname", qname.toString());
+		q.setParameter("type", contentType);
+		q.setParameter("version", version);
+
+		try {
+			artifact = (ArtifactImpl) q.getSingleResult();
+		} catch (NoResultException nr) {
+			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s does not exists", qname, contentType, version), nr);
+		}
+		mgr.getTransaction().begin();
+		mgr.remove(artifact);
+		mgr.getTransaction().commit();
+	}
 
 	@Override
-	public Observable watch(QName qname, String version, String type) {
-		// TODO Auto-generated method stub
-		return null;
+	public boolean exists(QName qname, String contentType, String version) throws RepositoryException {
+		Query q = mgr.createNamedQuery("artifactExists");
+		q.setParameter("qname", qname.toString());
+		q.setParameter("type", contentType);
+		q.setParameter("version", version);
+
+		Long count = (Long) q.getSingleResult();
+		if (count.intValue() > 0) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override

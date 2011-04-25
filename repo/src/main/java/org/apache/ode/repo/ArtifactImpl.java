@@ -31,16 +31,17 @@ import javax.persistence.Lob;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.repo.Artifact;
 
 @NamedQueries({
-		@NamedQuery(name="uniqueArtifact", query="select count(a) from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version"),
+		@NamedQuery(name="artifactExists", query="select count(a) from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version"),
 		@NamedQuery(name="lookupArtifact", query="select a from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version")
 })
 @Entity
-@Table(name = "ARTIFACT")
+@Table(name = "ARTIFACT",  uniqueConstraints={@UniqueConstraint(name="ARTIFACT_UNIQUENESS", columnNames={"QNAME","CONTENT_TYPE", "VERSION"})})
 public class ArtifactImpl implements Serializable, Artifact {
 
 	private static final long serialVersionUID = 1L;
