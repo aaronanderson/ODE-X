@@ -11,10 +11,13 @@
 				minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="jmxURL" type="string" />
-		<attribute name="host" type="string" default="localhost"/>
-		<attribute name="jmxPort" type="integer" default="8686"/>
-		<attribute name="httpPort" type="integer" default="8080"/>
-		<attribute name="sslEnabled" type="boolean" default="false"/>
+		<attribute name="host" type="string" default="localhost" />
+		<attribute name="jmxPort" type="integer" default="8686" />
+		<attribute name="httpPort" type="integer" default="8080" />
+		<attribute name="sslEnabled" type="boolean" default="false" />
+		<attribute name="minThreads" type="integer" default="0" />
+		<attribute name="maxThreads" type="integer" default="10" />
+		<attribute name="queueSize" type="integer" default="100" />
 	</complexType>
 
 	<complexType name="dataSourceType">

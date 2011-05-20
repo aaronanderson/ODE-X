@@ -18,6 +18,10 @@
  */
 package org.apache.ode.spi.compiler;
 
-public interface InstructionSet {
+
+
+public interface CompilerPass {
+	
+	void compile(CompilerPhase phase, CompilerContext ctx, Source artifact);
 
 }

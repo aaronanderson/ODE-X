@@ -20,21 +20,29 @@ package org.apache.ode.server.cdi;
 
 import java.util.Set;
 
+import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Singleton;
 
 import org.apache.ode.runtime.build.BuildSystem;
+import org.apache.ode.runtime.build.CompilersImpl;
+import org.apache.ode.runtime.build.WSDLContextImpl;
+import org.apache.ode.runtime.build.XMLSchemaContextImpl;
 import org.apache.ode.runtime.wsdl.WSDL;
 import org.apache.ode.runtime.xml.XML;
 import org.apache.ode.runtime.xsd.XSD;
 import org.apache.ode.runtime.xsl.XSL;
 import org.apache.ode.spi.cdi.Handler;
+import org.apache.ode.spi.compiler.WSDLContext;
+import org.apache.ode.spi.compiler.XMLSchemaContext;
 
 public class RuntimeHandler extends Handler {
 
@@ -57,6 +65,23 @@ public class RuntimeHandler extends Handler {
 	Bean<BuildSystem> buildSysBean;
 	CreationalContext<BuildSystem> buildSysCtx;
 	BuildSystem buildSys;
+	
+	@Singleton
+	public static class CompilerProducer {
+
+		@Produces
+		@Dependent
+		public XMLSchemaContext createXMLSchemaCtx() {
+			return new XMLSchemaContextImpl();
+		}
+		
+		@Produces
+		@Dependent
+		public WSDLContext createWSDLCtx() {
+			return new WSDLContextImpl();
+		}
+		
+	}
 
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(XSD.class));
@@ -64,6 +89,8 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDL.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(XSL.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BuildSystem.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(CompilersImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(CompilerProducer.class));
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {

@@ -23,6 +23,11 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.ode.spi.compiler.Compiler;
+import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.WSDLContext;
+import org.apache.ode.spi.compiler.XMLSchemaContext;
 import org.apache.ode.spi.repo.Repository;
 
 @Singleton
@@ -35,6 +40,13 @@ public class WSDL {
 	Repository repository;
 	@Inject 
 	Provider<WSDLValidation> validateProvider;
+	@Inject
+	Compilers compilers;
+	@Inject
+	Provider<XMLSchemaContext> schemaProvider;
+	@Inject
+	Provider<WSDLContext> wsdlProvider;
+	
 	
 	@PostConstruct
 	public void init(){
@@ -43,6 +55,18 @@ public class WSDL {
 		repository.registerNamespace(WSDL_NAMESPACE, WSDL_MIMETYPE);
 		repository.registerCommandInfo(WSDL_MIMETYPE, "validate", true, validateProvider);
 		repository.registerHandler(WSDL_MIMETYPE, new WSDLDataContentHandler());
+		
+		Compiler wsdlCompiler = compilers.newInstance();
+		wsdlCompiler.addSubContext(schemaProvider);
+		wsdlCompiler.addSubContext(wsdlProvider);
+		WSDLCompiler compiler = new WSDLCompiler();
+		wsdlCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
+		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+		compilers.register(wsdlCompiler, WSDL_MIMETYPE);
 		System.out.println("WSDL support Initialized");
 		
 	}

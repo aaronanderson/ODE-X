@@ -22,6 +22,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataSource;
@@ -31,6 +32,9 @@ import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLReader;
 import javax.wsdl.xml.WSDLWriter;
 import javax.xml.bind.JAXBException;
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.spi.repo.DependentArtifactDataSource;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
@@ -41,29 +45,29 @@ public class WSDLDataContentHandler extends XMLDataContentHandler {
 
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
-		if (dataSource instanceof DependentArtifactDataSource){
+		if (dataSource instanceof DependentArtifactDataSource) {
 			try {
 				WSDLFactory factory = WSDLFactory.newInstance();
 				WSDLReader reader = factory.newWSDLReader();
-				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource)dataSource));
+				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource) dataSource));
 			} catch (WSDLException je) {
 				throw new IOException(je);
 			}
 		}
 		throw new IOException("Unable to process WSDL without dependencies");
-		
+
 	}
 
 	@Override
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
 		if (Definition.class.equals(flavor.getDefaultRepresentationClass())) {
-			if (!(dataSource instanceof DependentArtifactDataSource)){
+			if (!(dataSource instanceof DependentArtifactDataSource)) {
 				throw new IOException("Unable to process WSDL without dependencies");
 			}
 			try {
 				WSDLFactory factory = WSDLFactory.newInstance();
 				WSDLReader reader = factory.newWSDLReader();
-				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource)dataSource));
+				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource) dataSource));
 			} catch (WSDLException je) {
 				throw new IOException(je);
 			}
@@ -91,6 +95,24 @@ public class WSDLDataContentHandler extends XMLDataContentHandler {
 			}
 		} else {
 			return super.toContent(content, contentType);
+		}
+	}
+
+	@Override
+	public QName getDefaultQName(DataSource dataSource) {
+		QName defaultName = null;
+		try {
+			InputStream is = dataSource.getInputStream();
+			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
+			reader.nextTag();
+			String tns = reader.getAttributeValue(null, "targetNamespace");
+			reader.close();
+			if (tns != null) {
+				defaultName = QName.valueOf("{" + tns + "}");
+			}
+			return defaultName;
+		} catch (Exception e) {
+			return null;
 		}
 	}
 

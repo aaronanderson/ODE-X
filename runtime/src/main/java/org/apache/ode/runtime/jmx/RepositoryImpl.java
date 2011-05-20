@@ -65,6 +65,10 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 		}
 		String mtype = artifactId.getType() != null ? artifactId.getType() : ds.getContentType();
 		String version = artifactId.getVersion() != null ? artifactId.getVersion() : "1.0";
+		if (!noValidate){
+			repo.getDataHandler(ds);
+		}
+		
 		try {
 			if (overwrite && repo.exists(qname, mtype, version)) {
 				repo.update(qname, mtype, version, ds);

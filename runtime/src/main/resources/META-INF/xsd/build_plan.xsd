@@ -19,6 +19,8 @@
 			<element name="target" type="tns:targetType" minOccurs="1"
 				maxOccurs="unbounded" />
 		</sequence>
+		<attribute name="targetNamespace" type="string" use="optional" />
+		<attribute name="name" type="string" use="optional" />
 	</complexType>
 
 	<complexType name="targetType">
@@ -84,6 +86,15 @@
 			</extension>
 		</complexContent>
 	</complexType>
+	
+	<complexType name="preprocessorJavaType">
+		<complexContent>
+			<extension base="tns:preprocessorType">
+				<attribute name="class" type="string" />
+			</extension>
+		</complexContent>
+	</complexType>
+	
 
 
 

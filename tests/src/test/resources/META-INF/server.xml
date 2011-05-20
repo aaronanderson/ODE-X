@@ -23,6 +23,7 @@
   <handler-class>org.apache.ode.server.cdi.JPAHandler</handler-class>
   <handler-class>org.apache.ode.server.cdi.RepoHandler</handler-class>
   <handler-class>org.apache.ode.server.cdi.RuntimeHandler</handler-class>
+  <handler-class>org.apache.ode.server.cdi.ExecutorHandler</handler-class>
   <handler-class>org.apache.ode.server.cdi.WebServerHandler</handler-class>
   <handler-class>org.apache.ode.bpel.plugin.cdi.BPELHandler</handler-class>
   </handlers>

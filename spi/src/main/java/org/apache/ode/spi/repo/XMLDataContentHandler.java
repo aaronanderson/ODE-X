@@ -118,7 +118,7 @@ public class XMLDataContentHandler extends DataContentHandler {
 			InputStream is = dataSource.getInputStream();
 			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
 			reader.nextTag();
-			String tns = reader.getAttributeValue(null,"targetNamespace");
+			String tns = reader.getNamespaceURI();
 			reader.close();
 			if (tns != null) {
 				defaultName = QName.valueOf("{"+tns+"}");

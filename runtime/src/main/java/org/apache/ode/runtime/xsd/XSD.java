@@ -23,6 +23,10 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.ode.spi.compiler.Compiler;
+import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.XMLSchemaContext;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 
@@ -34,6 +38,10 @@ public class XSD {
 
 	@Inject
 	Repository repository;
+	@Inject
+	Compilers compilers;
+	@Inject
+	Provider<XMLSchemaContext> schemaProvider;
 	
 	@PostConstruct
 	public void init() {
@@ -41,6 +49,18 @@ public class XSD {
 		repository.registerFileExtension("xsd", XSD_MIMETYPE);
 		repository.registerNamespace(XSD_NAMESPACE, XSD_MIMETYPE);
 		repository.registerHandler(XSD_MIMETYPE, new XMLDataContentHandler());
+		
+		Compiler schemaCompiler = compilers.newInstance();
+		schemaCompiler.addSubContext(schemaProvider);
+		XSDCompiler compiler = new XSDCompiler();
+		schemaCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
+		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+		compilers.register(schemaCompiler, XSD_MIMETYPE);
+		
 		System.out.println("XSD support Initialized");
 	}
 

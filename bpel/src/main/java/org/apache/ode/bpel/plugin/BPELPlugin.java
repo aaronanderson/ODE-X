@@ -30,8 +30,15 @@ import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.ode.bpel.compiler.BPELContext;
+import org.apache.ode.bpel.compiler.DiscoveryPass;
 import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.Plugin;
+import org.apache.ode.spi.compiler.Compiler;
+import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.WSDLContext;
+import org.apache.ode.spi.compiler.XMLSchemaContext;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 
@@ -45,8 +52,16 @@ public class BPELPlugin implements Plugin {
 	@Inject
 	Repository repository;
 	@Inject
+	Compilers compilers;
+	@Inject
 	Provider<BPELExecValidation> validateProvider;
-
+	@Inject
+	Provider<BPELContext> ctxProvider;
+	@Inject
+	Provider<XMLSchemaContext> schemaProvider;
+	@Inject
+	Provider<WSDLContext> wsdlProvider;
+	
 	@PostConstruct
 	public void init() {
 		System.out.println("Initializing BPELPlugin");
@@ -74,6 +89,18 @@ public class BPELPlugin implements Plugin {
 				}
 			}
 		});
+		Compiler bpelCompiler = compilers.newInstance();
+		bpelCompiler.addSubContext(schemaProvider);
+		bpelCompiler.addSubContext(wsdlProvider);
+		bpelCompiler.addSubContext(ctxProvider);
+		bpelCompiler.addCompilerPass(CompilerPhase.DISCOVERY, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
+		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
+		
 		System.out.println("BPELPlugin Initialized");
 
 	}

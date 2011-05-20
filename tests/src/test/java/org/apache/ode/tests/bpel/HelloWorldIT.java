@@ -36,6 +36,10 @@ public class HelloWorldIT {
 		if (!CLI.execute(output, "--port", "9696", "import", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.bpel")) {
 			throw new Exception(output.toString());
 		}
+		
+		if (!CLI.execute(output, "--port", "9696", "import", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.build")) {
+			throw new Exception(output.toString());
+		}
 	}
 
 	@AfterClass

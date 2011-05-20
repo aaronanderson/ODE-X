@@ -34,7 +34,7 @@
 			<version>1.0</version>
 			<scope>provided</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-jcdi_1.0_spec</artifactId>
@@ -57,7 +57,46 @@
 
 	</dependencies>
 
-
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.jvnet.jaxb2.maven2</groupId>
+				<artifactId>maven-jaxb2-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
+					<schemaIncludes>
+						<schemaInclude>bpel.xsd</schemaInclude>
+					</schemaIncludes>
+					<bindingDirectory>src/main/bindings</bindingDirectory>
+					<bindingIncludes>
+						<bindingInclude>bpel.xjb</bindingInclude>
+					</bindingIncludes>
+					<catalog>src/main/bindings/catalog.xml</catalog>
+					<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.ode</groupId>
+							<artifactId>ode-spi</artifactId>
+						</plugin>
+					</plugins>
+					<episodes>
+						<episode>
+							<groupId>org.apache.ode</groupId>
+							<artifactId>ode-spi</artifactId>
+						</episode>
+					</episodes>
+					<extension>true</extension>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
 

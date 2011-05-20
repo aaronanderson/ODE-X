@@ -20,15 +20,20 @@ package org.apache.ode.bpel.plugin.cdi;
 
 import java.util.Set;
 
+import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Singleton;
 
+import org.apache.ode.bpel.compiler.BPELContext;
+import org.apache.ode.bpel.compiler.BPELContextImpl;
 import org.apache.ode.bpel.plugin.BPELPlugin;
 import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.cdi.Handler;
@@ -38,11 +43,24 @@ public class BPELHandler extends Handler {
 	Bean<BPELPlugin> pluginBean;
 	CreationalContext<BPELPlugin> pluginCtx;
 	BPELPlugin pluginSys;
+	
+	@Singleton
+	public static class BPELCompilerProducer {
+
+		@Produces
+		@Dependent
+		public BPELContext createBPELCtx() {
+			return new BPELContextImpl();
+		}
+			
+	}
+
 
 	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELExecValidation.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BPELContextImpl.class));
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {

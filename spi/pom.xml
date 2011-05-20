@@ -51,7 +51,31 @@
 
 	</dependencies>
 
-
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.jvnet.jaxb2.maven2</groupId>
+				<artifactId>maven-jaxb2-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
+					<schemaIncludes>
+						<schemaInclude>executable.xsd</schemaInclude>
+					</schemaIncludes>
+					<bindingDirectory>src/main/bindings</bindingDirectory>
+					<bindingIncludes>
+						<bindingInclude>executable.xjb</bindingInclude>
+					</bindingIncludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
 

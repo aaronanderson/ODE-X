@@ -95,7 +95,10 @@
 					<schemaIncludes>
 						<schemaInclude>build_plan.xsd</schemaInclude>
 					</schemaIncludes>
-					<generatePackage>org.apache.ode.runtime.build.xml</generatePackage>
+					<bindingDirectory>src/main/bindings</bindingDirectory>
+					<bindingIncludes>
+						<bindingInclude>build_plan.xjb</bindingInclude>
+					</bindingIncludes>
 				</configuration>
 			</plugin>
 		</plugins>
