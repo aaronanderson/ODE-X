@@ -15,10 +15,11 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
-package org.apache.ode.spi.compiler;
+ */s
+package org.apache.ode.runtime.exec;
 
-public interface WSDLContext {
-	public static final String ID ="WSDLContext";
+import org.apache.ode.spi.exec.Program;
+
+public class ProgramImpl implements Program {
 
 }

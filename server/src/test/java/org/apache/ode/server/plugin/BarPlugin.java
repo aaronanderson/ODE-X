@@ -20,14 +20,11 @@ package org.apache.ode.server.plugin;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import javax.activation.ActivationDataFlavor;
-import javax.activation.CommandObject;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.MimeTypeParseException;
@@ -38,9 +35,10 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.ode.spi.Plugin;
-import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.ArtifactDataSource;
+import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.Validate;
 
 @Singleton
 @Named("BarPlugin")
@@ -62,7 +60,7 @@ public class BarPlugin implements Plugin {
 		repository.registerFileExtension("bar", BAR_MIMETYPE);
 		repository.registerFileExtension("bar2", BAR_MIMETYPE);
 		repository.registerNamespace("http://foo", FOO_MIMETYPE);
-		repository.registerCommandInfo(BAR_MIMETYPE, "validate", true, barProvider);
+		repository.registerCommandInfo(BAR_MIMETYPE, Validate.VALIDATE_CMD, true, barProvider);
 		repository.registerHandler(BAR_MIMETYPE, new BarDataContentHandler());
 		System.out.println("BARPlugin Initialized");
 
@@ -92,7 +90,7 @@ public class BarPlugin implements Plugin {
 		return repository;
 	}
 
-	static public class BarValidation implements CommandObject {
+	static public class BarValidation implements Validate {
 
 		DataHandler handler;
 
@@ -101,10 +99,14 @@ public class BarPlugin implements Plugin {
 			this.handler = handler;
 		}
 
-		public boolean isValid() throws Exception {
-
-			Bar bar = (Bar) handler.getContent();
-			return "Foo".equals(bar.getPayload());
+		@Override
+		public boolean validate(StringBuilder sb) {
+			try {
+				Bar bar = (Bar) handler.getContent();
+				return "Foo".equals(bar.getPayload());
+			} catch (Exception e) {
+				return false;
+			}
 		}
 	}
 
@@ -159,6 +161,5 @@ public class BarPlugin implements Plugin {
 			return payload;
 		}
 	}
-
 
 }

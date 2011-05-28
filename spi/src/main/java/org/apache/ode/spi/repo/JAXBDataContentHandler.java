@@ -30,38 +30,44 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
-import org.w3c.dom.Document;
+import org.apache.ode.spi.exec.xml.Executable;
 
 public class JAXBDataContentHandler extends XMLDataContentHandler {
 
 	public static final ActivationDataFlavor JAXB_FLAVOR = new ActivationDataFlavor(JAXBElement.class, "application/xml; x-java-class=JAXB", "JAXB");
 
-	JAXBContext jc;
+	protected JAXBContext jc;
 
 	public JAXBDataContentHandler(JAXBContext jc) {
 		this.jc = jc;
 	}
 
+	protected JAXBDataContentHandler() {
+
+	}
+
+	protected JAXBContext getJAXBContext(DataSource dataSource) throws JAXBException {
+		return this.jc;
+	}
+
+	protected JAXBContext getJAXBContext(JAXBElement<Executable> exec) throws JAXBException {
+		return this.jc;
+	}
+
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
-		if (jc != null) {
-			try {
-				Unmarshaller u = jc.createUnmarshaller();
+		try {
+			JAXBContext ctx = getJAXBContext(dataSource);
+			if (ctx != null) {
+
+				Unmarshaller u = ctx.createUnmarshaller();
 				return (JAXBElement) u.unmarshal(dataSource.getInputStream());
-			} catch (JAXBException je) {
-				throw new IOException(je);
+			} else {
+				throw new IOException("JAXBContext is null");
 			}
-		} else {
-			return super.getContent(dataSource);
+		} catch (JAXBException je) {
+			throw new IOException(je);
 		}
 	}
 
@@ -69,8 +75,13 @@ public class JAXBDataContentHandler extends XMLDataContentHandler {
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
 		if (JAXBElement.class.equals(flavor.getDefaultRepresentationClass())) {
 			try {
-				Unmarshaller u = jc.createUnmarshaller();
-				return (JAXBElement) u.unmarshal(dataSource.getInputStream());
+				JAXBContext ctx = getJAXBContext(dataSource);
+				if (ctx != null) {
+					Unmarshaller u = ctx.createUnmarshaller();
+					return (JAXBElement) u.unmarshal(dataSource.getInputStream());
+				} else {
+					throw new IOException("JAXBContext is null");
+				}
 			} catch (JAXBException je) {
 				throw new IOException(je);
 			}
@@ -88,10 +99,18 @@ public class JAXBDataContentHandler extends XMLDataContentHandler {
 	public byte[] toContent(Object content, String contentType) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		if (content instanceof JAXBElement) {
+			JAXBElement<Executable> exec = (JAXBElement<Executable>) content;
 			try {
-				Marshaller u = jc.createMarshaller();
-				u.marshal((JAXBElement) content, bos);
-				return bos.toByteArray();
+				JAXBContext ctx = getJAXBContext(exec);
+				if (ctx != null) {
+
+					Marshaller u = ctx.createMarshaller();
+					u.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+					u.marshal(exec, bos);
+					return bos.toByteArray();
+				} else {
+					throw new IOException("JAXBContext is null");
+				}
 			} catch (JAXBException je) {
 				throw new IOException(je);
 			}

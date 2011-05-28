@@ -18,36 +18,61 @@
  */
 package org.apache.ode.runtime.build;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.inject.Provider;
+import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 
-public class CompilerImpl implements Compiler{
-	
-	private Map<CompilerPhase,CompilerPass> passes = new ConcurrentHashMap<CompilerPhase,CompilerPass>();
-	private Set<Provider<?>> contexts = new CopyOnWriteArraySet<Provider<?>>();
-    private Set<String> jaxbCtxs = new CopyOnWriteArraySet<String>();
-	
+public class CompilerImpl implements Compiler {
+
+	private Map<CompilerPhase, List<CompilerPass>> passes = new ConcurrentHashMap<CompilerPhase, List<CompilerPass>>();
+	private Map<String, Provider<?>> contexts = new ConcurrentHashMap<String, Provider<?>>();
+	private Set<QName> instructionSets = new CopyOnWriteArraySet<QName>();
+
 	@Override
 	public void addCompilerPass(CompilerPhase phase, CompilerPass pass) {
-		passes.put(phase, pass);
+		List<CompilerPass> passList = passes.get(phase);
+		if (passList == null) {
+			passList = new ArrayList<CompilerPass>();
+			passes.put(phase, passList);
+		}
+		passList.add(pass);
+	}
+
+	public List<CompilerPass> getCompilerPasses(CompilerPhase phase) {
+		List<CompilerPass> passList = passes.get(phase);
+		if (passList == null) {
+			return Collections.EMPTY_LIST;
+		}
+		return passList;
 	}
 
 	@Override
-	public <C> void addSubContext(Provider<C> type) {
-		contexts.add(type);
+	public <C> void addSubContext(String id, Provider<C> type) {
+		contexts.put(id, type);
+	}
+
+	public Map<String, Provider<?>> getSubContexts() {
+		return contexts;
 	}
 
 	@Override
-	public void addJAXBContext(String packageName) {
-		jaxbCtxs.add(packageName);	
+	public void addInstructionSet(QName instructionSet) {
+		instructionSets.add(instructionSet);
+	}
+
+	public Set<QName> getInstructionSets() {
+		return instructionSets;
 	}
 
 }

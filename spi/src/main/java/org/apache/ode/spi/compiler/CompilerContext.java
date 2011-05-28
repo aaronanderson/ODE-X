@@ -25,7 +25,7 @@ import org.w3c.dom.Node;
 
 public interface CompilerContext {
 	
-	<C> C getSubContext(Class<C> type);
+	<C> C getSubContext(String id);
     Executable executable();
     Binder<Node> executableBinder();
     void addWarning(String msg, Throwable t);

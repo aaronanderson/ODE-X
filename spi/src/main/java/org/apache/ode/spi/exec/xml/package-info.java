@@ -16,9 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = Platform.EXEC_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Platform.EXEC_NAMESPACE, prefix = "exec") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.spi.exec.xml;
 
-public interface WSDLContext {
-	public static final String ID ="WSDLContext";
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 
-}
+import org.apache.ode.spi.exec.Platform;
+

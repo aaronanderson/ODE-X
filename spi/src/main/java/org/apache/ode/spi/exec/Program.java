@@ -16,9 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.spi.exec;
 
-public interface WSDLContext {
-	public static final String ID ="WSDLContext";
+public interface Program {
 
 }

@@ -16,21 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.wsdl;
+package org.apache.ode.spi.exec;
 
-import java.io.IOException;
+import javax.xml.namespace.QName;
 
-import javax.activation.CommandObject;
-import javax.activation.DataHandler;
+import org.apache.ode.spi.repo.Artifact;
 
-public class WSDLValidation implements CommandObject{
+public interface Platform {
 
-	@Override
-	public void setCommandContext(String arg0, DataHandler arg1)
-			throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-	
+	public static final String EXEC_MIMETYPE = "application/ode-executable";
+	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
 
+	public void registerInstructionSet(QName instructionSet, String jaxbPath);
+
+	public Program install(Artifact executable) throws PlatformException;
+
+	public void uninstall(Program program) throws PlatformException;
 }

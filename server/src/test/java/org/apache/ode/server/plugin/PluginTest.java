@@ -151,7 +151,7 @@ public class PluginTest {
 		Object o = dh.getBean(ci);
 		assertTrue(o instanceof BarPlugin.BarValidation);
 		BarPlugin.BarValidation val = (BarPlugin.BarValidation) o;
-		assertTrue(val.isValid());
+		assertTrue(val.validate(null));
 	}
 
 	@Test

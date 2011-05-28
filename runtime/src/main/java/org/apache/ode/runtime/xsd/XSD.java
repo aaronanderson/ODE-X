@@ -22,13 +22,18 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.XMLSchemaContext;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.Validate;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
+import org.apache.ode.spi.repo.XMLValidate;
+import org.apache.ode.spi.repo.XMLValidate.SchemaSource;
 
 @Singleton
 public class XSD {
@@ -41,26 +46,46 @@ public class XSD {
 	@Inject
 	Compilers compilers;
 	@Inject
+	XMLValidate xmlValidate;
+	@Inject
 	Provider<XMLSchemaContext> schemaProvider;
-	
+
 	@PostConstruct
 	public void init() {
 		System.out.println("Initializing XSD support");
 		repository.registerFileExtension("xsd", XSD_MIMETYPE);
 		repository.registerNamespace(XSD_NAMESPACE, XSD_MIMETYPE);
+		xmlValidate.registerSchemaSource(XSD_MIMETYPE, new SchemaSource() {
+
+			@Override
+			public Source[] getSchemaSource() {
+				try {
+					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/wsdl.xsd")) };
+				} catch (Exception e) {
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+		repository.registerCommandInfo(XSD_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(XSD_MIMETYPE, new XMLDataContentHandler());
-		
+
 		Compiler schemaCompiler = compilers.newInstance();
-		schemaCompiler.addSubContext(schemaProvider);
+		schemaCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
 		XSDCompiler compiler = new XSDCompiler();
 		schemaCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
-		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.LINK, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new
+		// DiscoveryPass());
 		compilers.register(schemaCompiler, XSD_MIMETYPE);
-		
+
 		System.out.println("XSD support Initialized");
 	}
 

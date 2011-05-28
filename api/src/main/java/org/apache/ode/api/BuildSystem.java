@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.repo;
+package org.apache.ode.api;
 
 import java.io.IOException;
 
-import javax.activation.CommandObject;
-import javax.activation.DataHandler;
+import javax.management.MXBean;
 
-public class BPELExecValidation implements CommandObject{
+import org.apache.ode.api.Repository.ArtifactId;
 
-	@Override
-	public void setCommandContext(String arg0, DataHandler arg1)
-			throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-	
+@MXBean
+public interface BuildSystem {
+
+	public static String OBJECTNAME = "org.apache.ode:type=BuildSystem";
+
+	public void build(ArtifactId artifact) throws IOException;
+
+	public void build(byte[] contents) throws IOException;
 
 }

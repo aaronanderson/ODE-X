@@ -16,12 +16,28 @@
 
 	<complexType name="executableType">
 		<sequence>
+			<element name="instructionSet" type="tns:instructionSetType"
+				minOccurs="0" maxOccurs="1" />
 			<element name="installation" type="tns:installationType"
 				minOccurs="1" maxOccurs="1" />
 			<element name="sources" type="tns:sourcesType" minOccurs="1"
 				maxOccurs="1" />
+			<element name="operation" type="tns:operationType" minOccurs="1"
+				maxOccurs="unbounded" />
+			<element name="block" type="tns:blockType" minOccurs="1"
+				maxOccurs="unbounded" />
+			<!-- <choice maxOccurs="unbounded"> <element name="operation" type="tns:operationType" 
+				/> <element name="block" type="tns:blockType" /> </choice> -->
 		</sequence>
+		<attribute name="targetNamespace" type="string" use="optional" />
 		<attribute name="name" type="string" use="optional" />
+	</complexType>
+
+	<complexType name="instructionSetType">
+		<sequence>
+			<element name="instruction-set" type="QName" minOccurs="1"
+				maxOccurs="unbounded" />
+		</sequence>
 	</complexType>
 
 	<complexType name="installDataType" abstract="true" />
@@ -82,22 +98,17 @@
 
 	<complexType name="controlType" abstract="true">
 		<complexContent>
-			<extension base="tns:sourceRef" />
+			<extension base="tns:instructionType" />
 		</complexContent>
 	</complexType>
 
-    
+
 	<complexType name="blockType">
 		<sequence>
-			<choice>
-				<element name="variable" type="tns:variableType" minOccurs="0"
-					maxOccurs="unbounded" />
-				<element name="in" type="tns:inType" minOccurs="0"
-					maxOccurs="unbounded" />
-				<element name="out" type="tns:outType" minOccurs="0"
-					maxOccurs="unbounded" />
-				<!--<element type="tns:instructionType" minOccurs="0" maxOccurs="unbounded" 
-					/> -->
+			<choice maxOccurs="unbounded">
+				<element name="variable" type="tns:variableType" />
+				<element name="in" type="tns:inType" />
+				<element name="out" type="tns:outType" />
 				<any namespace="##other" processContents="strict" minOccurs="0"
 					maxOccurs="unbounded" />
 			</choice>

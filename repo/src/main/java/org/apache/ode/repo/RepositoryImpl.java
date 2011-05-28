@@ -19,10 +19,7 @@
 package org.apache.ode.repo;
 
 import java.awt.datatransfer.DataFlavor;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Observable;
 
 import javax.activation.CommandObject;
 import javax.activation.MimeTypeParseException;
@@ -34,6 +31,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.DataHandler;
@@ -96,6 +94,10 @@ public class RepositoryImpl implements Repository {
 	@Override
 	public <C> C read(QName qname, String contentType, String version, Class<C> javaType) throws RepositoryException {
 		ArtifactImpl artifact = loadArtifact(qname, contentType, version);
+		
+		if (Artifact.class.isAssignableFrom(javaType)) {
+			return (C) artifact;
+		}
 		ArtifactDataSourceImpl ds = dsProvider.get();
 		try {
 			ds.configure(artifact);

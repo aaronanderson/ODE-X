@@ -72,6 +72,10 @@
 					<bindingIncludes>
 						<bindingInclude>executable.xjb</bindingInclude>
 					</bindingIncludes>
+					<extension>true</extension>
+					<args>
+						<arg>-npa</arg>
+					</args>
 				</configuration>
 			</plugin>
 		</plugins>

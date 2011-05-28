@@ -16,9 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = BPELPlugin.BPEL_EXEC_NAMESPACE, xmlns = {
+		@XmlNs(namespaceURI = BPELPlugin.BPEL_INSTRUCTION_SET_NS, prefix = "bpel") })
+package org.apache.ode.bpel.exec.xml;
 
-public interface WSDLContext {
-	public static final String ID ="WSDLContext";
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlSchema;
 
-}
+import org.apache.ode.bpel.plugin.BPELPlugin;
+
+

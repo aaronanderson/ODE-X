@@ -19,5 +19,7 @@
 package org.apache.ode.bpel.compiler;
 
 public interface BPELContext {
+	
+   public static final String ID ="BPELContext";
 
 }

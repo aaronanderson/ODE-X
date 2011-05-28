@@ -19,10 +19,11 @@
 package org.apache.ode.spi.compiler;
 
 import javax.inject.Provider;
+import javax.xml.namespace.QName;
 
 public interface Compiler {
 
 	void addCompilerPass(CompilerPhase phase, CompilerPass compilerPasses);
-	<C> void addSubContext(Provider<C> type);
-	void addJAXBContext(String packageName);
+	<C> void addSubContext(String id, Provider<C> type);
+	void addInstructionSet(QName instructionSet);
 }

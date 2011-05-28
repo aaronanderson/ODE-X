@@ -20,5 +20,7 @@ package org.apache.ode.spi.compiler;
 
 public interface XMLSchemaContext {
 	
+	public static final String ID ="XMLSchemaContext";
+	
 
 }

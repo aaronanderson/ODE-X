@@ -18,42 +18,74 @@
  */
 package org.apache.ode.runtime.build;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Map;
+
 import javax.xml.bind.Binder;
 
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.w3c.dom.Node;
 
-public class CompilerContextImpl implements CompilerContext{
-	
-	@Override
-	public <C> C getSubContext(Class<C> type){
-		return null;
+public class CompilerContextImpl implements CompilerContext {
+
+	private Executable executable;
+	private Binder<Node> binder;
+	private Map<String, Object> subContext;
+	boolean terminated;
+	private StringBuilder messages;
+
+	public CompilerContextImpl(Executable executable, Binder<Node> binder, Map<String, Object> subContext) {
+		this.executable = executable;
+		this.binder = binder;
+		this.subContext = subContext;
+		terminated = false;
+		messages = new StringBuilder();
+
 	}
-	
+
 	@Override
-	public Executable executable(){
-		return null;
+	public <C> C getSubContext(String id) {
+		return (C) subContext.get(id);
 	}
-	
+
 	@Override
-	public Binder<Node> executableBinder(){
-		return null;
+	public Executable executable() {
+		return executable;
 	}
-	
+
 	@Override
-	public void addWarning(String msg, Throwable t){
-		
+	public Binder<Node> executableBinder() {
+		return binder;
 	}
-	
+
 	@Override
-	public void addError(String msg, Throwable t){
-		
+	public void addWarning(String msg, Throwable t) {
+		messages.append("warning: ");
+		messages.append(msg);
+		StringWriter sw = new StringWriter();
+		t.printStackTrace(new PrintWriter(sw));
+		messages.append(sw.toString());
+
 	}
-	
+
 	@Override
-	public void terminate(){
-		
+	public void addError(String msg, Throwable t) {
+		messages.append("error: ");
+		messages.append(msg);
+		StringWriter sw = new StringWriter();
+		t.printStackTrace(new PrintWriter(sw));
+		messages.append(sw.toString());
 	}
-    
+
+	public StringBuilder getMessages() {
+		return messages;
+	}
+
+	@Override
+	public void terminate() {
+		terminated = true;
+	}
+
 }

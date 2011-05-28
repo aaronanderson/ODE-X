@@ -35,7 +35,7 @@ public interface Repository {
 	public byte[] exportArtifact(ArtifactId artifact) throws IOException;
 
 	public void removeArtifact(ArtifactId artifact) throws IOException;
-
+	
 	public String[] listContentTypes();
 
 	public ArtifactId[] listArtifacts(String contentType, int resultLimit);

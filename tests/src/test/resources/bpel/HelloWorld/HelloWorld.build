@@ -12,12 +12,12 @@
 	~ under the License. -->
 <build-plan xmlns="http://ode.apache.org/build-plan"  xmlns:wsdl="http://ode/bpel/unit-test.wsdl" xmlns:bpel="http://ode/bpel/unit-test" targetNamespace="http://ode/bpel/unit-test">
   <target>
-  <artifact version="1.0" qname="bpel:HelloWorld" contentType=""/>
+  <artifact version="1.0" qname="bpel:HelloWorld" contentType="application/ode-executable"/>
   <main>
   <artifact version="1.0" qname="bpel:HelloWorld" contentType="application/bpel-exec"/>
   </main>
   <includes>
-  <artifact version="1.0" qname="wsdl" contentType="application/wsdl"/>
+  <artifact version="1.0" qname="wsdl:HelloService" contentType="application/wsdl"/>
   </includes>
   </target>
 </build-plan>

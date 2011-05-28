@@ -62,12 +62,8 @@ public class BuildSystem {
 						String tns = reader.getAttributeValue(null, "targetNamespace");
 						String name = reader.getAttributeValue(null, "name");
 						reader.close();
-						if (tns != null) {
-							if (name != null) {
-								defaultName = new QName(tns, name);
-							} else {
-								defaultName = QName.valueOf("{" + tns + "}");	
-							}
+						if (tns != null && name != null) {
+							defaultName = new QName(tns, name);
 						}
 						return defaultName;
 					} catch (Exception e) {

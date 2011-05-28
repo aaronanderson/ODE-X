@@ -30,7 +30,7 @@
 			<element name="main" type="tns:mainType" minOccurs="1"
 				maxOccurs="1" />
 			<element name="includes" type="tns:includesType" minOccurs="0"
-				maxOccurs="unbounded" />
+				maxOccurs="1" />
 		</sequence>
 	</complexType>
 
@@ -50,7 +50,7 @@
 
 	<complexType name="includesType">
 		<sequence>
-			<element name="artifact" type="tns:sourceType" minOccurs="0"
+			<element name="artifact" type="tns:sourceType" minOccurs="1"
 				maxOccurs="unbounded" />
 		</sequence>
 	</complexType>

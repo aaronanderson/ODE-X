@@ -22,6 +22,8 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
@@ -29,6 +31,9 @@ import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.WSDLContext;
 import org.apache.ode.spi.compiler.XMLSchemaContext;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.Validate;
+import org.apache.ode.spi.repo.XMLValidate;
+import org.apache.ode.spi.repo.XMLValidate.SchemaSource;
 
 @Singleton
 public class WSDL {
@@ -39,7 +44,7 @@ public class WSDL {
 	@Inject
 	Repository repository;
 	@Inject 
-	Provider<WSDLValidation> validateProvider;
+	XMLValidate xmlValidate;
 	@Inject
 	Compilers compilers;
 	@Inject
@@ -53,12 +58,24 @@ public class WSDL {
 		System.out.println("Initializing WSDL support");
 		repository.registerFileExtension("wsdl", WSDL_MIMETYPE);
 		repository.registerNamespace(WSDL_NAMESPACE, WSDL_MIMETYPE);
-		repository.registerCommandInfo(WSDL_MIMETYPE, "validate", true, validateProvider);
+		xmlValidate.registerSchemaSource(WSDL_MIMETYPE, new SchemaSource() {
+			
+			@Override
+			public Source[] getSchemaSource() {
+				try {
+					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/wsdl.xsd"))};
+				} catch (Exception e) {
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+		repository.registerCommandInfo(WSDL_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(WSDL_MIMETYPE, new WSDLDataContentHandler());
 		
 		Compiler wsdlCompiler = compilers.newInstance();
-		wsdlCompiler.addSubContext(schemaProvider);
-		wsdlCompiler.addSubContext(wsdlProvider);
+		wsdlCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
+		wsdlCompiler.addSubContext(WSDLContext.ID,wsdlProvider);
 		WSDLCompiler compiler = new WSDLCompiler();
 		wsdlCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
 		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());

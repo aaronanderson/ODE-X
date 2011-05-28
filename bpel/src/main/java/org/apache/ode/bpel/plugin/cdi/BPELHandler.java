@@ -35,7 +35,6 @@ import javax.inject.Singleton;
 import org.apache.ode.bpel.compiler.BPELContext;
 import org.apache.ode.bpel.compiler.BPELContextImpl;
 import org.apache.ode.bpel.plugin.BPELPlugin;
-import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.cdi.Handler;
 
 public class BPELHandler extends Handler {
@@ -59,7 +58,6 @@ public class BPELHandler extends Handler {
 	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(BPELExecValidation.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELContextImpl.class));
 	}
 

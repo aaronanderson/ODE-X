@@ -20,6 +20,7 @@ package org.apache.ode.runtime.jmx;
 
 import java.io.IOException;
 
+import javax.activation.CommandInfo;
 import javax.activation.MimeTypeParseException;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -29,6 +30,7 @@ import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.DataHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
+import org.apache.ode.spi.repo.Validate;
 
 public class RepositoryImpl implements org.apache.ode.api.Repository {
 
@@ -57,7 +59,7 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 		if (artifactId.getName() == null) {
 			DataHandler dh = repo.getDataHandler(ds);
 			qname = dh.getDefaultQName();
-			if (qname == null){
+			if (qname == null) {
 				throw new IOException("Unable to establish default QName");
 			}
 		} else {
@@ -65,10 +67,19 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 		}
 		String mtype = artifactId.getType() != null ? artifactId.getType() : ds.getContentType();
 		String version = artifactId.getVersion() != null ? artifactId.getVersion() : "1.0";
-		if (!noValidate){
-			repo.getDataHandler(ds);
+		noValidate= true; //TODO validation is slow (30 sec), check to see why (background dl?)
+		if (!noValidate) {
+			DataHandler dh = repo.getDataHandler(ds);
+			CommandInfo info = dh.getCommand(Validate.VALIDATE_CMD);
+			if (info != null) {
+				Validate cmd = (Validate) dh.getBean(info);
+				StringBuilder sb = new StringBuilder();
+				if (!cmd.validate(sb)) {
+					throw new IOException(sb.toString());
+				}
+			}
 		}
-		
+
 		try {
 			if (overwrite && repo.exists(qname, mtype, version)) {
 				repo.update(qname, mtype, version, ds);

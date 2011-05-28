@@ -29,18 +29,23 @@ import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.bpel.compiler.BPELContext;
 import org.apache.ode.bpel.compiler.DiscoveryPass;
-import org.apache.ode.bpel.repo.BPELExecValidation;
 import org.apache.ode.spi.Plugin;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.WSDLContext;
 import org.apache.ode.spi.compiler.XMLSchemaContext;
+import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.repo.Validate;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
+import org.apache.ode.spi.repo.XMLValidate;
+import org.apache.ode.spi.repo.XMLValidate.SchemaSource;
 
 @Singleton
 @Named("BPELPlugin")
@@ -48,26 +53,57 @@ public class BPELPlugin implements Plugin {
 
 	public static final String BPEL_EXEC_MIMETYPE = "application/bpel-exec";
 	public static final String BPEL_EXEC_NAMESPACE = "http://docs.oasis-open.org/wsbpel/2.0/process/executable";
+	public static final String WSDL_MIMETYPE = "application/wsdl";
+	public static final String BPEL_INSTRUCTION_SET_NS = "http://ode.apache.org/bpel";
+	public static final QName BPEL_INSTRUCTION_SET = new QName(BPEL_INSTRUCTION_SET_NS, "BPEL");
+
 	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
 	@Inject
 	Compilers compilers;
 	@Inject
-	Provider<BPELExecValidation> validateProvider;
+	Platform platform;
+	@Inject
+	XMLValidate xmlValidate;
 	@Inject
 	Provider<BPELContext> ctxProvider;
 	@Inject
 	Provider<XMLSchemaContext> schemaProvider;
 	@Inject
 	Provider<WSDLContext> wsdlProvider;
-	
+
 	@PostConstruct
 	public void init() {
 		System.out.println("Initializing BPELPlugin");
 		repository.registerFileExtension("bpel", BPEL_EXEC_MIMETYPE);
 		repository.registerNamespace(BPEL_EXEC_NAMESPACE, BPEL_EXEC_MIMETYPE);
-		repository.registerCommandInfo(BPEL_EXEC_MIMETYPE, "validate", true, validateProvider);
+		xmlValidate.registerSchemaSource(BPEL_EXEC_MIMETYPE, new SchemaSource() {
+
+			@Override
+			public Source[] getSchemaSource() {
+				try {
+					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/ws-bpel_executable.xsd")) };
+				} catch (Exception e) {
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+
+		xmlValidate.registerSchemaSource(WSDL_MIMETYPE, new SchemaSource() {
+
+			@Override
+			public Source[] getSchemaSource() {
+				try {
+					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/ws-bpel_plnktype.xsd")) };
+				} catch (Exception e) {
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+		repository.registerCommandInfo(BPEL_EXEC_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(BPEL_EXEC_MIMETYPE, new XMLDataContentHandler() {
 
 			@Override
@@ -89,18 +125,26 @@ public class BPELPlugin implements Plugin {
 				}
 			}
 		});
+		platform.registerInstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml");
 		Compiler bpelCompiler = compilers.newInstance();
-		bpelCompiler.addSubContext(schemaProvider);
-		bpelCompiler.addSubContext(wsdlProvider);
-		bpelCompiler.addSubContext(ctxProvider);
+		bpelCompiler.addInstructionSet(BPEL_INSTRUCTION_SET);
+		bpelCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
+		bpelCompiler.addSubContext(WSDLContext.ID, wsdlProvider);
+		bpelCompiler.addSubContext(BPELContext.ID, ctxProvider);
 		bpelCompiler.addCompilerPass(CompilerPhase.DISCOVERY, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+		bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.LINK, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new
+		// DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new
+		// DiscoveryPass());
 		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
-		
+
 		System.out.println("BPELPlugin Initialized");
 
 	}

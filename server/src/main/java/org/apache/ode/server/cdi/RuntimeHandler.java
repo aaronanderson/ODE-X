@@ -20,153 +20,95 @@ package org.apache.ode.server.cdi;
 
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Singleton;
+import javax.management.ObjectName;
 
+import org.apache.ode.runtime.build.BuildExecutor;
 import org.apache.ode.runtime.build.BuildSystem;
 import org.apache.ode.runtime.build.CompilersImpl;
 import org.apache.ode.runtime.build.WSDLContextImpl;
 import org.apache.ode.runtime.build.XMLSchemaContextImpl;
+import org.apache.ode.runtime.exec.Exec;
+import org.apache.ode.runtime.exec.PlatformImpl;
+import org.apache.ode.runtime.jmx.BuildSystemImpl;
 import org.apache.ode.runtime.wsdl.WSDL;
 import org.apache.ode.runtime.xml.XML;
 import org.apache.ode.runtime.xsd.XSD;
 import org.apache.ode.runtime.xsl.XSL;
+import org.apache.ode.server.JMXServer;
 import org.apache.ode.spi.cdi.Handler;
-import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XMLSchemaContext;
+import org.apache.ode.spi.repo.XMLValidate;
 
 public class RuntimeHandler extends Handler {
 
-	Bean<XSD> xsdBean;
-	CreationalContext<XSD> xsdCtx;
-	XSD xsd;
-
-	Bean<XML> xmlBean;
-	CreationalContext<XML> xmlCtx;
-	XML xml;
-
-	Bean<WSDL> wsdlBean;
-	CreationalContext<WSDL> wsdlCtx;
-	WSDL wsdl;
-
-	Bean<XSL> xslBean;
-	CreationalContext<XSL> xslCtx;
-	XSL xsl;
-
-	Bean<BuildSystem> buildSysBean;
-	CreationalContext<BuildSystem> buildSysCtx;
-	BuildSystem buildSys;
-	
-	@Singleton
-	public static class CompilerProducer {
-
-		@Produces
-		@Dependent
-		public XMLSchemaContext createXMLSchemaCtx() {
-			return new XMLSchemaContextImpl();
-		}
-		
-		@Produces
-		@Dependent
-		public WSDLContext createWSDLCtx() {
-			return new WSDLContextImpl();
-		}
-		
-	}
-
+	/*
+	 * @Singleton public static class CompilerProducer {
+	 * 
+	 * @Produces
+	 * 
+	 * @Dependent public XMLSchemaContext createXMLSchemaCtx() { return new
+	 * XMLSchemaContextImpl(); }
+	 * 
+	 * @Produces
+	 * 
+	 * @Dependent public WSDLContext createWSDLCtx() { return new
+	 * WSDLContextImpl(); }
+	 * 
+	 * }
+	 */
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(XSD.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(XML.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDL.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(XSL.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(XMLValidate.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BuildSystem.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BuildSystemImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BuildExecutor.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(CompilersImpl.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(CompilerProducer.class));
+		// bbd.addAnnotatedType(bm.createAnnotatedType(CompilerProducer.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(XMLSchemaContextImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLContextImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(Exec.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(PlatformImpl.class));
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
-		Set<Bean<?>> beans = bm.getBeans(XSD.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			xsdBean = (Bean<XSD>) beans.iterator().next();
-			xsdCtx = bm.createCreationalContext(xsdBean);
-			xsd = (XSD) bm.getReference(xsdBean, XSD.class, xsdCtx);
-		} else {
-			System.out.println("Can't find class " + XSD.class);
-		}
+		manage(BuildSystemImpl.class);
+		manage(XSD.class);
+		manage(XSD.class);
+		manage(XML.class);
+		manage(WSDL.class);
+		manage(XSL.class);
+		manage(BuildSystem.class);
+		manage(Exec.class);
+		start(bm);
 
-		beans = bm.getBeans(XML.class, new AnnotationLiteral<Any>() {
+		Set<Bean<?>> beans = bm.getBeans(JMXServer.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
-			xmlBean = (Bean<XML>) beans.iterator().next();
-			xmlCtx = bm.createCreationalContext(xmlBean);
-			xml = (XML) bm.getReference(xmlBean, XML.class, xmlCtx);
-		} else {
-			System.out.println("Can't find class " + XML.class);
-		}
-
-		beans = bm.getBeans(WSDL.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			wsdlBean = (Bean<WSDL>) beans.iterator().next();
-			wsdlCtx = bm.createCreationalContext(wsdlBean);
-			wsdl = (WSDL) bm.getReference(wsdlBean, WSDL.class, wsdlCtx);
-		} else {
-			System.out.println("Can't find class " + WSDL.class);
-		}
-
-		beans = bm.getBeans(XSL.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			xslBean = (Bean<XSL>) beans.iterator().next();
-			xslCtx = bm.createCreationalContext(xslBean);
-			xsl = (XSL) bm.getReference(xslBean, XSL.class, xslCtx);
-		} else {
-			System.out.println("Can't find class " + XSL.class);
-		}
-
-		beans = bm.getBeans(BuildSystem.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			buildSysBean = (Bean<BuildSystem>) beans.iterator().next();
-			buildSysCtx = bm.createCreationalContext(buildSysBean);
-			buildSys = (BuildSystem) bm.getReference(buildSysBean, BuildSystem.class, buildSysCtx);
-		} else {
-			System.out.println("Can't find class " + BuildSystem.class);
+			Bean<?> bean = beans.iterator().next();
+			JMXServer server = (JMXServer) bm.getReference(bean, JMXServer.class, bm.createCreationalContext(bean));
+			try {
+				server.getMBeanServer().registerMBean(getInstance(BuildSystemImpl.class), ObjectName.getInstance(BuildSystemImpl.OBJECTNAME));
+			} catch (Exception e) {
+				e.printStackTrace();
+				adv.addDeploymentProblem(e);
+			}
 		}
 
 	}
 
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-		if (xsd != null) {
-			xsdBean.destroy(xsd, xsdCtx);
-		}
-
-		if (xml != null) {
-			xmlBean.destroy(xml, xmlCtx);
-		}
-
-		if (wsdl != null) {
-			wsdlBean.destroy(wsdl, wsdlCtx);
-		}
-
-		if (xsl != null) {
-			xslBean.destroy(xsl, xslCtx);
-		}
-
-		if (buildSys != null) {
-			buildSysBean.destroy(buildSys, buildSysCtx);
-		}
+		stop();
 	}
 
 }

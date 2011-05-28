@@ -16,9 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.runtime.build;
 
-public interface WSDLContext {
-	public static final String ID ="WSDLContext";
+public class BuildException extends Exception {
+
+	public BuildException(String msg) {
+		super(msg);
+	}
+
+	public BuildException(Throwable t) {
+		super(t);
+	}
 
 }

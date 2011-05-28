@@ -19,5 +19,23 @@
 		<jxb:bindings node="//xs:complexType[@name='buildPlanType']">
 			<jxb:class name="BuildPlan" />
 		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='targetType']">
+			<jxb:class name="Target" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='artifactType']">
+			<jxb:class name="Artifact" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='mainType']">
+			<jxb:class name="Main" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='includesType']">
+			<jxb:class name="Includes" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='sourceType']">
+			<jxb:class name="BuildSource" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='preprocessorType']">
+			<jxb:class name="PreProcessor" />
+		</jxb:bindings>
 	</jxb:bindings>
 </jxb:bindings>

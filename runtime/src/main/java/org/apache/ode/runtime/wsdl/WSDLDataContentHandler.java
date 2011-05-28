@@ -23,6 +23,7 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataSource;
@@ -31,13 +32,20 @@ import javax.wsdl.WSDLException;
 import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLReader;
 import javax.wsdl.xml.WSDLWriter;
-import javax.xml.bind.JAXBException;
+import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 
 import org.apache.ode.spi.repo.DependentArtifactDataSource;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
 
 public class WSDLDataContentHandler extends XMLDataContentHandler {
 
@@ -102,13 +110,37 @@ public class WSDLDataContentHandler extends XMLDataContentHandler {
 	public QName getDefaultQName(DataSource dataSource) {
 		QName defaultName = null;
 		try {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setNamespaceAware(true);
+			DocumentBuilder db = factory.newDocumentBuilder();
 			InputStream is = dataSource.getInputStream();
-			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
-			reader.nextTag();
-			String tns = reader.getAttributeValue(null, "targetNamespace");
-			reader.close();
-			if (tns != null) {
-				defaultName = QName.valueOf("{" + tns + "}");
+			Document doc = db.parse(is);
+			XPathFactory xfactory = XPathFactory.newInstance();
+			XPath xpath = xfactory.newXPath();
+			xpath.setNamespaceContext(new NamespaceContext() {
+				
+				@Override
+				public Iterator getPrefixes(String namespaceURI) {
+					return null;
+				}
+				
+				@Override
+				public String getPrefix(String namespaceURI) {
+					return null;
+				}
+				
+				@Override
+				public String getNamespaceURI(String prefix) {
+					if ("wsdl".equals(prefix)){
+						return "http://schemas.xmlsoap.org/wsdl/";
+					}
+					return null;
+				}
+			});
+			Attr nsAttr = (Attr) xpath.evaluate("/wsdl:definitions/@targetNamespace", doc, XPathConstants.NODE);
+			Attr nameAttr = (Attr) xpath.evaluate("//wsdl:service[1]/@name", doc, XPathConstants.NODE);
+			if (nsAttr != null && nameAttr != null) {
+				defaultName = new QName(nsAttr.getNodeValue(), nameAttr.getNodeValue());
 			}
 			return defaultName;
 		} catch (Exception e) {

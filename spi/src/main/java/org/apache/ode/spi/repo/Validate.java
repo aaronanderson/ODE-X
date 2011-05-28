@@ -16,20 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.api;
+package org.apache.ode.spi.repo;
 
-import javax.management.MXBean;
+import javax.activation.CommandObject;
 
-import org.apache.ode.api.Repository.ArtifactId;
+public interface Validate extends CommandObject {
 
+	public static final String VALIDATE_CMD = "validate";
 
-@MXBean
-public interface Compiler {
-	
-	public static String OBJECTNAME = "org.apache.ode:type=Compiler";
-	
-	byte [] compile (ArtifactId source, ArtifactId ... includes);
-	
-	ArtifactId compileToRepository (ArtifactId source, ArtifactId ... includes);
-
+	public boolean validate(StringBuilder messages);
 }
