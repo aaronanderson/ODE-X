@@ -16,13 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.repo;
+package org.apache.ode.runtime.wsdl;
 
-import javax.activation.CommandObject;
-import javax.xml.namespace.QName;
+import java.util.List;
 
-public interface Import extends CommandObject {
+import org.apache.ode.spi.exec.Action;
+import org.apache.ode.spi.exec.ActionContext;
+import org.apache.ode.spi.exec.PlatformException;
 
-	public void importContent(QName qname, String version, String type);
-	
+public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponent {
+
+	@Override
+	public String jaxbContextPath() {
+		return "org.apache.ode.runtime.exec.wsdl.xml";
+	}
+
+	@Override
+	public List<Action> supportedActions(){
+		return null;
+	}
+
+	@Override
+	public void execute(Action action, ActionContext context) throws PlatformException{
+		
+	}
+
 }

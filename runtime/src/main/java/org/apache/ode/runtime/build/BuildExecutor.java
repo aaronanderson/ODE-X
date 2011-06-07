@@ -18,6 +18,7 @@
  */
 package org.apache.ode.runtime.build;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import javax.inject.Provider;
 import javax.xml.bind.Binder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -42,11 +44,12 @@ import org.apache.ode.runtime.build.xml.BuildPlan;
 import org.apache.ode.runtime.build.xml.BuildSource;
 import org.apache.ode.runtime.build.xml.PreProcessor;
 import org.apache.ode.runtime.build.xml.Target;
-import org.apache.ode.runtime.exec.PlatformImpl;
+import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
+import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
@@ -110,15 +113,15 @@ public class BuildExecutor implements CommandObject {
 			}
 			Executable exec = new Executable();
 			org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
-			JAXBElement<Executable> execBase =of.createExecutable(exec);
+			JAXBElement<Executable> execBase = of.createExecutable(exec);
 			JAXBContext jc;
-			
+
 			Binder<Node> binder;
 			Document execDoc;
 			try {
 				jc = JAXBContext.newInstance(contextPath.toString());
 				binder = jc.createBinder();
-				 execDoc = db.newDocument();
+				execDoc = db.newDocument();
 				binder.marshal(execBase, execDoc);
 			} catch (Exception jbe) {
 				throw new BuildException(jbe);
@@ -134,14 +137,21 @@ public class BuildExecutor implements CommandObject {
 				}
 			}
 			/*
+			 * try { binder.marshal(execBase, execDoc); } catch (Exception jbe)
+			 * { throw new BuildException(jbe); }
+			 */
+			byte[] contents = null;
 			try {
-				binder.marshal(execBase, execDoc);
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				Marshaller u = jc.createMarshaller();
+				u.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+				u.marshal(execBase, bos);
+				contents = bos.toByteArray();
 			} catch (Exception jbe) {
 				throw new BuildException(jbe);
-			}*/
-			org.apache.ode.spi.repo.DataHandler tdh = repo.getDataHandler(execBase, target.getArtifact().getContentType());
+			}
 			try {
-				repo.create(target.getArtifact().getQname(), target.getArtifact().getVersion(), target.getArtifact().getContentType(), tdh.toContent());
+				repo.create(target.getArtifact().getQname(), target.getArtifact().getContentType(), target.getArtifact().getVersion(), contents);
 			} catch (Exception re) {
 				throw new BuildException(re);
 			}
@@ -156,11 +166,11 @@ public class BuildExecutor implements CommandObject {
 			}
 			compilerCache.put(src.getContentType(), impl);
 			for (QName iset : impl.getInstructionSets()) {
-				String jaxbPath = platform.getJAXBPath(iset);
-				if (jaxbPath == null) {
+				Component c = platform.getComponent(iset);
+				if (c == null) {
 					throw new BuildException(String.format("Unsupported instructionset %s", iset));
 				}
-				jaxbContexts.add(jaxbPath);
+				jaxbContexts.add(c.jaxbContextPath());
 			}
 
 			for (Map.Entry<String, Provider<?>> p : impl.getSubContexts().entrySet()) {

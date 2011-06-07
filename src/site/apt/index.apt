@@ -1,0 +1,79 @@
+Overview
+
+  The ODE-X project is an experiment in applying modern Java standards to concepts forged in the ODE project with the goal of providing a foundation for the next generation version of ODE. 
+
+Objectives
+
+  Objectives of the ODE-X Prototype:
+
+  [[1]] Dependency Injection
+    
+	[[a]] Platform agnostic DI using JSR 331 CDI 
+    
+	[[a]] JPA injection	
+	
+  [[1]] Repository
+  
+    [[a]] Import/Export of all referenced artifact into the repository
+	
+    [[a]] Use of activation to simplify file operations
+	
+  [[1]] Build System
+    
+	[[a]] Define executable format 
+    
+	[[a]] Create a build plan that can be used to generate executables 
+	
+	[[a]] Create phased compiler that can be extended to build executable
+	
+	[[a]] Support extensions via annotations in the source code or compiler plugins that add new instruction sets
+	
+	[[a]] Support the concept of a pre-processor that can mark up a source artifact before compilation
+  
+  [[1]] Platform
+    
+	[[a]] Provide an API for installing, starting, stopping, monitoring, managing, and uninstall executables 
+    
+	[[a]] Support the notion of clustering and targeting the processing of executable on selected instances
+	
+	[[a]] Support interprocess communication
+	
+  [[1]] Eventing
+  
+    [[a]] Use of events to avoid thread management
+  
+    [[a]] External event integration
+
+    [[a]] Event scheduling
+
+  [[1]] Interpreter
+    
+	[[a]] Process an executable based in incoming/outgoing events and web service calls
+    
+	[[a]] Execute both platform and extended instructions
+    
+	[[a]] Provide source code location and standard platform concepts such as variables and frames
+
+  [[1]] Continuations
+  
+    [[a]] Prove the continuation concept is a viable and simplictic means of persisting execution state.
+
+  [[1]] Eclipse Integration
+    
+	[[a]] Round trip development from eclipse - source upload, diff, versioning, install, uninstall, start/stop
+	
+    [[a]] debugging support - attach, break points, call stack popping, variables
+	
+  [[1]] Server
+    
+	[[a]] Develop a standalone server with a minimal footprint that can boot up the ODE-X runtime and execute processes
+     
+  [[1]] Languages/Execution Models
+    
+	[[a]] WS-BPEL 2.0
+	
+	[[a]] WS-HumanTask 1.1
+	
+	[[a]] BPEL4People
+	
+	[[a]] Executable BPMN 2.0

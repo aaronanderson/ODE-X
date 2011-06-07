@@ -18,15 +18,15 @@
  */
 package org.apache.ode.bpel.compiler;
 
+import org.apache.ode.bpel.exec.BPELComponent;
 import org.apache.ode.bpel.exec.xml.ObjectFactory;
 import org.apache.ode.bpel.exec.xml.Process;
-import org.apache.ode.bpel.plugin.BPELPlugin;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.exec.xml.Block;
-import org.apache.ode.spi.exec.xml.InstructionSet;
+import org.apache.ode.spi.exec.xml.InstructionSets;
 
 
 
@@ -39,12 +39,12 @@ public class DiscoveryPass implements CompilerPass{
 		ObjectFactory bpelFactory = new ObjectFactory();
 		switch (phase){
 		case EMIT:
-			InstructionSet set = ctx.executable().getInstructionSet();
+			InstructionSets set = ctx.executable().getInstructionSets();
 			if (set == null){
-				set = new InstructionSet();
-				ctx.executable().setInstructionSet(set);
+				set = new InstructionSets();
+				ctx.executable().setInstructionSets(set);
 			}
-			set.getInstructionSet().add(BPELPlugin.BPEL_INSTRUCTION_SET);
+			set.getInstructionSet().add(BPELComponent.BPEL_INSTRUCTION_SET);
 			Block b = new Block();
 			ctx.executable().getBlock().add(b );
 			b.getBody().add(bpelFactory.createProcess(new Process()));

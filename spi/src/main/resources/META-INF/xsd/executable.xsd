@@ -16,7 +16,7 @@
 
 	<complexType name="executableType">
 		<sequence>
-			<element name="instructionSet" type="tns:instructionSetType"
+			<element name="instruction-sets" type="tns:instructionSetsType"
 				minOccurs="0" maxOccurs="1" />
 			<element name="installation" type="tns:installationType"
 				minOccurs="1" maxOccurs="1" />
@@ -33,7 +33,7 @@
 		<attribute name="name" type="string" use="optional" />
 	</complexType>
 
-	<complexType name="instructionSetType">
+	<complexType name="instructionSetsType">
 		<sequence>
 			<element name="instruction-set" type="QName" minOccurs="1"
 				maxOccurs="unbounded" />
@@ -218,5 +218,7 @@
 	</complexType>
 
 	<element name="executable" type="tns:executableType" />
+	
+	<element name="installation" type="tns:installationType" />
 
 </schema>

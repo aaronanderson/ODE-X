@@ -43,6 +43,8 @@ public class CLI {
 		jc.addCommand("listTypes", listTypesCmd);
 		ListArtifactsCommand listArtifactsCmd = new ListArtifactsCommand(con,out);
 		jc.addCommand("list", listArtifactsCmd);
+		SetupCommand setupCmd = new SetupCommand(con,out);
+		jc.addCommand("setup", setupCmd);
 		InstallCommand installCmd = new InstallCommand(con,out);
 		jc.addCommand("install", installCmd);
 		UninstallCommand uninstallCmd = new UninstallCommand(con,out);

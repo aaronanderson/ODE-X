@@ -16,41 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.api;
+package org.apache.ode.spi.exec;
 
-import java.beans.ConstructorProperties;
+public class Target {
+	private String name;
+	private TargetType type = TargetType.ALL;
 
-import javax.management.MXBean;
+	public void setTargetType(TargetType type) {
+		this.type = type;
+	}
 
-@MXBean
-public interface Machine {
-	
-	public static String OBJECTNAME = "org.apache.ode:type=Machine";
-	
-	public void install();
-	public void uninstall();
-	public InstanceID start();
-	public void stop(InstanceID instance);
-	
-	
-	public static class InstanceID{
-		
-		@ConstructorProperties({"name"})
-		public InstanceID(String name){
-			this.name=name;
-		}
-		
-		private String name;
+	public TargetType getTargetType() {
+		return type;
+	}
 
-		public String getName() {
-			return name;
-		}
+	public void setName(String name) {
+		this.name = name;
+	}
 
-		public void setName(String name) {
-			this.name = name;
-		}
-		
-		
+	public String getName() {
+		return name;
+	}
+
+	public static enum TargetType {
+		ALL, CLUSTER, NODE;
 	}
 
 }

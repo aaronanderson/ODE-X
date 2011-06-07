@@ -31,8 +31,6 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import org.apache.ode.spi.exec.xml.Executable;
-
 public class JAXBDataContentHandler extends XMLDataContentHandler {
 
 	public static final ActivationDataFlavor JAXB_FLAVOR = new ActivationDataFlavor(JAXBElement.class, "application/xml; x-java-class=JAXB", "JAXB");
@@ -43,25 +41,11 @@ public class JAXBDataContentHandler extends XMLDataContentHandler {
 		this.jc = jc;
 	}
 
-	protected JAXBDataContentHandler() {
-
-	}
-
-	protected JAXBContext getJAXBContext(DataSource dataSource) throws JAXBException {
-		return this.jc;
-	}
-
-	protected JAXBContext getJAXBContext(JAXBElement<Executable> exec) throws JAXBException {
-		return this.jc;
-	}
-
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
 		try {
-			JAXBContext ctx = getJAXBContext(dataSource);
-			if (ctx != null) {
-
-				Unmarshaller u = ctx.createUnmarshaller();
+			if (jc != null) {
+				Unmarshaller u = jc.createUnmarshaller();
 				return (JAXBElement) u.unmarshal(dataSource.getInputStream());
 			} else {
 				throw new IOException("JAXBContext is null");
@@ -73,11 +57,10 @@ public class JAXBDataContentHandler extends XMLDataContentHandler {
 
 	@Override
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
-		if (JAXBElement.class.equals(flavor.getDefaultRepresentationClass())) {
+		if (JAXBElement.class.equals(flavor.getRepresentationClass())) {
 			try {
-				JAXBContext ctx = getJAXBContext(dataSource);
-				if (ctx != null) {
-					Unmarshaller u = ctx.createUnmarshaller();
+				if (jc != null) {
+					Unmarshaller u = jc.createUnmarshaller();
 					return (JAXBElement) u.unmarshal(dataSource.getInputStream());
 				} else {
 					throw new IOException("JAXBContext is null");
@@ -99,14 +82,11 @@ public class JAXBDataContentHandler extends XMLDataContentHandler {
 	public byte[] toContent(Object content, String contentType) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		if (content instanceof JAXBElement) {
-			JAXBElement<Executable> exec = (JAXBElement<Executable>) content;
 			try {
-				JAXBContext ctx = getJAXBContext(exec);
-				if (ctx != null) {
-
-					Marshaller u = ctx.createMarshaller();
+				if (jc != null) {
+					Marshaller u = jc.createMarshaller();
 					u.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-					u.marshal(exec, bos);
+					u.marshal((JAXBElement) content, bos);
 					return bos.toByteArray();
 				} else {
 					throw new IOException("JAXBContext is null");

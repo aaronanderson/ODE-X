@@ -17,15 +17,16 @@
  * under the License.
  */
 /*
- * Added to specify namespace prefix during unmarshall
+ * Added to specify namespace prefix during marshall
  */
-@XmlSchema(namespace = BPELPlugin.BPEL_EXEC_NAMESPACE, xmlns = {
-		@XmlNs(namespaceURI = BPELPlugin.BPEL_INSTRUCTION_SET_NS, prefix = "bpel") })
+@XmlSchema(namespace = BPELComponent.BPEL_INSTRUCTION_SET_NS, xmlns = {
+		@XmlNs(namespaceURI = BPELComponent.BPEL_INSTRUCTION_SET_NS, prefix = "bpel") })
 package org.apache.ode.bpel.exec.xml;
 
 import javax.xml.bind.annotation.XmlNs;
 import javax.xml.bind.annotation.XmlSchema;
 
-import org.apache.ode.bpel.plugin.BPELPlugin;
+import org.apache.ode.bpel.BPEL;
+import org.apache.ode.bpel.exec.BPELComponent;
 
 

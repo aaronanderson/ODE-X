@@ -67,6 +67,8 @@ public class BuildCommand extends AbstractCommand {
 			bsys.build(contents);
 			out.format("Sucessfully built plan %s\n", file.getAbsolutePath());
 		} else {
+			type = type != null ? type : BuildSystem.BUILDPLAN_MIMETYPE;
+			version = version != null ? version : "1.0";
 			ArtifactId id = new ArtifactId(name, type, version);
 			bsys.build(id);
 			out.format("Sucessfully built artifact %s\n", id);

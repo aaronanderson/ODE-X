@@ -15,11 +15,40 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */s
-package org.apache.ode.runtime.exec;
+ */
+package org.apache.ode.spi.exec;
 
-import org.apache.ode.spi.exec.Program;
+import java.util.List;
 
-public class ProgramImpl implements Program {
+import javax.xml.namespace.QName;
+
+import org.apache.ode.spi.exec.Action.ActionId;
+import org.w3c.dom.Document;
+
+public interface ActionStatus {
+
+	public ActionId getActionId();
+
+	public QName action();
+	
+	public Document input();
+
+	public Document result();
+	
+	public Status status();
+
+	public List<NodeStatus> nodeStatus();
+
+	public static interface NodeStatus {
+		public String nodeId();
+		
+		public String state();
+
+		public List<ActionMessage> messages();
+	}
+
+	public static enum Status {
+		EXECUTING, COMPLETED, CANCELED
+	}
 
 }

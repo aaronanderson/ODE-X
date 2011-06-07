@@ -18,6 +18,31 @@
  */
 package org.apache.ode.spi.exec;
 
+import java.util.Calendar;
+import java.util.List;
+
+import javax.xml.namespace.QName;
+
 public interface Program {
+
+	QName id();
+
+	Status status();
+
+	Calendar installDate();
+
+	QName executableQName();
+
+	String executableVersion();
+
+	String executableCheckSum();
+	
+	byte[] installData();
+	
+	List<String> nodes();
+
+	public static enum Status {
+		STARTED, STOPPED;
+	}
 
 }

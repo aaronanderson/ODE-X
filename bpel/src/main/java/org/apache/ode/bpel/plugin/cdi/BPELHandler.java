@@ -32,17 +32,14 @@ import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Singleton;
 
+import org.apache.ode.bpel.BPEL;
 import org.apache.ode.bpel.compiler.BPELContext;
 import org.apache.ode.bpel.compiler.BPELContextImpl;
-import org.apache.ode.bpel.plugin.BPELPlugin;
+import org.apache.ode.bpel.exec.BPELComponent;
 import org.apache.ode.spi.cdi.Handler;
 
 public class BPELHandler extends Handler {
 
-	Bean<BPELPlugin> pluginBean;
-	CreationalContext<BPELPlugin> pluginCtx;
-	BPELPlugin pluginSys;
-	
 	@Singleton
 	public static class BPELCompilerProducer {
 
@@ -51,34 +48,25 @@ public class BPELHandler extends Handler {
 		public BPELContext createBPELCtx() {
 			return new BPELContextImpl();
 		}
-			
-	}
 
+	}
 
 	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
-		bbd.addAnnotatedType(bm.createAnnotatedType(BPELPlugin.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BPEL.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(BPELComponent.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(BPELContextImpl.class));
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
-		Set<Bean<?>> beans = bm.getBeans(BPELPlugin.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			pluginBean = (Bean<BPELPlugin>) beans.iterator().next();
-			pluginCtx = bm.createCreationalContext(pluginBean);
-			bm.getReference(pluginBean, BPELPlugin.class, pluginCtx);
-		} else {
-			System.out.println("Can't find class " + BPELPlugin.class);
-		}
+		manage(BPEL.class);
+		start(bm);
 
 	}
 
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-		if (pluginSys != null) {
-			pluginBean.destroy(pluginSys, pluginCtx);
-		}
+		stop();
 	}
 
 }

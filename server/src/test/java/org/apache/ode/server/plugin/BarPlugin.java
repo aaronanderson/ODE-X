@@ -34,7 +34,6 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.apache.ode.spi.Plugin;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.Repository;
@@ -42,7 +41,7 @@ import org.apache.ode.spi.repo.Validate;
 
 @Singleton
 @Named("BarPlugin")
-public class BarPlugin implements Plugin {
+public class BarPlugin {
 
 	public static final String BAR_MIMETYPE = "application/bar";
 	public static final String FOO_MIMETYPE = "application/foo";

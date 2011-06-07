@@ -65,11 +65,15 @@ public class RepositoryImpl implements Repository {
 			artifact.setQName(qname);
 			artifact.setVersion(version);
 			artifact.setContentType(contentType);
-			DataHandler dh = getDataHandler(content, contentType);
-			try {
-				artifact.setContent(dh.toContent());
-			} catch (IOException e) {
-				throw new RepositoryException(e);
+			if (content instanceof byte[]) {
+				artifact.setContent((byte[])content);
+			} else {
+				DataHandler dh = getDataHandler(content, contentType);
+				try {
+					artifact.setContent(dh.toContent());
+				} catch (IOException e) {
+					throw new RepositoryException(e);
+				}
 			}
 		}
 		mgr.getTransaction().begin();
@@ -94,7 +98,7 @@ public class RepositoryImpl implements Repository {
 	@Override
 	public <C> C read(QName qname, String contentType, String version, Class<C> javaType) throws RepositoryException {
 		ArtifactImpl artifact = loadArtifact(qname, contentType, version);
-		
+
 		if (Artifact.class.isAssignableFrom(javaType)) {
 			return (C) artifact;
 		}

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.plugin;
+package org.apache.ode.bpel;
 
 import java.io.InputStream;
 
@@ -34,13 +34,14 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.bpel.compiler.BPELContext;
 import org.apache.ode.bpel.compiler.DiscoveryPass;
-import org.apache.ode.spi.Plugin;
+import org.apache.ode.bpel.exec.BPELComponent;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.WSDLContext;
 import org.apache.ode.spi.compiler.XMLSchemaContext;
 import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.WSDLComponent;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.Validate;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
@@ -49,14 +50,12 @@ import org.apache.ode.spi.repo.XMLValidate.SchemaSource;
 
 @Singleton
 @Named("BPELPlugin")
-public class BPELPlugin implements Plugin {
+public class BPEL {
 
 	public static final String BPEL_EXEC_MIMETYPE = "application/bpel-exec";
 	public static final String BPEL_EXEC_NAMESPACE = "http://docs.oasis-open.org/wsbpel/2.0/process/executable";
 	public static final String WSDL_MIMETYPE = "application/wsdl";
-	public static final String BPEL_INSTRUCTION_SET_NS = "http://ode.apache.org/bpel";
-	public static final QName BPEL_INSTRUCTION_SET = new QName(BPEL_INSTRUCTION_SET_NS, "BPEL");
-
+	
 	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
@@ -66,6 +65,8 @@ public class BPELPlugin implements Plugin {
 	Platform platform;
 	@Inject
 	XMLValidate xmlValidate;
+	@Inject
+	BPELComponent bpelComponent;
 	@Inject
 	Provider<BPELContext> ctxProvider;
 	@Inject
@@ -125,9 +126,10 @@ public class BPELPlugin implements Plugin {
 				}
 			}
 		});
-		platform.registerInstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml");
+		platform.registerComponent(bpelComponent);
 		Compiler bpelCompiler = compilers.newInstance();
-		bpelCompiler.addInstructionSet(BPEL_INSTRUCTION_SET);
+		bpelCompiler.addInstructionSet(bpelComponent.instructionSet());
+		bpelCompiler.addInstructionSet(WSDLComponent.WSDL_INSTRUCTION_SET);
 		bpelCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
 		bpelCompiler.addSubContext(WSDLContext.ID, wsdlProvider);
 		bpelCompiler.addSubContext(BPELContext.ID, ctxProvider);

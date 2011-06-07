@@ -16,34 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.cli;
+package org.apache.ode.spi.exec;
 
-import org.apache.ode.api.Machine;
+import javax.xml.namespace.QName;
 
-public class MachineImpl implements Machine{
+public abstract class WSDLComponent implements Component {
 
-	@Override
-	public void install() {
-		// TODO Auto-generated method stub
-		
-	}
+	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
+	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
 
 	@Override
-	public void uninstall() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public InstanceID start() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void stop(InstanceID instance) {
-		// TODO Auto-generated method stub
-		
+	public QName instructionSet() {
+		return WSDL_INSTRUCTION_SET;
 	}
 
 }

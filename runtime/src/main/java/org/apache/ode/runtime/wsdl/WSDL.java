@@ -22,6 +22,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.xml.namespace.QName;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
@@ -30,6 +31,7 @@ import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.WSDLContext;
 import org.apache.ode.spi.compiler.XMLSchemaContext;
+import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.Validate;
 import org.apache.ode.spi.repo.XMLValidate;
@@ -40,6 +42,7 @@ public class WSDL {
 
 	public static final String WSDL_MIMETYPE= "application/wsdl";
 	public static final String WSDL_NAMESPACE ="http://schemas.xmlsoap.org/wsdl/";
+
 	//@Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
@@ -47,6 +50,10 @@ public class WSDL {
 	XMLValidate xmlValidate;
 	@Inject
 	Compilers compilers;
+	@Inject
+	Platform platform;
+	@Inject
+	WSDLComponent wsdlComponent;
 	@Inject
 	Provider<XMLSchemaContext> schemaProvider;
 	@Inject
@@ -72,12 +79,14 @@ public class WSDL {
 		});
 		repository.registerCommandInfo(WSDL_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(WSDL_MIMETYPE, new WSDLDataContentHandler());
-		
+		platform.registerComponent(wsdlComponent);
 		Compiler wsdlCompiler = compilers.newInstance();
+		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSet());
 		wsdlCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
 		wsdlCompiler.addSubContext(WSDLContext.ID,wsdlProvider);
 		WSDLCompiler compiler = new WSDLCompiler();
 		wsdlCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
+		wsdlCompiler.addCompilerPass(CompilerPhase.EMIT, compiler);
 		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
 		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
 		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());

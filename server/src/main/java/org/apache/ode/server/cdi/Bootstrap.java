@@ -19,14 +19,16 @@
 package org.apache.ode.server.cdi;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.AnnotatedType;
@@ -35,6 +37,8 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.inject.spi.Extension;
+import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.inject.spi.InjectionTarget;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.inject.spi.ProcessBean;
 import javax.enterprise.inject.spi.ProcessInjectionTarget;
@@ -44,7 +48,6 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Singleton;
 
 import org.apache.ode.server.Server;
-import org.apache.ode.server.WebServer;
 import org.apache.ode.server.xml.ServerType;
 import org.apache.ode.spi.cdi.Handler;
 
@@ -80,7 +83,6 @@ public class Bootstrap implements Extension {
 		}
 
 		System.out.format("BeforeBeanDiscovery \n");
-		bbd.addAnnotatedType(bm.createAnnotatedType(ServerConfigProducer.class));
 		BeforeBeanDiscovery bbdImpl = new BeforeBeanDiscoveryImpl(bbd);
 		for (Handler h : handlers) {
 			h.beforeBeanDiscovery(bbdImpl, bm);
@@ -118,19 +120,73 @@ public class Bootstrap implements Extension {
 		for (Handler h : handlers) {
 			h.afterBeanDiscovery(abd, bm);
 		}
+		
+		 AnnotatedType<ServerType> at = bm.createAnnotatedType(ServerType.class);
+         final InjectionTarget<ServerType> it = bm.createInjectionTarget(at);
+         
+         Bean<ServerType> si = new Bean<ServerType>() {
+
+             public Set<Type> getTypes() {
+                 Set<Type> types = new HashSet<Type>();
+                 types.add(ServerType.class);
+                 types.add(Object.class);
+                 return types;
+             }
+
+             public Set<Annotation> getQualifiers() {
+                 Set<Annotation> qualifiers = new HashSet<Annotation>();
+                 qualifiers.add(new AnnotationLiteral<Default>(){
+             
+                 });
+                 return qualifiers;
+
+             }
+
+             public Class<? extends Annotation> getScope() {
+                 return Singleton.class;
+             }
+
+             public String getName() {
+                 return "ServerConfig";
+             }
+
+             public Set<Class<? extends Annotation>> getStereotypes() {
+                 return Collections.EMPTY_SET;
+             }
+
+             public Class<?> getBeanClass() {
+                 return ServerType.class;
+             }
+
+             public boolean isAlternative() {
+                 return false;
+             }
+
+             public boolean isNullable() {
+                 return false;
+             }
+
+             public Set<InjectionPoint> getInjectionPoints() {
+                 return it.getInjectionPoints();
+             }
+
+             @Override
+             public ServerType create(CreationalContext<ServerType> ctx) {
+                 return server;
+
+             }
+
+             @Override
+             public void destroy(ServerType instance,
+                     CreationalContext<ServerType> ctx) {
+             }
+         };
+         abd.addBean(si);
+
 	}
 
 	public void afterDeployment(@Observes AfterDeploymentValidation adv, BeanManager bm) {
 		System.out.format("^^^^^^^^^^^^^^^^^^^^^^^^^AfterDeploymentValidation ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-		Set<Bean<?>> beans = bm.getBeans(ServerConfigProducer.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			Bean<?> bean = beans.iterator().next();
-			ServerConfigProducer sp = (ServerConfigProducer)bm.getReference(bean, ServerConfigProducer.class, bm.createCreationalContext(bean));
-			sp.setServerConfig(server);
-		} else {
-			System.out.println("Can't find class " + ServerConfigProducer.class);
-		}
 		for (Handler h : handlers) {
 			h.afterDeploymentValidation(adv, bm);
 		}
@@ -138,8 +194,9 @@ public class Bootstrap implements Extension {
 
 	public void beforeShutdown(@Observes BeforeShutdown bfs, BeanManager bm) {
 		System.out.format("BeforeShutdown \n");
-		for (Handler h : handlers) {
-			h.beforeShutdown(bfs, bm);
+		//Reverse the order
+		for (int i= handlers.size()-1; i>-1;i--){
+			handlers.get(i).beforeShutdown(bfs, bm);
 		}
 	}
 
@@ -219,21 +276,6 @@ public class Bootstrap implements Extension {
 
 	}
 
-	@Singleton
-	public static class ServerConfigProducer {
-
-		private ServerType serverConfig;
-
-		public void setServerConfig(ServerType serverConfig) {
-			this.serverConfig = serverConfig;
-		}
-
-		@Produces
-		@Dependent
-		public ServerType create() {
-			return serverConfig;
-
-		}
-	}
+	
 
 }

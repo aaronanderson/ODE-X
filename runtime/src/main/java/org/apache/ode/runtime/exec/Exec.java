@@ -25,21 +25,21 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.exec.Platform;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.InstructionSet;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 
+import static org.apache.ode.runtime.exec.platform.Cluster.*;
+
 @Singleton
 public class Exec {
-	public static final String EXEC_JAXB_CTX = "org.apache.ode.spi.exec.xml";
+
 	@Inject
 	Repository repository;
 	@Inject
@@ -50,80 +50,31 @@ public class Exec {
 		System.out.println("Initializing Execution Runtime");
 		repository.registerFileExtension("exec", Platform.EXEC_MIMETYPE);
 		repository.registerNamespace(Platform.EXEC_NAMESPACE, Platform.EXEC_MIMETYPE);
-		repository.registerHandler(Platform.EXEC_MIMETYPE, new ExecutableJAXBDataContentHandler(platform));
+		repository.registerHandler(Platform.EXEC_MIMETYPE, new ExecDataContentHandler(platform));
 
+		repository.registerNamespace(CLUSTER_CONFIG_NAMESPACE, CLUSTER_CONFIG_MIMETYPE);
+		repository.registerHandler(CLUSTER_CONFIG_MIMETYPE, new JAXBDataContentHandler(CLUSTER_CONFIG_JAXB_CTX) {
+			@Override
+			public QName getDefaultQName(DataSource dataSource) {
+				QName defaultName = null;
+				try {
+					InputStream is = dataSource.getInputStream();
+					XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
+					reader.nextTag();
+					String tns = CLUSTER_CONFIG_NAMESPACE;
+					String name = reader.getAttributeValue(null, "name");
+					reader.close();
+					if (name != null) {
+						defaultName = new QName(tns, name);
+					}
+					return defaultName;
+				} catch (Exception e) {
+					return null;
+				}
+			}
+
+		});
 		System.out.println("Execution Runtime Initialized");
 
 	}
-
-	public static class ExecutableJAXBDataContentHandler extends JAXBDataContentHandler {
-		PlatformImpl platform;
-
-		public ExecutableJAXBDataContentHandler(PlatformImpl platform) {
-			this.platform = platform;
-		}
-
-		@Override
-		protected JAXBContext getJAXBContext(DataSource dataSource) throws JAXBException {
-			StringBuilder ctxs = new StringBuilder(EXEC_JAXB_CTX);
-			try {
-				InputStream is = dataSource.getInputStream();
-				XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
-				reader.nextTag();// root
-				reader.nextTag();// Instruction set, if present
-				if ("InstructionSets".equals(reader.getLocalName())) {
-					reader.nextTag();// first instruction set
-					while ("InstructionSet".equals(reader.getLocalName())) {
-						/*
-						 * reader.get // reader.nextTag();//next iset QName iset
-						 * = null; String jaxbPath = platform.getJAXBPath(iset);
-						 * if (jaxbPath==null){ throw new
-						 * JAXBException("Unknown instruction set " +
-						 * iset.toString()); }
-						 */
-					}
-				}
-				return JAXBContext.newInstance(ctxs.toString());
-			} catch (Exception e) {
-				throw new JAXBException(e);
-			}
-		}
-
-		@Override
-		protected JAXBContext getJAXBContext(JAXBElement<Executable> exec) throws JAXBException {
-			StringBuilder ctxs = new StringBuilder(EXEC_JAXB_CTX);
-			InstructionSet isets = exec.getValue().getInstructionSet();
-			if (isets != null) {
-				for (QName iset : isets.getInstructionSet()) {
-					String jaxbPath = platform.getJAXBPath(iset);
-					if (jaxbPath == null) {
-						throw new JAXBException("Unknown instruction set " + iset.toString());
-					}
-					ctxs.append(':');
-					ctxs.append(jaxbPath);
-				}
-			}
-			return JAXBContext.newInstance(ctxs.toString());
-		}
-
-		@Override
-		public QName getDefaultQName(DataSource dataSource) {
-			QName defaultName = null;
-			try {
-				InputStream is = dataSource.getInputStream();
-				XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
-				reader.nextTag();
-				String tns = reader.getAttributeValue(null, "targetNamespace");
-				String name = reader.getAttributeValue(null, "name");
-				reader.close();
-				if (tns != null && name != null) {
-					defaultName = new QName(tns, name);
-				}
-				return defaultName;
-			} catch (Exception e) {
-				return null;
-			}
-		}
-	}
-
 }

@@ -16,19 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi;
+package org.apache.ode.spi.exec;
 
 import java.util.List;
 
-import org.apache.ode.spi.xml.HandlerRegistry;
+import javax.xml.namespace.QName;
 
-/*
- * Marker interface
- * Idea: host obtains list of plugins and uses container instanciation to obtain instance. In plugins init method
- * references are used to register datacontenthandlers and commandObjects with JAF commandMap 
- */
-public interface Plugin {
-	
-	
+public interface Component {
 
+	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
+	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
+
+	public QName instructionSet();
+
+	public String jaxbContextPath();
+	
+	public List<Action> supportedActions();
+
+	public void execute(Action action, ActionContext context) throws PlatformException;
 }

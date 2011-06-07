@@ -16,14 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.repo;
+package org.apache.ode.spi.exec;
 
-import java.io.File;
+import org.apache.ode.spi.exec.Action.ActionId;
+import org.w3c.dom.Document;
 
-import javax.activation.CommandObject;
-
-public interface Export extends CommandObject {
-
-	public void exportContent(File file);
+public interface ActionContext {
 	
+	public ActionId getActionId();
+
+	public String getNodeId();
+	
+	public String getState();
+
+	public void log(ActionMessage message);
+
+	public Document getActionInfo();
+	
+	public Platform getPlatform();
 }

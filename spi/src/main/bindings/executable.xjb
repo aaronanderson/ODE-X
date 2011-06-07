@@ -21,8 +21,16 @@
 			<jxb:class name="Executable" />
 		</jxb:bindings>
 		
-		<jxb:bindings node="//xs:complexType[@name='instructionSetType']">
-			<jxb:class name="InstructionSet" />
+		<jxb:bindings node="//xs:complexType[@name='instructionSetsType']">
+			<jxb:class name="InstructionSets" />
+		</jxb:bindings>	
+		
+		<jxb:bindings node="//xs:complexType[@name='installDataType']">
+			<jxb:class name="InstallData" />
+		</jxb:bindings>	
+		
+		<jxb:bindings node="//xs:complexType[@name='installationType']">
+			<jxb:class name="Installation" />
 		</jxb:bindings>		
 		
 		<jxb:bindings node="//xs:complexType[@name='operationType']">

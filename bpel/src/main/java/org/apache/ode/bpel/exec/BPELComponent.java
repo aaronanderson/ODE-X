@@ -16,41 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec;
+package org.apache.ode.bpel.exec;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
-import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.Action;
+import org.apache.ode.spi.exec.ActionContext;
+import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Program;
-import org.apache.ode.spi.repo.Artifact;
 
-@Singleton
-public class PlatformImpl implements Platform {
+public class BPELComponent implements Component {
 
-	private Map<QName,String> jaxbCtxs = new ConcurrentHashMap<QName, String>();
+	public static final String BPEL_INSTRUCTION_SET_NS = "http://ode.apache.org/bpel";
+	public static final QName BPEL_INSTRUCTION_SET = new QName(BPEL_INSTRUCTION_SET_NS, "BPEL");
+
 	@Override
-	public void registerInstructionSet(QName instructionSet, String jaxbPath) {
-		jaxbCtxs.put(instructionSet, jaxbPath);
-	}
-	
-	public String getJAXBPath(QName instructionSet){
-		return jaxbCtxs.get(instructionSet);
+	public QName instructionSet() {
+		return BPEL_INSTRUCTION_SET;
 	}
 
 	@Override
-	public Program install(Artifact executable) throws PlatformException {
+	public String jaxbContextPath() {
+		return "org.apache.ode.bpel.exec.xml";
+	}
 
+	@Override
+	public List<Action> supportedActions(){
 		return null;
 	}
 
 	@Override
-	public void uninstall(Program program) throws PlatformException {
-
+	public void execute(Action action, ActionContext context) throws PlatformException{
+		
 	}
-
 }

@@ -20,16 +20,34 @@ package org.apache.ode.spi.exec;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.Action.ActionId;
 import org.apache.ode.spi.repo.Artifact;
+import org.w3c.dom.Document;
 
 public interface Platform {
 
 	public static final String EXEC_MIMETYPE = "application/ode-executable";
 	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
 
-	public void registerInstructionSet(QName instructionSet, String jaxbPath);
+	public static final String PLATFORM_NAMESPACE = "http://ode.apache.org/platform";
 
-	public Program install(Artifact executable) throws PlatformException;
+	public void registerComponent(Component component);
 
-	public void uninstall(Program program) throws PlatformException;
+	public Document setup(Artifact executable) throws PlatformException;
+
+	public void install(QName id, Artifact executable, Document installData, Target... targets) throws PlatformException;
+
+	public Program programInfo(QName id) throws PlatformException;
+
+	public Process start(QName id, Target... targets) throws PlatformException;
+
+	public void stop(QName id, Target... targets) throws PlatformException;
+
+	public void uninstall(QName id, Target... targets) throws PlatformException;
+
+	public ActionId execute(Action action, Document actionInput, Target... targets) throws PlatformException;
+
+	public ActionStatus status(ActionId actionId) throws PlatformException;
+
+	public void cancel(ActionId actionId) throws PlatformException;
 }

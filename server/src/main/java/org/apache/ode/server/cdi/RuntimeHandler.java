@@ -20,7 +20,6 @@ package org.apache.ode.server.cdi;
 
 import java.util.Set;
 
-import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
@@ -36,13 +35,14 @@ import org.apache.ode.runtime.build.CompilersImpl;
 import org.apache.ode.runtime.build.WSDLContextImpl;
 import org.apache.ode.runtime.build.XMLSchemaContextImpl;
 import org.apache.ode.runtime.exec.Exec;
-import org.apache.ode.runtime.exec.PlatformImpl;
+import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.runtime.jmx.BuildSystemImpl;
 import org.apache.ode.runtime.wsdl.WSDL;
 import org.apache.ode.runtime.xml.XML;
 import org.apache.ode.runtime.xsd.XSD;
 import org.apache.ode.runtime.xsl.XSL;
 import org.apache.ode.server.JMXServer;
+import org.apache.ode.server.WSDLComponentImpl;
 import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.repo.XMLValidate;
 
@@ -76,12 +76,13 @@ public class RuntimeHandler extends Handler {
 		// bbd.addAnnotatedType(bm.createAnnotatedType(CompilerProducer.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(XMLSchemaContextImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLContextImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLComponentImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(Exec.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(PlatformImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(org.apache.ode.runtime.jmx.PlatformImpl.class));
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
-		manage(BuildSystemImpl.class);
 		manage(XSD.class);
 		manage(XSD.class);
 		manage(XML.class);
@@ -89,6 +90,8 @@ public class RuntimeHandler extends Handler {
 		manage(XSL.class);
 		manage(BuildSystem.class);
 		manage(Exec.class);
+		manage(BuildSystemImpl.class);
+		manage(org.apache.ode.runtime.jmx.PlatformImpl.class);
 		start(bm);
 
 		Set<Bean<?>> beans = bm.getBeans(JMXServer.class, new AnnotationLiteral<Any>() {
@@ -98,6 +101,7 @@ public class RuntimeHandler extends Handler {
 			JMXServer server = (JMXServer) bm.getReference(bean, JMXServer.class, bm.createCreationalContext(bean));
 			try {
 				server.getMBeanServer().registerMBean(getInstance(BuildSystemImpl.class), ObjectName.getInstance(BuildSystemImpl.OBJECTNAME));
+				server.getMBeanServer().registerMBean(getInstance(org.apache.ode.runtime.jmx.PlatformImpl.class), ObjectName.getInstance(org.apache.ode.runtime.jmx.PlatformImpl.OBJECTNAME));
 			} catch (Exception e) {
 				e.printStackTrace();
 				adv.addDeploymentProblem(e);

@@ -64,6 +64,13 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jpa_2.0_spec</artifactId>
+			<version>1.1</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>wsdl4j</groupId>
 			<artifactId>wsdl4j</artifactId>
 			<version>1.6.2</version>
@@ -94,11 +101,33 @@
 					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
 					<schemaIncludes>
 						<schemaInclude>build_plan.xsd</schemaInclude>
+						<schemaInclude>cluster_config.xsd</schemaInclude>
+						<schemaInclude>wsdl.xsd</schemaInclude>
 					</schemaIncludes>
 					<bindingDirectory>src/main/bindings</bindingDirectory>
 					<bindingIncludes>
 						<bindingInclude>build_plan.xjb</bindingInclude>
+						<bindingInclude>cluster_config.xjb</bindingInclude>
+						<bindingInclude>wsdl.xjb</bindingInclude>
 					</bindingIncludes>
+					<catalog>src/main/bindings/catalog.xml</catalog>
+					<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.ode</groupId>
+							<artifactId>ode-spi</artifactId>
+						</plugin>
+					</plugins>
+					<episodes>
+						<episode>
+							<groupId>org.apache.ode</groupId>
+							<artifactId>ode-spi</artifactId>
+						</episode>
+					</episodes>
+					<extension>true</extension>
+					<args>
+						<arg>-npa</arg>
+					</args>
 				</configuration>
 			</plugin>
 		</plugins>

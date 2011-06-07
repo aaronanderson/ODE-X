@@ -26,7 +26,7 @@ import javax.management.MXBean;
 @MXBean
 public interface Repository {
 
-	public static String OBJECTNAME = "org.apache.ode:type=Machine.Repository";
+	public static final String OBJECTNAME = "org.apache.ode:type=Machine.Repository";
 
 	public ArtifactId importArtifact(ArtifactId artifactId, String fileName, boolean overwrite, boolean noValidate, byte[] contents) throws IOException;
 

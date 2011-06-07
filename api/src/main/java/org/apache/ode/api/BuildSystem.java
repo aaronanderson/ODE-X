@@ -27,7 +27,8 @@ import org.apache.ode.api.Repository.ArtifactId;
 @MXBean
 public interface BuildSystem {
 
-	public static String OBJECTNAME = "org.apache.ode:type=BuildSystem";
+	public static final String OBJECTNAME = "org.apache.ode:type=BuildSystem";
+	public static final String BUILDPLAN_MIMETYPE = "application/ode-build-plan";
 
 	public void build(ArtifactId artifact) throws IOException;
 

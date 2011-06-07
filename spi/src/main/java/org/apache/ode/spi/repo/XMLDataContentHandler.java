@@ -43,8 +43,7 @@ public class XMLDataContentHandler extends DataContentHandler {
 	public static final ActivationDataFlavor STREAM_FLAVOR = new ActivationDataFlavor(XMLStreamReader.class, "application/xml; x-java-class=XMLStreamReader",
 			"Stax XML Stream Reader");
 	public static final ActivationDataFlavor DOM_FLAVOR = new ActivationDataFlavor(Document.class, "application/xml; x-java-class=W3CDom", "W3C DOM");
-	public static final ActivationDataFlavor XSL_SOURCE_FLAVOR = new ActivationDataFlavor(StreamSource.class, "application/xml; x-java-class=W3CDom",
-			"XSL Stream Source");
+	public static final ActivationDataFlavor XSL_SOURCE_FLAVOR = new ActivationDataFlavor(StreamSource.class, "application/xml; x-java-class=SrreamSource","XSL Stream Source");
 
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
@@ -57,13 +56,13 @@ public class XMLDataContentHandler extends DataContentHandler {
 
 	@Override
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
-		if (XMLStreamReader.class.equals(flavor.getDefaultRepresentationClass())) {
+		if (XMLStreamReader.class.equals(flavor.getRepresentationClass())) {
 			try {
 				return XMLInputFactory.newInstance().createXMLStreamReader(dataSource.getInputStream());
 			} catch (Exception e) {
 				throw new IOException(e);
 			}
-		} else if (Document.class.equals(flavor.getDefaultRepresentationClass())) {
+		} else if (Document.class.equals(flavor.getRepresentationClass())) {
 			try {
 				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 				factory.setNamespaceAware(true);
@@ -72,7 +71,7 @@ public class XMLDataContentHandler extends DataContentHandler {
 			} catch (Exception e) {
 				throw new IOException(e);
 			}
-		} else if (StreamSource.class.equals(flavor.getDefaultRepresentationClass())) {
+		} else if (StreamSource.class.equals(flavor.getRepresentationClass())) {
 			try {
 				return new StreamSource(dataSource.getInputStream());
 			} catch (Exception e) {
@@ -84,7 +83,7 @@ public class XMLDataContentHandler extends DataContentHandler {
 
 	@Override
 	public DataFlavor[] getTransferDataFlavors() {
-		return new DataFlavor[] { STREAM_FLAVOR, DOM_FLAVOR };
+		return new DataFlavor[] { STREAM_FLAVOR, DOM_FLAVOR,XSL_SOURCE_FLAVOR };
 	}
 
 	@Override
