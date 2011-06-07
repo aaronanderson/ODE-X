@@ -116,18 +116,19 @@
 	<distributionManagement>
 		<site>
 			<id>apache.aanderson</id>
-			<name>AAnderson Apache People</name>
+			<name>ODE-X Maven Site</name>
 			<url>scp://people.apache.org/home/aanderson/public_html/ODE-X</url>
 		</site>
+		
 		<repository>
-			<id>ode</id>
-			<name>ODE</name>
-			<url>http://ode.apache.org/nexus/content/repositories/ode</url>
+			<id>apache.aanderson</id>
+			<name>ODE-X Maven Repo</name>
+			<url>scp://people.apache.org/home/aanderson/public_html/maven</url>
 		</repository>
 		<snapshotRepository>
-			<id>ode-snapshot</id>
-			<name>ODE</name>
-			<url>http://ode.apache.org:8383/nexus/content/repositories/ode</url>
+			<id>apache.aanderson</id>
+			<name>ODE-X Maven Snapshot Repo</name>
+			<url>scp://people.apache.org/home/aanderson/public_html/maven-snapshots</url>
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
