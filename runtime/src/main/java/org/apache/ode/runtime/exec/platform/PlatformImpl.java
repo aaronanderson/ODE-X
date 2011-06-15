@@ -18,50 +18,36 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
-import org.apache.ode.spi.exec.Action;
-import org.apache.ode.spi.exec.ActionStatus;
+import org.apache.ode.spi.exec.ActionTask.ActionId;
+import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Process;
 import org.apache.ode.spi.exec.Program;
-import org.apache.ode.spi.exec.Action.ActionId;
-import org.apache.ode.spi.exec.Program.Status;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Installation;
 import org.apache.ode.spi.exec.xml.InstructionSets;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.ArtifactDataSource;
@@ -86,7 +72,9 @@ public class PlatformImpl implements Platform {
 	@Inject
 	Provider<ArtifactDataSource> dsProvider;
 
+	@Inject
 	private Cluster cluster;
+	
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
 
 	@Override
@@ -158,16 +146,17 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public ActionId execute(Action action, Document actionInfo, Target... targets) throws PlatformException {
-		return cluster.execute(action, actionInfo, targets);
+	public ActionId execute(QName action, Document actionInput, Target... targets) throws PlatformException{
+		return cluster.execute(action, actionInput, targets);
 	}
 
 	@Override
-	public ActionStatus status(ActionId actionId) throws PlatformException {
+	public ActionStatus status(ActionId actionId) throws PlatformException{
 		return cluster.status(actionId);
 	}
 
-	public void cancel(ActionId actionId) throws PlatformException {
+	@Override
+	public void cancel(ActionId actionId) throws PlatformException{
 		cluster.cancel(actionId);
 	}
 
@@ -255,6 +244,11 @@ public class PlatformImpl implements Platform {
 			}
 		}
 		return isets;
+	}
+
+	@Override
+	public Set<NodeStatus> status() {
+		return cluster.status();
 	}
 
 }

@@ -168,7 +168,17 @@
 				</executions>
 				<configuration>
 					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
-					<generatePackage>org.apache.ode.server.xml</generatePackage>
+					<schemaIncludes>
+						<schemaInclude>server.xsd</schemaInclude>
+					</schemaIncludes>
+					<bindingDirectory>src/main/bindings</bindingDirectory>
+					<bindingIncludes>
+						<bindingInclude>server.xjb</bindingInclude>
+					</bindingIncludes>
+					<extension>true</extension>
+					<!-- <args>
+						<arg>-npa</arg>
+					</args> -->
 				</configuration>
 			</plugin>
 			<plugin>

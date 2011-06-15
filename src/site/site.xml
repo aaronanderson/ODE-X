@@ -16,6 +16,9 @@
     <src>http://people.apache.org/~mriou/ode/site/images/top-banner.gif</src>
     <href>http://ode.apache.org/</href>
   </bannerLeft>
+  <poweredBy>
+    <logo name="CloudBees" href="http://www.cloudbees.com/" img="http://web-static-cloudfront.s3.amazonaws.com/images/badges/BuiltOnDEV.png"/>
+  </poweredBy>
   <body>
     <links>
 	<item name="ODE-X" href="https://github.com/aaronanderson/ODE-X"/>
@@ -29,7 +32,7 @@
       <item name="Repository" href="repository.html" />
       <item name="Executation Platform" href="platform.html"/>
       <item name="Extension" href="extension.html"/>
-      <item name="Integration" href="integration.html" />
+      <item name="Integration" href="interop.html" />
     </menu>
 	
 	<menu ref="parent" inherit="top" />

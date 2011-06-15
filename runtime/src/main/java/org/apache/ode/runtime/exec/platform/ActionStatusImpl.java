@@ -20,19 +20,20 @@ package org.apache.ode.runtime.exec.platform;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import javax.persistence.Version;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Action.ActionId;
-import org.apache.ode.spi.exec.ActionStatus;
+import org.apache.ode.spi.exec.ActionTask.ActionId;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage;
+import org.apache.ode.spi.exec.ActionTask.ActionStatus;
+import org.apache.ode.spi.exec.ActionTask.Status;
 import org.w3c.dom.Document;
 
 @Entity
@@ -43,7 +44,7 @@ public class ActionStatusImpl implements ActionStatus, Serializable {
 	@Column(name = "ACTION_ID")
 	private String actionId;
 
-	@Column(name = "INITIATOR")
+	@Column(name = "NODE_ID")
 	private String nodeId;
 
 	@Column(name = "ACTION_TYPE")
@@ -56,7 +57,6 @@ public class ActionStatusImpl implements ActionStatus, Serializable {
 	private String user;
 
 	@Version
-	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "LAST_MODIFIED")
 	private Timestamp lastModified;
 
@@ -85,22 +85,12 @@ public class ActionStatusImpl implements ActionStatus, Serializable {
 	}
 
 	@Override
-	public ActionId getActionId() {
+	public ActionId id() {
 		return null;
 	}
 
 	@Override
-	public Document input() {
-		return null;
-	}
-	
-	@Override
-	public Document result() {
-		return null;
-	}
-	
-	@Override
-	public QName action() {
+	public QName type() {
 		return null;
 	}
 
@@ -110,7 +100,22 @@ public class ActionStatusImpl implements ActionStatus, Serializable {
 	}
 
 	@Override
-	public List<NodeStatus> nodeStatus() {
+	public List<ActionMessage> messages() {
+		return null;
+	}
+
+	@Override
+	public Document result() {
+		return null;
+	}
+
+	@Override
+	public Date start() {
+		return null;
+	}
+
+	@Override
+	public Date finish() {
 		return null;
 	}
 

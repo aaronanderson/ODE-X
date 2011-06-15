@@ -18,49 +18,61 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import org.apache.ode.spi.exec.Action.ActionId;
-import org.apache.ode.spi.exec.ActionContext;
-import org.apache.ode.spi.exec.ActionMessage;
+import javax.xml.namespace.QName;
+
+import org.apache.ode.spi.exec.ActionTask.ActionContext;
+import org.apache.ode.spi.exec.ActionTask.ActionId;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage;
+import org.apache.ode.spi.exec.ActionTask.Status;
 import org.apache.ode.spi.exec.Platform;
 import org.w3c.dom.Document;
 
 public class ActionContextImpl implements ActionContext {
 
 	private ActionId actionId;
+	private QName type;
 	private String nodeId;
-	private Document actionInfo;
-	private Platform platform;
-	private String state;
+	private Document actionInput;
+	private Status status;
 
-	public ActionContextImpl(ActionId actionId, String nodeId, Document actionInfo, Platform platform) {
+	public ActionContextImpl(ActionId actionId, QName type, String nodeId, Document actionInput, Platform platform) {
 
 	}
 
-	public ActionId getActionId() {
+	@Override
+	public ActionId id() {
 		return actionId;
 	}
 
-	public String getNodeId() {
-		return nodeId;
+	@Override
+	public QName type() {
+		return type;
 	}
 
-	public void setState(String state) {
-		this.state = state;
-	}
-
-	public String getState() {
-		return state;
-	}
-
+	@Override
 	public void log(ActionMessage message) {
-
+	}
+	
+	@Override
+	public Document input() {
+		return actionInput;
 	}
 
-	public Document getActionInfo() {
-		return actionInfo;
+	@Override
+	public void refresh() {
 	}
 
-	public Platform getPlatform() {
-		return platform;
+	@Override
+	public Status getStatus() {
+		return status;
 	}
+
+	@Override
+	public void updateStatus(Status status) {
+	}
+
+	@Override
+	public void updateResult(Document result) {
+	}
+
 }

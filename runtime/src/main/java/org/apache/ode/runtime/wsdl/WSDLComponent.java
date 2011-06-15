@@ -18,10 +18,11 @@
  */
 package org.apache.ode.runtime.wsdl;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.ode.spi.exec.Action;
-import org.apache.ode.spi.exec.ActionContext;
+import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.PlatformException;
 
 public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponent {
@@ -37,8 +38,19 @@ public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponen
 	}
 
 	@Override
-	public void execute(Action action, ActionContext context) throws PlatformException{
+	public ActionTask<?> loadAction(Action action) throws PlatformException{
+		return null;
+	}
+	
+	@Override
+	public void online() throws PlatformException {
 		
 	}
+
+	@Override
+	public void offline() throws PlatformException {
+		
+	}
+
 
 }

@@ -20,32 +20,40 @@ package org.apache.ode.cli;
 
 import java.io.IOException;
 import java.util.Formatter;
+import java.util.List;
 
+import javax.management.JMX;
 import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+
+import org.apache.ode.api.Platform;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
 @Parameters(separators = "=", commandDescription = "Starts a new instance of an installed executable on the machine")
-public class StartCommand extends AbstractCommand{
-   
-  public StartCommand(Connection connection, Formatter out) {
+public class StartCommand extends AbstractCommand {
+
+	public StartCommand(Connection connection, Formatter out) {
 		super(connection, out);
 	}
 
-@Parameter(names = "--name", description = "Executable name", required = true)
-  public String name;
-  
-  @Parameter(names = "--version", description = "Executable version")
-  public String version;
+	@Parameter(names = "--name", description = "Specify the program name")
+	public String name;
 
-  @Parameter(names = "--instancename", description = "Specify the name of the new instance")
-  public String instanceName;
+	@Parameter(names = "--target", description = "Specify installation target all <cluster|target>:<name>")
+	public List<String> targets;
 
-@Override
-public void execute()  throws IOException, MalformedObjectNameException{
-	// TODO Auto-generated method stub
-	
-}
+	@Override
+	public void execute() throws IOException, MalformedObjectNameException {
+		Platform platform = JMX.newMXBeanProxy(connection.getConnection(), ObjectName.getInstance(Platform.OBJECTNAME), Platform.class);
+		String[] target = null;
+		if (targets != null) {
+
+		}
+		platform.stop(name, target);
+		out.format("Sucessfully started program %s\n", name);
+
+	}
 
 }

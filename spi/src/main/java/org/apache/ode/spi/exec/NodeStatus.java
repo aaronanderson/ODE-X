@@ -18,26 +18,16 @@
  */
 package org.apache.ode.spi.exec;
 
-public class Target {
-	final private String name;
-	final private TargetType type;
-	public static final Target ALL = new Target(null, TargetType.ALL);
 
-	public Target(String name, TargetType type) {
-		this.name = name;
-		this.type = type;
+public interface NodeStatus {
+
+	public String clusterId();
+
+	public String nodeId();
+
+	public State state();
+
+	public static enum State {
+		ONLINE, OFFLINE;
 	}
-
-	public TargetType getTargetType() {
-		return type;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public static enum TargetType {
-		ALL, CLUSTER, NODE;
-	}
-
 }

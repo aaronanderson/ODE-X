@@ -30,8 +30,14 @@ public interface Component {
 	public QName instructionSet();
 
 	public String jaxbContextPath();
-	
+
 	public List<Action> supportedActions();
 
-	public void execute(Action action, ActionContext context) throws PlatformException;
+	public ActionTask<?> loadAction(Action action) throws PlatformException;
+
+	public void online() throws PlatformException;
+
+	public void offline() throws PlatformException;
+
+	
 }

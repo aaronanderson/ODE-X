@@ -16,47 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.cli;
+package org.apache.ode.runtime.exec.platform;
 
-import java.io.IOException;
+import java.util.List;
 
-import org.apache.ode.api.Platform;
-import org.apache.ode.api.Repository.ArtifactId;
+import javax.xml.namespace.QName;
 
-public class PlatformImpl implements Platform {
+import org.apache.ode.spi.exec.ActionTask.ActionId;
+import org.apache.ode.spi.exec.MasterActionTask.MasterActionContext;
+import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
+import org.w3c.dom.Document;
 
-	@Override
-	public byte[] setup(ArtifactId executable) throws IOException {
+public class MasterActionContextImpl extends ActionContextImpl implements MasterActionContext {
 
-		return null;
+
+	public MasterActionContextImpl(ActionId actionId, QName type, String nodeId, Document actionInput, Platform platform) {
+		super(actionId, type, nodeId, actionInput, platform);
 	}
 
 	@Override
-	public void install(String id, ArtifactId executable, byte[] installData, String[] targets) throws IOException {
-
-	}
-
-	@Override
-	public Program programInfo(String id) throws IOException {
-		return null;
-	}
-
-	@Override
-	public Process start(String id, String[] targets) throws IOException {
-
-		return null;
-	}
-
-	@Override
-	public void stop(String id, String[] targets) throws IOException {
+	public List<SlaveActionStatus> slaveStatus() {
 		// TODO Auto-generated method stub
-
+		return null;
 	}
 
-	@Override
-	public void uninstall(String id, String[] targets) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
 
 }

@@ -27,7 +27,11 @@
 	</persistence-unit>
 	<persistence-unit name="platform" transaction-type="RESOURCE_LOCAL">
 		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-		<class>org.apache.ode.runtime.exec.ProgramImpl</class>
+		<class>org.apache.ode.runtime.exec.platform.ActionStatusImpl</class>
+		<!-- <class>org.apache.ode.runtime.exec.platform.MasterActionStatusImpl</class>
+		<class>org.apache.ode.runtime.exec.platform.SlaveActionStatusImpl</class> -->
+		<class>org.apache.ode.runtime.exec.platform.ProgramImpl</class>
+		<class>org.apache.ode.runtime.exec.platform.Node</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
 			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;DB_CLOSE_DELAY=-1" />

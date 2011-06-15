@@ -16,28 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+package org.apache.ode.runtime.exec.platform;
 
-public class Target {
-	final private String name;
-	final private TargetType type;
-	public static final Target ALL = new Target(null, TargetType.ALL);
+import org.apache.ode.spi.exec.ActionTask.ActionId;
 
-	public Target(String name, TargetType type) {
-		this.name = name;
-		this.type = type;
-	}
+public class ActionIdImpl implements ActionId {
 
-	public TargetType getTargetType() {
-		return type;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public static enum TargetType {
-		ALL, CLUSTER, NODE;
-	}
-
+	
 }

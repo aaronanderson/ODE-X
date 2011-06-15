@@ -38,7 +38,7 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.ode.server.xml.ServerType;
+import org.apache.ode.server.xml.ServerConfig;
 import org.apache.ode.spi.cdi.Handler;
 
 public class ExecutorHandler extends Handler {
@@ -53,7 +53,7 @@ public class ExecutorHandler extends Handler {
 	public static class ExecutorProducer {
 		
 		@Inject
-		ServerType serverConfig;
+		ServerConfig serverConfig;
 		
 		ExecutorService service;
 		

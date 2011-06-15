@@ -48,7 +48,10 @@ public class HelloWorldIT {
 		if (!CLI.execute(output, "--port", "9696", "install", "--name", "{http://ode/bpel/unit-test}HelloWorld", "--file", "target/installData.xml")) {
 			throw new Exception(output.toString());
 		}
-
+		
+		if (!CLI.execute(output, "--port", "9696", "start", "--name", "{http://ode/bpel/unit-test}HelloWorld")) {
+			throw new Exception(output.toString());
+		}
 		/*
 		 * if (!CLI.execute(output, "--port", "9696", "install", "--name",
 		 * "{http://ode/bpel/unit-test}HelloWorld")) { throw new

@@ -23,7 +23,7 @@ import java.util.List;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Action;
-import org.apache.ode.spi.exec.ActionContext;
+import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.PlatformException;
 
@@ -42,13 +42,26 @@ public class BPELComponent implements Component {
 		return "org.apache.ode.bpel.exec.xml";
 	}
 
+
 	@Override
 	public List<Action> supportedActions(){
 		return null;
 	}
 
 	@Override
-	public void execute(Action action, ActionContext context) throws PlatformException{
+	public ActionTask<?> loadAction(Action action) throws PlatformException{
+		return null;
+	}
+
+	@Override
+	public void online() throws PlatformException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void offline() throws PlatformException {
+		// TODO Auto-generated method stub
 		
 	}
 }

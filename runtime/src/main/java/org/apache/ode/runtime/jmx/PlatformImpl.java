@@ -34,6 +34,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.apache.ode.api.Repository.ArtifactId;
 import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.w3c.dom.Document;
@@ -69,7 +70,7 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 	}
 
 	@Override
-	public void install(String id, ArtifactId executable, byte[] installData) throws IOException {
+	public void install(String id, ArtifactId executable, byte[] installData, String[] targets) throws IOException {
 		String pid = id != null ? id : executable.getName();
 		String type = executable.getType() != null ? executable.getType() : Platform.EXEC_MIMETYPE;
 		String version = executable.getVersion() != null ? executable.getVersion() : "1.0";
@@ -87,7 +88,12 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 				ByteArrayInputStream bis = new ByteArrayInputStream(installData);
 				installDoc = db.parse(bis);
 			}
-			platform.install(idQname, artifact, installDoc);
+			Target[] target = null;
+			if (targets != null) {
+
+			}
+
+			platform.install(idQname, artifact, installDoc, target);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
@@ -100,20 +106,38 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 	}
 
 	@Override
-	public Process start(String id) throws IOException {
-		System.out.format("Starting program %s\n", id);
+	public Process start(String pid, String[] targets) throws IOException {
+		System.out.format("Starting program %s\n", pid);
+		QName idQname = QName.valueOf(pid);
+		Target[] target = null;
+		if (targets != null) {
+
+		}
+		try {
+			platform.start(idQname, target);
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 		return null;
 	}
 
 	@Override
-	public void stop(String id) throws IOException {
+	public void stop(String id, String[] targets) throws IOException {
 		System.out.format("Stopping program %s\n", id);
+		Target[] target = null;
+		if (targets != null) {
+
+		}
 
 	}
 
 	@Override
-	public void uninstall(String id) throws IOException {
-		// TODO Auto-generated method stub
+	public void uninstall(String id, String[] targets) throws IOException {
+		Target[] target = null;
+		if (targets != null) {
+
+		}
+		
 
 	}
 

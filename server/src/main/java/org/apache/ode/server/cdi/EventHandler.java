@@ -41,12 +41,11 @@ import org.apache.ode.spi.event.Publisher;
 import org.apache.ode.spi.event.Subscriber;
 
 public class EventHandler extends Handler {
-	
+
 	public static class Inject extends AnnotationLiteral<javax.inject.Inject> implements javax.inject.Inject {
 	};
 
-	public static class Observes extends AnnotationLiteral<javax.enterprise.event.Observes> implements
-			javax.enterprise.event.Observes {
+	public static class Observes extends AnnotationLiteral<javax.enterprise.event.Observes> implements javax.enterprise.event.Observes {
 		TransactionPhase phase;
 		Reception reception;
 
@@ -86,10 +85,10 @@ public class EventHandler extends Handler {
 		BeanManager mgr;
 		String type;
 
-		public ChannelImpl(String type, BeanManager mgr){
-			this.type=type;
-			this.mgr=mgr;
-			
+		public ChannelImpl(String type, BeanManager mgr) {
+			this.type = type;
+			this.mgr = mgr;
+
 		}
 
 		@Override
@@ -97,19 +96,18 @@ public class EventHandler extends Handler {
 			mgr.fireEvent(event, new EventQualifierImpl(type));
 		}
 	}
-	
-	
-public static class  ChannelProducer<T> {
-				
+
+	public static class ChannelProducer<T> {
+
 		@Produces
-		public Channel<T> create(InjectionPoint ip, BeanManager mgr){
+		public Channel<T> create(InjectionPoint ip, BeanManager mgr) {
 			Publisher publisher = ip.getAnnotated().getAnnotation(Publisher.class);
-			String type= "";
+			String type = "";
 			if (publisher != null) {
 				type = publisher.value();
-			} 
+			}
 			return new ChannelImpl<T>(type, mgr);
-			
+
 		}
 
 	}
@@ -118,8 +116,6 @@ public static class  ChannelProducer<T> {
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(ChannelProducer.class));
 	}
-	
-
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -144,8 +140,7 @@ public static class  ChannelProducer<T> {
 		for (AnnotatedField<?> field : type.getFields()) {
 			if (field.isAnnotationPresent(Publisher.class)) {
 				Type t = field.getBaseType();
-				if (t instanceof ParameterizedType
-						&& ((Class<?>) ((ParameterizedType) t).getRawType()).isAssignableFrom(Channel.class)) {
+				if (t instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) t).getRawType()).isAssignableFrom(Channel.class)) {
 					return true;
 				}
 			}
@@ -162,8 +157,7 @@ public static class  ChannelProducer<T> {
 			for (AnnotatedParameter<?> param : method.getParameters()) {
 				if (param.isAnnotationPresent(Subscriber.class)) {
 					Subscriber subscriber = param.getAnnotation(Subscriber.class);
-					System.out.format("************* Identified Subscriber annotation %s on param type %s\n",
-							subscriber.value(), param.getBaseType());
+					System.out.format("************* Identified Subscriber annotation %s on param type %s\n", subscriber.value(), param.getBaseType());
 					param.getAnnotations().add(new Observes());
 					if (subscriber.value().length() > 0) {
 						param.getAnnotations().add(new EventQualifierImpl(subscriber.value()));
@@ -174,10 +168,9 @@ public static class  ChannelProducer<T> {
 		for (AnnotatedField<?> field : at.getFields()) {
 			if (field.isAnnotationPresent(Publisher.class)) {
 				Type t = field.getBaseType();
-				if (t instanceof ParameterizedType
-						&& ((Class<?>) ((ParameterizedType) t).getRawType()).isAssignableFrom(Channel.class)) {
+				if (t instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) t).getRawType()).isAssignableFrom(Channel.class)) {
 					Publisher publisher = field.getAnnotation(Publisher.class);
-					System.out.format("############# Identified Publisher annotation %s on field %s\n", publisher.value(),t);
+					System.out.format("############# Identified Publisher annotation %s on field %s\n", publisher.value(), t);
 					field.getAnnotations().add(new Inject());
 				}
 			}

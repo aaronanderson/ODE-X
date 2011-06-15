@@ -10,24 +10,10 @@
 	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
-<cluster-config xmlns="http://ode.apache.org/cluster-config" name="default-cluster">
-<!-- xmlns:cluster="http://ode.apache.org/cluster-config"
-	xmlns:xs="http://www.w3.org/2001/XMLSchema" name="default-cluster">
-	 	<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://ode.apache.org/cluster-config"
-		targetNamespace="http://ode.apache.org/cluster-config" xmlns:exec="http://ode.apache.org/executable"
-		elementFormDefault="qualified">
-		<xs:complexType name="installType">
-			<xs:sequence>
-				<xs:element name="id" type="xs:QName" />
-				<xs:element name="installData" type="exec:installationType" />
-			</xs:sequence>
-		</xs:complexType>
-		<xs:element name="install" type="installType" />
-		<xs:element name="programId" type="xs:QName" />
-	</xs:schema> -->
-	
-	<health-check frequency="10000" inactive-timeout="60000"
+<cluster-config xmlns="http://ode.apache.org/cluster-config" name="test-cluster">
+
+	<health-check frequency="1000" inactive-timeout="2000"
 	node-cleanup="P10D" />
-	<action-check frequency="750" action-timeout="30000" />
+	<action-check frequency="500" action-timeout="2000" />
 	<nodes auto-discovery="true" />
 </cluster-config>

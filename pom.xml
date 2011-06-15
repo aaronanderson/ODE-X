@@ -61,6 +61,11 @@
 		</mailingList>
 	</mailingLists>
 
+	<ciManagement>
+		<system>Jenkins</system>
+		<url>https://ode-x.ci.cloudbees.com/</url>
+	</ciManagement>
+
 	<modules>
 		<module>api</module>
 		<module>spi</module>
@@ -119,17 +124,15 @@
 			<name>ODE-X Maven Site</name>
 			<url>scp://people.apache.org/home/aanderson/public_html/ODE-X</url>
 		</site>
-		
 		<repository>
-			<id>apache.aanderson</id>
-			<name>ODE-X Maven Repo</name>
-			<url>scp://people.apache.org/home/aanderson/public_html/maven</url>
+			<id>cloudbees-ode-x</id>
+			<name>CloudBees ODE-X</name>
+			<url>https://repository-ode-x.forge.cloudbees.com/release/</url>
 		</repository>
 		<snapshotRepository>
-			<id>apache.aanderson</id>
-			<name>ODE-X Maven Snapshot Repo</name>
-			<url>scp://people.apache.org/home/aanderson/public_html/maven-snapshots</url>
-			<uniqueVersion>false</uniqueVersion>
+			<id>cloudbees-ode-x-snapshot</id>
+			<name>CloudBees ODE-X Snapshots</name>
+			<url>https://repository-ode-x.forge.cloudbees.com/snapshot/</url>
 		</snapshotRepository>
 	</distributionManagement>
 

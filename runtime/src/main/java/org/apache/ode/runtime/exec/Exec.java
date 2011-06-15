@@ -52,28 +52,6 @@ public class Exec {
 		repository.registerNamespace(Platform.EXEC_NAMESPACE, Platform.EXEC_MIMETYPE);
 		repository.registerHandler(Platform.EXEC_MIMETYPE, new ExecDataContentHandler(platform));
 
-		repository.registerNamespace(CLUSTER_CONFIG_NAMESPACE, CLUSTER_CONFIG_MIMETYPE);
-		repository.registerHandler(CLUSTER_CONFIG_MIMETYPE, new JAXBDataContentHandler(CLUSTER_CONFIG_JAXB_CTX) {
-			@Override
-			public QName getDefaultQName(DataSource dataSource) {
-				QName defaultName = null;
-				try {
-					InputStream is = dataSource.getInputStream();
-					XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
-					reader.nextTag();
-					String tns = CLUSTER_CONFIG_NAMESPACE;
-					String name = reader.getAttributeValue(null, "name");
-					reader.close();
-					if (name != null) {
-						defaultName = new QName(tns, name);
-					}
-					return defaultName;
-				} catch (Exception e) {
-					return null;
-				}
-			}
-
-		});
 		System.out.println("Execution Runtime Initialized");
 
 	}

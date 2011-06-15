@@ -18,37 +18,24 @@
  */
 package org.apache.ode.spi.exec;
 
-import java.util.List;
-
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Action.ActionId;
-import org.w3c.dom.Document;
+import org.apache.ode.spi.exec.ActionTask.ActionContext;
+import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionContext;
 
-public interface ActionStatus {
+/**
+ * 
+ * Intended to run once on multiple nodes
+ * 
+ */
+public interface SlaveActionTask extends ActionTask<SlaveActionContext> {
 
-	public ActionId getActionId();
-
-	public QName action();
-	
-	public Document input();
-
-	public Document result();
-	
-	public Status status();
-
-	public List<NodeStatus> nodeStatus();
-
-	public static interface NodeStatus {
-		public String nodeId();
-		
-		public String state();
-
-		public List<ActionMessage> messages();
+	public interface SlaveActionContext extends ActionContext {
+		public QName component();
 	}
 
-	public static enum Status {
-		EXECUTING, COMPLETED, CANCELED
+	public interface SlaveActionStatus extends ActionStatus {
+
 	}
 
 }

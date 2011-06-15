@@ -18,26 +18,30 @@
  */
 package org.apache.ode.spi.exec;
 
-public class Target {
-	final private String name;
-	final private TargetType type;
-	public static final Target ALL = new Target(null, TargetType.ALL);
+import java.util.List;
 
-	public Target(String name, TargetType type) {
-		this.name = name;
-		this.type = type;
+import org.apache.ode.spi.exec.ActionTask.ActionContext;
+import org.apache.ode.spi.exec.MasterActionTask.MasterActionContext;
+import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
+
+/**
+ * 
+ * Intended to run once only on a single node but coordinate with multiple slave
+ * tasks across nodes
+ * 
+ */
+public interface MasterActionTask extends ActionTask<MasterActionContext> {
+	
+	public interface MasterActionContext extends ActionContext {
+
+		public List<SlaveActionStatus> slaveStatus();
+
 	}
 
-	public TargetType getTargetType() {
-		return type;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public static enum TargetType {
-		ALL, CLUSTER, NODE;
+	public interface MasterActionStatus extends ActionStatus {
+		
+		public List<SlaveActionStatus> slaveStatus();
+		
 	}
 
 }

@@ -69,8 +69,9 @@ public class StaticHandler extends Handler {
 	}
 	
 	public void beforeShutdown(@Observes BeforeShutdown bfs, BeanManager bm){
-		for (Handler h: delegates){
-			h.beforeShutdown(bfs, bm);
+		//Reverse the order
+		for (int i= delegates.size()-1; i>-1;i--){
+			delegates.get(i).beforeShutdown(bfs, bm);
 		}
 	}
 	

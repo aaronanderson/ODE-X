@@ -17,7 +17,7 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-  <server  xmlns="http://ode.apache.org/server" >
+  <server xmlns="http://ode.apache.org/server" nodeId="testNode1" clusterId="test-cluster">
   <handlers>
   <handler-class>org.apache.ode.server.cdi.StaticHandler</handler-class>
   </handlers>

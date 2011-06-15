@@ -18,65 +18,11 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.apache.ode.spi.exec.Action;
-import org.apache.ode.spi.exec.ActionStatus;
-import org.apache.ode.spi.exec.Component;
-import org.apache.ode.spi.exec.Platform;
-import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Process;
-import org.apache.ode.spi.exec.Program;
-import org.apache.ode.spi.exec.Action.ActionId;
-import org.apache.ode.spi.exec.Program.Status;
-import org.apache.ode.spi.exec.Target;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Installation;
-import org.apache.ode.spi.exec.xml.InstructionSets;
-import org.apache.ode.spi.repo.Artifact;
-import org.apache.ode.spi.repo.ArtifactDataSource;
-import org.apache.ode.spi.repo.DataHandler;
-import org.apache.ode.spi.repo.Repository;
-import org.apache.ode.spi.repo.XMLDataContentHandler;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 @Singleton
 public class LocalNode {
 
-	@Inject
-	PlatformImpl platform;
-	
    /*
 		public void install(QName id, Artifact executable, Document installData) throws PlatformException {
 		ProgramImpl program = new ProgramImpl();

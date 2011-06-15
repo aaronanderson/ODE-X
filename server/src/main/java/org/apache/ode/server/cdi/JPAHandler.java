@@ -45,6 +45,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
 
 import org.apache.ode.spi.cdi.Handler;
 
@@ -63,7 +64,7 @@ public class JPAHandler extends Handler {
 
 		@Produces
 		@Dependent
-		public EntityManager create(InjectionPoint ip) {
+		public EntityManager createEM(InjectionPoint ip) {
 			PersistenceContext pc = ip.getAnnotated().getAnnotation(PersistenceContext.class);
 			if (pc != null && pc.unitName() != null) {
 				EntityManagerFactory emf = emfCache.get(pc.unitName());
@@ -74,6 +75,22 @@ public class JPAHandler extends Handler {
 				EntityManager em = emf.createEntityManager();
 				return em;
 
+			}
+			return null;
+
+		}
+
+		@Produces
+		@Dependent
+		public EntityManagerFactory createEMF(InjectionPoint ip) {
+			PersistenceUnit pc = ip.getAnnotated().getAnnotation(PersistenceUnit.class);
+			if (pc != null && pc.unitName() != null) {
+				EntityManagerFactory emf = emfCache.get(pc.unitName());
+				if (emf == null) {
+					emf = Persistence.createEntityManagerFactory(pc.unitName());
+					emfCache.put(pc.unitName(), emf);
+				}
+				return emf;
 			}
 			return null;
 
@@ -145,11 +162,14 @@ public class JPAHandler extends Handler {
 
 			if (method.isAnnotationPresent(PersistenceContext.class)) {
 				return true;
-
+			} else if (method.isAnnotationPresent(PersistenceUnit.class)) {
+				return true;
 			}
 		}
 		for (AnnotatedField<?> field : type.getFields()) {
 			if (field.isAnnotationPresent(PersistenceContext.class)) {
+				return true;
+			} else if (field.isAnnotationPresent(PersistenceUnit.class)) {
 				return true;
 			}
 		}
@@ -167,6 +187,11 @@ public class JPAHandler extends Handler {
 				// method.getAnnotation(PersistenceContext.class);
 				System.out.format("************* Identified PersistenceContext annotation on method %s\n", method.getJavaMember().getName());
 				method.getAnnotations().add(new Inject());
+			} else if (method.isAnnotationPresent(PersistenceUnit.class)) {
+				// PersistenceContext ctx =
+				// method.getAnnotation(PersistenceContext.class);
+				System.out.format("************* Identified PersistenceUnit annotation on method %s\n", method.getJavaMember().getName());
+				method.getAnnotations().add(new Inject());
 			}
 		}
 		for (AnnotatedField<?> field : at.getFields()) {
@@ -174,6 +199,11 @@ public class JPAHandler extends Handler {
 				// PersistenceContext ctx =
 				// field.getAnnotation(PersistenceContext.class);
 				System.out.format("############# Identified PersistenceContext annotation on field %s\n", field.getJavaMember().getName());
+				field.getAnnotations().add(new Inject());
+			} else if (field.isAnnotationPresent(PersistenceUnit.class)) {
+				// PersistenceContext ctx =
+				// field.getAnnotation(PersistenceContext.class);
+				System.out.format("############# Identified PersistenceUnit annotation on field %s\n", field.getJavaMember().getName());
 				field.getAnnotations().add(new Inject());
 			}
 		}

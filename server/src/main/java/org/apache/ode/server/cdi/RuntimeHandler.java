@@ -18,15 +18,21 @@
  */
 package org.apache.ode.server.cdi;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Set;
 
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
+import javax.enterprise.inject.spi.AnnotatedField;
+import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Inject;
 import javax.management.ObjectName;
 
 import org.apache.ode.runtime.build.BuildExecutor;
@@ -35,6 +41,12 @@ import org.apache.ode.runtime.build.CompilersImpl;
 import org.apache.ode.runtime.build.WSDLContextImpl;
 import org.apache.ode.runtime.build.XMLSchemaContextImpl;
 import org.apache.ode.runtime.exec.Exec;
+import org.apache.ode.runtime.exec.platform.ActionPoll;
+import org.apache.ode.runtime.exec.platform.Cluster;
+import org.apache.ode.runtime.exec.platform.Cluster.ClusterId;
+import org.apache.ode.runtime.exec.platform.Cluster.NodeId;
+import org.apache.ode.runtime.exec.platform.HealthCheck;
+import org.apache.ode.runtime.exec.platform.LocalNode;
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.runtime.jmx.BuildSystemImpl;
 import org.apache.ode.runtime.wsdl.WSDL;
@@ -43,6 +55,7 @@ import org.apache.ode.runtime.xsd.XSD;
 import org.apache.ode.runtime.xsl.XSL;
 import org.apache.ode.server.JMXServer;
 import org.apache.ode.server.WSDLComponentImpl;
+import org.apache.ode.server.xml.ServerConfig;
 import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.repo.XMLValidate;
 
@@ -63,6 +76,7 @@ public class RuntimeHandler extends Handler {
 	 * 
 	 * }
 	 */
+
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(XSD.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(XML.class));
@@ -79,6 +93,13 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLComponentImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(Exec.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(PlatformImpl.class));
+		bbd.addAnnotatedType(getClusterType(bm.createAnnotatedType(Cluster.class)));
+		bbd.addQualifier(ClusterId.class);
+		bbd.addQualifier(NodeId.class);
+		bbd.addAnnotatedType(bm.createAnnotatedType(ClusterProducer.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(HealthCheck.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(ActionPoll.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(LocalNode.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(org.apache.ode.runtime.jmx.PlatformImpl.class));
 	}
 
@@ -88,8 +109,9 @@ public class RuntimeHandler extends Handler {
 		manage(XML.class);
 		manage(WSDL.class);
 		manage(XSL.class);
-		manage(BuildSystem.class);
+		manage(Cluster.class);
 		manage(Exec.class);
+		manage(BuildSystem.class);
 		manage(BuildSystemImpl.class);
 		manage(org.apache.ode.runtime.jmx.PlatformImpl.class);
 		start(bm);
@@ -101,7 +123,8 @@ public class RuntimeHandler extends Handler {
 			JMXServer server = (JMXServer) bm.getReference(bean, JMXServer.class, bm.createCreationalContext(bean));
 			try {
 				server.getMBeanServer().registerMBean(getInstance(BuildSystemImpl.class), ObjectName.getInstance(BuildSystemImpl.OBJECTNAME));
-				server.getMBeanServer().registerMBean(getInstance(org.apache.ode.runtime.jmx.PlatformImpl.class), ObjectName.getInstance(org.apache.ode.runtime.jmx.PlatformImpl.OBJECTNAME));
+				server.getMBeanServer().registerMBean(getInstance(org.apache.ode.runtime.jmx.PlatformImpl.class),
+						ObjectName.getInstance(org.apache.ode.runtime.jmx.PlatformImpl.OBJECTNAME));
 			} catch (Exception e) {
 				e.printStackTrace();
 				adv.addDeploymentProblem(e);
@@ -115,4 +138,51 @@ public class RuntimeHandler extends Handler {
 		stop();
 	}
 
+	public static class ClusterProducer {
+
+		@Inject
+		ServerConfig serverConfig;
+
+		@Produces
+		@ClusterId
+		public String createClusterId() {
+			return serverConfig.getClusterId();
+		}
+
+		@Produces
+		@NodeId
+		public String createNodeId() {
+			String nodeId = serverConfig.getNodeId();
+			if (nodeId != null) {
+				return nodeId;
+			}
+			try {
+				InetAddress addr = InetAddress.getLocalHost();
+				nodeId = addr.getHostName();
+				int index = nodeId.indexOf('.');
+				if (index > -1) {
+					nodeId = nodeId.substring(0, index);
+				}
+				return nodeId;
+			} catch (UnknownHostException e) {
+			}
+			return "node1";
+		}
+	}
+
+	public AnnotatedType<Cluster> getClusterType(AnnotatedType<Cluster> type) {
+		AnnotatedTypeImpl<Cluster> at = new AnnotatedTypeImpl<Cluster>(type);
+		final class Inject extends AnnotationLiteral<javax.inject.Inject> implements javax.inject.Inject {
+		}
+		for (AnnotatedField<?> field : at.getFields()) {
+			if (field.isAnnotationPresent(ClusterId.class)) {
+				field.getAnnotations().add(new Inject());
+				// field.getAnnotations().add(new ClusterIdAnnotation());
+			} else if (field.isAnnotationPresent(NodeId.class)) {
+				field.getAnnotations().add(new Inject());
+				// field.getAnnotations().add(new NodeIdAnnotation());
+			}
+		}
+		return at;
+	}
 }

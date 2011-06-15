@@ -26,14 +26,14 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.ode.server.xml.ServerType;
+import org.apache.ode.server.xml.ServerConfig;
 
 import com.sun.grizzly.http.embed.GrizzlyWebServer;
 
 @Singleton
 public class WebServer {
 	@Inject
-	ServerType serverConfig;
+	ServerConfig serverConfig;
 	GrizzlyWebServer server;
 	int httpPort = -1;
 	boolean sslEnabled = false;

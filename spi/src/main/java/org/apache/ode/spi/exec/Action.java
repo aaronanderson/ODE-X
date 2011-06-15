@@ -19,33 +19,44 @@
 package org.apache.ode.spi.exec;
 
 import javax.xml.namespace.QName;
-import static org.apache.ode.spi.exec.Platform.PLATFORM_NAMESPACE;
+
+import org.apache.ode.spi.exec.Platform.PlatformAction;
 
 public class Action {
 
-	public static final Action INSTALL_ACTION = new Action(new QName(PLATFORM_NAMESPACE, "install"), new String[] { "INSTALL", "INSTALLING", "INSTALLED" });
-	public static final Action START_ACTION = new Action(new QName(PLATFORM_NAMESPACE, "start"), new String[] { "START", "STARTING", "STARTED" });
-	public static final Action STOP_ACTION = new Action(new QName(PLATFORM_NAMESPACE, "stop"), new String[] { "STOP", "STOPING", "STOPPED" });
-	public static final Action UNINSTALL_ACTION = new Action(new QName(PLATFORM_NAMESPACE, "uninstall"), new String[] { "UNINSTALL", "UNINSTALLING",
-			"UNINSTALLED" });
+	public static final Action INSTALL_ACTION = new Action(PlatformAction.INSTALL_ACTION.qname(), TaskType.SLAVE);
+	public static final Action UNINSTALL_ACTION = new Action(PlatformAction.UNINSTALL_ACTION.qname(), TaskType.SLAVE);
+	public static final Action START_ACTION = new Action(PlatformAction.START_ACTION.qname(), TaskType.SLAVE);
+	public static final Action STOP_ACTION = new Action(PlatformAction.STOP_ACTION.qname(), TaskType.SLAVE);
 
-	final QName type;
-	final String[] states;
+	private final QName qname;
+	private final TaskType type;
 
-	public Action(QName type, String[] states) {
+	public Action(QName qname, TaskType type) {
+		this.qname = qname;
 		this.type = type;
-		this.states = states;
 	}
 
-	public QName getActionType() {
+	public QName getQName() {
+		return qname;
+	}
+
+	public TaskType getType() {
 		return type;
 	}
 
-	public String[] getStates() {
-		return states;
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof Action) {
+			Action a2 = (Action) o;
+			if (qname.equals(a2.getQName()) && type.equals(a2.getType())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
-	public static interface ActionId {
+	public static enum TaskType {
+		ACTION, MASTER, SLAVE
 	}
-
 }

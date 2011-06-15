@@ -33,15 +33,15 @@ public interface Platform {
 
 	public byte[] setup(ArtifactId executable) throws IOException;
 
-	public void install(String id, ArtifactId executable, byte[] installData) throws IOException;
+	public void install(String id, ArtifactId executable, byte[] installData, String[] targets) throws IOException;
 
 	public Program programInfo(String id) throws IOException;
 
-	public Process start(String id) throws IOException;
+	public Process start(String id, String[] targets) throws IOException;
 
-	public void stop(String id) throws IOException;
+	public void stop(String id, String[] targets) throws IOException;
 
-	public void uninstall(String id) throws IOException;
+	public void uninstall(String id, String[] targets) throws IOException;
 
 	public static class Program {
 
@@ -66,12 +66,12 @@ public interface Platform {
 	}
 
 	public static class Process {
-		
+
 		@ConstructorProperties({ "id" })
 		public Process(String id) {
 			this.id = id;
 		}
-		
+
 		private String id;
 
 		public String getId() {

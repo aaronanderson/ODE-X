@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Formatter;
+import java.util.List;
 
 import javax.management.JMX;
 import javax.management.MalformedObjectNameException;
@@ -54,6 +55,9 @@ public class InstallCommand extends AbstractCommand {
 	@Parameter(names = "--file", description = "Install data file to for install", converter = FileConverter.class)
 	public File file;
 
+	@Parameter(names = "--target", description = "Specify installation target all <cluster|target>:<name>")
+	public List<String> targets;
+
 	@Override
 	public void execute() throws IOException, MalformedObjectNameException {
 		Platform platform = JMX.newMXBeanProxy(connection.getConnection(), ObjectName.getInstance(Platform.OBJECTNAME), Platform.class);
@@ -71,7 +75,11 @@ public class InstallCommand extends AbstractCommand {
 		}
 		version = version != null ? version : "1.0";
 		ArtifactId aid = new ArtifactId(name, Platform.EXEC_MIMETYPE, version);
-		platform.install(id, aid, contents);
+		String[] target = null;
+		if (targets != null) {
+
+		}
+		platform.install(id, aid, contents, target);
 		out.format("Sucessfully installed executable %s with program name %s\n", id, name);
 
 	}

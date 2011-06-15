@@ -16,47 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.cli;
+package org.apache.ode.runtime.exec.platform;
 
-import java.io.IOException;
+import java.io.Serializable;
+import java.util.List;
 
-import org.apache.ode.api.Platform;
-import org.apache.ode.api.Repository.ArtifactId;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
-public class PlatformImpl implements Platform {
+import org.apache.ode.spi.exec.ActionTask.ActionMessage;
+import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
 
+public class SlaveActionStatusImpl extends ActionStatusImpl implements SlaveActionStatus, Serializable {
+
+	
 	@Override
-	public byte[] setup(ArtifactId executable) throws IOException {
-
+	public List<ActionMessage> messages() {
 		return null;
-	}
-
-	@Override
-	public void install(String id, ArtifactId executable, byte[] installData, String[] targets) throws IOException {
-
-	}
-
-	@Override
-	public Program programInfo(String id) throws IOException {
-		return null;
-	}
-
-	@Override
-	public Process start(String id, String[] targets) throws IOException {
-
-		return null;
-	}
-
-	@Override
-	public void stop(String id, String[] targets) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void uninstall(String id, String[] targets) throws IOException {
-		// TODO Auto-generated method stub
-
 	}
 
 }

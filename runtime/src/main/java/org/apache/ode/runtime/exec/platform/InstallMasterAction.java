@@ -16,22 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+package org.apache.ode.runtime.exec.platform;
 
-import org.apache.ode.spi.exec.Action.ActionId;
-import org.w3c.dom.Document;
+import org.apache.ode.spi.exec.MasterActionTask;
+import org.apache.ode.spi.exec.PlatformException;
 
-public interface ActionContext {
-	
-	public ActionId getActionId();
+public class InstallMasterAction implements MasterActionTask {
 
-	public String getNodeId();
-	
-	public String getState();
+	@Override
+	public void start(MasterActionContext ctx) throws PlatformException {
+		// TODO Auto-generated method stub
 
-	public void log(ActionMessage message);
+	}
 
-	public Document getActionInfo();
-	
-	public Platform getPlatform();
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void finish() throws PlatformException {
+		// TODO Auto-generated method stub
+
+	}
+
 }

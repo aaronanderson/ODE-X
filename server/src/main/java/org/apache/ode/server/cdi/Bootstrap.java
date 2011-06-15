@@ -48,14 +48,14 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Singleton;
 
 import org.apache.ode.server.Server;
-import org.apache.ode.server.xml.ServerType;
+import org.apache.ode.server.xml.ServerConfig;
 import org.apache.ode.spi.cdi.Handler;
 
 public class Bootstrap implements Extension {
 	// We will bootstrap all CDI beans rather than using beans.xml for
 	// autodiscovery
 
-	ServerType server;
+	ServerConfig server;
 	List<Handler> handlers = new ArrayList<Handler>();
 	List<AnnotatedType<?>> addedTypes = new ArrayList<AnnotatedType<?>>();
 
@@ -121,14 +121,14 @@ public class Bootstrap implements Extension {
 			h.afterBeanDiscovery(abd, bm);
 		}
 		
-		 AnnotatedType<ServerType> at = bm.createAnnotatedType(ServerType.class);
-         final InjectionTarget<ServerType> it = bm.createInjectionTarget(at);
+		 AnnotatedType<ServerConfig> at = bm.createAnnotatedType(ServerConfig.class);
+         final InjectionTarget<ServerConfig> it = bm.createInjectionTarget(at);
          
-         Bean<ServerType> si = new Bean<ServerType>() {
+         Bean<ServerConfig> si = new Bean<ServerConfig>() {
 
              public Set<Type> getTypes() {
                  Set<Type> types = new HashSet<Type>();
-                 types.add(ServerType.class);
+                 types.add(ServerConfig.class);
                  types.add(Object.class);
                  return types;
              }
@@ -155,7 +155,7 @@ public class Bootstrap implements Extension {
              }
 
              public Class<?> getBeanClass() {
-                 return ServerType.class;
+                 return ServerConfig.class;
              }
 
              public boolean isAlternative() {
@@ -171,14 +171,14 @@ public class Bootstrap implements Extension {
              }
 
              @Override
-             public ServerType create(CreationalContext<ServerType> ctx) {
+             public ServerConfig create(CreationalContext<ServerConfig> ctx) {
                  return server;
 
              }
 
              @Override
-             public void destroy(ServerType instance,
-                     CreationalContext<ServerType> ctx) {
+             public void destroy(ServerConfig instance,
+                     CreationalContext<ServerConfig> ctx) {
              }
          };
          abd.addBean(si);

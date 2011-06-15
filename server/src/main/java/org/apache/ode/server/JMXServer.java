@@ -20,7 +20,6 @@ package org.apache.ode.server;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.rmi.registry.LocateRegistry;
 import java.util.Map;
 
@@ -34,12 +33,12 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.apache.ode.server.xml.ServerType;
+import org.apache.ode.server.xml.ServerConfig;
 
 @Singleton
 public class JMXServer {
 	@Inject
-	ServerType serverConfig;
+	ServerConfig serverConfig;
 	JMXConnectorServer cntorServer;
 	MBeanServer mbeanServer;
 	int port = -1;
@@ -64,7 +63,7 @@ public class JMXServer {
 		}
 	}
 
-	public static JMXServiceURL buildJMXAddress(ServerType serverConfig) throws MalformedURLException {
+	public static JMXServiceURL buildJMXAddress(ServerConfig serverConfig) throws MalformedURLException {
 		if (serverConfig.getJmxURL() != null) {
 			return new JMXServiceURL(serverConfig.getJmxURL());
 		} else {

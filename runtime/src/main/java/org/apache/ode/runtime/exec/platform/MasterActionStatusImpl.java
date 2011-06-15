@@ -16,27 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+package org.apache.ode.runtime.exec.platform;
 
+import java.io.Serializable;
+import java.util.List;
 
-public class ActionMessage {
-	private LogType type;
-	private String message;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage;
+import org.apache.ode.spi.exec.MasterActionTask.MasterActionStatus;
+import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
 
-	public ActionMessage(LogType type, String message) {
-		this.type = type;
-		this.message = message;
+public class MasterActionStatusImpl extends ActionStatusImpl implements MasterActionStatus, Serializable {
+
+	@Override
+	public List<SlaveActionStatus> slaveStatus() {
+		return null;
 	}
 
-	public LogType getType() {
-		return type;
-	}
-
-	public String getMessage() {
-		return message;
-	}
 	
-	public static enum LogType {
-		INFO, WARNING, ERROR
-	}
+	
+
 }

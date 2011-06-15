@@ -33,7 +33,7 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.apache.ode.server.xml.ServerType;
+import org.apache.ode.server.xml.ServerConfig;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 
@@ -129,7 +129,7 @@ public class Server {
 
 	public void stop() {
 		try {
-			ServerType serverConfig = readConfig();
+			ServerConfig serverConfig = readConfig();
 			JMXServiceURL url = JMXServer.buildJMXAddress(serverConfig);
 			JMXConnector jmxc = JMXConnectorFactory.connect(url, null);
 			MBeanServerConnection jmxConnection = jmxc.getMBeanServerConnection();
@@ -164,7 +164,7 @@ public class Server {
 
 	}
 
-	public static ServerType readConfig() throws IOException {
+	public static ServerConfig readConfig() throws IOException {
 
 		String configName = System.getProperty("ode.config");
 		if (configName == null) {
@@ -178,7 +178,7 @@ public class Server {
 			try {
 				JAXBContext jc = JAXBContext.newInstance("org.apache.ode.server.xml");
 				Unmarshaller u = jc.createUnmarshaller();
-				JAXBElement<ServerType> element = (JAXBElement<ServerType>) u.unmarshal(is);
+				JAXBElement<ServerConfig> element = (JAXBElement<ServerConfig>) u.unmarshal(is);
 				return element.getValue();
 
 			} catch (JAXBException je) {

@@ -19,16 +19,22 @@
 package org.apache.ode.runtime.exec.platform;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
+import java.util.Calendar;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Version;
 
+import org.apache.ode.spi.exec.NodeStatus.State;
+
+@NamedQueries({ @NamedQuery(name = "healthCheck", query = "select node from Node node where node.heartBeat > :lifetime"),
+		@NamedQuery(name = "deleteDeadNodes", query = "delete from Node node where node.heartBeat < :lifetime") })
 @Entity
 @Table(name = "NODE")
 public class Node implements Serializable {
@@ -45,13 +51,16 @@ public class Node implements Serializable {
 	@Column(name = "NODE_SEQ")
 	private int nodeSequence;
 
-	@Column(name = "STATUS")
-	private String status;
+	@Column(name = "STATE")
+	private String state;
 
-	@Version
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "HEARTBEAT")
-	private Timestamp heartBeat;
+	private Calendar heartBeat;
+
+	@Version
+	@Column(name = "VERSION")
+	private long version;
 
 	public void setNodeId(String nodeId) {
 		this.nodeId = nodeId;
@@ -77,23 +86,23 @@ public class Node implements Serializable {
 		return nodeSequence;
 	}
 
-	public void setStatus(Status status) {
-		this.status = status.name();
+	public void setState(State state) {
+		this.state = state.name();
 	}
 
-	public Status getStatus() {
-		if (status != null) {
-			return Status.valueOf(this.status);
+	public State getState() {
+		if (state != null) {
+			return State.valueOf(state);
 		}
-		return Status.INACTIVE;
+		return State.OFFLINE;
 	}
 
-	public Timestamp getHeartBeat() {
+	public Calendar getHeartBeat() {
 		return heartBeat;
 	}
 
-	public static enum Status {
-		ACTIVE, INACTIVE;
+	public void setHeartBeat(Calendar heartBeat) {
+		this.heartBeat = heartBeat;
 	}
 
 }

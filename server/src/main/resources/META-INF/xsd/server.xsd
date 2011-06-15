@@ -19,7 +19,7 @@
 		<attribute name="maxThreads" type="integer" default="10" />
 		<attribute name="queueSize" type="integer" default="100" />
 		<attribute name="nodeId" type="string" />
-		<attribute name="cluster" type="string" default="default_cluster"/>
+		<attribute name="clusterId" type="string" default="default_cluster"/>
 	</complexType>
 
 	<complexType name="dataSourceType">

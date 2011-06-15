@@ -16,47 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.cli;
+package org.apache.ode.runtime.exec.platform;
 
-import java.io.IOException;
+import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.SlaveActionTask;
 
-import org.apache.ode.api.Platform;
-import org.apache.ode.api.Repository.ArtifactId;
 
-public class PlatformImpl implements Platform {
+public class InstallSlaveAction implements SlaveActionTask {
 
 	@Override
-	public byte[] setup(ArtifactId executable) throws IOException {
-
-		return null;
+	public void start(SlaveActionContext ctx) throws PlatformException {
+		
 	}
 
 	@Override
-	public void install(String id, ArtifactId executable, byte[] installData, String[] targets) throws IOException {
-
+	public void run() {
+		
 	}
 
 	@Override
-	public Program programInfo(String id) throws IOException {
-		return null;
+	public void finish() throws PlatformException {
+		
 	}
 
-	@Override
-	public Process start(String id, String[] targets) throws IOException {
 
-		return null;
-	}
-
-	@Override
-	public void stop(String id, String[] targets) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void uninstall(String id, String[] targets) throws IOException {
-		// TODO Auto-generated method stub
-
-	}
 
 }
