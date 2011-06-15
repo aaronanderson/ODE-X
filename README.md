@@ -12,4 +12,4 @@
 
 ## Docs
    
-   See [Apache ODE-X](http://people.apache.org/~aanderson/ODE-X)    
+   See [ODE-X](http://people.apache.org/~aanderson/ODE-X)    
