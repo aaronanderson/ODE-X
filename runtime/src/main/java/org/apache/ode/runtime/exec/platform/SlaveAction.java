@@ -19,20 +19,25 @@
 package org.apache.ode.runtime.exec.platform;
 
 import java.io.Serializable;
-import java.util.List;
 
-import org.apache.ode.spi.exec.ActionTask.ActionMessage;
-import org.apache.ode.spi.exec.MasterActionTask.MasterActionStatus;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToOne;
+
+import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
 
-public class MasterActionStatusImpl extends ActionStatusImpl implements MasterActionStatus, Serializable {
-
+@DiscriminatorValue("SLAVE")
+public class SlaveAction extends Action implements SlaveActionStatus, Serializable {
+	
+	@ManyToOne()
+	@JoinTable(name = "ACTION_SLAVES", joinColumns = { @JoinColumn(name = "SLAVE_ID") }, inverseJoinColumns = { @JoinColumn(name = "MASTER_ID") })
+	MasterAction master;
+	
 	@Override
-	public List<SlaveActionStatus> slaveStatus() {
-		return null;
+	public ActionStatus masterStatus() {
+		return master;
 	}
-
 	
-	
-
 }

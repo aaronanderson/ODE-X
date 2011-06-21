@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -41,6 +42,7 @@ import javax.xml.stream.XMLStreamReader;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
@@ -74,16 +76,22 @@ public class PlatformImpl implements Platform {
 
 	@Inject
 	private Cluster cluster;
-	
-	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
 
+	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
+	private Map<QName, String> instructions = new ConcurrentHashMap<QName, String>();
+
+	
 	@Override
 	public void registerComponent(Component component) {
-		components.put(component.instructionSet(), component);
+		components.put(component.name(), component);
+		for (InstructionSet is : component.instructionSets()) {
+			instructions.put(is.getName(), is.getJAXBContextPath());
+		}
+		cluster.addComponent(component);
 	}
 
-	public Component getComponent(QName instructionSet) {
-		return components.get(instructionSet);
+	public Component getComponent(QName name) {
+		return components.get(name);
 	}
 
 	@Override
@@ -122,7 +130,7 @@ public class PlatformImpl implements Platform {
 
 	@Override
 	public void install(QName id, Artifact executable, Document installData, Target... targets) throws PlatformException {
-	  //cluster.execute(action, installData,targets);
+		// cluster.execute(action, installData,targets);
 	}
 
 	@Override
@@ -133,7 +141,7 @@ public class PlatformImpl implements Platform {
 
 	@Override
 	public Process start(QName id, Target... targets) throws PlatformException {
-	  return null;
+		return null;
 	}
 
 	@Override
@@ -146,17 +154,17 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public ActionId execute(QName action, Document actionInput, Target... targets) throws PlatformException{
+	public ActionId execute(QName action, Document actionInput, Target... targets) throws PlatformException {
 		return cluster.execute(action, actionInput, targets);
 	}
 
 	@Override
-	public ActionStatus status(ActionId actionId) throws PlatformException{
+	public ActionStatus status(ActionId actionId) throws PlatformException {
 		return cluster.status(actionId);
 	}
 
 	@Override
-	public void cancel(ActionId actionId) throws PlatformException{
+	public void cancel(ActionId actionId) throws PlatformException {
 		cluster.cancel(actionId);
 	}
 
@@ -172,12 +180,12 @@ public class PlatformImpl implements Platform {
 		StringBuilder ctxs = new StringBuilder(EXEC_JAXB_CTX);
 		try {
 			for (QName iset : isets) {
-				Component c = components.get(iset);
-				if (c == null) {
+				String jaxbPath = instructions.get(iset);
+				if (jaxbPath == null) {
 					throw new PlatformException("Unknown instruction set " + iset.toString());
 				}
 				ctxs.append(':');
-				ctxs.append(c.jaxbContextPath());
+				ctxs.append(jaxbPath);
 			}
 			return JAXBContext.newInstance(ctxs.toString());
 		} catch (Exception e) {
@@ -220,12 +228,12 @@ public class PlatformImpl implements Platform {
 		InstructionSets isets = executable.getInstructionSets();
 		if (isets != null) {
 			for (QName iset : isets.getInstructionSet()) {
-				Component c = components.get(iset);
-				if (c == null) {
+				String jaxbPath = instructions.get(iset);
+				if (jaxbPath == null) {
 					throw new JAXBException("Unknown instruction set " + iset.toString());
 				}
 				ctxs.append(':');
-				ctxs.append(c.jaxbContextPath());
+				ctxs.append(jaxbPath);
 			}
 		}
 		return JAXBContext.newInstance(ctxs.toString());

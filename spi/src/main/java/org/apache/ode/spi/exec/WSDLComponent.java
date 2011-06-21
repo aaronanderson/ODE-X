@@ -18,6 +18,9 @@
  */
 package org.apache.ode.spi.exec;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.namespace.QName;
 
 public abstract class WSDLComponent implements Component {
@@ -26,8 +29,11 @@ public abstract class WSDLComponent implements Component {
 	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
 
 	@Override
-	public QName instructionSet() {
-		return WSDL_INSTRUCTION_SET;
+	public List<InstructionSet> instructionSets() {
+		List<InstructionSet> instructions = new ArrayList<InstructionSet>();
+		InstructionSet is = new InstructionSet(WSDL_INSTRUCTION_SET, null);
+		instructions.add(is);
+		return instructions;
 	}
 
 }

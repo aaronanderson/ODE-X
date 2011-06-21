@@ -37,7 +37,7 @@ public class Target {
 	}
 
 	public static enum TargetType {
-		ALL, CLUSTER, NODE;
+		ALL, CLUSTER, NODE, LOCAL;
 	}
 
 }

@@ -18,38 +18,40 @@
  */
 package org.apache.ode.spi.exec;
 
+import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Platform.PlatformAction;
+import org.apache.ode.spi.exec.ActionTask.ActionContext;
 
 public class Action {
 
-	public static final Action INSTALL_ACTION = new Action(PlatformAction.INSTALL_ACTION.qname(), TaskType.SLAVE);
-	public static final Action UNINSTALL_ACTION = new Action(PlatformAction.UNINSTALL_ACTION.qname(), TaskType.SLAVE);
-	public static final Action START_ACTION = new Action(PlatformAction.START_ACTION.qname(), TaskType.SLAVE);
-	public static final Action STOP_ACTION = new Action(PlatformAction.STOP_ACTION.qname(), TaskType.SLAVE);
-
-	private final QName qname;
+	private final QName name;
 	private final TaskType type;
+	private final Provider<? extends ActionTask<?>> provider;
 
-	public Action(QName qname, TaskType type) {
-		this.qname = qname;
+	public Action(QName name, TaskType type, Provider<? extends ActionTask<?>> provider) {
+		this.name = name;
 		this.type = type;
+		this.provider = provider;
 	}
 
-	public QName getQName() {
-		return qname;
+	public QName getName() {
+		return name;
 	}
 
 	public TaskType getType() {
 		return type;
+	}
+	
+	public Provider<? extends ActionTask<?>> getProvider() {
+		return provider;
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Action) {
 			Action a2 = (Action) o;
-			if (qname.equals(a2.getQName()) && type.equals(a2.getType())) {
+			if (name.equals(a2.getName()) && type.equals(a2.getType())) {
 				return true;
 			}
 		}
@@ -57,6 +59,6 @@ public class Action {
 	}
 
 	public static enum TaskType {
-		ACTION, MASTER, SLAVE
+		ACTION, MASTER, SLAVE, SINGLE_SLAVE
 	}
 }

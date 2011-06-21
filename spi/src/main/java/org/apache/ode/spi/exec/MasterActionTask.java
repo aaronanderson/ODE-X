@@ -18,11 +18,11 @@
  */
 package org.apache.ode.spi.exec;
 
-import java.util.List;
+import java.util.Set;
 
 import org.apache.ode.spi.exec.ActionTask.ActionContext;
 import org.apache.ode.spi.exec.MasterActionTask.MasterActionContext;
-import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
+import org.w3c.dom.Document;
 
 /**
  * 
@@ -31,17 +31,20 @@ import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
  * 
  */
 public interface MasterActionTask extends ActionTask<MasterActionContext> {
-	
+
 	public interface MasterActionContext extends ActionContext {
 
-		public List<SlaveActionStatus> slaveStatus();
+		public Set<ActionStatus> slaveStatus();
+		
+		public void setInput(String nodeId, Document input) throws PlatformException;
+
 
 	}
 
 	public interface MasterActionStatus extends ActionStatus {
-		
-		public List<SlaveActionStatus> slaveStatus();
-		
+
+		public Set<ActionStatus> slaveStatus();
+
 	}
 
 }

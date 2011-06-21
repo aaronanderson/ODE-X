@@ -31,21 +31,22 @@ import org.w3c.dom.Document;
  * Intended to run once only on a single node
  * 
  */
-public interface ActionTask<C extends ActionContext> extends Runnable {
+public interface ActionTask<C extends ActionContext> {
 
-	// returns QName of NodeActionTask\
 	public void start(C ctx) throws PlatformException;
 
-	@Override
-	public void run();
+	public void run(C ctx) throws PlatformException;
 
-	public void finish() throws PlatformException;
+	public void finish(C ctx) throws PlatformException;
+
+	@Override
+	public boolean equals(Object o);
 
 	public static interface ActionContext {
 
 		public ActionId id();
 
-		public QName type();
+		public QName name();
 
 		public void log(ActionMessage message);
 
@@ -53,9 +54,9 @@ public interface ActionTask<C extends ActionContext> extends Runnable {
 
 		public void refresh();
 
-		public Status getStatus();
+		public ActionState getStatus();
 
-		public void updateStatus(Status status);
+		public void updateStatus(ActionState status);
 
 		public void updateResult(Document result);
 	}
@@ -64,9 +65,11 @@ public interface ActionTask<C extends ActionContext> extends Runnable {
 
 		public ActionId id();
 
-		public QName type();
+		public QName name();
+		
+		public QName component();
 
-		public Status status();
+		public ActionState state();
 
 		public List<ActionMessage> messages();
 
@@ -78,8 +81,8 @@ public interface ActionTask<C extends ActionContext> extends Runnable {
 
 	}
 
-	public static enum Status {
-		START, EXECUTING, COMPLETED, PARTIAL_FAILURE, FAILED, CANCELED
+	public static enum ActionState {
+		SUBMIT, START, EXECUTING, FINISH, COMPLETED, PARTIAL_FAILURE, FAILED, CANCELED
 	}
 
 	public static interface ActionId {
@@ -87,12 +90,18 @@ public interface ActionTask<C extends ActionContext> extends Runnable {
 	}
 
 	public static class ActionMessage {
-		private LogType type;
-		private String message;
+		private final Date timestamp;
+		private final LogType type;
+		private final String message;
 
-		public ActionMessage(LogType type, String message) {
+		public ActionMessage(Date timestamp, LogType type, String message) {
+			this.timestamp = timestamp;
 			this.type = type;
 			this.message = message;
+		}
+
+		public Date getTimestamp() {
+			return timestamp;
 		}
 
 		public LogType getType() {

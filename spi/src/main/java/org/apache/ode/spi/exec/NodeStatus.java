@@ -25,9 +25,9 @@ public interface NodeStatus {
 
 	public String nodeId();
 
-	public State state();
+	public NodeState state();
 
-	public static enum State {
+	public static enum NodeState {
 		ONLINE, OFFLINE;
 	}
 }

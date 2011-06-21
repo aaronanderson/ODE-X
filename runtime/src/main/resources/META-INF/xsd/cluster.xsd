@@ -17,9 +17,11 @@
 	<complexType name="clusterConfigType">
 		<sequence>
 			<element name="health-check" type="tns:healthCheckType"
-				minOccurs="1" maxOccurs="1" />
+				minOccurs="0" maxOccurs="1" />
 			<element name="action-check" type="tns:actionCheckType"
-				minOccurs="1" maxOccurs="1" />
+				minOccurs="0" maxOccurs="1" />
+			<element name="action-execution" type="tns:actionExecutionType"
+				minOccurs="0" maxOccurs="1" />
 			<element name="nodes" type="tns:nodesType" minOccurs="1"
 				maxOccurs="1" />
 		</sequence>
@@ -37,6 +39,14 @@
 		<attribute name="action-timeout" type="long" default="30000" />
 	</complexType>
 
+	<complexType name="actionExecutionType">
+		<attribute name="queue-size" type="int" default="100" />
+		<attribute name="core-threads" type="int" default="5" />
+		<attribute name="max-threads" type="int" default="20" />
+		<attribute name="thread-timeout" type="int" default="30" />
+		<attribute name="shutdown-wait-time" type="int" default="30" />
+	</complexType>
+
 	<complexType name="nodesType">
 		<sequence>
 			<element name="node" type="string" minOccurs="0" maxOccurs="unbounded" />
@@ -44,19 +54,11 @@
 		<attribute name="auto-discovery" type="boolean" default="true" />
 	</complexType>
 
-	<complexType name="nodeStatusType">
-		<sequence>
-			<element name="messages" type="tns:nodeStatusMessagesType"
-				minOccurs="0" maxOccurs="1" />
-			<any namespace="##other" processContents="strict" minOccurs="0"
-				maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
 
-	<complexType name="nodeStatusMessagesType">
+	<complexType name="nodeMessagesType">
 		<sequence>
-			<element name="message" type="tns:nodeStatusMessageType"
-				minOccurs="1" maxOccurs="unbounded" />
+			<element name="message" type="tns:nodeMessageType" minOccurs="1"
+				maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
@@ -68,9 +70,10 @@
 		</restriction>
 	</simpleType>
 
-	<complexType name="nodeStatusMessageType">
+	<complexType name="nodeMessageType">
 		<simpleContent>
 			<extension base="string">
+				<attribute name="timestamp" type="dateTime" use="required" />
 				<attribute name="type" type="tns:logType" default="ERROR" />
 			</extension>
 		</simpleContent>
@@ -78,6 +81,6 @@
 
 	<element name="cluster-config" type="tns:clusterConfigType" />
 
-	<element name="node-status" type="tns:nodeStatusType" />
+	<element name="messages" type="tns:nodeMessagesType" />
 
 </schema>

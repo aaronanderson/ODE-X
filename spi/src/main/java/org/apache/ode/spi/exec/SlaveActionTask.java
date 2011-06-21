@@ -21,6 +21,7 @@ package org.apache.ode.spi.exec;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.ActionTask.ActionContext;
+import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionContext;
 
 /**
@@ -31,10 +32,12 @@ import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionContext;
 public interface SlaveActionTask extends ActionTask<SlaveActionContext> {
 
 	public interface SlaveActionContext extends ActionContext {
-		public QName component();
+		
 	}
 
 	public interface SlaveActionStatus extends ActionStatus {
+		
+		public ActionStatus masterStatus();
 
 	}
 

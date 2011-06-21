@@ -39,6 +39,11 @@
 		<developerConnection>scm:git:ssh//github.com/aaronanderson/ODE-X.git</developerConnection>
 		<url>https://github.com/aaronanderson/ODE-X</url>
 	</scm>
+	
+	<issueManagement>
+      <system>GitHub</system>
+      <url>https://github.com/aaronanderson/ODE-X/issues</url>
+    </issueManagement>    
 
 	<mailingLists>
 		<mailingList>

@@ -41,11 +41,14 @@ import org.apache.ode.runtime.build.CompilersImpl;
 import org.apache.ode.runtime.build.WSDLContextImpl;
 import org.apache.ode.runtime.build.XMLSchemaContextImpl;
 import org.apache.ode.runtime.exec.Exec;
+import org.apache.ode.runtime.exec.platform.ActionExecutor;
 import org.apache.ode.runtime.exec.platform.ActionPoll;
 import org.apache.ode.runtime.exec.platform.Cluster;
 import org.apache.ode.runtime.exec.platform.Cluster.ClusterId;
 import org.apache.ode.runtime.exec.platform.Cluster.NodeId;
 import org.apache.ode.runtime.exec.platform.HealthCheck;
+import org.apache.ode.runtime.exec.platform.InstallMasterAction;
+import org.apache.ode.runtime.exec.platform.InstallSlaveAction;
 import org.apache.ode.runtime.exec.platform.LocalNode;
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.runtime.jmx.BuildSystemImpl;
@@ -99,6 +102,9 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(ClusterProducer.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(HealthCheck.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(ActionPoll.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(ActionExecutor.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(InstallMasterAction.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(InstallSlaveAction.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(LocalNode.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(org.apache.ode.runtime.jmx.PlatformImpl.class));
 	}

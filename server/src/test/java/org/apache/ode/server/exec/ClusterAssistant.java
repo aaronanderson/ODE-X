@@ -30,11 +30,12 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceException;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.ActionExecutor;
 import org.apache.ode.runtime.exec.platform.ActionPoll;
 import org.apache.ode.runtime.exec.platform.HealthCheck;
 import org.apache.ode.runtime.exec.platform.Node;
 import org.apache.ode.spi.exec.NodeStatus;
-import org.apache.ode.spi.exec.NodeStatus.State;
+import org.apache.ode.spi.exec.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.repo.Repository;
 
@@ -55,14 +56,17 @@ public class ClusterAssistant {
 
 	@Inject
 	ActionPoll actionPoll;
-
+	
+	@Inject
+	ActionExecutor actionExec;
+	
 	String clusterId;
 
 	String nodeId;
 
 	ClusterConfig config;
 
-	AtomicReference<State> nodeStatus = new AtomicReference<State>();
+	AtomicReference<NodeState> nodeStatus = new AtomicReference<NodeState>();
 
 	@PostConstruct
 	public void init() {
@@ -74,18 +78,18 @@ public class ClusterAssistant {
 		this.nodeId = nodeId;
 		this.clusterId = clusterId;
 		this.config = config;
-		nodeStatus.set(State.OFFLINE);
+		nodeStatus.set(NodeState.OFFLINE);
 		healthCheck.init(clusterId, nodeId, nodeStatus, config.getHealthCheck());
-		actionPoll.init(clusterId, nodeId, nodeStatus, config.getActionCheck());
+		actionPoll.init(clusterId, nodeId, nodeStatus,actionExec, config.getActionCheck());
 	}
 
 	public void online() {
-		nodeStatus.set(State.ONLINE);
+		nodeStatus.set(NodeState.ONLINE);
 		healthCheck.run();
 	}
 
 	public void offline() {
-		nodeStatus.set(State.OFFLINE);
+		nodeStatus.set(NodeState.OFFLINE);
 		healthCheck.run();
 	}
 

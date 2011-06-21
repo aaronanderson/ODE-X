@@ -81,7 +81,7 @@ public class WSDL {
 		repository.registerHandler(WSDL_MIMETYPE, new WSDLDataContentHandler());
 		platform.registerComponent(wsdlComponent);
 		Compiler wsdlCompiler = compilers.newInstance();
-		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSet());
+		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSets().get(0).getName());
 		wsdlCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
 		wsdlCompiler.addSubContext(WSDLContext.ID,wsdlProvider);
 		WSDLCompiler compiler = new WSDLCompiler();

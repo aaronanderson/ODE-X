@@ -22,5 +22,14 @@ import org.apache.ode.spi.exec.ActionTask.ActionId;
 
 public class ActionIdImpl implements ActionId {
 
-	
+	final long id;
+
+	public ActionIdImpl(long id) {
+		this.id = id;
+	}
+
+	public long getId() {
+		return id;
+	}
+
 }

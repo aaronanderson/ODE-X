@@ -50,6 +50,7 @@ import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
@@ -170,7 +171,10 @@ public class BuildExecutor implements CommandObject {
 				if (c == null) {
 					throw new BuildException(String.format("Unsupported instructionset %s", iset));
 				}
-				jaxbContexts.add(c.jaxbContextPath());
+				for (InstructionSet is: c.instructionSets()){
+					jaxbContexts.add(is.getJAXBContextPath());
+				}
+				
 			}
 
 			for (Map.Entry<String, Provider<?>> p : impl.getSubContexts().entrySet()) {

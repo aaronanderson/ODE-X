@@ -18,27 +18,33 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import org.apache.ode.spi.exec.MasterActionTask;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.OneToMany;
+
+import org.apache.ode.spi.exec.ActionTask.ActionStatus;
+import org.apache.ode.spi.exec.MasterActionTask.MasterActionStatus;
 import org.apache.ode.spi.exec.PlatformException;
+import org.w3c.dom.Document;
 
-public class InstallMasterAction implements MasterActionTask {
+@DiscriminatorValue("MASTER")
+public class MasterAction extends Action implements MasterActionStatus, Serializable {
 
-	@Override
-	public void start(MasterActionContext ctx) throws PlatformException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void run(MasterActionContext ctx) {
-		// TODO Auto-generated method stub
-
-	}
+	@OneToMany(cascade = CascadeType.ALL)
+	@JoinTable(name = "ACTION_SLAVES", joinColumns = { @JoinColumn(name = "MASTER_ID", unique = true) }, inverseJoinColumns = { @JoinColumn(name = "SLAVE_ID") })
+	Set<SlaveAction> slaves;
 
 	@Override
-	public void finish(MasterActionContext ctx) throws PlatformException {
-		// TODO Auto-generated method stub
-
+	public Set<ActionStatus> slaveStatus() {
+		Set<ActionStatus> stats = new HashSet<ActionStatus>();
+		stats.addAll(slaves);
+		return stats;
 	}
 
 }

@@ -29,5 +29,6 @@
 	<health-check frequency="10000" inactive-timeout="60000"
 	node-cleanup="P10D" />
 	<action-check frequency="750" action-timeout="30000" />
+	<action-execution queue-size="100" core-threads="5" max-threads="20" thread-timeout="30" shutdown-wait-time="30" />
 	<nodes auto-discovery="true" />
 </cluster-config>

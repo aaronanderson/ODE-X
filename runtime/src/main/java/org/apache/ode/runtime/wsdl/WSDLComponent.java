@@ -18,39 +18,44 @@
  */
 package org.apache.ode.runtime.wsdl;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 
 public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponent {
 
 	@Override
-	public String jaxbContextPath() {
-		return "org.apache.ode.runtime.exec.wsdl.xml";
+	public QName name() {
+		return WSDL_INSTRUCTION_SET;
 	}
 
 	@Override
-	public List<Action> supportedActions(){
-		return null;
+	public List<InstructionSet> instructionSets() {
+		List<InstructionSet> iset = new ArrayList<InstructionSet>();
+		iset.add(new InstructionSet(WSDL_INSTRUCTION_SET, "org.apache.ode.runtime.exec.wsdl.xml"));
+		return iset;
 	}
 
 	@Override
-	public ActionTask<?> loadAction(Action action) throws PlatformException{
+	public List<Action> actions() {
 		return null;
 	}
-	
+
 	@Override
 	public void online() throws PlatformException {
-		
+
 	}
 
 	@Override
 	public void offline() throws PlatformException {
-		
-	}
 
+	}
 
 }

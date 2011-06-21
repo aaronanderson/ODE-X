@@ -26,6 +26,8 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayInputStream;
 import java.util.Calendar;
 import java.util.Set;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
@@ -35,6 +37,7 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Provider;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
@@ -46,12 +49,15 @@ import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
 import org.apache.ode.server.cdi.StaticHandler;
 import org.apache.ode.spi.exec.Action;
+import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask;
+import org.apache.ode.spi.exec.ActionTask.ActionContext;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
-import org.apache.ode.spi.exec.ActionTask.Status;
+import org.apache.ode.spi.exec.ActionTask.ActionState;
 import org.apache.ode.spi.exec.NodeStatus;
-import org.apache.ode.spi.exec.NodeStatus.State;
+import org.apache.ode.spi.exec.NodeStatus.NodeState;
+import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.Repository;
@@ -67,6 +73,7 @@ public class ClusterTest {
 	protected static Cluster cluster;
 	protected static ClusterAssistant assistant;
 	protected static ClusterConfig clusterConfig;
+	protected static ClusterComponent clusterComponent;
 
 	final static String clusterId = "test-cluster";
 	final static String nodeId = "testNode1";
@@ -99,7 +106,7 @@ public class ClusterTest {
 					Repository repo = (Repository) bm.getReference(repoBean, Repository.class, ctx);
 					try {
 						byte[] content = DataContentHandler.readStream(getClass().getResourceAsStream("/META-INF/test_cluster.xml"));
-						Unmarshaller u = Cluster.CLUSTER_CONFIG_JAXB_CTX.createUnmarshaller();
+						Unmarshaller u = Cluster.CLUSTER_JAXB_CTX.createUnmarshaller();
 						JAXBElement<ClusterConfig> config = (JAXBElement<ClusterConfig>) u.unmarshal(new ByteArrayInputStream(content));
 						clusterConfig = config.getValue();
 						repo.create(new QName(Cluster.CLUSTER_CONFIG_NAMESPACE, clusterId), Cluster.CLUSTER_CONFIG_MIMETYPE, "1.0", content);
@@ -114,6 +121,7 @@ public class ClusterTest {
 				cluster = (Cluster) getInstance(Cluster.class);
 				assistant = (ClusterAssistant) getInstance(ClusterAssistant.class);
 				assistant.setup(testNodeId, clusterId, clusterConfig);
+				clusterComponent = (ClusterComponent) getInstance(ClusterComponent.class);
 			}
 
 			@Override
@@ -140,33 +148,33 @@ public class ClusterTest {
 		assertNotNull(assistant);
 		cluster.offline();
 		assistant.offline();
-		nodeStatus(assistant.availableNodes(),false,false);
+		nodeStatus(assistant.availableNodes(), false, false);
 		assistant.online();
-		nodeStatus(assistant.availableNodes(),false,true);
+		nodeStatus(assistant.availableNodes(), false, true);
 		cluster.online();
-		assistant.healthCheck();//detect other cluster heartbeat
-		nodeStatus(assistant.availableNodes(),true,true);
+		assistant.healthCheck();// detect other cluster heartbeat
+		nodeStatus(assistant.availableNodes(), true, true);
 		cluster.offline();
 		assistant.offline();
-		nodeStatus(assistant.availableNodes(),false,false);
+		nodeStatus(assistant.availableNodes(), false, false);
 	}
-	
-	void nodeStatus(Set<NodeStatus> status, boolean node1, boolean node2){
+
+	void nodeStatus(Set<NodeStatus> status, boolean node1, boolean node2) {
 		assertEquals(2, status.size());
-		for (NodeStatus s: status){
-			if (nodeId.equals(s.nodeId())){
-				if (node1){
-					assertTrue(State.ONLINE.equals(s.state()));
-				}else{
-					assertTrue(State.OFFLINE.equals(s.state()));
+		for (NodeStatus s : status) {
+			if (nodeId.equals(s.nodeId())) {
+				if (node1) {
+					assertTrue(NodeState.ONLINE.equals(s.state()));
+				} else {
+					assertTrue(NodeState.OFFLINE.equals(s.state()));
 				}
-			}else if (testNodeId.equals(s.nodeId())){
-				if (node2){
-					assertTrue(State.ONLINE.equals(s.state()));
-				}else{
-					assertTrue(State.OFFLINE.equals(s.state()));
+			} else if (testNodeId.equals(s.nodeId())) {
+				if (node2) {
+					assertTrue(NodeState.ONLINE.equals(s.state()));
+				} else {
+					assertTrue(NodeState.OFFLINE.equals(s.state()));
 				}
-			}else{
+			} else {
 				fail("Unknown node id " + s.nodeId());
 			}
 		}
@@ -183,30 +191,122 @@ public class ClusterTest {
 				passed = true;
 				break;
 			}
-			Thread.sleep(200);
+			Thread.sleep(100);
 		}
 		assertTrue(passed);
 	}
-	
+
 	@Test
 	public void testAction() throws Exception {
+		/*
 		assertNotNull(cluster);
-	/*	ActionId id = cluster.execute(ClusterComponent.TEST_ACTION.getQName(), ClusterComponent.testActionInput("localTest"), Target.ALL);
+		assertNotNull(clusterComponent);
+		final CyclicBarrier notify = new CyclicBarrier(2);
+		class TestAction implements ActionTask<ActionContext> {
+			String input = null;
+
+			ActionContext ctx;
+
+			@Override
+			public void start(ActionContext ctx) throws PlatformException {
+				this.ctx = ctx;
+				try {
+					notify.await();
+					notify.await();
+				} catch (Exception e) {
+				}
+			}
+
+			@Override
+			public void run(ActionContext ctx) {
+				input = ctx.input().getDocumentElement().getTextContent();
+				try {
+					notify.await(2, TimeUnit.SECONDS);
+					notify.await(2, TimeUnit.SECONDS);
+				} catch (Exception e) {
+				}
+			}
+
+			@Override
+			public void finish(ActionContext ctx) throws PlatformException {
+				try {
+					notify.await(2, TimeUnit.SECONDS);
+					notify.await(2, TimeUnit.SECONDS);
+				} catch (Exception e) {
+				}
+			}
+
+		}
+		Provider<? extends ActionTask<?>> provider = new Provider<ActionTask<?>>() {
+
+			@Override
+			public ActionTask<?> get() {
+				return new TestAction();
+			}
+
+		};
+		cluster.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_ACTION, TaskType.ACTION, provider));
+		cluster.online();
+		ActionId id = cluster.execute(ClusterComponent.TEST_ACTION, ClusterComponent.testActionInput("localTest"), Target.ALL);
 		assertNotNull(id);
+
+		notify.await(2, TimeUnit.SECONDS);
 		ActionStatus status = cluster.status(id);
 		assertNotNull(status);
-		assertEquals(Status.EXECUTING,status.status());*/
+		assertEquals(ActionState.START, status.state());
+		notify.await(2, TimeUnit.SECONDS);
+
+		notify.await(2, TimeUnit.SECONDS);
+		status = cluster.status(id);
+		assertNotNull(status);
+		assertEquals(ActionState.EXECUTING, status.state());
+		notify.await(2, TimeUnit.SECONDS);
+
+		notify.await(2, TimeUnit.SECONDS);
+		status = cluster.status(id);
+		assertNotNull(status);
+		assertEquals(ActionState.FINISH, status.state());
+		notify.await(2, TimeUnit.SECONDS);
+
+		boolean passed = false;
+		for (int i = 0; i < 25; i++) {
+			status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.COMPLETED.equals(status.state())) {
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+		*/
 	}
-	
+
 	@Test
 	public void testMasterSlaveAction() throws Exception {
 		assertNotNull(cluster);
-	/*	ActionId id = cluster.execute(ClusterComponent.TEST_ACTION.getQName(), ClusterComponent.testActionInput("localTest"), Target.ALL);
-		assertNotNull(id);
-		ActionStatus status = cluster.status(id);
-		assertNotNull(status);
-		assertEquals(Status.EXECUTING,status.status());*/
+		/*
+		 * ActionId id =
+		 * cluster.execute(ClusterComponent.TEST_ACTION.getQName(),
+		 * ClusterComponent.testActionInput("localTest"), Target.ALL);
+		 * assertNotNull(id); ActionStatus status = cluster.status(id);
+		 * assertNotNull(status);
+		 * assertEquals(Status.EXECUTING,status.status());
+		 */
 	}
 	
+
+	@Test
+	public void testStatus() throws Exception {
+		
+	}
+	
+	
+	@Test
+	public void testCancel() throws Exception {
+		
+	}
 
 }

@@ -30,12 +30,12 @@ public class InstallSlaveAction implements SlaveActionTask {
 	}
 
 	@Override
-	public void run() {
+	public void run(SlaveActionContext ctx) {
 		
 	}
 
 	@Override
-	public void finish() throws PlatformException {
+	public void finish(SlaveActionContext ctx) throws PlatformException {
 		
 	}
 

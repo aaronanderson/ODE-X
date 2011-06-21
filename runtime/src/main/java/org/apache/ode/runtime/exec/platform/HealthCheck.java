@@ -33,7 +33,7 @@ import javax.persistence.Query;
 import javax.xml.datatype.Duration;
 
 import org.apache.ode.spi.exec.NodeStatus;
-import org.apache.ode.spi.exec.NodeStatus.State;
+import org.apache.ode.spi.exec.NodeStatus.NodeState;
 
 public class HealthCheck implements Runnable {
 
@@ -44,7 +44,7 @@ public class HealthCheck implements Runnable {
 	private org.apache.ode.runtime.exec.cluster.xml.HealthCheck config;
 	private String clusterId;
 	private String nodeId;
-	AtomicReference<State> localNodeState;
+	AtomicReference<NodeState> localNodeState;
 
 	@Override
 	public synchronized void run() {
@@ -57,6 +57,7 @@ public class HealthCheck implements Runnable {
 				local.setState(localNodeState.get());
 				local.setHeartBeat(now);
 				pmgr.merge(local);
+				//TODO check version with previous to detect nodeId conflict
 			} else {
 				local = new Node();
 				local.setClusterId(clusterId);
@@ -89,10 +90,10 @@ public class HealthCheck implements Runnable {
 		HashSet<NodeStatus> currentNodes = new HashSet<NodeStatus>();
 		HashSet<String> currentOnlineClusterNodes = new HashSet<String>();
 		for (Node n : nodes) {
-			State nState = State.ONLINE.equals(n.getState()) && n.getHeartBeat().compareTo(active) >= 0 ? State.ONLINE : State.OFFLINE;
+			NodeState nState = NodeState.ONLINE.equals(n.getState()) && n.getHeartBeat().compareTo(active) >= 0 ? NodeState.ONLINE : NodeState.OFFLINE;
 			NodeStatusImpl status = new NodeStatusImpl(n.getClusterId(), n.getNodeId(), nState);
 			currentNodes.add(status);
-			if (clusterId.equalsIgnoreCase(n.getClusterId()) && State.ONLINE.equals(nState)) {
+			if (clusterId.equalsIgnoreCase(n.getClusterId()) && NodeState.ONLINE.equals(nState)) {
 				currentOnlineClusterNodes.add(n.getNodeId());
 			}
 		}
@@ -102,7 +103,7 @@ public class HealthCheck implements Runnable {
 		onlineClusterNodes.set(Collections.unmodifiableSet(currentOnlineClusterNodes));
 	}
 
-	public void init(String clusterId, String nodeId, AtomicReference<State> localNodeStatus, org.apache.ode.runtime.exec.cluster.xml.HealthCheck config) {
+	public void init(String clusterId, String nodeId, AtomicReference<NodeState> localNodeStatus, org.apache.ode.runtime.exec.cluster.xml.HealthCheck config) {
 		this.clusterId = clusterId;
 		this.nodeId = nodeId;
 		this.localNodeState = localNodeStatus;
@@ -140,9 +141,9 @@ public class HealthCheck implements Runnable {
 
 		final String clusterId;
 		final String nodeId;
-		final State state;
+		final NodeState state;
 
-		public NodeStatusImpl(String clusterId, String nodeId, State state) {
+		public NodeStatusImpl(String clusterId, String nodeId, NodeState state) {
 			this.clusterId = clusterId;
 			this.nodeId = nodeId;
 			this.state = state;
@@ -159,7 +160,7 @@ public class HealthCheck implements Runnable {
 		}
 
 		@Override
-		public State state() {
+		public NodeState state() {
 			return state;
 		}
 

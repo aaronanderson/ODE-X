@@ -19,7 +19,9 @@
 package org.apache.ode.server.exec;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -32,6 +34,7 @@ import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.ActionTask.ActionContext;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
@@ -42,9 +45,11 @@ import org.w3c.dom.Element;
 @Singleton
 public class ClusterComponent implements Component {
 	public static final String TEST_NS = "http://ode.apache.org/ClusterTest";
-	public static final Action TEST_ACTION =new Action(new QName(TEST_NS, "TestAction"), TaskType.ACTION);
+	public static final QName TEST_ACTION =new QName(TEST_NS, "TestAction");
+	public static final QName TEST_MASTER_ACTION =new QName(TEST_NS, "TestMSAction");
+	public static final QName TEST_SLAVE_ACTION = new QName(TEST_NS, "TestMSAction");
 
-	ExecCallback execCallback;
+	List<Action> supportedActions = new ArrayList<Action>();
 
 	@Inject
 	Repository repository;
@@ -54,41 +59,27 @@ public class ClusterComponent implements Component {
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing ClusterAssistant");
+		System.out.println("Initializing ClusterComponent");
 		platform.registerComponent(this);
-		System.out.println("ClusterAssistant Initialized");
+		System.out.println("ClusterComponent Initialized");
 
 	}
 
 	@Override
-	public QName instructionSet() {
-		return new QName(TEST_NS, "ClusterTestComponent");
+	public QName name(){
+		return new QName(TEST_NS,"TestComponent");
 	}
-
-	@Override
-	public String jaxbContextPath() {
-		return "";
-	}
-
-
-	
 	
 	@Override
-	public List<Action> supportedActions(){
-		List<Action> supportedActions = new ArrayList<Action>();
-		supportedActions.add(Action.INSTALL_ACTION);
-		supportedActions.add(TEST_ACTION);
+	public List<InstructionSet> instructionSets(){
+		List<InstructionSet> instructions = new ArrayList<InstructionSet>();
+		return instructions;
+	}
+
+	
+	@Override
+	public List<Action> actions(){
 		return supportedActions;
-	}
-
-	@Override
-	public ActionTask<?> loadAction(Action action) throws PlatformException{
-		return null;
-	}
-	
-
-	public void setExecCallback(ExecCallback callback) {
-		this.execCallback = callback;
 	}
 
 	public interface ExecCallback {
@@ -122,5 +113,6 @@ public class ClusterComponent implements Component {
 		}
 
 	}
+	
 
 }

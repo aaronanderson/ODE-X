@@ -24,20 +24,31 @@ import javax.xml.namespace.QName;
 
 public interface Component {
 
-	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
-	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
+	public QName name();
 
-	public QName instructionSet();
+	public List<InstructionSet> instructionSets();
 
-	public String jaxbContextPath();
-
-	public List<Action> supportedActions();
-
-	public ActionTask<?> loadAction(Action action) throws PlatformException;
+	public List<Action> actions();
 
 	public void online() throws PlatformException;
 
 	public void offline() throws PlatformException;
 
-	
+	public class InstructionSet {
+		final QName name;
+		final String jaxbContextPath;
+
+		public InstructionSet(QName name, String jaxbContextPath) {
+			this.name = name;
+			this.jaxbContextPath = jaxbContextPath;
+		}
+
+		public QName getName() {
+			return name;
+		}
+
+		public String getJAXBContextPath() {
+			return jaxbContextPath;
+		}
+	}
 }

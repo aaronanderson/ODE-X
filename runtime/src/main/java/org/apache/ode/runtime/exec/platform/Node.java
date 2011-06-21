@@ -31,7 +31,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Version;
 
-import org.apache.ode.spi.exec.NodeStatus.State;
+import org.apache.ode.spi.exec.NodeStatus.NodeState;
 
 @NamedQueries({ @NamedQuery(name = "healthCheck", query = "select node from Node node where node.heartBeat > :lifetime"),
 		@NamedQuery(name = "deleteDeadNodes", query = "delete from Node node where node.heartBeat < :lifetime") })
@@ -86,15 +86,15 @@ public class Node implements Serializable {
 		return nodeSequence;
 	}
 
-	public void setState(State state) {
+	public void setState(NodeState state) {
 		this.state = state.name();
 	}
 
-	public State getState() {
+	public NodeState getState() {
 		if (state != null) {
-			return State.valueOf(state);
+			return NodeState.valueOf(state);
 		}
-		return State.OFFLINE;
+		return NodeState.OFFLINE;
 	}
 
 	public Calendar getHeartBeat() {

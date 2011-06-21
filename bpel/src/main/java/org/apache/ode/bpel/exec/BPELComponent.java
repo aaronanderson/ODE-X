@@ -18,12 +18,12 @@
  */
 package org.apache.ode.bpel.exec;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Action;
-import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.PlatformException;
 
@@ -32,26 +32,24 @@ public class BPELComponent implements Component {
 	public static final String BPEL_INSTRUCTION_SET_NS = "http://ode.apache.org/bpel";
 	public static final QName BPEL_INSTRUCTION_SET = new QName(BPEL_INSTRUCTION_SET_NS, "BPEL");
 
+	
 	@Override
-	public QName instructionSet() {
+	public QName name() {
 		return BPEL_INSTRUCTION_SET;
 	}
-
+	
 	@Override
-	public String jaxbContextPath() {
-		return "org.apache.ode.bpel.exec.xml";
+	public List<InstructionSet> instructionSets(){
+		List<InstructionSet> iset = new ArrayList<InstructionSet>();
+		iset.add(new InstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml"));
+		return iset;
 	}
 
-
 	@Override
-	public List<Action> supportedActions(){
+	public List<Action> actions(){
 		return null;
 	}
-
-	@Override
-	public ActionTask<?> loadAction(Action action) throws PlatformException{
-		return null;
-	}
+	
 
 	@Override
 	public void online() throws PlatformException {
@@ -64,4 +62,6 @@ public class BPELComponent implements Component {
 		// TODO Auto-generated method stub
 		
 	}
+
+	
 }

@@ -33,19 +33,20 @@ public interface Platform {
 	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
 
 	public static final String PLATFORM_NAMESPACE = "http://ode.apache.org/platform";
+	public static final QName PLATFORM = new QName(PLATFORM_NAMESPACE,"platform");
 
 	public enum PlatformAction {
 
-		INSTALL_ACTION(new QName(PLATFORM_NAMESPACE, "install")), START_ACTION(new QName(PLATFORM_NAMESPACE, "start")), STOP_ACTION(new QName(
-				PLATFORM_NAMESPACE, "stop")), UNINSTALL_ACTION(new QName(PLATFORM_NAMESPACE, "uninstall"));
+		INSTALL_ACTION(new QName(PLATFORM_NAMESPACE, "install")),ONLINE_ACTION(new QName(PLATFORM_NAMESPACE, "online")), START_ACTION(new QName(PLATFORM_NAMESPACE, "start")), STOP_ACTION(new QName(
+				PLATFORM_NAMESPACE, "stop")),OFFLINE_ACTION(new QName(PLATFORM_NAMESPACE, "offline")), UNINSTALL_ACTION(new QName(PLATFORM_NAMESPACE, "uninstall"));
 
 		private PlatformAction(QName qname) {
 			this.qname = qname;
 		}
 
 		private QName qname;
-		
-		public QName qname(){
+
+		public QName qname() {
 			return qname;
 		}
 	}

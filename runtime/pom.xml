@@ -101,13 +101,13 @@
 					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
 					<schemaIncludes>
 						<schemaInclude>build_plan.xsd</schemaInclude>
-						<schemaInclude>cluster_config.xsd</schemaInclude>
+						<schemaInclude>cluster.xsd</schemaInclude>
 						<schemaInclude>wsdl.xsd</schemaInclude>
 					</schemaIncludes>
 					<bindingDirectory>src/main/bindings</bindingDirectory>
 					<bindingIncludes>
 						<bindingInclude>build_plan.xjb</bindingInclude>
-						<bindingInclude>cluster_config.xjb</bindingInclude>
+						<bindingInclude>cluster.xjb</bindingInclude>
 						<bindingInclude>wsdl.xjb</bindingInclude>
 					</bindingIncludes>
 					<catalog>src/main/bindings/catalog.xml</catalog>

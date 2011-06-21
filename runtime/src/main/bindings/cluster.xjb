@@ -12,7 +12,10 @@
 	~ under the License. -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
 	xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0">
-	<jxb:bindings schemaLocation="../resources/META-INF/xsd/cluster_config.xsd">
+	<jxb:bindings schemaLocation="../resources/META-INF/xsd/cluster.xsd">
+		<jxb:globalBindings>
+		  <jxb:javaType name="java.util.Calendar" xmlType="xs:dateTime" parseMethod="javax.xml.bind.DatatypeConverter.parseDateTime" printMethod="javax.xml.bind.DatatypeConverter.printDateTime"/>
+		</jxb:globalBindings>
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.runtime.exec.cluster.xml" />
 		</jxb:schemaBindings>
@@ -25,13 +28,13 @@
 		<jxb:bindings node="//xs:complexType[@name='actionCheckType']">
 			<jxb:class name="ActionCheck" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='nodeStatusType']">
-			<jxb:class name="NodeStatus" />
+		<jxb:bindings node="//xs:complexType[@name='actionExecutionType']">
+			<jxb:class name="ActionExecution" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='nodeStatusMessagesType']">
+		<jxb:bindings node="//xs:complexType[@name='nodeMessagesType']">
 			<jxb:class name="Messages" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='nodeStatusMessageType']">
+		<jxb:bindings node="//xs:complexType[@name='nodeMessageType']">
 			<jxb:class name="Message" />
 		</jxb:bindings>
 	</jxb:bindings>
