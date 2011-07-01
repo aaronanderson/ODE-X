@@ -26,7 +26,6 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayInputStream;
 import java.util.Calendar;
 import java.util.Set;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.spi.CreationalContext;
@@ -37,7 +36,6 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Provider;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
@@ -48,16 +46,15 @@ import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
 import org.apache.ode.server.cdi.StaticHandler;
+import org.apache.ode.server.exec.ClusterComponent.LocalTestAction;
+import org.apache.ode.server.exec.ClusterComponent.RemoteTestAction;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Action.TaskType;
-import org.apache.ode.spi.exec.ActionTask;
-import org.apache.ode.spi.exec.ActionTask.ActionContext;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
-import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.ActionTask.ActionState;
+import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.NodeStatus.NodeState;
-import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.Repository;
@@ -66,6 +63,7 @@ import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.w3c.dom.Document;
 
 public class ClusterTest {
 	private static Weld weld;
@@ -197,78 +195,34 @@ public class ClusterTest {
 	}
 
 	@Test
-	public void testAction() throws Exception {
-		/*
+	public void testLocalAction() throws Exception {
 		assertNotNull(cluster);
 		assertNotNull(clusterComponent);
-		final CyclicBarrier notify = new CyclicBarrier(2);
-		class TestAction implements ActionTask<ActionContext> {
-			String input = null;
 
-			ActionContext ctx;
-
-			@Override
-			public void start(ActionContext ctx) throws PlatformException {
-				this.ctx = ctx;
-				try {
-					notify.await();
-					notify.await();
-				} catch (Exception e) {
-				}
-			}
-
-			@Override
-			public void run(ActionContext ctx) {
-				input = ctx.input().getDocumentElement().getTextContent();
-				try {
-					notify.await(2, TimeUnit.SECONDS);
-					notify.await(2, TimeUnit.SECONDS);
-				} catch (Exception e) {
-				}
-			}
-
-			@Override
-			public void finish(ActionContext ctx) throws PlatformException {
-				try {
-					notify.await(2, TimeUnit.SECONDS);
-					notify.await(2, TimeUnit.SECONDS);
-				} catch (Exception e) {
-				}
-			}
-
-		}
-		Provider<? extends ActionTask<?>> provider = new Provider<ActionTask<?>>() {
-
-			@Override
-			public ActionTask<?> get() {
-				return new TestAction();
-			}
-
-		};
 		cluster.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_ACTION, TaskType.ACTION, provider));
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_LOCAL_ACTION, TaskType.ACTION, LocalTestAction.getProvider()));
 		cluster.online();
-		ActionId id = cluster.execute(ClusterComponent.TEST_ACTION, ClusterComponent.testActionInput("localTest"), Target.ALL);
+		ActionId id = cluster.execute(ClusterComponent.TEST_LOCAL_ACTION, ClusterComponent.testActionDoc("localTest"), Target.LOCAL);
 		assertNotNull(id);
 
-		notify.await(2, TimeUnit.SECONDS);
+		LocalTestAction.notify(2, TimeUnit.SECONDS);
 		ActionStatus status = cluster.status(id);
 		assertNotNull(status);
 		assertEquals(ActionState.START, status.state());
-		notify.await(2, TimeUnit.SECONDS);
+		LocalTestAction.notify(2, TimeUnit.SECONDS);
 
-		notify.await(2, TimeUnit.SECONDS);
+		LocalTestAction.notify(2, TimeUnit.SECONDS);
 		status = cluster.status(id);
 		assertNotNull(status);
 		assertEquals(ActionState.EXECUTING, status.state());
-		notify.await(2, TimeUnit.SECONDS);
+		LocalTestAction.notify(2, TimeUnit.SECONDS);
 
-		notify.await(2, TimeUnit.SECONDS);
+		LocalTestAction.notify(2, TimeUnit.SECONDS);
 		status = cluster.status(id);
 		assertNotNull(status);
 		assertEquals(ActionState.FINISH, status.state());
-		notify.await(2, TimeUnit.SECONDS);
+		LocalTestAction.notify(2, TimeUnit.SECONDS);
 
 		boolean passed = false;
 		for (int i = 0; i < 25; i++) {
@@ -281,7 +235,40 @@ public class ClusterTest {
 			Thread.sleep(100);
 		}
 		assertTrue(passed);
-		*/
+	}
+
+	
+	@Test
+	public void testRemoteAction() throws Exception {
+		assertNotNull(cluster);
+		assertNotNull(clusterComponent);
+		assertNotNull(assistant);
+
+		cluster.offline();
+		assistant.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_REMOTE_ACTION, TaskType.ACTION, RemoteTestAction.getProvider()));
+		cluster.online();
+		assistant.online();
+		ActionId id = assistant.executeRemoteAction( ClusterComponent.testActionDoc("remoteTest"), nodeId);
+		assertNotNull(id);
+
+
+		boolean passed = false;
+		Document result=null;
+		for (int i = 0; i < 50; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.COMPLETED.equals(status.state())) {
+				result=status.result();
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+		assertNotNull(result);
+		assertEquals("remoteTest start run finish",result.getDocumentElement().getTextContent());
 	}
 
 	@Test
@@ -296,17 +283,15 @@ public class ClusterTest {
 		 * assertEquals(Status.EXECUTING,status.status());
 		 */
 	}
-	
 
 	@Test
 	public void testStatus() throws Exception {
-		
+
 	}
-	
-	
+
 	@Test
 	public void testCancel() throws Exception {
-		
+
 	}
 
 }

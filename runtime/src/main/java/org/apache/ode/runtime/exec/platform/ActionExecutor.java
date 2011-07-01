@@ -83,7 +83,7 @@ public class ActionExecutor {
 	private String nodeId;
 	private ActionExecution config;
 	private ThreadPoolExecutor exec;
-	
+
 	@PostConstruct
 	public void init() {
 		System.out.println("Initializing ActionExecutor");
@@ -130,7 +130,7 @@ public class ActionExecutor {
 		return executingTasks;
 	}
 
-	public void run(org.apache.ode.runtime.exec.platform.Action action) {
+	public void run(org.apache.ode.runtime.exec.platform.Action action) throws PlatformException {
 		ActionEntry entry = actions.get(action.name());
 		ActionTask task = null;
 		if (action instanceof SlaveAction) {
@@ -143,7 +143,7 @@ public class ActionExecutor {
 		} else {
 			task = entry.action.get();
 		}
-		ActionRunnable runnable = new ActionRunnable(action, task);
+		ActionRunnable runnable = new ActionRunnable(action.getActionId(), task);
 		FutureTask<ActionRunnable> future = new FutureTask<ActionRunnable>(runnable, runnable);
 		runnable.setFutureTask(future);
 		exec.submit(future);
@@ -308,7 +308,9 @@ public class ActionExecutor {
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 		pmgr.getTransaction().begin();
 		try {
-			return pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, actionId.id);
+			ActionStatus status = pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, actionId.id);
+			pmgr.detach(status);
+			return status;
 		} catch (PersistenceException pe) {
 			pmgr.getTransaction().rollback();
 			throw new PlatformException(pe);
@@ -352,22 +354,21 @@ public class ActionExecutor {
 		Lock updateLock = new ReentrantLock();
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 
-		public ActionRunnable(org.apache.ode.runtime.exec.platform.Action action, ActionTask task) {
-			this.task = task;
-			this.action = action;
-			this.context = new ActionContextImpl(this);
-		}
+		public ActionRunnable(long actionId, ActionTask task) throws PlatformException {
+			try {
+				action = pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, actionId);
+			} catch (PersistenceException pe) {
+				throw new PlatformException(pe);
+			}
+			if (action instanceof MasterAction) {
+				this.context = new MasterActionContextImpl(this);
+			} else if (action instanceof MasterAction) {
+				this.context = new SlaveActionContextImpl(this);
+			} else {
+				this.context = new ActionContextImpl(this);
+			}
 
-		public ActionRunnable(MasterAction action, ActionTask task) {
 			this.task = task;
-			this.action = action;
-			this.context = new ActionContextImpl(this);
-		}
-
-		public ActionRunnable(SlaveAction action, ActionTask task) {
-			this.task = task;
-			this.action = action;
-			this.context = new ActionContextImpl(this);
 		}
 
 		public org.apache.ode.runtime.exec.platform.Action getAction() {
@@ -387,7 +388,7 @@ public class ActionExecutor {
 			try {
 				pmgr.getTransaction().begin();
 				try {
-					pmgr.persist(action);
+					pmgr.merge(action);
 					pmgr.getTransaction().commit();
 				} catch (PersistenceException pe) {
 					pe.printStackTrace();
@@ -403,7 +404,7 @@ public class ActionExecutor {
 			try {
 				pmgr.getTransaction().begin();
 				try {
-					pmgr.persist(action);
+					pmgr.merge(action);
 					pmgr.getTransaction().commit();
 				} catch (PersistenceException pe) {
 					pmgr.getTransaction().rollback();
@@ -414,71 +415,125 @@ public class ActionExecutor {
 			}
 		}
 
-		public void refresh() {
-			updateLock.lock();
-			try {
-				pmgr.getTransaction().begin();
-				try {
-					pmgr.refresh(action);
-					pmgr.getTransaction().commit();
-				} catch (PersistenceException pe) {
-					pe.printStackTrace();
-					pmgr.getTransaction().rollback();
-				}
-			} finally {
-				updateLock.unlock();
-			}
-		}
+		/*
+		 * Concurrency Model: Once an action has been persisted with the action
+		 * state START only the node that is executing the task will be updating
+		 * the persisted state except for the following conditions:
+		 * 
+		 * cancel: At any time any node may update the action state to the
+		 * cancelled status. Typically this will generate an optimistic lock
+		 * exception that should be handled gracefully.
+		 * 
+		 * refresh: A running task may release the update lock and wait for the
+		 * action polling thread to update the action state. This is typically
+		 * useful in a master/slave communication pattern
+		 * 
+		 * master to slave: When slaves start up they wait for the master to
+		 * finishing starting first before they do. This allows the master to
+		 * update the slave action input at any time during the start and
+		 * executing phase. When slaves update their result based on the current
+		 * input it provides a master/slave communication channel. It is
+		 * anticipated that both the master and slave will use the refresh
+		 * mechanism to retrieve input/result updates while in an executing
+		 * state.
+		 * 
+		 * master finish: If a master finishes without waiting for the slaves to
+		 * finish then all executing slaves are cancelled
+		 */
 
 		@Override
 		public void run() {
-			try {
-				action.setStart(new Date());
-				task.start(context);
-				if (ActionState.START.equals(action.state())) {
-					action.setState(ActionState.EXECUTING);
+
+			if (action instanceof SlaveAction) {// Master should start before
+												// slave
+				SlaveAction saction = (SlaveAction) action;
+				while (ActionState.START.equals(saction.masterStatus())) {
+					try {
+						refreshLatch.await();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				if (!ActionState.EXECUTING.equals(saction.masterStatus())) {
+					saction.setState(ActionState.CANCELED);
 					save();
-				} else {
+					remove();
+					return;
+				}
+			}
+			/* We will lock polling updates during the entire duration of the task
+			 * unless the task invokes the context refresh method allowing the update */
+			updateLock.lock();
+			try {
+				try {
+					Date start = new Date();
+					action.setStart(start);
+					save();
+					task.start(context);
+					if (ActionState.START.equals(action.state())) {
+						action.setState(ActionState.EXECUTING);
+						save();
+					} else {
+						action.setFinish(new Date());
+						save();
+						remove();
+						return;
+					}
+				} catch (PlatformException pe) {
+					context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
+					action.setState(ActionState.FAILED);
 					action.setFinish(new Date());
 					save();
 					remove();
 					return;
 				}
-			} catch (PlatformException pe) {
-				context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
-				action.setState(ActionState.FAILED);
-				action.setFinish(new Date());
-				save();
-				remove();
-				return;
-			}
 
-			try {
-				task.run(context);
-				if (ActionState.EXECUTING.equals(action.state())) {
-					action.setState(ActionState.FINISH);
-				} // finish should always run if started completed
-			} catch (PlatformException pe) {
-				context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
-				action.setState(ActionState.FAILED);
-			} finally {
-				save();
-			}
-
-			try {
-				task.finish(context);
-				if (ActionState.FINISH.equals(action.state())) {
-					action.setState(ActionState.COMPLETED);
+				try {
+					task.run(context);
+					if (ActionState.EXECUTING.equals(action.state())) {
+						action.setState(ActionState.FINISH);
+					} // finish should always run if started completed
+				} catch (PlatformException pe) {
+					context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
+					action.setState(ActionState.FAILED);
+				} finally {
+					save();
 				}
-			} catch (PlatformException pe) {
-				context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
-				action.setState(ActionState.FAILED);
-			} finally {
-				action.setFinish(new Date());
-				save();
-			}
-			remove();
 
+				try {
+					task.finish(context);
+					if (ActionState.FINISH.equals(action.state())) {
+						action.setState(ActionState.COMPLETED);
+					}
+				} catch (PlatformException pe) {
+					context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
+					action.setState(ActionState.FAILED);
+				} finally {
+					action.setFinish(new Date());
+					save();
+				}
+				if (action instanceof MasterAction) {// Cancel any executing
+														// slaves
+					MasterAction maction = (MasterAction) action;
+					for (SlaveAction slave : maction.getSlaves()) {
+						switch (slave.state()) {
+						case SUBMIT:
+						case START:
+						case EXECUTING:
+						case FINISH:
+							try {
+								slave.setState(ActionState.CANCELED);
+								pmgr.merge(slave);
+							} catch (PersistenceException pe) {
+								pe.printStackTrace();
+							}
+						}
+					}
+				}
+				remove();
+			} finally {
+				updateLock.unlock();
+			}
 		}
 
 		public void remove() {
@@ -487,21 +542,35 @@ public class ActionExecutor {
 		}
 
 		public void pollUpdate() {
-			refresh();
-			if (!futureTask.isDone() && ActionState.CANCELED.equals(action.state())) {
-				futureTask.cancel(true);
+			if (updateLock.tryLock()) {
 				try {
-					action.setState(ActionState.CANCELED);
-					task.finish(context);
-				} catch (PlatformException pe) {
-					context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
-					action.setState(ActionState.FAILED);
+					pmgr.getTransaction().begin();
+					try {
+						pmgr.refresh(action);
+						pmgr.getTransaction().commit();
+					} catch (PersistenceException pe) {
+						pe.printStackTrace();
+						pmgr.getTransaction().rollback();
+					}
+
+					if (!futureTask.isDone() && ActionState.CANCELED.equals(action.state())) {
+						futureTask.cancel(true);
+						try {
+							action.setState(ActionState.CANCELED);
+							task.finish(context);
+						} catch (PlatformException pe) {
+							context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
+							action.setState(ActionState.FAILED);
+						} finally {
+							save();
+						}
+						remove();
+					}
 				} finally {
-					save();
+					updateLock.unlock();
 				}
-				remove();
+				refreshLatch.countDown();
 			}
-			refreshLatch.countDown();
 		}
 
 	}
@@ -537,10 +606,13 @@ public class ActionExecutor {
 
 		@Override
 		public void refresh() {
+			runnable.updateLock.unlock();//should be same thread as ActionRunnable.run()
 			try {
 				refreshLatch.await();
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				runnable.updateLock.lock();
 			}
 		}
 

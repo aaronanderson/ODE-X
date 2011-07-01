@@ -22,9 +22,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
@@ -45,8 +48,10 @@ import org.w3c.dom.Element;
 @Singleton
 public class ClusterComponent implements Component {
 	public static final String TEST_NS = "http://ode.apache.org/ClusterTest";
-	public static final QName TEST_ACTION =new QName(TEST_NS, "TestAction");
-	public static final QName TEST_MASTER_ACTION =new QName(TEST_NS, "TestMSAction");
+	public static final QName COMPONENT_NAME =new QName(TEST_NS, "TestComponent");
+	public static final QName TEST_LOCAL_ACTION = new QName(TEST_NS, "TestLocalAction");
+	public static final QName TEST_REMOTE_ACTION = new QName(TEST_NS, "TestRemoteAction");
+	public static final QName TEST_MASTER_ACTION = new QName(TEST_NS, "TestMSAction");
 	public static final QName TEST_SLAVE_ACTION = new QName(TEST_NS, "TestMSAction");
 
 	List<Action> supportedActions = new ArrayList<Action>();
@@ -66,26 +71,24 @@ public class ClusterComponent implements Component {
 	}
 
 	@Override
-	public QName name(){
-		return new QName(TEST_NS,"TestComponent");
+	public QName name() {
+		return COMPONENT_NAME;
 	}
-	
+
 	@Override
-	public List<InstructionSet> instructionSets(){
+	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> instructions = new ArrayList<InstructionSet>();
 		return instructions;
 	}
 
-	
 	@Override
-	public List<Action> actions(){
+	public List<Action> actions() {
 		return supportedActions;
 	}
 
 	public interface ExecCallback {
 		public void execute(ActionContext context) throws PlatformException;
 	}
-
 
 	@Override
 	public void online() throws PlatformException {
@@ -97,7 +100,7 @@ public class ClusterComponent implements Component {
 
 	}
 
-	public static Document testActionInput(String input) {
+	public static Document testActionDoc(String input) {
 		try {
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			dbf.setNamespaceAware(true);
@@ -113,6 +116,91 @@ public class ClusterComponent implements Component {
 		}
 
 	}
-	
+
+	public static class LocalTestAction implements ActionTask<ActionContext> {
+
+		static final CyclicBarrier notify = new CyclicBarrier(2);
+
+		public static Provider<LocalTestAction> getProvider() {
+			return new Provider<LocalTestAction>() {
+
+				@Override
+				public LocalTestAction get() {
+					return new LocalTestAction();
+				}
+
+			};
+
+		}
+
+		static void notify(int time, TimeUnit unit) throws Exception {
+			notify.await(time, unit);
+		}
+
+		@Override
+		public void start(ActionContext ctx) throws PlatformException {
+			try {
+				notify.await();
+				// System.out.println("Status " + ctx.getStatus());
+				notify.await();
+			} catch (Exception e) {
+			}
+		}
+
+		@Override
+		public void run(ActionContext ctx) {
+			try {
+				notify.await(2, TimeUnit.SECONDS);
+				// System.out.println("Status " + ctx.getStatus());
+				notify.await(2, TimeUnit.SECONDS);
+			} catch (Exception e) {
+			}
+		}
+
+		@Override
+		public void finish(ActionContext ctx) throws PlatformException {
+			try {
+				notify.await(2, TimeUnit.SECONDS);
+				// System.out.println("Status " + ctx.getStatus());
+				notify.await(2, TimeUnit.SECONDS);
+			} catch (Exception e) {
+			}
+		}
+
+	}
+
+	public static class RemoteTestAction implements ActionTask<ActionContext> {
+		String content = null;
+
+		public static Provider<RemoteTestAction> getProvider() {
+			return new Provider<RemoteTestAction>() {
+
+				@Override
+				public RemoteTestAction get() {
+					return new RemoteTestAction();
+				}
+
+			};
+
+		}
+
+		@Override
+		public void start(ActionContext ctx) throws PlatformException {
+			content = ctx.input().getDocumentElement().getTextContent();
+			content += " start";
+		}
+
+		@Override
+		public void run(ActionContext ctx) {
+			content += " run";
+		}
+
+		@Override
+		public void finish(ActionContext ctx) throws PlatformException {
+			content += " finish";
+			ctx.updateResult(testActionDoc(content));
+		}
+
+	}
 
 }

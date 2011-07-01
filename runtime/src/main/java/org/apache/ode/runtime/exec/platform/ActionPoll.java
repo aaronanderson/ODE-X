@@ -48,9 +48,8 @@ public class ActionPoll implements Runnable {
 	@Override
 	public synchronized void run() {
 		// Refresh the executing entries
-		for (Iterator<Map.Entry<Long, ActionRunnable>> i = exec.getExecutingTasks().entrySet().iterator(); i.hasNext();) {
-			Map.Entry<Long, ActionRunnable> entry = i.next();
-			ActionRunnable runnable = entry.getValue();
+		for (Iterator<ActionRunnable> i = exec.getExecutingTasks().values().iterator(); i.hasNext();) {
+			ActionRunnable runnable = i.next();
 			runnable.pollUpdate();
 		}
 		// Spawn new tasks
@@ -70,10 +69,10 @@ public class ActionPoll implements Runnable {
 					pmgr.getTransaction().begin();
 					try {
 						a.setState(ActionState.START);
-						pmgr.persist(a);
+						pmgr.merge(a);
 						pmgr.getTransaction().commit();
 						exec.run(a);
-					} catch (PersistenceException pe) {
+					} catch (Exception pe) {
 						pmgr.getTransaction().rollback();
 						pe.printStackTrace();
 					}

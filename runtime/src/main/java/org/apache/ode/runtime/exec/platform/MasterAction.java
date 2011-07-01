@@ -46,5 +46,10 @@ public class MasterAction extends Action implements MasterActionStatus, Serializ
 		stats.addAll(slaves);
 		return stats;
 	}
+	
+	public Set<SlaveAction> getSlaves(){
+		return slaves;
+	}
+	
 
 }

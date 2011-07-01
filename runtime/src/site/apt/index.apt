@@ -10,8 +10,28 @@ Platform
 
   The cluster concept is an internal representation of a set of related nodes that can be acted upon as a single unit. A platform consists of a set of clusters and a cluster consists of a set of physical nodes. 
 
+  * HealthCheck
+  
+  A heartbeat mechanism is in place so that as soon as a node comes up node state updates are persisted. At the given polling interval the state of all nodes are retrieved from the persistence store. This availability information is then used to deduce targets for actions. submitted for execution
+  
   * Action
 
-  An action represents a command that can be simultaneously executed on a given set of targets. 
+  An action represents a command that may be executed once or executed simultaneously on a given set of targets. There are four types of actions
+	
+	* Action - A single action that is executed on a single cluster node, typically the local one
+	
+	* Master - A controlling action that is executed on a single cluster node, typically the local one. This master action coordinates with slave actions to accomplish an overall action result
+	
+	* Slave - An action that is executed on every single target node.  Slaves coordinate with the master action to peform a given task on each node target.
+  
+    * Single Slave - Indentical to a normal slave except it is only executed on a single cluster node, typically the local one. This is useful for heterogenous tasks such as a platform install where many different slave tasks are coordinated together to fullfill a master task but the slave task really only needs to execute once. 
+
+  * Target
+  
+  For each task that is executed a target is provided to indicate to the platform on which phyiscal nodes the task should execute.
+  
+  * Action Polling
+  
+  If a task is to be executed on a remote node the action state is persisted and then a remote action polling process periodically scans for local tasks to execute, updates the action state to executing, and then executes the task locally.
 
   

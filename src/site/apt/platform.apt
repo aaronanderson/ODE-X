@@ -7,7 +7,7 @@ Cluster
 
 * The case for clustering
    
-    As a software platform that might execute mission critical business processes ODE-X must offer failover and load scaling capabilities for these sensitive processes. Given the architectual goal of runtime neutrality (JavaEE, Spring, etc) and that coordination of business process execution requires domain specific clustering techniques a minimal custom clustering solution is required to be developed. This is in contrast to relying on a third party library. The goals of the clustering solution are
+    As a software platform that might execute mission critical business processes ODE-X must offer failover and load scaling capabilities for these sensitive processes. Given the architectual goal of runtime neutrality (JavaEE, Spring, etc) and that coordination of business process execution requires domain specific clustering techniques a minimal custom clustering solution is required to be developed. This is in contrast to relying on a third party cluster library. The goals of the clustering solution are
 	
 	* Custom cluster configuration 
 	

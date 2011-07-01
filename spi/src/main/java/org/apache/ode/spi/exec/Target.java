@@ -22,6 +22,7 @@ public class Target {
 	final private String name;
 	final private TargetType type;
 	public static final Target ALL = new Target(null, TargetType.ALL);
+	public static final Target LOCAL = new Target(null, TargetType.LOCAL);
 
 	public Target(String name, TargetType type) {
 		this.name = name;

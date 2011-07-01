@@ -27,9 +27,9 @@
 	</persistence-unit>
 	<persistence-unit name="platform" transaction-type="RESOURCE_LOCAL">
 		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-		<class>org.apache.ode.runtime.exec.platform.ActionStatusImpl</class>
-		<!-- <class>org.apache.ode.runtime.exec.platform.MasterActionStatusImpl</class>
-		<class>org.apache.ode.runtime.exec.platform.SlaveActionStatusImpl</class> -->
+		<class>org.apache.ode.runtime.exec.platform.Action</class>
+		<class>org.apache.ode.runtime.exec.platform.MasterAction</class>
+		<class>org.apache.ode.runtime.exec.platform.SlaveAction</class>
 		<class>org.apache.ode.runtime.exec.platform.ProgramImpl</class>
 		<class>org.apache.ode.runtime.exec.platform.Node</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>

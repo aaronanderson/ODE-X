@@ -30,14 +30,17 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceException;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.platform.ActionExecutor;
-import org.apache.ode.runtime.exec.platform.ActionPoll;
+import org.apache.ode.runtime.exec.platform.ActionIdImpl;
 import org.apache.ode.runtime.exec.platform.HealthCheck;
 import org.apache.ode.runtime.exec.platform.Node;
+import org.apache.ode.spi.exec.ActionTask.ActionId;
+import org.apache.ode.spi.exec.ActionTask.ActionState;
 import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.repo.Repository;
+import org.w3c.dom.Document;
 
 @Singleton
 public class ClusterAssistant {
@@ -54,12 +57,6 @@ public class ClusterAssistant {
 	@Inject
 	HealthCheck healthCheck;
 
-	@Inject
-	ActionPoll actionPoll;
-	
-	@Inject
-	ActionExecutor actionExec;
-	
 	String clusterId;
 
 	String nodeId;
@@ -80,7 +77,6 @@ public class ClusterAssistant {
 		this.config = config;
 		nodeStatus.set(NodeState.OFFLINE);
 		healthCheck.init(clusterId, nodeId, nodeStatus, config.getHealthCheck());
-		actionPoll.init(clusterId, nodeId, nodeStatus,actionExec, config.getActionCheck());
 	}
 
 	public void online() {
@@ -110,6 +106,36 @@ public class ClusterAssistant {
 			return null;
 		} finally {
 			pmgr.clear();
+		}
+
+	}
+
+	public ActionId executeRemoteAction(Document actionInput, String target) throws PlatformException {
+		pmgr.getTransaction().begin();
+		try {
+			org.apache.ode.runtime.exec.platform.Action a = new org.apache.ode.runtime.exec.platform.Action();
+			a.setActionType(ClusterComponent.TEST_REMOTE_ACTION);
+			a.setComponent(ClusterComponent.COMPONENT_NAME);
+			a.setNodeId(target);
+			a.setInput(actionInput);
+			a.setState(ActionState.SUBMIT);
+			pmgr.persist(a);
+			pmgr.getTransaction().commit();
+			return a.id();
+		} catch (PersistenceException pe) {
+			pmgr.getTransaction().rollback();
+			throw new PlatformException(pe);
+		}
+
+	}
+
+	public Document getResult(ActionId id) throws PlatformException {
+		try {
+			pmgr.clear();
+			org.apache.ode.runtime.exec.platform.Action a = pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, ((ActionIdImpl) id).getId());
+			return a.result();
+		} catch (PersistenceException pe) {
+			throw new PlatformException(pe);
 		}
 
 	}

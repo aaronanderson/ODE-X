@@ -68,7 +68,7 @@ import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.PlatformException;
 import org.w3c.dom.Document;
 
-@NamedQueries({ @NamedQuery(name = "localNewTasks", query = "select action from Action action where nodeId = :nodeId and state = 'SUBMIT'") })
+@NamedQueries({ @NamedQuery(name = "localNewTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'") })
 @Entity
 @Table(name = "ACTION_STATUS")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -244,7 +244,7 @@ public class Action implements ActionStatus, Serializable {
 		DocumentBuilder db;
 		try {
 			db = domFactory.newDocumentBuilder();
-			return db.parse(new ByteArrayInputStream(input));
+			return db.parse(new ByteArrayInputStream(result));
 		} catch (Exception pe) {
 			pe.printStackTrace();
 			return null;

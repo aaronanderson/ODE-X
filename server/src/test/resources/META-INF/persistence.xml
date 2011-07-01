@@ -22,14 +22,14 @@
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
-			<property name="eclipselink.ddl-generation" value="drop-and-create-tables" />
+			<property name="eclipselink.ddl-generation" value="create-tables" />
 		</properties>
 	</persistence-unit>
 	<persistence-unit name="platform" transaction-type="RESOURCE_LOCAL">
 		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-		<class>org.apache.ode.runtime.exec.platform.ActionStatusImpl</class>
-		<!-- <class>org.apache.ode.runtime.exec.platform.MasterActionStatusImpl</class>
-		<class>org.apache.ode.runtime.exec.platform.SlaveActionStatusImpl</class> -->
+		<class>org.apache.ode.runtime.exec.platform.Action</class>
+		<class>org.apache.ode.runtime.exec.platform.MasterAction</class>
+		<class>org.apache.ode.runtime.exec.platform.SlaveAction</class>
 		<class>org.apache.ode.runtime.exec.platform.ProgramImpl</class>
 		<class>org.apache.ode.runtime.exec.platform.Node</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
@@ -38,7 +38,7 @@
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
-			<property name="eclipselink.ddl-generation" value="drop-and-create-tables" />
+			<property name="eclipselink.ddl-generation" value="create-tables" />
 		</properties>
 	</persistence-unit>
 </persistence>
