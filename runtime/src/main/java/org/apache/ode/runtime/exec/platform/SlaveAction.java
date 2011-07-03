@@ -20,7 +20,10 @@ package org.apache.ode.runtime.exec.platform;
 
 import java.io.Serializable;
 
+import javax.persistence.CascadeType;
 import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
@@ -28,16 +31,21 @@ import javax.persistence.ManyToOne;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
 
+@Entity
 @DiscriminatorValue("SLAVE")
 public class SlaveAction extends Action implements SlaveActionStatus, Serializable {
-	
-	@ManyToOne()
-	@JoinTable(name = "ACTION_SLAVES", joinColumns = { @JoinColumn(name = "SLAVE_ID") }, inverseJoinColumns = { @JoinColumn(name = "MASTER_ID") })
+
+	@ManyToOne(fetch = FetchType.LAZY, cascade = { CascadeType.REFRESH })
+	@JoinTable(name = "ACTION_SLAVES", joinColumns = { @JoinColumn(name = "SLAVE_ID", referencedColumnName="ACTION_ID") }, inverseJoinColumns = { @JoinColumn(name = "MASTER_ID", referencedColumnName="ACTION_ID") })
 	MasterAction master;
-	
+
 	@Override
 	public ActionStatus masterStatus() {
 		return master;
 	}
-	
+
+	public void setMaster(MasterAction master) {
+		this.master = master;
+	}
+
 }

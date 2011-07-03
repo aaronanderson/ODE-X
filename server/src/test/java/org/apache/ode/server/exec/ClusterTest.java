@@ -47,7 +47,9 @@ import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
 import org.apache.ode.server.cdi.StaticHandler;
 import org.apache.ode.server.exec.ClusterComponent.LocalTestAction;
+import org.apache.ode.server.exec.ClusterComponent.MasterTestAction;
 import org.apache.ode.server.exec.ClusterComponent.RemoteTestAction;
+import org.apache.ode.server.exec.ClusterComponent.SlaveTestAction;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
@@ -79,6 +81,10 @@ public class ClusterTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
+
+		//org.h2.tools.Server server = org.h2.tools.Server.createTcpServer("-tcpPort", "9081");
+		//server.start();
+
 		StaticHandler.clear();
 		StaticHandler.addDelegate(new JPAHandler());
 		StaticHandler.addDelegate(new RepoHandler());
@@ -237,7 +243,6 @@ public class ClusterTest {
 		assertTrue(passed);
 	}
 
-	
 	@Test
 	public void testRemoteAction() throws Exception {
 		assertNotNull(cluster);
@@ -250,17 +255,16 @@ public class ClusterTest {
 		clusterComponent.actions().add(new Action(ClusterComponent.TEST_REMOTE_ACTION, TaskType.ACTION, RemoteTestAction.getProvider()));
 		cluster.online();
 		assistant.online();
-		ActionId id = assistant.executeRemoteAction( ClusterComponent.testActionDoc("remoteTest"), nodeId);
+		ActionId id = assistant.executeRemoteAction(ClusterComponent.testActionDoc("remoteTest"), nodeId);
 		assertNotNull(id);
 
-
 		boolean passed = false;
-		Document result=null;
+		Document result = null;
 		for (int i = 0; i < 50; i++) {
 			ActionStatus status = cluster.status(id);
 			assertNotNull(status);
 			if (ActionState.COMPLETED.equals(status.state())) {
-				result=status.result();
+				result = status.result();
 				passed = true;
 				break;
 			}
@@ -268,29 +272,61 @@ public class ClusterTest {
 		}
 		assertTrue(passed);
 		assertNotNull(result);
-		assertEquals("remoteTest start run finish",result.getDocumentElement().getTextContent());
+		assertEquals("remoteTest start run finish", result.getDocumentElement().getTextContent());
 	}
 
 	@Test
 	public void testMasterSlaveAction() throws Exception {
 		assertNotNull(cluster);
-		/*
-		 * ActionId id =
-		 * cluster.execute(ClusterComponent.TEST_ACTION.getQName(),
-		 * ClusterComponent.testActionInput("localTest"), Target.ALL);
-		 * assertNotNull(id); ActionStatus status = cluster.status(id);
-		 * assertNotNull(status);
-		 * assertEquals(Status.EXECUTING,status.status());
-		 */
+		assertNotNull(clusterComponent);
+		assertNotNull(assistant);
+
+		cluster.offline();
+		assistant.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_MASTER_SLAVE_ACTION, TaskType.MASTER, MasterTestAction.getProvider()));
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_MASTER_SLAVE_ACTION, TaskType.SLAVE, SlaveTestAction.getProvider()));
+		cluster.online();
+		assistant.online();
+		ActionId id = cluster.execute(ClusterComponent.TEST_MASTER_SLAVE_ACTION, ClusterComponent.testActionDoc("MasterSlaveTest"), Target.LOCAL);
+		assertNotNull(id);
+
+		boolean passed = false;
+		Document result = null;
+		for (int i = 0; i < 5000; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.COMPLETED.equals(status.state())) {
+				result = status.result();
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+		assertNotNull(result);
+		System.out.println(result.getDocumentElement().getTextContent());
+		assertEquals("MasterSlaveTest start master run master update master input master start slave run slave update slave finish slave finish master", result.getDocumentElement().getTextContent());
+
 	}
 
 	@Test
-	public void testStatus() throws Exception {
+	public void testUpdateStatus() throws Exception {
+
+	}
+
+	@Test
+	public void testLogMessages() throws Exception {
 
 	}
 
 	@Test
 	public void testCancel() throws Exception {
+
+	}
+
+	@Test
+	public void testTimeout() throws Exception {
 
 	}
 

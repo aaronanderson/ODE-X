@@ -41,7 +41,6 @@
 
 	<complexType name="actionExecutionType">
 		<attribute name="queue-size" type="int" default="100" />
-		<attribute name="core-threads" type="int" default="5" />
 		<attribute name="max-threads" type="int" default="20" />
 		<attribute name="thread-timeout" type="int" default="30" />
 		<attribute name="shutdown-wait-time" type="int" default="30" />

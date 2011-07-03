@@ -32,11 +32,13 @@ import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionContext;
 public interface SlaveActionTask extends ActionTask<SlaveActionContext> {
 
 	public interface SlaveActionContext extends ActionContext {
-		
+
+		public ActionStatus masterStatus();
+
 	}
 
 	public interface SlaveActionStatus extends ActionStatus {
-		
+
 		public ActionStatus masterStatus();
 
 	}

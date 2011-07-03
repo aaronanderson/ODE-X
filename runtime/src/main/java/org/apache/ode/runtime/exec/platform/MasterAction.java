@@ -24,32 +24,41 @@ import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.OneToMany;
+import javax.persistence.FetchType;
 
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.MasterActionTask.MasterActionStatus;
-import org.apache.ode.spi.exec.PlatformException;
-import org.w3c.dom.Document;
 
+@Entity
 @DiscriminatorValue("MASTER")
 public class MasterAction extends Action implements MasterActionStatus, Serializable {
 
-	@OneToMany(cascade = CascadeType.ALL)
-	@JoinTable(name = "ACTION_SLAVES", joinColumns = { @JoinColumn(name = "MASTER_ID", unique = true) }, inverseJoinColumns = { @JoinColumn(name = "SLAVE_ID") })
+	@OneToMany(mappedBy="master",cascade = CascadeType.ALL, fetch=FetchType.LAZY)
+	@JoinTable(name = "ACTION_SLAVES", joinColumns = { @JoinColumn(name = "MASTER_ID", referencedColumnName="ACTION_ID") }, inverseJoinColumns = { @JoinColumn(name = "SLAVE_ID", referencedColumnName="ACTION_ID") })
 	Set<SlaveAction> slaves;
 
 	@Override
 	public Set<ActionStatus> slaveStatus() {
 		Set<ActionStatus> stats = new HashSet<ActionStatus>();
-		stats.addAll(slaves);
+		if (slaves != null) {
+			stats.addAll(slaves);
+		}
 		return stats;
 	}
-	
-	public Set<SlaveAction> getSlaves(){
+
+	public Set<SlaveAction> getSlaves() {
 		return slaves;
 	}
-	
+
+	public void addSlave(SlaveAction slave) {
+		if (slaves == null) {
+			slaves = new HashSet<SlaveAction>();
+		}
+		slaves.add(slave);
+	}
 
 }

@@ -36,7 +36,7 @@ public interface MasterActionTask extends ActionTask<MasterActionContext> {
 
 		public Set<ActionStatus> slaveStatus();
 		
-		public void setInput(String nodeId, Document input) throws PlatformException;
+		public void updateInput(String nodeId, Document input) throws PlatformException;
 
 
 	}

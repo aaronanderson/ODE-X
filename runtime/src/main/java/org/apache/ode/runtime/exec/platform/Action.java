@@ -70,7 +70,7 @@ import org.w3c.dom.Document;
 
 @NamedQueries({ @NamedQuery(name = "localNewTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'") })
 @Entity
-@Table(name = "ACTION_STATUS")
+@Table(name = "ACTION")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = DiscriminatorType.STRING)
 @DiscriminatorValue("ACTION")
@@ -139,19 +139,22 @@ public class Action implements ActionStatus, Serializable {
 		this.nodeId = nodeId;
 	}
 
-	public String getNodeId() {
+	@Override
+	public String nodeId() {
 		return nodeId;
 	}
 
 	public Document getInput() {
-		DocumentBuilder db;
-		try {
-			db = domFactory.newDocumentBuilder();
-			return db.parse(new ByteArrayInputStream(input));
-		} catch (Exception pe) {
-			pe.printStackTrace();
-			return null;
+		if (input != null) {
+			DocumentBuilder db;
+			try {
+				db = domFactory.newDocumentBuilder();
+				return db.parse(new ByteArrayInputStream(input));
+			} catch (Exception pe) {
+				pe.printStackTrace();
+			}
 		}
+		return null;
 
 	}
 
@@ -212,14 +215,16 @@ public class Action implements ActionStatus, Serializable {
 
 	@Override
 	public List<ActionMessage> messages() {
-		try {
-			Unmarshaller u = Cluster.CLUSTER_JAXB_CTX.createUnmarshaller();
-			JAXBElement<Messages> messages = (JAXBElement<Messages>) u.unmarshal(new ByteArrayInputStream(this.messages));
-			return convertMessages(messages.getValue().getMessage());
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (messages != null) {
+			try {
+				Unmarshaller u = Cluster.CLUSTER_JAXB_CTX.createUnmarshaller();
+				JAXBElement<Messages> logs = (JAXBElement<Messages>) u.unmarshal(new ByteArrayInputStream(messages));
+				return convertMessages(logs.getValue().getMessage());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-		return null;
+		return new ArrayList<ActionMessage>();
 	}
 
 	public void setMessages(List<ActionMessage> messages) throws PlatformException {
@@ -241,14 +246,17 @@ public class Action implements ActionStatus, Serializable {
 
 	@Override
 	public Document result() {
-		DocumentBuilder db;
-		try {
-			db = domFactory.newDocumentBuilder();
-			return db.parse(new ByteArrayInputStream(result));
-		} catch (Exception pe) {
-			pe.printStackTrace();
-			return null;
+		if (result != null) {
+			DocumentBuilder db;
+			try {
+				db = domFactory.newDocumentBuilder();
+				return db.parse(new ByteArrayInputStream(result));
+			} catch (Exception pe) {
+				pe.printStackTrace();
+			}
 		}
+		return null;
+
 	}
 
 	public void setResult(Document doc) throws PlatformException {

@@ -56,17 +56,19 @@ public interface ActionTask<C extends ActionContext> {
 
 		public ActionState getStatus();
 
-		public void updateStatus(ActionState status);
+		public void updateStatus(ActionState status) throws PlatformException;
 
-		public void updateResult(Document result);
+		public void updateResult(Document result) throws PlatformException;
 	}
 
 	public static interface ActionStatus {
 
 		public ActionId id();
 
+		public String nodeId();
+
 		public QName name();
-		
+
 		public QName component();
 
 		public ActionState state();

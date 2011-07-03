@@ -47,37 +47,41 @@ public class ActionPoll implements Runnable {
 
 	@Override
 	public synchronized void run() {
-		// Refresh the executing entries
-		for (Iterator<ActionRunnable> i = exec.getExecutingTasks().values().iterator(); i.hasNext();) {
-			ActionRunnable runnable = i.next();
-			runnable.pollUpdate();
-		}
-		// Spawn new tasks
-		List<Action> newTasks = null;
-		try {
-			pmgr.clear();
-			Query newTasksQuery = pmgr.createNamedQuery("localNewTasks");
-			newTasksQuery.setParameter("nodeId", nodeId);
-			newTasks = (List<Action>) newTasksQuery.getResultList();
-		} catch (PersistenceException pe) {
-			pe.printStackTrace();
-		}
-		if (newTasks != null) {
-			for (Action a : newTasks) {
-				if (!exec.getExecutingTasks().containsKey(a.getActionId())) {
-					pmgr.clear();
-					pmgr.getTransaction().begin();
-					try {
-						a.setState(ActionState.START);
-						pmgr.merge(a);
-						pmgr.getTransaction().commit();
-						exec.run(a);
-					} catch (Exception pe) {
-						pmgr.getTransaction().rollback();
-						pe.printStackTrace();
+		try {// stop for nothing
+			// Refresh the executing entries
+			for (Iterator<ActionRunnable> i = exec.getExecutingTasks().values().iterator(); i.hasNext();) {
+				ActionRunnable runnable = i.next();
+				//System.out.format("refreshing: ActionId: %s\n", runnable.action.getActionId());
+				runnable.pollUpdate();
+			}
+			// Spawn new tasks
+			List<Action> newTasks = null;
+			try {
+				pmgr.clear();
+				Query newTasksQuery = pmgr.createNamedQuery("localNewTasks");
+				newTasksQuery.setParameter("nodeId", nodeId);
+				newTasks = (List<Action>) newTasksQuery.getResultList();
+			} catch (PersistenceException pe) {
+				pe.printStackTrace();
+			}
+			if (newTasks != null) {
+				for (Action a : newTasks) {
+					if (!exec.getExecutingTasks().containsKey(a.getActionId())) {
+						pmgr.clear();
+						pmgr.getTransaction().begin();
+						try {
+							a.setState(ActionState.START);
+							pmgr.merge(a);
+							pmgr.getTransaction().commit();
+							exec.run(a);
+						} catch (Exception pe) {
+							pe.printStackTrace();
+						}
 					}
 				}
 			}
+		} catch (Throwable t) {
+			t.printStackTrace();
 		}
 	}
 
