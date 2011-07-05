@@ -48,59 +48,63 @@ public class HealthCheck implements Runnable {
 
 	@Override
 	public synchronized void run() {
-		Calendar now = GregorianCalendar.getInstance();
-		// Update the node status
-		pmgr.getTransaction().begin();
-		try {
-			Node local = pmgr.find(Node.class, nodeId);
-			if (local != null) {
-				local.setState(localNodeState.get());
-				local.setHeartBeat(now);
-				pmgr.merge(local);
-				//TODO check version with previous to detect nodeId conflict
-			} else {
-				local = new Node();
-				local.setClusterId(clusterId);
-				local.setNodeId(nodeId);
-				local.setState(localNodeState.get());
-				local.setHeartBeat(now);
-				pmgr.persist(local);
+		try {// stop for nothing
+			Calendar now = GregorianCalendar.getInstance();
+			// Update the node status
+			pmgr.getTransaction().begin();
+			try {
+				Node local = pmgr.find(Node.class, nodeId);
+				if (local != null) {
+					local.setState(localNodeState.get());
+					local.setHeartBeat(now);
+					pmgr.merge(local);
+					// TODO check version with previous to detect nodeId conflict
+				} else {
+					local = new Node();
+					local.setClusterId(clusterId);
+					local.setNodeId(nodeId);
+					local.setState(localNodeState.get());
+					local.setHeartBeat(now);
+					pmgr.persist(local);
+				}
+				pmgr.getTransaction().commit();
+			} catch (PersistenceException pe) {
+				pe.printStackTrace();
+				pmgr.getTransaction().rollback();
 			}
-			pmgr.getTransaction().commit();
-		} catch (PersistenceException pe) {
-			pe.printStackTrace();
-			pmgr.getTransaction().rollback();
-		}
-		pmgr.clear();
+			pmgr.clear();
 
-		// Read in the existing node status
-		Calendar lifeTime = (Calendar) now.clone();
-		Duration expiration = config.getNodeCleanup().negate();
-		expiration.addTo(lifeTime);
-		Calendar active = (Calendar) now.clone();
-		active.add(Calendar.MILLISECOND, (int) -config.getInactiveTimeout());
-		List<Node> nodes = null;
-		try {
-			Query hcheckQ = pmgr.createNamedQuery("healthCheck");
-			hcheckQ.setParameter("lifetime", lifeTime);
-			nodes = (List<Node>) hcheckQ.getResultList();
-		} catch (PersistenceException pe) {
-			pe.printStackTrace();
-		}
-		HashSet<NodeStatus> currentNodes = new HashSet<NodeStatus>();
-		HashSet<String> currentOnlineClusterNodes = new HashSet<String>();
-		for (Node n : nodes) {
-			NodeState nState = NodeState.ONLINE.equals(n.getState()) && n.getHeartBeat().compareTo(active) >= 0 ? NodeState.ONLINE : NodeState.OFFLINE;
-			NodeStatusImpl status = new NodeStatusImpl(n.getClusterId(), n.getNodeId(), nState);
-			currentNodes.add(status);
-			if (clusterId.equalsIgnoreCase(n.getClusterId()) && NodeState.ONLINE.equals(nState)) {
-				currentOnlineClusterNodes.add(n.getNodeId());
+			// Read in the existing node status
+			Calendar lifeTime = (Calendar) now.clone();
+			Duration expiration = config.getNodeCleanup().negate();
+			expiration.addTo(lifeTime);
+			Calendar active = (Calendar) now.clone();
+			active.add(Calendar.MILLISECOND, (int) -config.getInactiveTimeout());
+			List<Node> nodes = null;
+			try {
+				Query hcheckQ = pmgr.createNamedQuery("healthCheck");
+				hcheckQ.setParameter("lifetime", lifeTime);
+				nodes = (List<Node>) hcheckQ.getResultList();
+			} catch (PersistenceException pe) {
+				pe.printStackTrace();
 			}
-		}
-		pmgr.clear();
+			HashSet<NodeStatus> currentNodes = new HashSet<NodeStatus>();
+			HashSet<String> currentOnlineClusterNodes = new HashSet<String>();
+			for (Node n : nodes) {
+				NodeState nState = NodeState.ONLINE.equals(n.getState()) && n.getHeartBeat().compareTo(active) >= 0 ? NodeState.ONLINE : NodeState.OFFLINE;
+				NodeStatusImpl status = new NodeStatusImpl(n.getClusterId(), n.getNodeId(), nState);
+				currentNodes.add(status);
+				if (clusterId.equalsIgnoreCase(n.getClusterId()) && NodeState.ONLINE.equals(nState)) {
+					currentOnlineClusterNodes.add(n.getNodeId());
+				}
+			}
+			pmgr.clear();
 
-		nodeStatus.set(Collections.unmodifiableSet(currentNodes));
-		onlineClusterNodes.set(Collections.unmodifiableSet(currentOnlineClusterNodes));
+			nodeStatus.set(Collections.unmodifiableSet(currentNodes));
+			onlineClusterNodes.set(Collections.unmodifiableSet(currentOnlineClusterNodes));
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
 	}
 
 	public void init(String clusterId, String nodeId, AtomicReference<NodeState> localNodeStatus, org.apache.ode.runtime.exec.cluster.xml.HealthCheck config) {

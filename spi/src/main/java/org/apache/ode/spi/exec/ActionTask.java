@@ -96,6 +96,12 @@ public interface ActionTask<C extends ActionContext> {
 		private final LogType type;
 		private final String message;
 
+		public ActionMessage(LogType type, String message) {
+			this.timestamp = new Date();
+			this.type = type;
+			this.message = message;
+		}
+
 		public ActionMessage(Date timestamp, LogType type, String message) {
 			this.timestamp = timestamp;
 			this.type = type;

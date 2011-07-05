@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
@@ -46,7 +45,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
-import javax.persistence.CacheRetrieveMode;
+import javax.persistence.OptimisticLockException;
+import javax.persistence.RollbackException;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.cluster.xml.ActionExecution;
@@ -146,14 +146,19 @@ public class ActionExecutor {
 		} else {
 			task = entry.action.get();
 		}
-		ActionRunnable runnable = new ActionRunnable(action.getActionId(), task);
+		ActionRunnable runnable = null;
+		if (ActionState.CANCELED.equals(action.state())) {
+			runnable = new CancelledActionRunnable(action.getActionId(), task);
+		} else {
+			runnable = new ActionRunnable(action.getActionId(), task);
+		}
 		FutureTask<ActionRunnable> future = new FutureTask<ActionRunnable>(runnable, runnable);
 		runnable.setFutureTask(future);
 		exec.submit(future);
 		executingTasks.put(action.getActionId(), runnable);
 	}
 
-	public TaskType actionType(QName action) throws PlatformException {
+	TaskType actionType(QName action) throws PlatformException {
 		ActionEntry e = actions.get(action);
 		if (e == null) {
 			throw new PlatformException(String.format("Unsupported action type %s", action));
@@ -166,7 +171,7 @@ public class ActionExecutor {
 		}
 	}
 
-	public void setupActions(Set<Component> components) throws PlatformException {
+	void setupActions(Set<Component> components) throws PlatformException {
 		// add built in actions
 		ActionEntry installActionEntry = new ActionEntry(TaskType.MASTER, Platform.PLATFORM, installMasterActionProvider);
 		installActionEntry.slave.add(new ActionEntry(TaskType.SLAVE, Platform.PLATFORM, installSlaveActionProvider));
@@ -212,7 +217,7 @@ public class ActionExecutor {
 		List<ActionEntry> slave = new ArrayList<ActionEntry>();
 	}
 
-	public ActionId executeAction(QName action, Document actionInput, String target) throws PlatformException {
+	ActionId executeAction(QName action, Document actionInput, String target) throws PlatformException {
 		ActionEntry ae = actions.get(action);
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 		pmgr.getTransaction().begin();
@@ -241,7 +246,7 @@ public class ActionExecutor {
 
 	}
 
-	public ActionId executeMasterAction(QName action, Document actionInput, Set<String> targets) throws PlatformException {
+	ActionId executeMasterAction(QName action, Document actionInput, Set<String> targets) throws PlatformException {
 		ActionEntry ae = actions.get(action);
 		String masterTarget = null;
 		Set<org.apache.ode.runtime.exec.platform.Action> localActions = new HashSet<org.apache.ode.runtime.exec.platform.Action>();
@@ -324,20 +329,41 @@ public class ActionExecutor {
 	public void cancel(ActionIdImpl actionId) throws PlatformException {
 
 		EntityManager pmgr = pmgrFactory.createEntityManager();
-		pmgr.getTransaction().begin();
 		try {
-			org.apache.ode.runtime.exec.platform.Action action = pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, actionId.id);
-			// TODO update status to cancel. For Master action iterate through
-			// slaves and cancel as well. If local task cancel it and remove it.
-		} catch (PersistenceException pe) {
-			throw new PlatformException(pe);
+			while (true) {
+				pmgr.clear();
+				pmgr.getTransaction().begin();
+				try {
+					org.apache.ode.runtime.exec.platform.Action action = pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, actionId.id);
+					if (ActionState.START.equals(action.state()) || ActionState.EXECUTING.equals(action.state()) || ActionState.FINISH.equals(action.state())) {
+						action.setState(ActionState.CANCELED);
+						pmgr.merge(action);
+						pmgr.getTransaction().commit();
+						if (action instanceof MasterAction) {
+							for (SlaveAction s : ((MasterAction) action).getSlaves()) {
+								cancel((ActionIdImpl) s.id());
+							}
+						}
+					} else {
+						pmgr.getTransaction().rollback();
+					}
+					break;
+				} catch (PersistenceException pe) {
+					if (pe instanceof RollbackException && pe.getCause() instanceof OptimisticLockException) {
+						OptimisticLockException oe = ((OptimisticLockException) pe.getCause());
+						oe.printStackTrace();
+					} else {
+						pe.printStackTrace();
+						break;
+					}
+				}
+			}
 		} finally {
 			pmgr.close();
 		}
-
 	}
 
-	public class RejectedActionExecution implements RejectedExecutionHandler {
+	private class RejectedActionExecution implements RejectedExecutionHandler {
 		@Override
 		public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
 			System.out.println(runnable.toString() + " : I've been rejected ! ");
@@ -353,6 +379,7 @@ public class ActionExecutor {
 		CyclicBarrier refreshBarrier = new CyclicBarrier(2);
 		Lock updateLock = new ReentrantLock();
 		EntityManager pmgr = pmgrFactory.createEntityManager();
+		volatile boolean canceled = false;
 
 		public ActionRunnable(long actionId, ActionTask task) throws PlatformException {
 			try {
@@ -383,34 +410,55 @@ public class ActionExecutor {
 			this.futureTask = future;
 		}
 
-		public void save() {
-			updateLock.lock();
-			try {
-				pmgr.getTransaction().begin();
-				try {
-					pmgr.merge(action);
-					pmgr.getTransaction().commit();
-				} catch (PersistenceException pe) {
-					pe.printStackTrace();
-				}
-			} finally {
-				updateLock.unlock();
-			}
+		public void cancel() {
+			canceled = true;
+			futureTask.cancel(true);
+			remove();
 		}
 
-		public void contextUpdate(org.apache.ode.runtime.exec.platform.Action action) throws PlatformException {
-			updateLock.lock();
-			try {
-				pmgr.getTransaction().begin();
+		public boolean save() {
+			if (!canceled) {
+				updateLock.lock();
 				try {
-					pmgr.merge(action);
-					pmgr.getTransaction().commit();
-				} catch (PersistenceException pe) {
-					throw new PlatformException(pe);
+					pmgr.getTransaction().begin();
+					try {
+						pmgr.merge(action);
+						pmgr.getTransaction().commit();
+						return true;
+					} catch (PersistenceException pe) {
+						if (pe instanceof RollbackException && pe.getCause() instanceof OptimisticLockException) {
+							context.refresh();
+						}
+						pe.printStackTrace();
+						return false;
+					}
+				} finally {
+					updateLock.unlock();
 				}
-			} finally {
-				updateLock.unlock();
 			}
+			return false;
+		}
+
+		public boolean contextUpdate(org.apache.ode.runtime.exec.platform.Action action) throws PlatformException {
+			if (!canceled) {
+				updateLock.lock();
+				try {
+					pmgr.getTransaction().begin();
+					try {
+						pmgr.merge(action);
+						pmgr.getTransaction().commit();
+						return true;
+					} catch (PersistenceException pe) {
+						if (pe instanceof RollbackException && pe.getCause() instanceof OptimisticLockException) {
+							context.refresh();
+						}
+						throw new PlatformException(pe);
+					}
+				} finally {
+					updateLock.unlock();
+				}
+			}
+			return false;
 		}
 
 		/*
@@ -418,22 +466,25 @@ public class ActionExecutor {
 		 * persisted state except for the following conditions:
 		 * 
 		 * cancel: At any time any node may update the action state to the cancelled status. Typically this will generate an optimistic lock exception that
-		 * should be handled gracefully.
+		 * should be handled gracefully. On each of the save methods if an optimistic lock is caught the refresh lock is acquired and the polling thread will
+		 * will refresh the state. If it is cancelled, the polling thread will use the futuretask to cancel the action. If the action was in an executing state it will 
+		 * be run again as a CancelledActionRunnable so that the task's finish method can be invoked. This allows cancelled tasks the opportunity to perform cleanup outside the polling thread.   
+		 * If the action was completed or in a start state the polling thread will simply set the finish date and clean up the thread.
 		 * 
-		 * refresh: A running task may release the update lock and wait for the action polling thread to update the action state. This is typically useful in a
+		 * timeout: similar to cancel. The polling thread will examine the last modified timestamp and if the task is in a running state and the timeout threshold exceed the
+		 * task will be cancelled. 
+		 * 
+		 * refresh: A running task may block on the refreshBarrier and wait for the action polling thread to update the action state. This is typically useful in a
 		 * master/slave communication pattern
 		 * 
 		 * master to slave: When slaves start up they wait for the master to finishing starting first before they do. This allows the master to update the slave
 		 * action input at any time during the start and executing phase. When slaves update their result based on the current input it provides a master/slave
 		 * communication channel. It is anticipated that both the master and slave will use the refresh mechanism to retrieve input/result updates while in an
 		 * executing state.
-		 * 
-		 * master finish: If a master finishes without waiting for the slaves to finish then all executing slaves are cancelled
 		 */
 
 		@Override
 		public void run() {
-
 			if (action instanceof SlaveAction) {// Master should start before slave
 				SlaveAction saction = (SlaveAction) action;
 				while (ActionState.START.equals(saction.masterStatus().state())) {
@@ -441,6 +492,7 @@ public class ActionExecutor {
 				}
 				if (!ActionState.EXECUTING.equals(saction.masterStatus().state())) {
 					saction.setState(ActionState.CANCELED);
+					action.setFinish(new Date());
 					save();
 					remove();
 					return;
@@ -529,34 +581,15 @@ public class ActionExecutor {
 		public void pollUpdate() {
 			if (refreshBarrier.getNumberWaiting() == 1 && updateLock.tryLock()) {
 				try {
-					try {
-						// HashMap refreshProperties = new HashMap();
-						// refreshProperties.put("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
-						pmgr.refresh(action);
-						if (action instanceof SlaveAction) { // not sure why but can't get master to refresh even with cascade.refresh
-							pmgr.refresh(((SlaveAction) action).master);
-						}
-						if (action.getInput() != null) {
-							//System.out.format("Poll Update: ActionId: %s LastUpdate %s Input: %s\n", action.getActionId(), action.getLastModified(), action
-							//		.getInput().getDocumentElement().getTextContent());
-						}
-					} catch (PersistenceException pe) {
-						pe.printStackTrace();
+					// HashMap refreshProperties = new HashMap();
+					// refreshProperties.put("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
+					pmgr.refresh(action);
+					if (action instanceof SlaveAction) { // not sure why but can't get master to refresh even with cascade.refresh
+						pmgr.refresh(((SlaveAction) action).master);
 					}
+				} catch (PersistenceException pe) {
+					pe.printStackTrace();
 
-					if (!futureTask.isDone() && ActionState.CANCELED.equals(action.state())) {
-						futureTask.cancel(true);
-						try {
-							action.setState(ActionState.CANCELED);
-							task.finish(context);
-						} catch (PlatformException pe) {
-							context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
-							action.setState(ActionState.FAILED);
-						} finally {
-							save();
-						}
-						remove();
-					}
 				} finally {
 					updateLock.unlock();
 					try {
@@ -565,7 +598,34 @@ public class ActionExecutor {
 						e.printStackTrace();
 					}
 				}
+
 			}
+		}
+
+	}
+
+	public class CancelledActionRunnable extends ActionRunnable {
+		public CancelledActionRunnable(long actionId, ActionTask task) throws PlatformException {
+			super(actionId, task);
+		}
+
+		@Override
+		public void run() {
+			// finish should be called on all cancelled tasks if the run method was invoked
+			if (ActionState.CANCELED.equals(action.state())) {// This task was thrown back on the queue after being cancelled
+				try {
+					task.finish(context);
+				} catch (Throwable pe) {
+					context.log(new ActionMessage(new Date(), LogType.ERROR, pe.getMessage()));
+					action.setState(ActionState.FAILED);
+				} finally {
+					action.setFinish(new Date());
+					save();
+					remove();
+				}
+				return;
+			}
+
 		}
 
 	}
@@ -590,7 +650,15 @@ public class ActionExecutor {
 
 		@Override
 		public void log(ActionMessage message) {
-			runnable.getAction().messages().add(message);
+			try {
+				do {
+					List<ActionMessage> messages = runnable.getAction().getMessages();
+					messages.add(message);
+					runnable.getAction().setMessages(messages);
+				} while (!runnable.contextUpdate(runnable.getAction()));
+			} catch (PlatformException e) {
+				e.printStackTrace();
+			}
 		}
 
 		@Override
@@ -600,11 +668,11 @@ public class ActionExecutor {
 
 		@Override
 		public void refresh() {
-			//System.out.format("Refresh: ActionId: %s\n", runnable.action.getActionId());
+			// System.out.format("Refresh: ActionId: %s\n", runnable.getAction().getActionId());
 			try {
 				runnable.getRefreshBarrier().await();
 			} catch (Exception e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 			}
 		}
 
@@ -615,14 +683,22 @@ public class ActionExecutor {
 
 		@Override
 		public void updateStatus(ActionState state) throws PlatformException {
-			runnable.getAction().setState(state);
-			runnable.contextUpdate(runnable.action);
+			if (ActionState.CANCELED.equals(state)) {
+				throw new PlatformException("ActionTasks may not cancel themselves");
+			}
+			if (!(ActionState.PARTIAL_FAILURE.equals(state) || ActionState.FAILED.equals(state))) {
+				throw new PlatformException("ActionTasks may only specify the failed and partial failure states. All others are managed by the platforms ");
+			}
+			do {
+				runnable.getAction().setState(state);
+			} while (!runnable.contextUpdate(runnable.getAction()));
 		}
 
 		@Override
 		public void updateResult(Document result) throws PlatformException {
-			runnable.getAction().setResult(result);
-			runnable.contextUpdate(runnable.action);
+			do {
+				runnable.getAction().setResult(result);
+			} while (!runnable.contextUpdate(runnable.getAction()));
 		}
 
 	}
@@ -644,25 +720,27 @@ public class ActionExecutor {
 			MasterAction ma = (MasterAction) runnable.getAction();
 			for (SlaveAction a : ma.slaves) {
 				if (a.nodeId().equals(nodeId)) {
-					if (ActionState.START.equals(runnable.action.state())) {
+					if (ActionState.START.equals(runnable.getAction().state())) {
 						if (ActionState.START.equals(a.state())) {
-							a.setInput(input);
-							runnable.contextUpdate(a);
+							do {
+								a.setInput(input);
+							} while (!runnable.contextUpdate(a));
 						} else {
-							throw new PlatformException(String.format("Invalid state. Master: %s Slave %s", runnable.action.state(), a.state()));
+							throw new PlatformException(String.format("Invalid state. Master: %s Slave %s", runnable.getAction().state(), a.state()));
 						}
-					} else if (ActionState.EXECUTING.equals(runnable.action.state())) {
+					} else if (ActionState.EXECUTING.equals(runnable.getAction().state())) {
 						while (ActionState.START.equals(a.state())) {
 							refresh();
 						}
 						if (ActionState.EXECUTING.equals(a.state())) {
-							a.setInput(input);
-							runnable.contextUpdate(a);
+							do {
+								a.setInput(input);
+							} while (!runnable.contextUpdate(a));
 						} else {
-							throw new PlatformException(String.format("Invalid state. Master: %s Slave %s", runnable.action.state(), a.state()));
+							throw new PlatformException(String.format("Invalid state. Master: %s Slave %s", runnable.getAction().state(), a.state()));
 						}
 					} else {
-						throw new PlatformException(String.format("Invalid state. Master: %s Slave %s", runnable.action.state(), a.state()));
+						throw new PlatformException(String.format("Invalid state. Master: %s Slave %s", runnable.getAction().state(), a.state()));
 					}
 
 					return;

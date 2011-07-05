@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -68,7 +69,7 @@ import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.PlatformException;
 import org.w3c.dom.Document;
 
-@NamedQueries({ @NamedQuery(name = "localNewTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'") })
+@NamedQueries({ @NamedQuery(name = "localTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'  or ( action.state = 'CANCELED' and action.finish is null )") })
 @Entity
 @Table(name = "ACTION")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -215,6 +216,10 @@ public class Action implements ActionStatus, Serializable {
 
 	@Override
 	public List<ActionMessage> messages() {
+		return Collections.unmodifiableList(getMessages());
+	}
+	
+	public List<ActionMessage> getMessages() {
 		if (messages != null) {
 			try {
 				Unmarshaller u = Cluster.CLUSTER_JAXB_CTX.createUnmarshaller();

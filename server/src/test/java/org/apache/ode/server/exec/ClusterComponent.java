@@ -34,12 +34,12 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.ActionTask.ActionContext;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogType;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.MasterActionTask;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.SlaveActionTask;
-import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionStatus;
 import org.apache.ode.spi.repo.Repository;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -51,7 +51,10 @@ public class ClusterComponent implements Component {
 	public static final QName TEST_LOCAL_ACTION = new QName(TEST_NS, "TestLocalAction");
 	public static final QName TEST_REMOTE_ACTION = new QName(TEST_NS, "TestRemoteAction");
 	public static final QName TEST_MASTER_SLAVE_ACTION = new QName(TEST_NS, "TestMasterAction");
-
+	public static final QName TEST_STATUS_ACTION = new QName(TEST_NS, "TestStatusAction");
+	public static final QName TEST_LOG_ACTION = new QName(TEST_NS, "TestLogAction");
+	public static final QName TEST_CANCEL_ACTION = new QName(TEST_NS, "TestCancelAction");
+	public static final QName TEST_TIMEOUT_ACTION = new QName(TEST_NS, "TestTimeoutAction");
 	List<Action> supportedActions = new ArrayList<Action>();
 
 	@Inject
@@ -297,6 +300,144 @@ public class ClusterComponent implements Component {
 		public void finish(SlaveActionContext ctx) throws PlatformException {
 			content += " finish slave";
 			ctx.updateResult(testActionDoc(content));
+		}
+
+	}
+
+	public static class StatusTestAction implements ActionTask<ActionContext> {
+
+		public static Provider<StatusTestAction> getProvider() {
+			return new Provider<StatusTestAction>() {
+
+				@Override
+				public StatusTestAction get() {
+					return new StatusTestAction();
+				}
+
+			};
+
+		}
+
+		@Override
+		public void start(ActionContext ctx) throws PlatformException {
+		}
+
+		@Override
+		public void run(ActionContext ctx) throws PlatformException {
+			ctx.updateStatus(ActionState.PARTIAL_FAILURE);
+		}
+
+		@Override
+		public void finish(ActionContext ctx) throws PlatformException {
+			if (ActionState.PARTIAL_FAILURE.equals(ctx.getStatus())) {
+				ctx.updateStatus(ActionState.FAILED);
+			}
+		}
+
+	}
+
+	public static class LogTestAction implements ActionTask<ActionContext> {
+
+		public static Provider<LogTestAction> getProvider() {
+			return new Provider<LogTestAction>() {
+
+				@Override
+				public LogTestAction get() {
+					return new LogTestAction();
+				}
+
+			};
+
+		}
+
+		@Override
+		public void start(ActionContext ctx) throws PlatformException {
+			ctx.log(new ActionMessage(LogType.INFO, "start"));
+		}
+
+		@Override
+		public void run(ActionContext ctx) {
+			ctx.log(new ActionMessage(LogType.WARNING, "run"));
+		}
+
+		@Override
+		public void finish(ActionContext ctx) throws PlatformException {
+			ctx.log(new ActionMessage(LogType.ERROR, "finish"));
+			throw new PlatformException("exception");
+		}
+
+	}
+
+	public static class CancelTestAction implements ActionTask<ActionContext> {
+
+		public static Provider<CancelTestAction> getProvider() {
+			return new Provider<CancelTestAction>() {
+
+				@Override
+				public CancelTestAction get() {
+					return new CancelTestAction();
+				}
+
+			};
+
+		}
+
+		void sleep() throws PlatformException {
+			// sleep 60 seconds simulating activity
+			try {
+				Thread.sleep(60000);
+			} catch (InterruptedException e) {
+				throw new PlatformException(e);
+			}
+		}
+
+		@Override
+		public void start(ActionContext ctx) throws PlatformException {
+			if ("start".equals(ctx.input().getDocumentElement().getTextContent())) {
+				sleep();
+			}
+		}
+
+		@Override
+		public void run(ActionContext ctx) throws PlatformException {
+			if ("run".equals(ctx.input().getDocumentElement().getTextContent())) {
+				sleep();
+			}
+		}
+
+		@Override
+		public void finish(ActionContext ctx) throws PlatformException {
+			if (ActionState.CANCELED.equals(ctx.getStatus())) {
+				ctx.updateResult(testActionDoc("finish"));
+			}
+		}
+
+	}
+
+	public static class TimeoutTestAction implements ActionTask<ActionContext> {
+
+		public static Provider<TimeoutTestAction> getProvider() {
+			return new Provider<TimeoutTestAction>() {
+
+				@Override
+				public TimeoutTestAction get() {
+					return new TimeoutTestAction();
+				}
+
+			};
+
+		}
+
+		@Override
+		public void start(ActionContext ctx) throws PlatformException {
+		}
+
+		@Override
+		public void run(ActionContext ctx) {
+		}
+
+		@Override
+		public void finish(ActionContext ctx) throws PlatformException {
 		}
 
 	}

@@ -20,11 +20,13 @@ package org.apache.ode.server.exec;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -46,13 +48,18 @@ import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
 import org.apache.ode.server.cdi.StaticHandler;
+import org.apache.ode.server.exec.ClusterComponent.CancelTestAction;
 import org.apache.ode.server.exec.ClusterComponent.LocalTestAction;
+import org.apache.ode.server.exec.ClusterComponent.LogTestAction;
 import org.apache.ode.server.exec.ClusterComponent.MasterTestAction;
 import org.apache.ode.server.exec.ClusterComponent.RemoteTestAction;
 import org.apache.ode.server.exec.ClusterComponent.SlaveTestAction;
+import org.apache.ode.server.exec.ClusterComponent.StatusTestAction;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogType;
 import org.apache.ode.spi.exec.ActionTask.ActionState;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.NodeStatus;
@@ -82,8 +89,8 @@ public class ClusterTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 
-		//org.h2.tools.Server server = org.h2.tools.Server.createTcpServer("-tcpPort", "9081");
-		//server.start();
+		org.h2.tools.Server server = org.h2.tools.Server.createTcpServer("-tcpPort", "9081");
+		server.start();
 
 		StaticHandler.clear();
 		StaticHandler.addDelegate(new JPAHandler());
@@ -235,6 +242,8 @@ public class ClusterTest {
 			status = cluster.status(id);
 			assertNotNull(status);
 			if (ActionState.COMPLETED.equals(status.state())) {
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
 				passed = true;
 				break;
 			}
@@ -265,6 +274,8 @@ public class ClusterTest {
 			assertNotNull(status);
 			if (ActionState.COMPLETED.equals(status.state())) {
 				result = status.result();
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
 				passed = true;
 				break;
 			}
@@ -293,10 +304,164 @@ public class ClusterTest {
 
 		boolean passed = false;
 		Document result = null;
-		for (int i = 0; i < 5000; i++) {
+		for (int i = 0; i < 50; i++) {
 			ActionStatus status = cluster.status(id);
 			assertNotNull(status);
 			if (ActionState.COMPLETED.equals(status.state())) {
+				result = status.result();
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+		assertNotNull(result);
+		assertEquals("MasterSlaveTest start master run master update master input master start slave run slave update slave finish slave finish master", result
+				.getDocumentElement().getTextContent());
+
+	}
+
+	@Test
+	public void testUpdateStatus() throws Exception {
+		assertNotNull(cluster);
+		assertNotNull(clusterComponent);
+
+		cluster.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_STATUS_ACTION, TaskType.ACTION, StatusTestAction.getProvider()));
+		cluster.online();
+		ActionId id = cluster.execute(ClusterComponent.TEST_STATUS_ACTION, null, Target.LOCAL);
+		assertNotNull(id);
+
+		boolean passed = false;
+		for (int i = 0; i < 50; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.FAILED.equals(status.state())) {
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+	}
+
+	@Test
+	public void testLogMessages() throws Exception {
+		assertNotNull(cluster);
+		assertNotNull(clusterComponent);
+
+		cluster.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_LOG_ACTION, TaskType.ACTION, LogTestAction.getProvider()));
+		cluster.online();
+		ActionId id = cluster.execute(ClusterComponent.TEST_LOG_ACTION, null, Target.LOCAL);
+		assertNotNull(id);
+
+		boolean passed = false;
+		List<ActionMessage> messages = null;
+		for (int i = 0; i < 50; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.COMPLETED.equals(status.state())) {
+				messages = status.messages();
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+		assertNotNull(messages);
+		assertTrue(messages.size() == 4);
+		assertEquals(LogType.INFO, messages.get(0).getType());
+		assertEquals("start", messages.get(0).getMessage());
+		assertEquals(LogType.WARNING, messages.get(1).getType());
+		assertEquals("run", messages.get(1).getMessage());
+		assertEquals(LogType.ERROR, messages.get(2).getType());
+		assertEquals("finish", messages.get(2).getMessage());
+		assertEquals(LogType.ERROR, messages.get(3).getType());
+		assertEquals("exception", messages.get(3).getMessage());
+	}
+
+	@Test
+	public void testCancel() throws Exception {
+		assertNotNull(cluster);
+		assertNotNull(clusterComponent);
+
+		cluster.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_CANCEL_ACTION, TaskType.ACTION, CancelTestAction.getProvider()));
+		cluster.online();
+		ActionId id = cluster.execute(ClusterComponent.TEST_CANCEL_ACTION, ClusterComponent.testActionDoc("start"), Target.LOCAL);
+		assertNotNull(id);
+		boolean passed = false;
+		Document result = null;
+		for (int i = 0; i < 50; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (status.start()!=null && ActionState.START.equals(status.state())) {
+				cluster.cancel(id);
+			} else if (status.finish() != null && ActionState.CANCELED.equals(status.state())) {
+				result = status.result();
+				assertNull(result);
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+		assertNull(result);
+
+		id = cluster.execute(ClusterComponent.TEST_CANCEL_ACTION, ClusterComponent.testActionDoc("run"), Target.LOCAL);
+		assertNotNull(id);
+		passed = false;
+		result = null;
+		for (int i = 0; i < 50; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.EXECUTING.equals(status.state())) {
+				cluster.cancel(id);
+			} else if (status.finish() != null && ActionState.CANCELED.equals(status.state())) {
+				result = status.result();
+				assertNotNull(result);
+				assertNotNull(status.start());
+				assertNotNull(status.finish());
+				assertEquals("finish", result.getDocumentElement().getTextContent());
+				passed = true;
+				break;
+			}
+			Thread.sleep(100);
+		}
+		assertTrue(passed);
+	}
+
+	/*
+	@Test
+	public void testTimeout() throws Exception {
+		assertNotNull(cluster);
+		assertNotNull(clusterComponent);
+
+		cluster.offline();
+		clusterComponent.actions().clear();
+		clusterComponent.actions().add(new Action(ClusterComponent.TEST_TIMEOUT_ACTION, TaskType.ACTION, TimeoutTestAction.getProvider()));
+		cluster.online();
+		ActionId id = cluster.execute(ClusterComponent.TEST_TIMEOUT_ACTION, null, Target.LOCAL);
+		assertNotNull(id);
+
+		boolean passed = false;
+		Document result = null;
+		for (int i = 0; i < 50; i++) {
+			ActionStatus status = cluster.status(id);
+			assertNotNull(status);
+			if (ActionState.CANCELED.equals(status.state())) {
 				result = status.result();
 				passed = true;
 				break;
@@ -305,29 +470,7 @@ public class ClusterTest {
 		}
 		assertTrue(passed);
 		assertNotNull(result);
-		System.out.println(result.getDocumentElement().getTextContent());
-		assertEquals("MasterSlaveTest start master run master update master input master start slave run slave update slave finish slave finish master", result.getDocumentElement().getTextContent());
-
+		assertEquals("finish", result.getDocumentElement().getTextContent());
 	}
-
-	@Test
-	public void testUpdateStatus() throws Exception {
-
-	}
-
-	@Test
-	public void testLogMessages() throws Exception {
-
-	}
-
-	@Test
-	public void testCancel() throws Exception {
-
-	}
-
-	@Test
-	public void testTimeout() throws Exception {
-
-	}
-
+	*/
 }
