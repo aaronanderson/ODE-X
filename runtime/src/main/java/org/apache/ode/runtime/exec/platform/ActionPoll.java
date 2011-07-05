@@ -22,6 +22,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -44,6 +46,8 @@ public class ActionPoll implements Runnable {
 	private String nodeId;
 	AtomicReference<NodeState> localNodeState;
 	ActionCheck config;
+
+	private static final Logger log = Logger.getLogger(ActionPoll.class.getName());
 
 	@Override
 	public synchronized void run() {
@@ -74,13 +78,15 @@ public class ActionPoll implements Runnable {
 					} else if (ActionState.CANCELED.equals(a.state()) && exec.getExecutingTasks().containsKey(a.getActionId())) {
 						ActionRunnable ar = exec.getExecutingTasks().get(a.getActionId());
 						if (ar != null && !(ar instanceof CancelledActionRunnable)) {
-							//System.out.format("Cancelling action %s\n",a.getActionId());
+							log.log(Level.FINE, "Cancelling action {0}", a.getActionId());
 							ar.cancel();
 							if (ActionState.EXECUTING.equals(ar.getAction().state()) || ActionState.FINISH.equals(ar.getAction().state())) {
-								//System.out.format("Executing cancellation task actionId: %s old state: %s new state: %s\n",ar.getAction().getActionId(),ar.getAction().state(), a.state());
+								log.log(Level.FINER, "Executing cancellation task actionId: {0} old state: {1} new state: {2}", new Object[] {
+										ar.getAction().getActionId(), ar.getAction().state(), a.state() });
 								exec.run(a);
 							} else if (a.start() != null && a.finish() == null) {
-								//System.out.format("Finalizing task actionId: %s old state: %s new state: %s\n",ar.getAction().getActionId(),ar.getAction().state(), a.state());
+								log.log(Level.FINER, "Finalizing task actionId: {0} old state: {1} new state: {2}", new Object[] {
+										ar.getAction().getActionId(), ar.getAction().state(), a.state() });
 								pmgr.getTransaction().begin();
 								try {
 									a.setFinish(new Date());
@@ -100,12 +106,12 @@ public class ActionPoll implements Runnable {
 			// Refresh the executing entries
 			for (Iterator<ActionRunnable> i = exec.getExecutingTasks().values().iterator(); i.hasNext();) {
 				ActionRunnable runnable = i.next();
-				// System.out.format("refreshing: ActionId: %s\n", runnable.action.getActionId());
+				log.log(Level.FINER, "refreshing: ActionId: {0}", runnable.action.getActionId());
 				runnable.pollUpdate();
 				if (ActionState.CANCELED.equals(runnable.getAction().state()) && runnable.futureTask.isDone() && runnable.getAction().finish() == null) {
 					exec.run(runnable.getAction());// put cancelled tasks back on the queue
 				}
-
+				//TODO implement task timeouts
 			}
 
 		} catch (Throwable t) {

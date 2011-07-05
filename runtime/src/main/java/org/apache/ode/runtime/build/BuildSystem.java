@@ -19,6 +19,7 @@
 package org.apache.ode.runtime.build;
 
 import java.io.InputStream;
+import java.util.logging.Logger;
 
 import javax.activation.DataSource;
 import javax.annotation.PostConstruct;
@@ -42,10 +43,13 @@ public class BuildSystem {
 	Repository repository;
 	@Inject
 	Provider<BuildExecutor> buildProvider;
+	
+	private static final Logger log = Logger.getLogger(BuildSystem.class.getName());
+
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing BuildSystem");
+		log.fine("Initializing BuildSystem");
 		repository.registerFileExtension("build", BUILDPLAN_MIMETYPE);
 		repository.registerFileExtension(BUILDPLAN_NAMESPACE, BUILDPLAN_MIMETYPE);
 		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, "build", true, buildProvider);
@@ -75,7 +79,7 @@ public class BuildSystem {
 			je.printStackTrace();
 		}
 
-		System.out.println("BuildSystem Initialized");
+		log.fine("BuildSystem Initialized");
 
 	}
 

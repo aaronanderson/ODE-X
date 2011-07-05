@@ -147,7 +147,7 @@ public class XMLValidate implements Validate {
 
 		@Override
 		public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
-			System.out.format("type %s, namespaceURI %s, publicId %s, systemId %s, baseURI %s\n", type,  namespaceURI,  publicId,  systemId,  baseURI);
+			//System. out.format("type %s, namespaceURI %s, publicId %s, systemId %s, baseURI %s\n", type,  namespaceURI,  publicId,  systemId,  baseURI);
 			return null;
 		}
 		

@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
@@ -59,6 +61,8 @@ public class Bootstrap implements Extension {
 	List<Handler> handlers = new ArrayList<Handler>();
 	List<AnnotatedType<?>> addedTypes = new ArrayList<AnnotatedType<?>>();
 
+	private static final Logger log = Logger.getLogger(Bootstrap.class.getName());
+
 	public Bootstrap() {
 
 	}
@@ -71,7 +75,7 @@ public class Bootstrap implements Extension {
 					Class<Handler> handler = (Class<Handler>) Class.forName(h);
 					if (handler != null) {
 						handlers.add(handler.newInstance());
-						System.out.format("Added handler %s\n", h);
+						log.log(Level.FINER, "Added handler {0}", h);
 					}
 
 				} catch (Exception ce) {
@@ -82,7 +86,7 @@ public class Bootstrap implements Extension {
 			ce.printStackTrace();
 		}
 
-		System.out.format("BeforeBeanDiscovery \n");
+		log.finer("BeforeBeanDiscovery");
 		BeforeBeanDiscovery bbdImpl = new BeforeBeanDiscoveryImpl(bbd);
 		for (Handler h : handlers) {
 			h.beforeBeanDiscovery(bbdImpl, bm);
@@ -100,7 +104,7 @@ public class Bootstrap implements Extension {
 		 * haha.
 		 */
 		for (AnnotatedType<?> t : addedTypes) {
-			boolean vetoed= false;
+			boolean vetoed = false;
 			ProcessAnnotatedTypeImpl type = new ProcessAnnotatedTypeImpl(t);
 			for (Handler h : handlers) {
 				h.processAnnotatedType(type, bm);
@@ -109,99 +113,98 @@ public class Bootstrap implements Extension {
 					break;
 				}
 			}
-			if (!vetoed){
-			   bbd.addAnnotatedType(type.getAnnotatedType());
+			if (!vetoed) {
+				bbd.addAnnotatedType(type.getAnnotatedType());
 			}
 		}
 	}
 
 	public void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager bm) {
-		System.out.format("AfterBeanDiscovery \n");
+		log.finer("AfterBeanDiscovery");
 		for (Handler h : handlers) {
 			h.afterBeanDiscovery(abd, bm);
 		}
-		
-		 AnnotatedType<ServerConfig> at = bm.createAnnotatedType(ServerConfig.class);
-         final InjectionTarget<ServerConfig> it = bm.createInjectionTarget(at);
-         
-         Bean<ServerConfig> si = new Bean<ServerConfig>() {
 
-             public Set<Type> getTypes() {
-                 Set<Type> types = new HashSet<Type>();
-                 types.add(ServerConfig.class);
-                 types.add(Object.class);
-                 return types;
-             }
+		AnnotatedType<ServerConfig> at = bm.createAnnotatedType(ServerConfig.class);
+		final InjectionTarget<ServerConfig> it = bm.createInjectionTarget(at);
 
-             public Set<Annotation> getQualifiers() {
-                 Set<Annotation> qualifiers = new HashSet<Annotation>();
-                 qualifiers.add(new AnnotationLiteral<Default>(){
-             
-                 });
-                 return qualifiers;
+		Bean<ServerConfig> si = new Bean<ServerConfig>() {
 
-             }
+			public Set<Type> getTypes() {
+				Set<Type> types = new HashSet<Type>();
+				types.add(ServerConfig.class);
+				types.add(Object.class);
+				return types;
+			}
 
-             public Class<? extends Annotation> getScope() {
-                 return Singleton.class;
-             }
+			public Set<Annotation> getQualifiers() {
+				Set<Annotation> qualifiers = new HashSet<Annotation>();
+				qualifiers.add(new AnnotationLiteral<Default>() {
 
-             public String getName() {
-                 return "ServerConfig";
-             }
+				});
+				return qualifiers;
 
-             public Set<Class<? extends Annotation>> getStereotypes() {
-                 return Collections.EMPTY_SET;
-             }
+			}
 
-             public Class<?> getBeanClass() {
-                 return ServerConfig.class;
-             }
+			public Class<? extends Annotation> getScope() {
+				return Singleton.class;
+			}
 
-             public boolean isAlternative() {
-                 return false;
-             }
+			public String getName() {
+				return "ServerConfig";
+			}
 
-             public boolean isNullable() {
-                 return false;
-             }
+			public Set<Class<? extends Annotation>> getStereotypes() {
+				return Collections.EMPTY_SET;
+			}
 
-             public Set<InjectionPoint> getInjectionPoints() {
-                 return it.getInjectionPoints();
-             }
+			public Class<?> getBeanClass() {
+				return ServerConfig.class;
+			}
 
-             @Override
-             public ServerConfig create(CreationalContext<ServerConfig> ctx) {
-                 return server;
+			public boolean isAlternative() {
+				return false;
+			}
 
-             }
+			public boolean isNullable() {
+				return false;
+			}
 
-             @Override
-             public void destroy(ServerConfig instance,
-                     CreationalContext<ServerConfig> ctx) {
-             }
-         };
-         abd.addBean(si);
+			public Set<InjectionPoint> getInjectionPoints() {
+				return it.getInjectionPoints();
+			}
+
+			@Override
+			public ServerConfig create(CreationalContext<ServerConfig> ctx) {
+				return server;
+
+			}
+
+			@Override
+			public void destroy(ServerConfig instance, CreationalContext<ServerConfig> ctx) {
+			}
+		};
+		abd.addBean(si);
 
 	}
 
 	public void afterDeployment(@Observes AfterDeploymentValidation adv, BeanManager bm) {
-		System.out.format("^^^^^^^^^^^^^^^^^^^^^^^^^AfterDeploymentValidation ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		log.finer("AfterDeploymentValidation");
 		for (Handler h : handlers) {
 			h.afterDeploymentValidation(adv, bm);
 		}
 	}
 
 	public void beforeShutdown(@Observes BeforeShutdown bfs, BeanManager bm) {
-		System.out.format("BeforeShutdown \n");
-		//Reverse the order
-		for (int i= handlers.size()-1; i>-1;i--){
+		log.finer("BeforeShutdown");
+		// Reverse the order
+		for (int i = handlers.size() - 1; i > -1; i--) {
 			handlers.get(i).beforeShutdown(bfs, bm);
 		}
 	}
 
 	public void processAnnotatedType(@Observes ProcessAnnotatedType<?> pa, BeanManager bm) {
-		System.out.format("ProcessAnnotatedType \n");
+		log.finer("ProcessAnnotatedType");
 		System.exit(0);
 		for (Handler h : handlers) {
 			h.processAnnotatedType(pa, bm);
@@ -209,28 +212,29 @@ public class Bootstrap implements Extension {
 	}
 
 	public void processInjectionTarget(@Observes ProcessInjectionTarget<?> pit, BeanManager bm) {
-		System.out.format("ProcessInjectionTarget: class: %s points: %s\n", pit.getAnnotatedType(), pit.getInjectionTarget().getInjectionPoints());
+		log.log(Level.FINEST, "ProcessInjectionTarget: class: {0} points: {1}", new Object[] { pit.getAnnotatedType(),
+				pit.getInjectionTarget().getInjectionPoints() });
 		for (Handler h : handlers) {
 			h.processInjectionTarget(pit, bm);
 		}
 	}
 
 	public void processProducer(@Observes ProcessProducer<?, ?> ppd, BeanManager bm) {
-		System.out.format("ProcessProducer: producer %s \n", ppd.getProducer());
+		log.log(Level.FINEST, "ProcessProducer: producer {0}", ppd.getProducer());
 		for (Handler h : handlers) {
 			h.processProducer(ppd, bm);
 		}
 	}
 
 	public void processBean(@Observes ProcessBean<?> pb, BeanManager bm) {
-		System.out.format("ProcessBean: baseType: %s \n", pb.getAnnotated().getBaseType());
+		log.log(Level.FINEST, "ProcessBean: baseType: {0}", pb.getAnnotated().getBaseType());
 		for (Handler h : handlers) {
 			h.processBean(pb, bm);
 		}
 	}
 
 	public void processObserverMethod(@Observes ProcessObserverMethod<?, ?> pom, BeanManager bm) {
-		System.out.format("ProcessObserverMethod \n");
+		log.finest("ProcessObserverMethod");
 		for (Handler h : handlers) {
 			h.processObserverMethod(pom, bm);
 		}
@@ -275,7 +279,5 @@ public class Bootstrap implements Extension {
 		}
 
 	}
-
-	
 
 }

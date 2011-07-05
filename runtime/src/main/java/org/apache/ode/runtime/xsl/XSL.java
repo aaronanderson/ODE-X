@@ -18,6 +18,8 @@
  */
 package org.apache.ode.runtime.xsl;
 
+import java.util.logging.Logger;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -37,17 +39,20 @@ public class XSL {
 	Provider<XSLValidation> validateProvider;
 	@Inject
 	Provider<XSLTransform> transformProvider;
+	
+	private static final Logger log = Logger.getLogger(XSL.class.getName());
+
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing XSL support");
+		log.fine("Initializing XSL support");
 		repository.registerFileExtension("xsl", XSL_MIMETYPE);
 		repository.registerFileExtension("xslt", XSL_MIMETYPE);
 		repository.registerNamespace(XSL_NAMESPACE, XSL_MIMETYPE);
 		repository.registerCommandInfo(XSL_MIMETYPE, "validate", true, validateProvider);
 		repository.registerCommandInfo(XSL_MIMETYPE, "transform", true, transformProvider);
 		repository.registerHandler(XSL_MIMETYPE, new XSLDataContentHandler());
-		System.out.println("XSL support Initialized");
+		log.fine("XSL support Initialized");
 	}
 
 }

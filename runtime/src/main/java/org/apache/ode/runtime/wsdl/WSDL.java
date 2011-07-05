@@ -18,11 +18,12 @@
  */
 package org.apache.ode.runtime.wsdl;
 
+import java.util.logging.Logger;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.xml.namespace.QName;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
@@ -59,10 +60,13 @@ public class WSDL {
 	@Inject
 	Provider<WSDLContext> wsdlProvider;
 	
+	private static final Logger log = Logger.getLogger(WSDL.class.getName());
+
+	
 	
 	@PostConstruct
 	public void init(){
-		System.out.println("Initializing WSDL support");
+		log.fine("Initializing WSDL support");
 		repository.registerFileExtension("wsdl", WSDL_MIMETYPE);
 		repository.registerNamespace(WSDL_NAMESPACE, WSDL_MIMETYPE);
 		xmlValidate.registerSchemaSource(WSDL_MIMETYPE, new SchemaSource() {
@@ -93,7 +97,7 @@ public class WSDL {
 		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
 		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
 		compilers.register(wsdlCompiler, WSDL_MIMETYPE);
-		System.out.println("WSDL support Initialized");
+		log.fine("WSDL support Initialized");
 		
 	}
 	

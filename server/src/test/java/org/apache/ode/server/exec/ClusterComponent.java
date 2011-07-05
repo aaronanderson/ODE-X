@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -62,12 +63,15 @@ public class ClusterComponent implements Component {
 
 	@Inject
 	Platform platform;
+	
+	private static final Logger log = Logger.getLogger(ClusterComponent.class.getName());
+
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing ClusterComponent");
+		log.fine("Initializing ClusterComponent");
 		platform.registerComponent(this);
-		System.out.println("ClusterComponent Initialized");
+		log.fine("ClusterComponent Initialized");
 
 	}
 
@@ -142,7 +146,7 @@ public class ClusterComponent implements Component {
 		public void start(ActionContext ctx) throws PlatformException {
 			try {
 				notify.await();
-				// System.out.println("Status " + ctx.getStatus());
+				// System. out.println("Status " + ctx.getStatus());
 				notify.await();
 			} catch (Exception e) {
 			}
@@ -152,7 +156,7 @@ public class ClusterComponent implements Component {
 		public void run(ActionContext ctx) {
 			try {
 				notify.await(2, TimeUnit.SECONDS);
-				// System.out.println("Status " + ctx.getStatus());
+				// System. out.println("Status " + ctx.getStatus());
 				notify.await(2, TimeUnit.SECONDS);
 			} catch (Exception e) {
 			}
@@ -162,7 +166,7 @@ public class ClusterComponent implements Component {
 		public void finish(ActionContext ctx) throws PlatformException {
 			try {
 				notify.await(2, TimeUnit.SECONDS);
-				// System.out.println("Status " + ctx.getStatus());
+				// System. out.println("Status " + ctx.getStatus());
 				notify.await(2, TimeUnit.SECONDS);
 			} catch (Exception e) {
 			}

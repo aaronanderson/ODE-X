@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -43,21 +44,23 @@ public class JMXServer {
 	MBeanServer mbeanServer;
 	int port = -1;
 
+	private static final Logger log = Logger.getLogger(JMXServer.class.getName());
+
 	@PostConstruct
 	void init() {
 		try {
-			System.out.println("Starting jmxServer");
+			log.finer("Starting jmxServer");
 			Map environment = null;
 			mbeanServer = MBeanServerFactory.createMBeanServer();
 			port = serverConfig.getJmxPort().intValue();
 			JMXServiceURL address = buildJMXAddress(serverConfig);
-			LocateRegistry.createRegistry(port); 
-			System.out.println("Registry created");
+			LocateRegistry.createRegistry(port);
+			log.finer("Registry created");
 			// JMXServiceURL address = new
 			// JMXServiceURL("service:jmx:rmi://localhost:"+port+"/jndi/rmi://localhost:"+port+"/jmxrmi");
 			cntorServer = JMXConnectorServerFactory.newJMXConnectorServer(address, environment, mbeanServer);
 			cntorServer.start();
-			System.out.println("Started jmxServer");
+			log.finer("Started jmxServer");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -84,10 +87,10 @@ public class JMXServer {
 	@PreDestroy
 	void shutdown() {
 		try {
-			System.out.println("Stoping jmxServer");
+			log.finer("Stoping jmxServer");
 			cntorServer.stop();
 			MBeanServerFactory.releaseMBeanServer(mbeanServer);
-			System.out.println("Stopped jmxServer");
+			log.finer("Stopped jmxServer");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

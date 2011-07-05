@@ -21,6 +21,7 @@ package org.apache.ode.server.exec;
 import java.util.Calendar;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -65,10 +66,12 @@ public class ClusterAssistant {
 
 	AtomicReference<NodeState> nodeStatus = new AtomicReference<NodeState>();
 
+	private static final Logger log = Logger.getLogger(ClusterAssistant.class.getName());
+
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing ClusterAssistant");
-		System.out.println("ClusterAssistant Initialized");
+		log.fine("Initializing ClusterAssistant");
+		log.fine("ClusterAssistant Initialized");
 	}
 
 	public void setup(String nodeId, String clusterId, ClusterConfig config) {

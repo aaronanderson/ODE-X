@@ -19,6 +19,8 @@
 package org.apache.ode.runtime.jmx;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.CommandInfo;
 import javax.inject.Inject;
@@ -28,6 +30,7 @@ import javax.xml.namespace.QName;
 import org.apache.ode.api.Repository.ArtifactId;
 import org.apache.ode.runtime.build.BuildExecutor;
 import org.apache.ode.runtime.build.BuildSystem;
+import org.apache.ode.runtime.exec.platform.ActionExecutor;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.DataHandler;
@@ -39,10 +42,12 @@ public class BuildSystemImpl implements org.apache.ode.api.BuildSystem {
 	Repository repo;
 	@Inject
 	Provider<ArtifactDataSource> dsProvider;
+	
+	private static final Logger log = Logger.getLogger(BuildSystem.class.getName());
 
 	@Override
 	public void build(ArtifactId artifactId) throws IOException {
-		System.out.println("Build " + artifactId);
+		log.log(Level.FINE,"Build {0}", artifactId);
 		QName qname = QName.valueOf(artifactId.getName());
 		try {
 			Artifact artifact = repo.read(qname, artifactId.getType() != null ? artifactId.getType() : BuildSystem.BUILDPLAN_MIMETYPE,
@@ -60,7 +65,7 @@ public class BuildSystemImpl implements org.apache.ode.api.BuildSystem {
 
 	@Override
 	public void build(byte[] contents) throws IOException {
-		System.out.println("Building from provided build plan");
+		log.fine("Building from provided build plan");
 		try {
 			ArtifactDataSource ds = dsProvider.get();
 			ds.configure(BuildSystem.BUILDPLAN_MIMETYPE, contents);

@@ -17,8 +17,8 @@
 		<class>org.apache.ode.repo.ArtifactImpl</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
-			<!--<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;MVCC=TRUE;DB_CLOSE_DELAY=-1" />-->
-			<property name="javax.persistence.jdbc.url" value="jdbc:h2:target/ode;MVCC=TRUE;DB_CLOSE_DELAY=-1" />
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;MVCC=TRUE" /> <!--;DB_CLOSE_DELAY=-1" />-->
+			<!--<property name="javax.persistence.jdbc.url" value="jdbc:h2:target/ode;MVCC=TRUE;DB_CLOSE_DELAY=-1" />-->
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
@@ -35,8 +35,8 @@
 		<class>org.apache.ode.runtime.exec.platform.Node</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
-			<!--<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;MVCC=TRUE;DB_CLOSE_DELAY=-1" />-->
-			<property name="javax.persistence.jdbc.url" value="jdbc:h2:target/ode;MVCC=TRUE;DB_CLOSE_DELAY=-1" />
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;MVCC=TRUE" /><!--;DB_CLOSE_DELAY=-1" />-->
+			<!--<property name="javax.persistence.jdbc.url" value="jdbc:h2:target/ode;MVCC=TRUE" />-->
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
 			<property name="javax.persistence.jdbc.user" value="sa" />

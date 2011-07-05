@@ -19,6 +19,8 @@
 package org.apache.ode.runtime.jmx;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.CommandInfo;
 import javax.activation.MimeTypeParseException;
@@ -39,12 +41,14 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 	@Inject
 	Provider<ArtifactDataSource> dsProvider;
 
+	private static final Logger log = Logger.getLogger(RepositoryImpl.class.getName());
+
 	@Override
 	public ArtifactId importArtifact(ArtifactId artifactId, String fileName, boolean overwrite, boolean noValidate, byte[] contents) throws IOException {
 		if (contents == null || contents.length == 0) {
 			throw new IOException("File contents is empty");
 		}
-		System.out.println("Import " + fileName);
+		log.log(Level.FINE, "Import {0}", fileName);
 		ArtifactDataSource ds = dsProvider.get();
 		try {
 			if (fileName != null) {
@@ -67,7 +71,7 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 		}
 		String mtype = artifactId.getType() != null ? artifactId.getType() : ds.getContentType();
 		String version = artifactId.getVersion() != null ? artifactId.getVersion() : "1.0";
-		noValidate= true; //TODO validation is slow (30 sec), check to see why (background dl?)
+		noValidate = true; // TODO validation is slow (30 sec), check to see why (background dl?)
 		if (!noValidate) {
 			DataHandler dh = repo.getDataHandler(ds);
 			CommandInfo info = dh.getCommand(Validate.VALIDATE_CMD);
@@ -97,7 +101,7 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 		if (contents == null || contents.length == 0) {
 			throw new IOException("File contents is empty");
 		}
-		System.out.println("Refresh " + artifactId);
+		log.log(Level.FINE, "Refresh {0}", artifactId);
 		ArtifactDataSource ds = dsProvider.get();
 		try {
 			ds.configure(artifactId.getType(), contents);
@@ -114,7 +118,7 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 
 	@Override
 	public byte[] exportArtifact(ArtifactId artifactId) throws IOException {
-		System.out.println("Export " + artifactId);
+		log.log(Level.FINE, "Export {0}", artifactId);
 		QName qname = QName.valueOf(artifactId.getName());
 		try {
 			return repo.read(qname, artifactId.getType(), artifactId.getVersion(), byte[].class);
@@ -125,7 +129,7 @@ public class RepositoryImpl implements org.apache.ode.api.Repository {
 
 	@Override
 	public void removeArtifact(ArtifactId artifactId) throws IOException {
-		System.out.println("Remove " + artifactId);
+		log.log(Level.FINE, "Remove {0}", artifactId);
 		QName qname = QName.valueOf(artifactId.getName());
 		try {
 			repo.delete(qname, artifactId.getType(), artifactId.getVersion());

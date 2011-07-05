@@ -18,24 +18,15 @@
  */
 package org.apache.ode.runtime.exec;
 
-import java.io.InputStream;
+import java.util.logging.Logger;
 
-import javax.activation.DataSource;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.exec.Platform;
-import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
-
-import static org.apache.ode.runtime.exec.platform.Cluster.*;
 
 @Singleton
 public class Exec {
@@ -44,15 +35,18 @@ public class Exec {
 	Repository repository;
 	@Inject
 	PlatformImpl platform;
+	
+	private static final Logger log = Logger.getLogger(Exec.class.getName());
+
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing Execution Runtime");
+		log.fine("Initializing Execution Runtime");
 		repository.registerFileExtension("exec", Platform.EXEC_MIMETYPE);
 		repository.registerNamespace(Platform.EXEC_NAMESPACE, Platform.EXEC_MIMETYPE);
 		repository.registerHandler(Platform.EXEC_MIMETYPE, new ExecDataContentHandler(platform));
 
-		System.out.println("Execution Runtime Initialized");
+		log.fine("Execution Runtime Initialized");
 
 	}
 }

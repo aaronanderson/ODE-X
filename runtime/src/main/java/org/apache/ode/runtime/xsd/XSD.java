@@ -18,6 +18,8 @@
  */
 package org.apache.ode.runtime.xsd;
 
+import java.util.logging.Logger;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -49,10 +51,13 @@ public class XSD {
 	XMLValidate xmlValidate;
 	@Inject
 	Provider<XMLSchemaContext> schemaProvider;
+	
+	private static final Logger log = Logger.getLogger(XSD.class.getName());
+
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing XSD support");
+		log.fine("Initializing XSD support");
 		repository.registerFileExtension("xsd", XSD_MIMETYPE);
 		repository.registerNamespace(XSD_NAMESPACE, XSD_MIMETYPE);
 		xmlValidate.registerSchemaSource(XSD_MIMETYPE, new SchemaSource() {
@@ -86,7 +91,7 @@ public class XSD {
 		// DiscoveryPass());
 		compilers.register(schemaCompiler, XSD_MIMETYPE);
 
-		System.out.println("XSD support Initialized");
+		log.fine("XSD support Initialized");
 	}
 
 }

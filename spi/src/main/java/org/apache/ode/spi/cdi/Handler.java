@@ -21,6 +21,8 @@ package org.apache.ode.spi.cdi;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
@@ -40,6 +42,7 @@ import javax.enterprise.util.AnnotationLiteral;
 public class Handler {
 
 	Map<Class, CDIContext> ctxs = new LinkedHashMap<Class, CDIContext>();
+	private static final Logger log = Logger.getLogger(Handler.class.getName());
 
 	public void manage(Class beanClass) {
 		CDIContext ctx = new CDIContext();
@@ -57,7 +60,7 @@ public class Handler {
 				ctx.cCtx = bm.createCreationalContext(ctx.bean);
 				ctx.instance = bm.getReference(ctx.bean, clazz, ctx.cCtx);
 			} else {
-				System.out.println("Can't find class " + clazz);
+				log.log(Level.SEVERE, "Can't find class {0}", clazz);
 			}
 		}
 	}

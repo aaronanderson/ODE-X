@@ -21,6 +21,8 @@ package org.apache.ode.runtime.jmx;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
 import javax.xml.namespace.QName;
@@ -46,11 +48,13 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 	@Inject
 	Platform platform;
 
+	private static final Logger log = Logger.getLogger(PlatformImpl.class.getName());
+
 	@Override
 	public byte[] setup(ArtifactId executable) throws IOException {
 		String type = executable.getType() != null ? executable.getType() : Platform.EXEC_MIMETYPE;
 		String version = executable.getVersion() != null ? executable.getVersion() : "1.0";
-		System.out.format("Loading setup data of executable name %s: type: %s version:%s\n", executable.getName(), type, version);
+		log.log(Level.FINE, "Loading setup data of executable name {0}: type: {1} version: {2]", new Object[] { executable.getName(), type, version });
 		try {
 			QName qname = QName.valueOf(executable.getName());
 			Artifact artifact = repo.read(qname, type, version, Artifact.class);
@@ -74,8 +78,8 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 		String pid = id != null ? id : executable.getName();
 		String type = executable.getType() != null ? executable.getType() : Platform.EXEC_MIMETYPE;
 		String version = executable.getVersion() != null ? executable.getVersion() : "1.0";
-		System.out.format("Installing program %s using executable name %s: type: %s version:%s %s custom installation data\n", pid, executable.getName(), type,
-				version, installData != null ? "with" : "without");
+		log.log(Level.FINE, "Installing program {0} using executable name {1}: type: {2} version: {3} {4} custom installation data", new Object[] { pid,
+				executable.getName(), type, version, installData != null ? "with" : "without" });
 		try {
 			QName idQname = QName.valueOf(pid);
 			QName execQname = QName.valueOf(executable.getName());
@@ -107,7 +111,7 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 
 	@Override
 	public Process start(String pid, String[] targets) throws IOException {
-		System.out.format("Starting program %s\n", pid);
+		log.log(Level.FINE, "Starting program {0}", pid);
 		QName idQname = QName.valueOf(pid);
 		Target[] target = null;
 		if (targets != null) {
@@ -123,7 +127,7 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 
 	@Override
 	public void stop(String id, String[] targets) throws IOException {
-		System.out.format("Stopping program %s\n", id);
+		log.log(Level.FINE, "Stopping program {0}", id);
 		Target[] target = null;
 		if (targets != null) {
 
@@ -137,7 +141,6 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 		if (targets != null) {
 
 		}
-		
 
 	}
 

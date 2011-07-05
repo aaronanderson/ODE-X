@@ -20,6 +20,8 @@ package org.apache.ode.server.cdi;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.enterprise.event.Reception;
 import javax.enterprise.event.TransactionPhase;
@@ -41,6 +43,8 @@ import org.apache.ode.spi.event.Publisher;
 import org.apache.ode.spi.event.Subscriber;
 
 public class EventHandler extends Handler {
+
+	private static final Logger log = Logger.getLogger(EventHandler.class.getName());
 
 	public static class Inject extends AnnotationLiteral<javax.inject.Inject> implements javax.inject.Inject {
 	};
@@ -121,7 +125,7 @@ public class EventHandler extends Handler {
 	@Override
 	public void processAnnotatedType(ProcessAnnotatedType<?> adv, BeanManager bm) {
 
-		System.out.format("Process Annotated type: %s \n", adv.getAnnotatedType().getJavaClass());
+		log.log(Level.FINEST, "Process Annotated type: {0}", adv.getAnnotatedType().getJavaClass());
 		if (scanForAnnotations(adv.getAnnotatedType())) {
 			adv.setAnnotatedType(updateAnnotations(adv.getAnnotatedType()));
 		}
@@ -129,7 +133,7 @@ public class EventHandler extends Handler {
 
 	@SuppressWarnings("unchecked")
 	public boolean scanForAnnotations(AnnotatedType<?> type) {
-		System.out.format("Scanning Annotated type: %s \n", type.getJavaClass());
+		log.log(Level.FINEST, "Scanning Annotated type: {0}", type.getJavaClass());
 		for (AnnotatedMethod<?> method : type.getMethods()) {
 			for (AnnotatedParameter<?> param : method.getParameters()) {
 				if (param.isAnnotationPresent(Subscriber.class)) {
@@ -152,12 +156,12 @@ public class EventHandler extends Handler {
 	@SuppressWarnings("unchecked")
 	public AnnotatedType updateAnnotations(AnnotatedType<?> type) {
 		AnnotatedTypeImpl<?> at = new AnnotatedTypeImpl(type);
-		System.out.format("Processing Annotated type: %s \n", at.getJavaClass());
+		log.log(Level.FINEST, "Processing Annotated type: {0}", at.getJavaClass());
 		for (AnnotatedMethod<?> method : at.getMethods()) {
 			for (AnnotatedParameter<?> param : method.getParameters()) {
 				if (param.isAnnotationPresent(Subscriber.class)) {
 					Subscriber subscriber = param.getAnnotation(Subscriber.class);
-					System.out.format("************* Identified Subscriber annotation %s on param type %s\n", subscriber.value(), param.getBaseType());
+					log.log(Level.FINEST, "Identified Subscriber annotation {0} on param type {1}", new Object[] { subscriber.value(), param.getBaseType() });
 					param.getAnnotations().add(new Observes());
 					if (subscriber.value().length() > 0) {
 						param.getAnnotations().add(new EventQualifierImpl(subscriber.value()));
@@ -170,7 +174,7 @@ public class EventHandler extends Handler {
 				Type t = field.getBaseType();
 				if (t instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) t).getRawType()).isAssignableFrom(Channel.class)) {
 					Publisher publisher = field.getAnnotation(Publisher.class);
-					System.out.format("############# Identified Publisher annotation %s on field %s\n", publisher.value(), t);
+					log.log(Level.FINEST, "Identified Publisher annotation {0} on field {1}", new Object[] { publisher.value(), t });
 					field.getAnnotations().add(new Inject());
 				}
 			}

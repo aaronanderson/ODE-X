@@ -20,6 +20,7 @@ package org.apache.ode.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Logger;
 
 import javax.management.JMX;
 import javax.management.MBeanServer;
@@ -41,8 +42,10 @@ import org.jboss.weld.environment.se.WeldContainer;
 //import org.apache.webbeans.spi.ContainerLifecycle;
 
 public class Server {
-	public static String OBJECTNAME = "org.apache.ode:type=ServerStop";
+	public static final String OBJECTNAME = "org.apache.ode:type=ServerStop";
 
+	private static final Logger log = Logger.getLogger(Server.class.getName());
+	
 	public static void main(String[] args) {
 		final Server server = new Server();
 		if (args.length == 0 || "start".equalsIgnoreCase(args[0])) {
@@ -69,7 +72,7 @@ public class Server {
 		} else if ("stop".equalsIgnoreCase(args[0])) {
 			server.stop();
 		} else {
-			System.err.println("Invalid arguements. Usage: Server <start | stop>");
+			log.severe("Invalid arguements. Usage: Server <start | stop>");
 			System.exit(-1);
 		}
 	}
@@ -95,7 +98,7 @@ public class Server {
 			e.printStackTrace();
 		}
 
-		System.out.println("Server Started");
+		log.info("Server Started");
 		/*
 		 * lifecycle = LifecycleFactory.getInstance().getLifecycle(); try {
 		 * lifecycle.startApplication(null);We } catch (Exception e1) {
@@ -105,9 +108,9 @@ public class Server {
 		 * lifecycle.getBeanManager().getBeans("webServer"); Set<Bean<?>> beans
 		 * =lifecycle.getBeanManager().getBeans(Object.class,new
 		 * AnnotationLiteral<Any>(){});
-		 * System.out.println("All beans: "+beans.size()); Iterator<Bean<?>> i =
+		 * System. out.println("All beans: "+beans.size()); Iterator<Bean<?>> i =
 		 * beans.iterator(); while(i.hasNext()){ Bean<?> b = i.next();
-		 * System.out.println("name: "+ b.getName() + " type: " +
+		 * System. out.println("name: "+ b.getName() + " type: " +
 		 * b.getBeanClass().getCanonicalName());
 		 * 
 		 * }
@@ -118,8 +121,8 @@ public class Server {
 		 * WebServer webServer = (WebServer)
 		 * lifecycle.getBeanManager().getReference(bean, WebServer.class,
 		 * lifecycle.getBeanManager().createCreationalContext(bean));
-		 * System.out.println("Retrieved the Web Server!! " +webServer); }else{
-		 * System.out.println("Web Server not available!! "); }
+		 * System. out.println("Retrieved the Web Server!! " +webServer); }else{
+		 * System. out.println("Web Server not available!! "); }
 		 */
 
 		// endpoint.stop();
@@ -215,9 +218,9 @@ public class Server {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					System.out.println("Shutting down ODE Server");
+					log.fine("Shutting down ODE Server");
 					weld.shutdown();
-					System.out.println("ODE Server Stopped");
+					log.info("ODE Server Stopped");
 
 				}
 

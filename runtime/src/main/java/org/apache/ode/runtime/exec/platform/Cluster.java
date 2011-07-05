@@ -31,6 +31,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.DataSource;
 import javax.annotation.PostConstruct;
@@ -62,11 +64,9 @@ import org.apache.ode.spi.repo.RepositoryException;
 import org.w3c.dom.Document;
 
 /**
- * A naive cluster implementation based on database polling. When the JSR 107
- * spec solidifies (http://github.com/jsr107) and a distributed implementation
- * is available this implementation should be migrated to it. A distributed
- * cache with update write throughs and cache listeners for acting on the
- * updates would be a more efficient implementation
+ * A naive cluster implementation based on database polling. When the JSR 107 spec solidifies (http://github.com/jsr107) and a distributed implementation is
+ * available this implementation should be migrated to it. A distributed cache with update write throughs and cache listeners for acting on the updates would be
+ * a more efficient implementation
  * 
  */
 @Singleton
@@ -102,18 +102,17 @@ public class Cluster {
 	@Inject
 	ActionExecutor actionExec;
 
-	@Inject
-	LocalNode localNode;
-
 	Set<Component> components = Collections.synchronizedSet(new HashSet<Component>());
 
 	AtomicReference<NodeState> localNodeState = new AtomicReference<NodeState>();
 
 	ScheduledExecutorService clusterScheduler;
 
+	private static final Logger log = Logger.getLogger(Cluster.class.getName());
+
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing Cluster");
+		log.fine("Initializing Cluster");
 		repo.registerNamespace(CLUSTER_CONFIG_NAMESPACE, CLUSTER_CONFIG_MIMETYPE);
 		repo.registerHandler(CLUSTER_CONFIG_MIMETYPE, new JAXBDataContentHandler(CLUSTER_JAXB_CTX) {
 			@Override
@@ -139,13 +138,16 @@ public class Cluster {
 
 		config = loadClusterConfig();
 		if (!config.getNodes().isAutoDiscovery() && !config.getNodes().getNode().contains(nodeId)) {
-			System.out.format("Node auth discovery disabled and nodeId %s is undeclared, aborting", nodeId);
+			log.log(Level.SEVERE, "Node auth discovery disabled and nodeId {0} is undeclared, aborting", nodeId);
 			return;
 		}
 		localNodeState.set(NodeState.OFFLINE);
-		org.apache.ode.runtime.exec.cluster.xml.HealthCheck healthCheckConfig =config.getHealthCheck()!=null?config.getHealthCheck(): new org.apache.ode.runtime.exec.cluster.xml.HealthCheck();
-		org.apache.ode.runtime.exec.cluster.xml.ActionExecution actionExecConfig = config.getActionExecution()!=null? config.getActionExecution(): new org.apache.ode.runtime.exec.cluster.xml.ActionExecution();
-		org.apache.ode.runtime.exec.cluster.xml.ActionCheck actionCheckConfig = config.getActionCheck()!=null?config.getActionCheck(): new org.apache.ode.runtime.exec.cluster.xml.ActionCheck();
+		org.apache.ode.runtime.exec.cluster.xml.HealthCheck healthCheckConfig = config.getHealthCheck() != null ? config.getHealthCheck()
+				: new org.apache.ode.runtime.exec.cluster.xml.HealthCheck();
+		org.apache.ode.runtime.exec.cluster.xml.ActionExecution actionExecConfig = config.getActionExecution() != null ? config.getActionExecution()
+				: new org.apache.ode.runtime.exec.cluster.xml.ActionExecution();
+		org.apache.ode.runtime.exec.cluster.xml.ActionCheck actionCheckConfig = config.getActionCheck() != null ? config.getActionCheck()
+				: new org.apache.ode.runtime.exec.cluster.xml.ActionCheck();
 		healthCheck.init(clusterId, nodeId, localNodeState, healthCheckConfig);
 		actionExec.init(nodeId, actionExecConfig);
 		actionPoll.init(clusterId, nodeId, localNodeState, actionExec, actionCheckConfig);
@@ -166,7 +168,7 @@ public class Cluster {
 		// healthCheck.run();
 		clusterScheduler.scheduleAtFixedRate(healthCheck, 0, healthCheckConfig.getFrequency(), TimeUnit.MILLISECONDS);
 		clusterScheduler.scheduleAtFixedRate(actionPoll, 0, actionCheckConfig.getFrequency(), TimeUnit.MILLISECONDS);
-		System.out.println("Cluster Initialized");
+		log.fine("Cluster Initialized");
 	}
 
 	@PreDestroy
@@ -326,7 +328,7 @@ public class Cluster {
 		} catch (RepositoryException e) {
 			// e.printStackTrace();
 		}
-		System.out.println("Unable to load cluster config, using default config");
+		log.log(Level.WARNING, "Unable to load cluster config, using default config");
 		try {
 			Unmarshaller u = CLUSTER_JAXB_CTX.createUnmarshaller();
 			JAXBElement<ClusterConfig> config = (JAXBElement<ClusterConfig>) u.unmarshal(getClass().getResourceAsStream("/META-INF/default_cluster.xml"));

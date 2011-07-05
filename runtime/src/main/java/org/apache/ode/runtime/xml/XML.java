@@ -18,6 +18,8 @@
  */
 package org.apache.ode.runtime.xml;
 
+import java.util.logging.Logger;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -36,13 +38,15 @@ public class XML {
 	@Inject
 	Provider<XMLValidation> validateProvider;
 	
+	private static final Logger log = Logger.getLogger(XML.class.getName());
+
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing XML support");
+		log.fine("Initializing XML support");
 		repository.registerFileExtension("xml", XML_MIMETYPE);
 		repository.registerCommandInfo(XML_MIMETYPE, "validate", true, validateProvider);
 		repository.registerHandler(XML_MIMETYPE, new XMLDataContentHandler());
-		System.out.println("XML support Initialized");
+		log.fine("XML support Initialized");
 	}
 
 }

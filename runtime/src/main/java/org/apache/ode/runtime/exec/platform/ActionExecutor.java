@@ -37,15 +37,17 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
-import javax.persistence.OptimisticLockException;
 import javax.persistence.RollbackException;
 import javax.xml.namespace.QName;
 
@@ -85,11 +87,14 @@ public class ActionExecutor {
 	private String nodeId;
 	private ActionExecution config;
 	private ThreadPoolExecutor exec;
+	
+	private static final Logger log = Logger.getLogger(ActionExecutor.class.getName());
+
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing ActionExecutor");
-		System.out.println("ActionExecutor Initialized");
+		log.fine("Initializing ActionExecutor");
+		log.fine("ActionExecutor Initialized");
 
 	}
 
@@ -366,7 +371,10 @@ public class ActionExecutor {
 	private class RejectedActionExecution implements RejectedExecutionHandler {
 		@Override
 		public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
-			System.out.println(runnable.toString() + " : I've been rejected ! ");
+			ActionRunnable ar= (ActionRunnable)runnable;
+			log.log(Level.SEVERE,"ActionTask Rejected {0}",ar.getAction().getActionId());
+			ar.getAction().setState(ActionState.CANCELED);
+			ar.save();
 		}
 	}
 
@@ -668,7 +676,7 @@ public class ActionExecutor {
 
 		@Override
 		public void refresh() {
-			// System.out.format("Refresh: ActionId: %s\n", runnable.getAction().getActionId());
+			log.log(Level.FINER,"Refresh: ActionId: {0}", runnable.getAction().getActionId());
 			try {
 				runnable.getRefreshBarrier().await();
 			} catch (Exception e) {

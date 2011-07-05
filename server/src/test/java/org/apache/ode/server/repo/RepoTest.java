@@ -18,11 +18,13 @@
  */
 package org.apache.ode.server.repo;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
@@ -51,6 +53,8 @@ public class RepoTest {
 	protected static CreationalContext<org.apache.ode.spi.repo.Repository> repoCtx;
 	protected static org.apache.ode.spi.repo.Repository repo;
 
+	private static final Logger log = Logger.getLogger(RepoTest.class.getName());
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		StaticHandler.clear();
@@ -66,7 +70,7 @@ public class RepoTest {
 			repoCtx = container.getBeanManager().createCreationalContext(repoBean);
 			repo = (org.apache.ode.spi.repo.Repository) container.getBeanManager().getReference(repoBean, org.apache.ode.spi.repo.Repository.class, repoCtx);
 		} else {
-			System.out.println("Can't find class " + org.apache.ode.spi.repo.Repository.class);
+			log.log(Level.SEVERE, "Can't find class {0}", org.apache.ode.spi.repo.Repository.class);
 		}
 
 		beans = container.getBeanManager().getBeans(Repository.class, new AnnotationLiteral<Any>() {
@@ -76,7 +80,7 @@ public class RepoTest {
 			jmxRepoCtx = container.getBeanManager().createCreationalContext(jmxRepoBean);
 			jmxRepo = (Repository) container.getBeanManager().getReference(jmxRepoBean, Repository.class, jmxRepoCtx);
 		} else {
-			System.out.println("Can't find class " + Repository.class);
+			log.log(Level.SEVERE, "Can't find class {0}", Repository.class);
 		}
 	}
 
@@ -110,7 +114,7 @@ public class RepoTest {
 		assertNotNull(contents);
 		assertEquals("this is some foo bar", new String(contents));
 		jmxRepo.removeArtifact(id);
-		assertFalse(repo.exists(QName.valueOf(id.getName()),id.getType(), id.getVersion()));
+		assertFalse(repo.exists(QName.valueOf(id.getName()), id.getType(), id.getVersion()));
 	}
 
 }

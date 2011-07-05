@@ -24,10 +24,11 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.CommandInfo;
 import javax.activation.DataHandler;
-import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
@@ -53,6 +54,8 @@ public class PluginTest {
 	private static Weld weld;
 	protected static WeldContainer container;
 	protected static BarPlugin barPlugin;
+
+	private static final Logger log = Logger.getLogger(PluginTest.class.getName());
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -88,7 +91,7 @@ public class PluginTest {
 			Bean<?> bean = beans.iterator().next();
 			barPlugin = (BarPlugin) container.getBeanManager().getReference(bean, BarPlugin.class, container.getBeanManager().createCreationalContext(bean));
 		} else {
-			System.out.println("Can't find class " + BarPlugin.class);
+			log.log(Level.SEVERE, "Can't find class {0}", BarPlugin.class);
 		}
 	}
 

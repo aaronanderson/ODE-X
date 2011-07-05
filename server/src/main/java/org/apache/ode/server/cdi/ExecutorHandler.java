@@ -18,23 +18,21 @@
  */
 package org.apache.ode.server.cdi;
 
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
-import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -48,6 +46,8 @@ public class ExecutorHandler extends Handler {
 	CreationalContext<ExecutorProducer> execCtx;
 	ExecutorProducer exec;
 	
+	private static final Logger log = Logger.getLogger(ExecutorHandler.class.getName());
+
 	
 	@Singleton
 	public static class ExecutorProducer {
@@ -66,13 +66,13 @@ public class ExecutorHandler extends Handler {
 	
 		@PostConstruct
 		public void init() {
-			System.out.println("Starting Executor ");
+			log.finer("Starting Executor ");
 			service = new ThreadPoolExecutor(0, 10, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(100));
 		}
 
 		@PreDestroy
 		public void destroy() {
-			System.out.println("Stopping Executor ");
+			log.finer("Stopping Executor ");
 			try{
 			  service.shutdown();
 			  service.awaitTermination(30, TimeUnit.SECONDS);
@@ -89,23 +89,13 @@ public class ExecutorHandler extends Handler {
 	}
 
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
-		Set<Bean<?>> beans = bm.getBeans(ExecutorProducer.class, new AnnotationLiteral<Any>() {
-		});
-		if (beans.size() > 0) {
-			execBean = (Bean<ExecutorProducer>) beans.iterator().next();
-			execCtx = bm.createCreationalContext(execBean);
-			exec = (ExecutorProducer) bm.getReference(execBean, ExecutorProducer.class, execCtx);
-		} else {
-			System.out.println("Can't find class " + ExecutorProducer.class);
-		}
+		manage(ExecutorProducer.class);
 
 	}
 
 	@Override
 	public void beforeShutdown(BeforeShutdown adv, BeanManager bm) {
-		if (exec != null) {
-			execBean.destroy(exec, execCtx);
-		}
+		stop();
 	}
 
 }

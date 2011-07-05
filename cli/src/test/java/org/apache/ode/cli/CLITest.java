@@ -25,6 +25,8 @@ import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
 import java.rmi.registry.LocateRegistry;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -43,15 +45,17 @@ public class CLITest {
 	static JMXConnectorServer cntorServer;
 	static int port;
 
+	private static final Logger log = Logger.getLogger(CLITest.class.getName());
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		ServerSocket server = new ServerSocket(0);
 		port = server.getLocalPort();
 		server.close();
 		LocateRegistry.createRegistry(port); 
-		System.out.println("Registry created");
+		log.info("Registry created");
 		JMXServiceURL address = new JMXServiceURL("service:jmx:rmi://localhost:"+port+"/jndi/rmi://localhost:"+port+"/jmxrmi"); 
-		System.out.println("JMXServer address: " + address);
+		log.log(Level.INFO,"JMXServer address:{0} ",  address);
 		Map environment = null;
 		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 		cntorServer = JMXConnectorServerFactory.newJMXConnectorServer(address, environment, mbs);
@@ -59,23 +63,23 @@ public class CLITest {
 		//mbs.registerMBean(new MachineImpl(), ObjectName.getInstance(Machine.OBJECTNAME));
 		mbs.registerMBean(new RepositoryImpl(), ObjectName.getInstance(Repository.OBJECTNAME));
 		cntorServer.start();
-		System.out.println("JMXServer started");
+		log.info("JMXServer started");
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 		mbs.unregisterMBean(ObjectName.getInstance(Repository.OBJECTNAME));
-		//mbs.unregisterMBean(ObjectName.getInstance(Machine.OBJECTNAME));
+		// mbs.unregisterMBean(ObjectName.getInstance(Machine.OBJECTNAME));
 		cntorServer.stop();
-		System.out.println("JMXServer stopped");
+		log.info("JMXServer stopped");
 	}
 
 	@Test
 	public void testConnection() throws Exception {
 		Connection con = new Connection();
 		JCommander cmd = new JCommander(con);
-		cmd.parse("--port",String.valueOf(port));
+		cmd.parse("--port", String.valueOf(port));
 		assertNotNull(con.getConnection());
 
 	}
@@ -83,7 +87,7 @@ public class CLITest {
 	@Test
 	public void testImport() {
 		StringBuilder out = new StringBuilder();
-		CLI.execute(out,  "--port",String.valueOf(port), "import","--file","target/test-classes/import.txt" );
+		CLI.execute(out, "--port", String.valueOf(port), "import", "--file", "target/test-classes/import.txt");
 		assertTrue(out.toString().contains("Sucessfull"));
 		out = new StringBuilder();
 

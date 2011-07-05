@@ -19,6 +19,7 @@
 package org.apache.ode.bpel;
 
 import java.io.InputStream;
+import java.util.logging.Logger;
 
 import javax.activation.DataSource;
 import javax.annotation.PostConstruct;
@@ -55,7 +56,8 @@ public class BPEL {
 	public static final String BPEL_EXEC_MIMETYPE = "application/bpel-exec";
 	public static final String BPEL_EXEC_NAMESPACE = "http://docs.oasis-open.org/wsbpel/2.0/process/executable";
 	public static final String WSDL_MIMETYPE = "application/wsdl";
-	
+	private static final Logger log = Logger.getLogger(BPEL.class.getName());
+
 	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
@@ -76,7 +78,7 @@ public class BPEL {
 
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing BPELPlugin");
+		log.fine("Initializing BPELPlugin");
 		repository.registerFileExtension("bpel", BPEL_EXEC_MIMETYPE);
 		repository.registerNamespace(BPEL_EXEC_NAMESPACE, BPEL_EXEC_MIMETYPE);
 		xmlValidate.registerSchemaSource(BPEL_EXEC_MIMETYPE, new SchemaSource() {
@@ -147,7 +149,7 @@ public class BPEL {
 		// DiscoveryPass());
 		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
 
-		System.out.println("BPELPlugin Initialized");
+		log.fine("BPELPlugin Initialized");
 
 	}
 

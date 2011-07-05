@@ -29,6 +29,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
@@ -86,6 +88,8 @@ public class ClusterTest {
 	final static String nodeId = "testNode1";
 	final static String testNodeId = "testNode2";
 
+	private static final Logger log = Logger.getLogger(ClusterTest.class.getName());
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 
@@ -126,7 +130,7 @@ public class ClusterTest {
 					}
 					repoBean.destroy(repo, ctx);
 				} else {
-					System.out.println("Can't find class " + Repository.class);
+					log.log(Level.SEVERE, "Can't find class {0}", Repository.class);
 				}
 				super.afterDeploymentValidation(adv, bm);
 				cluster = (Cluster) getInstance(Cluster.class);
@@ -367,7 +371,7 @@ public class ClusterTest {
 		for (int i = 0; i < 50; i++) {
 			ActionStatus status = cluster.status(id);
 			assertNotNull(status);
-			if (ActionState.COMPLETED.equals(status.state())) {
+			if (ActionState.FAILED.equals(status.state())) {
 				messages = status.messages();
 				assertNotNull(status.start());
 				assertNotNull(status.finish());
@@ -405,7 +409,7 @@ public class ClusterTest {
 		for (int i = 0; i < 50; i++) {
 			ActionStatus status = cluster.status(id);
 			assertNotNull(status);
-			if (status.start()!=null && ActionState.START.equals(status.state())) {
+			if (status.start() != null && ActionState.START.equals(status.state())) {
 				cluster.cancel(id);
 			} else if (status.finish() != null && ActionState.CANCELED.equals(status.state())) {
 				result = status.result();

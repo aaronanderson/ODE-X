@@ -21,6 +21,8 @@ package org.apache.ode.server.cdi;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -53,6 +55,8 @@ public class JPAHandler extends Handler {
 	Bean<EntityManagerProducer> emfpBean;
 	CreationalContext<EntityManagerProducer> emfpCtx;
 	EntityManagerProducer emfp;
+
+	private static final Logger log = Logger.getLogger(JPAHandler.class.getName());
 
 	public static class Inject extends AnnotationLiteral<javax.inject.Inject> implements javax.inject.Inject {
 	};
@@ -98,7 +102,7 @@ public class JPAHandler extends Handler {
 
 		public void close(@Disposes EntityManager manager) {
 			manager.close();
-			System.out.println("closed entitymanager");
+			log.finest("closed entitymanager");
 		}
 
 		@PostConstruct
@@ -110,7 +114,7 @@ public class JPAHandler extends Handler {
 		public void destroy() {
 			for (EntityManagerFactory emf : emfCache.values()) {
 				emf.close();
-				System.out.println("closed emf" + emf.toString());
+				log.finer("closed emf" + emf.toString());
 			}
 		}
 
@@ -131,7 +135,7 @@ public class JPAHandler extends Handler {
 			emfpCtx = bm.createCreationalContext(emfpBean);
 			emfp = (EntityManagerProducer) bm.getReference(emfpBean, EntityManagerProducer.class, emfpCtx);
 		} else {
-			System.out.println("Can't find class " + JPAHandler.class);
+			log.log(Level.SEVERE, "Can't find class {0}", JPAHandler.class);
 		}
 
 	}
@@ -147,7 +151,7 @@ public class JPAHandler extends Handler {
 	@Override
 	public void processAnnotatedType(ProcessAnnotatedType<?> adv, BeanManager bm) {
 
-		System.out.format("XXXXProcess Annotated type: %s \n", adv.getAnnotatedType().getJavaClass());
+		log.log(Level.FINER, "Process Annotated type: {0}", adv.getAnnotatedType().getJavaClass());
 		if (scanForAnnotations(adv.getAnnotatedType())) {
 			adv.setAnnotatedType(updateAnnotations(adv.getAnnotatedType()));
 		}
@@ -155,7 +159,7 @@ public class JPAHandler extends Handler {
 
 	@SuppressWarnings("unchecked")
 	public boolean scanForAnnotations(AnnotatedType<?> type) {
-		System.out.format("XXXXScanning Annotated type: %s \n", type.getJavaClass());
+		log.log(Level.FINER, "Scanning Annotated type: {0}", type.getJavaClass());
 		// we will skip the class level/JNDI name annotation
 
 		for (AnnotatedMethod<?> method : type.getMethods()) {
@@ -180,17 +184,17 @@ public class JPAHandler extends Handler {
 	@SuppressWarnings("unchecked")
 	public AnnotatedType updateAnnotations(AnnotatedType<?> type) {
 		AnnotatedTypeImpl<?> at = new AnnotatedTypeImpl(type);
-		System.out.format("Processing Annotated type: %s \n", at.getJavaClass());
+		log.log(Level.FINER, "Processing Annotated type: {0}", at.getJavaClass());
 		for (AnnotatedMethod<?> method : at.getMethods()) {
 			if (method.isAnnotationPresent(PersistenceContext.class)) {
 				// PersistenceContext ctx =
 				// method.getAnnotation(PersistenceContext.class);
-				System.out.format("************* Identified PersistenceContext annotation on method %s\n", method.getJavaMember().getName());
+				log.log(Level.FINER, "Identified PersistenceContext annotation on method {0}", method.getJavaMember().getName());
 				method.getAnnotations().add(new Inject());
 			} else if (method.isAnnotationPresent(PersistenceUnit.class)) {
 				// PersistenceContext ctx =
 				// method.getAnnotation(PersistenceContext.class);
-				System.out.format("************* Identified PersistenceUnit annotation on method %s\n", method.getJavaMember().getName());
+				log.log(Level.FINER, "Identified PersistenceUnit annotation on method {0}", method.getJavaMember().getName());
 				method.getAnnotations().add(new Inject());
 			}
 		}
@@ -198,12 +202,12 @@ public class JPAHandler extends Handler {
 			if (field.isAnnotationPresent(PersistenceContext.class)) {
 				// PersistenceContext ctx =
 				// field.getAnnotation(PersistenceContext.class);
-				System.out.format("############# Identified PersistenceContext annotation on field %s\n", field.getJavaMember().getName());
+				log.log(Level.FINER, "Identified PersistenceContext annotation on field {0}", field.getJavaMember().getName());
 				field.getAnnotations().add(new Inject());
 			} else if (field.isAnnotationPresent(PersistenceUnit.class)) {
 				// PersistenceContext ctx =
 				// field.getAnnotation(PersistenceContext.class);
-				System.out.format("############# Identified PersistenceUnit annotation on field %s\n", field.getJavaMember().getName());
+				log.log(Level.FINER, "Identified PersistenceUnit annotation on field {0}", field.getJavaMember().getName());
 				field.getAnnotations().add(new Inject());
 			}
 		}

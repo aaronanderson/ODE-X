@@ -20,6 +20,8 @@ package org.apache.ode.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -37,6 +39,8 @@ public class WebServer {
 	GrizzlyWebServer server;
 	int httpPort = -1;
 	boolean sslEnabled = false;
+
+	private static final Logger log = Logger.getLogger(WebServer.class.getName());
 
 	@PostConstruct
 	void init() {
@@ -70,9 +74,9 @@ public class WebServer {
 		// endpoint.publish(context); // Use grizzly HTTP context for publishing
 
 		try {
-			System.out.println("Starting webServer");
+			log.fine("Starting webServer");
 			server.start();
-			System.out.println("Started webServer");
+			log.log(Level.INFO, "Started webServer on port {0}", httpPort);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -88,7 +92,7 @@ public class WebServer {
 
 	@PreDestroy
 	void shutdown() {
-		System.out.println("Shutting down webServer");
+		log.fine("Shutting down webServer");
 		server.stop();
 	}
 

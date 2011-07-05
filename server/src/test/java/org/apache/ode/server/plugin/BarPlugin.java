@@ -23,6 +23,7 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataHandler;
@@ -53,15 +54,17 @@ public class BarPlugin {
 	@Inject
 	Provider<ArtifactDataSource> dsProvider;
 
+	private static final Logger log = Logger.getLogger(BarPlugin.class.getName());
+
 	@PostConstruct
 	public void init() {
-		System.out.println("Initializing BARPlugin");
+		log.fine("Initializing BARPlugin");
 		repository.registerFileExtension("bar", BAR_MIMETYPE);
 		repository.registerFileExtension("bar2", BAR_MIMETYPE);
 		repository.registerNamespace("http://foo", FOO_MIMETYPE);
 		repository.registerCommandInfo(BAR_MIMETYPE, Validate.VALIDATE_CMD, true, barProvider);
 		repository.registerHandler(BAR_MIMETYPE, new BarDataContentHandler());
-		System.out.println("BARPlugin Initialized");
+		log.fine("BARPlugin Initialized");
 
 	}
 
