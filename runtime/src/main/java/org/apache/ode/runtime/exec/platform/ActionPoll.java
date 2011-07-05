@@ -60,7 +60,7 @@ public class ActionPoll implements Runnable {
 				localTasksQuery.setParameter("nodeId", nodeId);
 				localTasks = (List<Action>) localTasksQuery.getResultList();
 			} catch (PersistenceException pe) {
-				pe.printStackTrace();
+				log.log(Level.SEVERE,"",pe);
 			}
 			if (localTasks != null) {
 				for (Action a : localTasks) {
@@ -73,7 +73,7 @@ public class ActionPoll implements Runnable {
 							pmgr.getTransaction().commit();
 							exec.run(a);
 						} catch (Exception pe) {
-							pe.printStackTrace();
+							log.log(Level.SEVERE,"",pe);
 						}
 					} else if (ActionState.CANCELED.equals(a.state()) && exec.getExecutingTasks().containsKey(a.getActionId())) {
 						ActionRunnable ar = exec.getExecutingTasks().get(a.getActionId());
@@ -93,7 +93,7 @@ public class ActionPoll implements Runnable {
 									pmgr.merge(a);
 									pmgr.getTransaction().commit();
 								} catch (Exception pe) {
-									pe.printStackTrace();
+									log.log(Level.SEVERE,"",pe);
 								}
 							}
 
@@ -115,7 +115,7 @@ public class ActionPoll implements Runnable {
 			}
 
 		} catch (Throwable t) {
-			t.printStackTrace();
+			log.log(Level.SEVERE,"",t);
 		}
 	}
 

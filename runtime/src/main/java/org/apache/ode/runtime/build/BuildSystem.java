@@ -19,6 +19,7 @@
 package org.apache.ode.runtime.build;
 
 import java.io.InputStream;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.activation.DataSource;
@@ -76,7 +77,7 @@ public class BuildSystem {
 				}
 			});
 		} catch (JAXBException je) {
-			je.printStackTrace();
+			log.log(Level.SEVERE,"",je);
 		}
 
 		log.fine("BuildSystem Initialized");

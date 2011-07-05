@@ -18,6 +18,7 @@
  */
 package org.apache.ode.runtime.xsd;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -67,7 +68,7 @@ public class XSD {
 				try {
 					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/wsdl.xsd")) };
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.log(Level.SEVERE,"",e);
 					return null;
 				}
 			}

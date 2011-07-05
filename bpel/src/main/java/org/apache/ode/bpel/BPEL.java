@@ -19,6 +19,7 @@
 package org.apache.ode.bpel;
 
 import java.io.InputStream;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.activation.DataSource;
@@ -88,7 +89,7 @@ public class BPEL {
 				try {
 					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/ws-bpel_executable.xsd")) };
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.log(Level.SEVERE,"",e);
 					return null;
 				}
 			}
@@ -101,7 +102,7 @@ public class BPEL {
 				try {
 					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/ws-bpel_plnktype.xsd")) };
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.log(Level.SEVERE,"",e);
 					return null;
 				}
 			}

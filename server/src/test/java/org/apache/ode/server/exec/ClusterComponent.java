@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -116,7 +117,7 @@ public class ClusterComponent implements Component {
 			doc.appendChild(root);
 			return doc;
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 			return null;
 		}
 

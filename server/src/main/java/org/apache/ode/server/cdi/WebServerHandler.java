@@ -20,24 +20,40 @@ package org.apache.ode.server.cdi;
 
 import java.util.logging.Logger;
 
+import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
+import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Singleton;
 
+import org.apache.ode.jetty.JAXWSHandler;
 import org.apache.ode.server.JMXServer;
 import org.apache.ode.server.WebServer;
 import org.apache.ode.spi.cdi.Handler;
 
 @Singleton
 public class WebServerHandler extends Handler {
-	
+
 	private static final Logger log = Logger.getLogger(WebServerHandler.class.getName());
+
+	@Singleton
+	public static class JAXWSHandlerProducer {
+
+		JAXWSHandler handler = new JAXWSHandler();
+		
+		@Produces
+		public JAXWSHandler create() {
+			return handler;
+		}
+
+	}
 
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(WebServer.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(JMXServer.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(JAXWSHandlerProducer.class));
 	}
 
 	@Override

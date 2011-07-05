@@ -126,7 +126,7 @@ public class ClusterTest {
 						clusterConfig = config.getValue();
 						repo.create(new QName(Cluster.CLUSTER_CONFIG_NAMESPACE, clusterId), Cluster.CLUSTER_CONFIG_MIMETYPE, "1.0", content);
 					} catch (Exception e) {
-						e.printStackTrace();
+						log.log(Level.SEVERE,"",e);
 					}
 					repoBean.destroy(repo, ctx);
 				} else {

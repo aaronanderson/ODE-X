@@ -20,6 +20,7 @@ package org.apache.ode.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.management.JMX;
@@ -64,7 +65,7 @@ public class Server {
 				try {
 					daemonThread.join();
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					log.log(Level.SEVERE,"",e);
 				}
 			} else {
 				server.start();
@@ -95,14 +96,14 @@ public class Server {
 		try {
 			mserver.registerMBean(new ServerStop(weld), new ObjectName(OBJECTNAME));
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 		}
 
 		log.info("Server Started");
 		/*
 		 * lifecycle = LifecycleFactory.getInstance().getLifecycle(); try {
 		 * lifecycle.startApplication(null);We } catch (Exception e1) {
-		 * e1.printStackTrace(); }
+		 * e1. printStackTrace(); }
 		 * 
 		 * //Set<Bean<?>> beans =
 		 * lifecycle.getBeanManager().getBeans("webServer"); Set<Bean<?>> beans
@@ -146,7 +147,7 @@ public class Server {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					log.log(Level.SEVERE,"",e);
 					break;
 				}
 				}catch (IOException ie){
@@ -154,7 +155,7 @@ public class Server {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 		}
 		// ShutdownManager shutdownManager =
 		// container.instance().select(ShutdownManager.class).get();
@@ -162,7 +163,7 @@ public class Server {
 
 		/*
 		 * try { lifecycle.stopApplication(null); } catch (Exception e1) {
-		 * e1.printStackTrace(); }
+		 * e1. printStackTrace(); }
 		 */
 
 	}
@@ -216,7 +217,7 @@ public class Server {
 					try {
 						Thread.sleep(3000);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						log.log(Level.SEVERE,"",e);
 					}
 					log.fine("Shutting down ODE Server");
 					weld.shutdown();

@@ -21,6 +21,7 @@ package org.apache.ode.server.exec;
 import java.util.Calendar;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -105,7 +106,7 @@ public class ClusterAssistant {
 			Node local = pmgr.find(Node.class, nodeId);
 			return local.getHeartBeat();
 		} catch (PersistenceException pe) {
-			pe.printStackTrace();
+			log.log(Level.SEVERE,"",pe);
 			return null;
 		} finally {
 			pmgr.clear();

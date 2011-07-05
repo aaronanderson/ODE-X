@@ -19,6 +19,8 @@
 package org.apache.ode.runtime.wsdl;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.DataSource;
 
@@ -28,6 +30,8 @@ import org.xml.sax.InputSource;
 public class WSDLLocator implements javax.wsdl.xml.WSDLLocator {
 	DependentArtifactDataSource dataSource;
 	String lastResolved = null;
+	
+	private static final Logger log = Logger.getLogger(WSDLLocator.class.getName());
 
 	public WSDLLocator(DependentArtifactDataSource dataSource) {
 		this.dataSource = dataSource;
@@ -43,7 +47,7 @@ public class WSDLLocator implements javax.wsdl.xml.WSDLLocator {
 		try {
 			return new InputSource(dataSource.getInputStream());
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 			return null;
 		}
 	}
@@ -62,7 +66,7 @@ public class WSDLLocator implements javax.wsdl.xml.WSDLLocator {
 				lastResolved = importLocation;
 				return source;
 			} catch (IOException e) {
-				e.printStackTrace();
+				log.log(Level.SEVERE,"",e);
 				return null;
 			}
 		}

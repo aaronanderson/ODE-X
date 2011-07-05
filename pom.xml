@@ -147,8 +147,30 @@
 			<name>Java.net Maven2 Repository for Metro</name>
 			<url>http://download.java.net/maven/2/</url>
 		</repository>
+		
+		<repository>
+			<id>ode-x.cloudbees.release</id>
+			<name>ODE-X Cloudbees Release Repository</name>
+			<url>http://repository-ode-x.forge.cloudbees.com/release/</url>
+			<releases> 
+			  <enabled>true</enabled> 
+			</releases>
+			<snapshots> 
+			  <enabled>false</enabled> 
+			</snapshots>
+		</repository>
 
-
+		<repository>
+			<id>ode-x.cloudbees.snapshot</id>
+			<name>ODE-X Cloudbees Snapshot Repository</name>
+			<url>http://repository-ode-x.forge.cloudbees.com/snapshot/</url>
+			<releases> 
+			  <enabled>false</enabled> 
+			</releases>
+			<snapshots> 
+			  <enabled>true</enabled> 
+			</snapshots>
+		</repository>
 		<!-- <repository> <id>ode.apache.org</id> <name>ODE Maven Repository</name> 
 			<url>http://ode.apache.org/nexus/content/groups/public/</url> <releases> 
 			<enabled>true</enabled> </releases> <snapshots> <enabled>true</enabled> </snapshots> 

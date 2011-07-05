@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.DataHandler;
 import javax.inject.Provider;
@@ -49,6 +51,8 @@ public class XMLValidate implements Validate {
 	DataHandler dh;
 
 	Map<String, Set<SchemaSource>> schemaSources = new HashMap<String, Set<SchemaSource>>();
+	
+	private static final Logger log = Logger.getLogger(XMLValidate.class.getName());
 
 	public synchronized void registerSchemaSource(String contentType, SchemaSource source) {
 		Set<SchemaSource> ssrcs = schemaSources.get(contentType);
@@ -118,7 +122,7 @@ public class XMLValidate implements Validate {
 
 		public void error(SAXParseException e) throws SAXException {
 			if (e.getMessage().contains("cvc-complex-type.2.4.a")){
-				e.printStackTrace();
+				log.log(Level.SEVERE,"",e);
 				return;
 			}
 			sb.append(String.format("line: %d column: %d error: %s", e.getLineNumber(), e.getColumnNumber(), e.getMessage()));

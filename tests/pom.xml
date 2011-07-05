@@ -89,6 +89,27 @@
 	<build>
 		<plugins>
 			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.apache.geronimo.specs</groupId>
+									<artifactId>geronimo-jaxws_2.2_spec</artifactId>
+									<version>1.0</version>
+									<outputDirectory>${project.build.directory}${file.separator}endorsed</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
 				<!-- run mvn -Dspe=local exec:java to only setup the environment for 
@@ -102,10 +123,7 @@
 						</goals>
 						<configuration>
 							<mainClass>org.apache.ode.server.Server</mainClass>
-							<arguments>
-								<argument>start</argument>
-								<argument>daemon</argument>
-							</arguments>
+							<argLine>-Djava.endorsed.dirs=${project.build.directory}${file.separator}endorsed start daemon</argLine>
 							<classpathScope>test</classpathScope>
 							<cleanupDaemonThreads>false</cleanupDaemonThreads>
 						</configuration>

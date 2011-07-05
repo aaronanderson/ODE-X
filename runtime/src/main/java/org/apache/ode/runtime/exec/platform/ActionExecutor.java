@@ -87,9 +87,8 @@ public class ActionExecutor {
 	private String nodeId;
 	private ActionExecution config;
 	private ThreadPoolExecutor exec;
-	
-	private static final Logger log = Logger.getLogger(ActionExecutor.class.getName());
 
+	private static final Logger log = Logger.getLogger(ActionExecutor.class.getName());
 
 	@PostConstruct
 	public void init() {
@@ -356,9 +355,9 @@ public class ActionExecutor {
 				} catch (PersistenceException pe) {
 					if (pe instanceof RollbackException && pe.getCause() instanceof OptimisticLockException) {
 						OptimisticLockException oe = ((OptimisticLockException) pe.getCause());
-						oe.printStackTrace();
+						log.log(Level.WARNING, "", oe);
 					} else {
-						pe.printStackTrace();
+						log.log(Level.SEVERE, "", pe);
 						break;
 					}
 				}
@@ -371,8 +370,8 @@ public class ActionExecutor {
 	private class RejectedActionExecution implements RejectedExecutionHandler {
 		@Override
 		public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
-			ActionRunnable ar= (ActionRunnable)runnable;
-			log.log(Level.SEVERE,"ActionTask Rejected {0}",ar.getAction().getActionId());
+			ActionRunnable ar = (ActionRunnable) runnable;
+			log.log(Level.SEVERE, "ActionTask Rejected {0}", ar.getAction().getActionId());
 			ar.getAction().setState(ActionState.CANCELED);
 			ar.save();
 		}
@@ -436,8 +435,9 @@ public class ActionExecutor {
 					} catch (PersistenceException pe) {
 						if (pe instanceof RollbackException && pe.getCause() instanceof OptimisticLockException) {
 							context.refresh();
+						} else {
+							log.log(Level.SEVERE, "", pe);
 						}
-						pe.printStackTrace();
 						return false;
 					}
 				} finally {
@@ -596,14 +596,14 @@ public class ActionExecutor {
 						pmgr.refresh(((SlaveAction) action).master);
 					}
 				} catch (PersistenceException pe) {
-					pe.printStackTrace();
+					log.log(Level.SEVERE, "", pe);
 
 				} finally {
 					updateLock.unlock();
 					try {
 						refreshBarrier.await();
 					} catch (Exception e) {
-						e.printStackTrace();
+						log.log(Level.FINE, "", e);
 					}
 				}
 
@@ -665,7 +665,7 @@ public class ActionExecutor {
 					runnable.getAction().setMessages(messages);
 				} while (!runnable.contextUpdate(runnable.getAction()));
 			} catch (PlatformException e) {
-				e.printStackTrace();
+				log.log(Level.SEVERE, "", e);
 			}
 		}
 
@@ -676,11 +676,11 @@ public class ActionExecutor {
 
 		@Override
 		public void refresh() {
-			log.log(Level.FINER,"Refresh: ActionId: {0}", runnable.getAction().getActionId());
+			log.log(Level.FINER, "Refresh: ActionId: {0}", runnable.getAction().getActionId());
 			try {
 				runnable.getRefreshBarrier().await();
 			} catch (Exception e) {
-				// e.printStackTrace();
+				log.log(Level.FINE, "", e);
 			}
 		}
 

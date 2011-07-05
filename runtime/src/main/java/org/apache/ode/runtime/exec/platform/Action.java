@@ -27,6 +27,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -76,7 +78,8 @@ import org.w3c.dom.Document;
 @DiscriminatorColumn(name = "TYPE", discriminatorType = DiscriminatorType.STRING)
 @DiscriminatorValue("ACTION")
 public class Action implements ActionStatus, Serializable {
-
+	
+	private static final Logger log = Logger.getLogger(Action.class.getName());
 	public static DocumentBuilderFactory domFactory;
 	public static TransformerFactory transformFactory;
 	static {
@@ -152,7 +155,7 @@ public class Action implements ActionStatus, Serializable {
 				db = domFactory.newDocumentBuilder();
 				return db.parse(new ByteArrayInputStream(input));
 			} catch (Exception pe) {
-				pe.printStackTrace();
+				log.log(Level.SEVERE,"",pe);
 			}
 		}
 		return null;
@@ -226,7 +229,7 @@ public class Action implements ActionStatus, Serializable {
 				JAXBElement<Messages> logs = (JAXBElement<Messages>) u.unmarshal(new ByteArrayInputStream(messages));
 				return convertMessages(logs.getValue().getMessage());
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.log(Level.SEVERE,"",e);
 			}
 		}
 		return new ArrayList<ActionMessage>();
@@ -257,7 +260,7 @@ public class Action implements ActionStatus, Serializable {
 				db = domFactory.newDocumentBuilder();
 				return db.parse(new ByteArrayInputStream(result));
 			} catch (Exception pe) {
-				pe.printStackTrace();
+				log.log(Level.SEVERE,"",pe);
 			}
 		}
 		return null;

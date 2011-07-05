@@ -28,15 +28,20 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.ode.jetty.JAXWSHandler;
 import org.apache.ode.server.xml.ServerConfig;
-
-import com.sun.grizzly.http.embed.GrizzlyWebServer;
 
 @Singleton
 public class WebServer {
+
 	@Inject
 	ServerConfig serverConfig;
-	GrizzlyWebServer server;
+
+	@Inject
+	JAXWSHandler handler;
+
+	org.eclipse.jetty.server.Server server;
+
 	int httpPort = -1;
 	boolean sslEnabled = false;
 
@@ -44,8 +49,6 @@ public class WebServer {
 
 	@PostConstruct
 	void init() {
-		String contextPath = "/ctxt";
-		String path = "/echo";
 
 		httpPort = serverConfig.getHttpPort().intValue();
 		sslEnabled = serverConfig.isSslEnabled();
@@ -57,28 +60,17 @@ public class WebServer {
 				server.close();
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 		}
-
-		String address = "http://localhost:" + httpPort + contextPath + path;
-
-		server = new GrizzlyWebServer(httpPort);
-		// SSLConfig cfg = new SSLConfig();
-		// server.setSSLConfiguration(sslConfiguration)
-		// HttpContext context =
-		// GrizzlyHttpContextFactory.createHttpContext(server, contextPath,
-		// path)t(server, contextPath, path)pContext(server, contextPath,
-		// path)ontext(server, contextPath, path);
-		// context.setHandler(new JAXWSHandler());
-		// Endpoint endpoint = Endpoint.create(new Object());
-		// endpoint.publish(context); // Use grizzly HTTP context for publishing
 
 		try {
 			log.fine("Starting webServer");
+			server = new org.eclipse.jetty.server.Server(httpPort);
+			server.setHandler(handler);
 			server.start();
 			log.log(Level.INFO, "Started webServer on port {0}", httpPort);
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
 		}
 	}
 
@@ -93,7 +85,11 @@ public class WebServer {
 	@PreDestroy
 	void shutdown() {
 		log.fine("Shutting down webServer");
-		server.stop();
+		try {
+			server.stop();
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
+		}
 	}
 
 }

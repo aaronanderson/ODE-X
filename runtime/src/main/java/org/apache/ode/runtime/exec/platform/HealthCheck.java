@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -45,6 +47,8 @@ public class HealthCheck implements Runnable {
 	private String clusterId;
 	private String nodeId;
 	AtomicReference<NodeState> localNodeState;
+	
+	private static final Logger log = Logger.getLogger(HealthCheck.class.getName());
 
 	@Override
 	public synchronized void run() {
@@ -69,8 +73,7 @@ public class HealthCheck implements Runnable {
 				}
 				pmgr.getTransaction().commit();
 			} catch (PersistenceException pe) {
-				pe.printStackTrace();
-				pmgr.getTransaction().rollback();
+				log.log(Level.SEVERE, "", pe);
 			}
 			pmgr.clear();
 
@@ -86,7 +89,7 @@ public class HealthCheck implements Runnable {
 				hcheckQ.setParameter("lifetime", lifeTime);
 				nodes = (List<Node>) hcheckQ.getResultList();
 			} catch (PersistenceException pe) {
-				pe.printStackTrace();
+				log.log(Level.SEVERE, "", pe);
 			}
 			HashSet<NodeStatus> currentNodes = new HashSet<NodeStatus>();
 			HashSet<String> currentOnlineClusterNodes = new HashSet<String>();
@@ -103,7 +106,7 @@ public class HealthCheck implements Runnable {
 			nodeStatus.set(Collections.unmodifiableSet(currentNodes));
 			onlineClusterNodes.set(Collections.unmodifiableSet(currentOnlineClusterNodes));
 		} catch (Throwable t) {
-			t.printStackTrace();
+			log.log(Level.SEVERE, "", t);
 		}
 	}
 
@@ -136,8 +139,7 @@ public class HealthCheck implements Runnable {
 			deleteStale.executeUpdate();
 			pmgr.getTransaction().commit();
 		} catch (PersistenceException pe) {
-			pe.printStackTrace();
-			pmgr.getTransaction().rollback();
+			log.log(Level.SEVERE, "", pe);
 		}
 	}
 

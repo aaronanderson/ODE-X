@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -61,8 +62,9 @@ public class JMXServer {
 			cntorServer = JMXConnectorServerFactory.newJMXConnectorServer(address, environment, mbeanServer);
 			cntorServer.start();
 			log.finer("Started jmxServer");
+			log.log(Level.INFO, "JMX Address: {0}", address);
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 		}
 	}
 
@@ -92,7 +94,7 @@ public class JMXServer {
 			MBeanServerFactory.releaseMBeanServer(mbeanServer);
 			log.finer("Stopped jmxServer");
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 		}
 	}
 

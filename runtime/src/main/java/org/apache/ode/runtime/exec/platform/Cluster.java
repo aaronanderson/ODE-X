@@ -75,11 +75,13 @@ public class Cluster {
 	public static final String CLUSTER_CONFIG_MIMETYPE = "application/ode-cluster-config";
 	public static final String CLUSTER_CONFIG_NAMESPACE = "http://ode.apache.org/cluster-config";
 	public static JAXBContext CLUSTER_JAXB_CTX;
+	private static final Logger log = Logger.getLogger(Cluster.class.getName());
+	
 	static {
 		try {
 			CLUSTER_JAXB_CTX = JAXBContext.newInstance("org.apache.ode.runtime.exec.cluster.xml");
 		} catch (JAXBException je) {
-			je.printStackTrace();
+			log.log(Level.SEVERE,"",je);
 		}
 	}
 	@ClusterId
@@ -108,7 +110,7 @@ public class Cluster {
 
 	ScheduledExecutorService clusterScheduler;
 
-	private static final Logger log = Logger.getLogger(Cluster.class.getName());
+	
 
 	@PostConstruct
 	public void init() {
@@ -326,7 +328,7 @@ public class Cluster {
 			JAXBElement<ClusterConfig> config = repo.read(configName, CLUSTER_CONFIG_MIMETYPE, "1.0", JAXBElement.class);
 			return config.getValue();
 		} catch (RepositoryException e) {
-			// e.printStackTrace();
+	
 		}
 		log.log(Level.WARNING, "Unable to load cluster config, using default config");
 		try {
@@ -335,7 +337,7 @@ public class Cluster {
 			repo.create(configName, CLUSTER_CONFIG_MIMETYPE, "1.0", config);
 			return config.getValue();
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE,"",e);
 		}
 		return null;
 	}
