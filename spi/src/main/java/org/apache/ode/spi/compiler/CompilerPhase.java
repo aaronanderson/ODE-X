@@ -19,5 +19,5 @@
 package org.apache.ode.spi.compiler;
 
 public enum CompilerPhase {
-	DISCOVERY, LINK, VALIDATE, EMIT, ANALYSIS, FINALIZE;
+	INITIALIZE, DISCOVERY, LINK, VALIDATE, EMIT, ANALYSIS, FINALIZE;
 }

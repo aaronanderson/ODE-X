@@ -162,7 +162,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.8.1</version>
+			<version>4.8.2</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -211,7 +211,11 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+				<!-- <forkMode>always</forkMode> 
+				<parallel>classes</parallel>
+				-->
 					<argLine>-Djava.endorsed.dirs=${project.build.directory}${file.separator}endorsed -Dode.config=test</argLine>
+					
 				</configuration>
 			</plugin>
 			<plugin>
@@ -230,6 +234,21 @@
 									<outputDirectory>${project.build.directory}${file.separator}endorsed</outputDirectory>
 								</artifactItem>
 							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<configuration>
+							<includes>
+								<include>META-INF/**</include>
+							</includes>
 						</configuration>
 					</execution>
 				</executions>

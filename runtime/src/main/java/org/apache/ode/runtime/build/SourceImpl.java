@@ -70,4 +70,8 @@ public class SourceImpl implements Source {
 		return sourceType;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("QName: %s ContentType: %s Version: %s", qname, contentType, version);
+	}
 }

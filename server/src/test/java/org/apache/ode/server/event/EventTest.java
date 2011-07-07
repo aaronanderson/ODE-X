@@ -20,35 +20,27 @@ package org.apache.ode.server.event;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.AfterBeanDiscovery;
-import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
-import javax.enterprise.inject.spi.ProcessAnnotatedType;
 
+import org.apache.ode.server.Server;
 import org.apache.ode.server.cdi.EventHandler;
-import org.apache.ode.server.cdi.ProcessAnnotatedTypeImpl;
 import org.apache.ode.server.cdi.StaticHandler;
 import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.event.Channel;
 import org.apache.ode.spi.event.Publisher;
 import org.apache.ode.spi.event.Subscriber;
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EventTest {
-	private static Weld weld;
-	protected static WeldContainer container;
-
+	private static Server server;
+	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		StaticHandler.clear();
@@ -66,22 +58,19 @@ public class EventTest {
 			}			
 			
 		});
-		weld = new Weld();
-		container = weld.initialize();
+		server = new Server();
+		server.start();
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		try {
-			weld.shutdown();
-		} catch (NullPointerException e) {
-		}
+		server.stop();
 	}
 
 	@Test
 	public void testSubscriberAll() {
 		SubscriberAllBean.reset();
-		container.event().select(MyEvent.class).fire(new MyEvent());
+		server.createEvent().select(MyEvent.class).fire(new MyEvent());
 		assertTrue(SubscriberAllBean.hasFired());
 
 	}
@@ -89,7 +78,7 @@ public class EventTest {
 	@Test
 	public void testSubscriberQualifier() {
 		SubscriberBean.reset();
-		container.event().select(MyEvent.class, new EventHandler.EventQualifierImpl("MyEvent")).fire(new MyEvent());
+		server.createEvent().select(MyEvent.class, new EventHandler.EventQualifierImpl("MyEvent")).fire(new MyEvent());
 		assertTrue(SubscriberBean.hasFired());
 	}
 
@@ -98,7 +87,7 @@ public class EventTest {
 		SubscriberAllBean.reset();
 		SubscriberBean.reset();
 		SubscriberNonBean.reset();
-		container.event().select(MyEvent.class, new EventHandler.EventQualifierImpl("NonEvent")).fire(new MyEvent());
+		server.createEvent().select(MyEvent.class, new EventHandler.EventQualifierImpl("NonEvent")).fire(new MyEvent());
 		assertTrue(SubscriberAllBean.hasFired());
 		assertTrue(SubscriberNonBean.hasFired());
 		assertTrue(!SubscriberBean.hasFired());
@@ -107,10 +96,10 @@ public class EventTest {
 	@Test
 	public void testPublisherAll() {
 		SubscriberAllBean.reset();
-		Set<Bean<?>> beans = container.getBeanManager().getBeans(PublisherAllBean.class);
+		Set<Bean<?>> beans = server.getBeanManager().getBeans(PublisherAllBean.class);
 		Bean<PublisherAllBean> publisherBean = (Bean<PublisherAllBean>) beans.iterator().next();
-		CreationalContext<PublisherAllBean> ctx = container.getBeanManager().createCreationalContext(publisherBean);
-		PublisherAllBean reference = (PublisherAllBean) container.getBeanManager().getReference(publisherBean,
+		CreationalContext<PublisherAllBean> ctx = server.getBeanManager().createCreationalContext(publisherBean);
+		PublisherAllBean reference = (PublisherAllBean) server.getBeanManager().getReference(publisherBean,
 				PublisherAllBean.class, ctx);
 		reference.trigger();
 		assertTrue(SubscriberAllBean.hasFired());
@@ -120,10 +109,10 @@ public class EventTest {
 	@Test
 	public void testPublisherQualifier() {
 		SubscriberBean.reset();
-		Set<Bean<?>> beans = container.getBeanManager().getBeans(PublisherBean.class);
+		Set<Bean<?>> beans = server.getBeanManager().getBeans(PublisherBean.class);
 		Bean<PublisherBean> publisherBean = (Bean<PublisherBean>) beans.iterator().next();
-		CreationalContext<PublisherBean> ctx = container.getBeanManager().createCreationalContext(publisherBean);
-		PublisherBean reference = (PublisherBean) container.getBeanManager().getReference(publisherBean,
+		CreationalContext<PublisherBean> ctx = server.getBeanManager().createCreationalContext(publisherBean);
+		PublisherBean reference = (PublisherBean) server.getBeanManager().getReference(publisherBean,
 				PublisherBean.class, ctx);
 		reference.trigger();
 		assertTrue(SubscriberBean.hasFired());
@@ -135,10 +124,10 @@ public class EventTest {
 		SubscriberBean.reset();
 		SubscriberNonBean.reset();
 
-		Set<Bean<?>> beans = container.getBeanManager().getBeans(PublisherNonBean.class);
+		Set<Bean<?>> beans = server.getBeanManager().getBeans(PublisherNonBean.class);
 		Bean<PublisherNonBean> publisherNonBean = (Bean<PublisherNonBean>) beans.iterator().next();
-		CreationalContext<PublisherNonBean> ctx = container.getBeanManager().createCreationalContext(publisherNonBean);
-		PublisherNonBean reference = (PublisherNonBean) container.getBeanManager().getReference(publisherNonBean,
+		CreationalContext<PublisherNonBean> ctx = server.getBeanManager().createCreationalContext(publisherNonBean);
+		PublisherNonBean reference = (PublisherNonBean) server.getBeanManager().getReference(publisherNonBean,
 				PublisherNonBean.class, ctx);
 		reference.trigger();
 		assertTrue(SubscriberAllBean.hasFired());

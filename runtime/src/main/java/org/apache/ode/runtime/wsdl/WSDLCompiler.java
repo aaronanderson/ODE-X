@@ -18,6 +18,10 @@
  */
 package org.apache.ode.runtime.wsdl;
 
+import javax.wsdl.Definition;
+import javax.wsdl.WSDLException;
+import javax.wsdl.xml.WSDLReader;
+
 import org.apache.ode.runtime.exec.wsdl.xml.Configuration;
 import org.apache.ode.runtime.exec.wsdl.xml.ObjectFactory;
 import org.apache.ode.spi.compiler.CompilerContext;
@@ -25,6 +29,7 @@ import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
+import org.apache.ode.spi.compiler.WSDLContext;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.Installation;
 import org.apache.ode.spi.exec.xml.InstructionSets;
@@ -38,7 +43,23 @@ public class WSDLCompiler implements CompilerPass {
 			ctx.terminate();
 			return;
 		}
+		WSDLContext wsdlCtx = (WSDLContext) ctx.getSubContext(WSDLContext.ID);
+
 		switch (phase) {
+		case INITIALIZE:
+			wsdlCtx.getExtensionRegistry();
+			break;
+
+		case DISCOVERY:
+			WSDLReader reader = wsdlCtx.getWSDLReader();
+			try {
+				Definition definition = reader.readWSDL(wsdlCtx.getWSDLLocator(artifact.getContent()));
+			} catch (WSDLException we) {
+				ctx.addError(String.format("failed to read WSDL %s", artifact), we);
+			}
+			// QName schemaLocation = (QName) definition.getExtensionAttribute(SCHEMA_LOCATION);
+			break;
+
 		case EMIT:
 			ObjectFactory wsdlFactory = new ObjectFactory();
 			Executable exec = ctx.executable();

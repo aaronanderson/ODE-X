@@ -38,6 +38,7 @@ import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.server.Server;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.StaticHandler;
@@ -51,8 +52,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class PluginTest {
-	private static Weld weld;
-	protected static WeldContainer container;
+	private static Server server;
 	protected static BarPlugin barPlugin;
 
 	private static final Logger log = Logger.getLogger(PluginTest.class.getName());
@@ -82,14 +82,14 @@ public class PluginTest {
 			}
 
 		});
-		weld = new Weld();
-		container = weld.initialize();
+		server = new Server();
+		server.start();
 
-		Set<Bean<?>> beans = container.getBeanManager().getBeans(BarPlugin.class, new AnnotationLiteral<Any>() {
+		Set<Bean<?>> beans = server.getBeanManager().getBeans(BarPlugin.class, new AnnotationLiteral<Any>() {
 		});
 		if (beans.size() > 0) {
 			Bean<?> bean = beans.iterator().next();
-			barPlugin = (BarPlugin) container.getBeanManager().getReference(bean, BarPlugin.class, container.getBeanManager().createCreationalContext(bean));
+			barPlugin = (BarPlugin) server.getBeanManager().getReference(bean, BarPlugin.class, server.getBeanManager().createCreationalContext(bean));
 		} else {
 			log.log(Level.SEVERE, "Can't find class {0}", BarPlugin.class);
 		}
@@ -97,10 +97,7 @@ public class PluginTest {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		try {
-			weld.shutdown();
-		} catch (NullPointerException e) {
-		}
+		server.stop();
 	}
 
 	@Test

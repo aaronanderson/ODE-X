@@ -51,12 +51,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.sun.xml.ws</groupId>
-			<artifactId>webservices-rt</artifactId>
-			<version>${metro.version}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-atinject_1.0_spec</artifactId>
 			<version>1.0</version>
@@ -71,9 +65,10 @@
 		</dependency>
 
 		<dependency>
-			<groupId>wsdl4j</groupId>
-			<artifactId>wsdl4j</artifactId>
-			<version>1.6.2</version>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jaxws_2.2_spec</artifactId>
+			<version>1.0</version>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>

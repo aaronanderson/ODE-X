@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.enterprise.event.Event;
+import javax.enterprise.inject.spi.BeanManager;
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
@@ -46,35 +48,73 @@ public class Server {
 	public static final String OBJECTNAME = "org.apache.ode:type=ServerStop";
 
 	private static final Logger log = Logger.getLogger(Server.class.getName());
-	
+
+	private Weld weld;
+	private WeldContainer container;
+
 	public static void main(String[] args) {
 		final Server server = new Server();
 		if (args.length == 0 || "start".equalsIgnoreCase(args[0])) {
-			if (args.length == 2 && "daemon".equals(args[1])) {
-				Thread daemonThread = new Thread(new Runnable() {
-
-					@Override
-					public void run() {
-						server.start();
-
-					}
-
-				}, "ODE Daemon Thread");
-				daemonThread.setDaemon(true);
-				daemonThread.start();
-				try {
-					daemonThread.join();
-				} catch (InterruptedException e) {
-					log.log(Level.SEVERE,"",e);
-				}
-			} else {
-				server.start();
-			}
+			server.startDeamon();
 		} else if ("stop".equalsIgnoreCase(args[0])) {
-			server.stop();
+			server.stopDeamon();
 		} else {
 			log.severe("Invalid arguements. Usage: Server <start | stop>");
 			System.exit(-1);
+		}
+	}
+
+	public void startDeamon() {
+		Thread daemonThread = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				start();
+			}
+
+		}, "ODE Daemon Thread");
+		daemonThread.setDaemon(true);
+		daemonThread.start();
+		try {
+			daemonThread.join();
+		} catch (InterruptedException e) {
+			log.log(Level.SEVERE, "", e);
+		}
+		JMXServer server = container.instance().select(JMXServer.class).get();
+		MBeanServer mserver = server.getMBeanServer();
+		try {
+			mserver.registerMBean(new ServerStop(), new ObjectName(OBJECTNAME));
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
+		}
+
+	}
+
+	public void stopDeamon() {
+		try {
+			ServerConfig serverConfig = readConfig();
+			JMXServiceURL url = JMXServer.buildJMXAddress(serverConfig);
+			JMXConnector jmxc = JMXConnectorFactory.connect(url, null);
+			MBeanServerConnection jmxConnection = jmxc.getMBeanServerConnection();
+			ServerStopMBean stopServer = JMX.newMBeanProxy(jmxConnection, new ObjectName(OBJECTNAME), ServerStopMBean.class);
+			stopServer.stop();
+			jmxc.close();
+			for (int i = 0; i < 15; i++) {
+				try {
+					jmxc = JMXConnectorFactory.connect(url, null);
+					jmxc.close();
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						log.log(Level.SEVERE, "", e);
+						break;
+					}
+				} catch (IOException ie) {
+					break;
+				}
+			}
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
 		}
 	}
 
@@ -89,15 +129,8 @@ public class Server {
 		// TODO register RepoFileType mapper and RepoCommandMap with guice
 		// org.jboss.weld.environment.se.StartMain.main(new
 		// String[]{"JSR","299"});
-		Weld weld = new Weld();
-		WeldContainer container = weld.initialize();
-		JMXServer server = container.instance().select(JMXServer.class).get();
-		MBeanServer mserver = server.getMBeanServer();
-		try {
-			mserver.registerMBean(new ServerStop(weld), new ObjectName(OBJECTNAME));
-		} catch (Exception e) {
-			log.log(Level.SEVERE,"",e);
-		}
+		weld = new Weld();
+		container = weld.initialize();
 
 		log.info("Server Started");
 		/*
@@ -132,40 +165,25 @@ public class Server {
 	}
 
 	public void stop() {
-		try {
-			ServerConfig serverConfig = readConfig();
-			JMXServiceURL url = JMXServer.buildJMXAddress(serverConfig);
-			JMXConnector jmxc = JMXConnectorFactory.connect(url, null);
-			MBeanServerConnection jmxConnection = jmxc.getMBeanServerConnection();
-			ServerStopMBean stopServer = JMX.newMBeanProxy(jmxConnection, new ObjectName(OBJECTNAME), ServerStopMBean.class);
-			stopServer.stop();
-			jmxc.close();
-			for (int i=0; i< 15; i ++){
-				try{
-				jmxc = JMXConnectorFactory.connect(url, null);
-				jmxc.close();
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					log.log(Level.SEVERE,"",e);
-					break;
-				}
-				}catch (IOException ie){
-					break;
-				}
-			}
-		} catch (Exception e) {
-			log.log(Level.SEVERE,"",e);
-		}
+
 		// ShutdownManager shutdownManager =
 		// container.instance().select(ShutdownManager.class).get();
 		// shutdownManager.shutdown();
-
+		weld.shutdown();
+		log.info("ODE Server Stopped");
 		/*
 		 * try { lifecycle.stopApplication(null); } catch (Exception e1) {
 		 * e1. printStackTrace(); }
 		 */
 
+	}
+	
+	public BeanManager getBeanManager(){
+		return container.getBeanManager();
+	}
+	
+	public Event<Object> createEvent(){
+		return container.event();
 	}
 
 	public static ServerConfig readConfig() throws IOException {
@@ -195,21 +213,16 @@ public class Server {
 	}
 
 	public static interface ServerStopMBean {
-	
+
 		public void stop();
 	}
 
 	public class ServerStop implements ServerStopMBean {
-		Weld weld;
-
-		public ServerStop(Weld weld) {
-			this.weld = weld;
-		}
 
 		public void stop() {
-			//We will shutdown the server in a seperate thread so 
-			//the JMX client can gracefully close it's connection before
-			//The JMX server closes the listener
+			// We will shutdown the server in a separate thread so
+			// the JMX client can gracefully close it's connection before
+			// The JMX server closes the listener
 			Thread shutdownThread = new Thread(new Runnable() {
 
 				@Override
@@ -217,11 +230,10 @@ public class Server {
 					try {
 						Thread.sleep(3000);
 					} catch (InterruptedException e) {
-						log.log(Level.SEVERE,"",e);
+						log.log(Level.SEVERE, "", e);
 					}
 					log.fine("Shutting down ODE Server");
-					weld.shutdown();
-					log.info("ODE Server Stopped");
+					stop();
 
 				}
 

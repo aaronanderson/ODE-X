@@ -46,6 +46,7 @@ import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.Cluster;
+import org.apache.ode.server.Server;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
@@ -77,8 +78,7 @@ import org.junit.Test;
 import org.w3c.dom.Document;
 
 public class ClusterTest {
-	private static Weld weld;
-	protected static WeldContainer container;
+	private static Server server;
 	protected static Cluster cluster;
 	protected static ClusterAssistant assistant;
 	protected static ClusterConfig clusterConfig;
@@ -93,8 +93,8 @@ public class ClusterTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 
-		org.h2.tools.Server server = org.h2.tools.Server.createTcpServer("-tcpPort", "9081");
-		server.start();
+		// org.h2.tools.Server server = org.h2.tools.Server.createTcpServer("-tcpPort", "9081");
+		// server.start();
 
 		StaticHandler.clear();
 		StaticHandler.addDelegate(new JPAHandler());
@@ -126,7 +126,7 @@ public class ClusterTest {
 						clusterConfig = config.getValue();
 						repo.create(new QName(Cluster.CLUSTER_CONFIG_NAMESPACE, clusterId), Cluster.CLUSTER_CONFIG_MIMETYPE, "1.0", content);
 					} catch (Exception e) {
-						log.log(Level.SEVERE,"",e);
+						log.log(Level.SEVERE, "", e);
 					}
 					repoBean.destroy(repo, ctx);
 				} else {
@@ -144,17 +144,14 @@ public class ClusterTest {
 				super.stop();
 			}
 		});
-		weld = new Weld();
-		container = weld.initialize();
+		server = new Server();
+		server.start();
 
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		try {
-			weld.shutdown();
-		} catch (NullPointerException e) {
-		}
+		server.stop();
 	}
 
 	@Test

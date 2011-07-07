@@ -18,13 +18,22 @@
  */
 package org.apache.ode.spi.compiler;
 
+import javax.wsdl.extensions.ExtensionRegistry;
+import javax.wsdl.xml.WSDLLocator;
+import javax.wsdl.xml.WSDLReader;
 import javax.xml.namespace.QName;
 
 public interface WSDLContext {
-	
+
 	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
 	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
 
-	public static final String ID ="WSDLContext";
+	public static final String ID = "WSDLContext";
+
+	public ExtensionRegistry getExtensionRegistry();
+
+	public WSDLReader getWSDLReader();
+	
+	public WSDLLocator getWSDLLocator(byte [] src);
 
 }

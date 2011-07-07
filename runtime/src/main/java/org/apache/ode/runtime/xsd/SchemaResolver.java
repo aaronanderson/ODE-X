@@ -16,11 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.build;
+package org.apache.ode.runtime.xsd;
 
-import org.apache.ode.spi.compiler.WSDLContext;
+import java.util.logging.Logger;
 
-public class WSDLContextImpl implements WSDLContext {
+import org.apache.ws.commons.schema.resolver.URIResolver;
+import org.xml.sax.InputSource;
+
+public class SchemaResolver implements URIResolver {
+	
+	private static final Logger log = Logger.getLogger(SchemaResolver.class.getName());
+
+	@Override
+	public InputSource resolveEntity(String targetNamespace, String schemaLocation, String baseUri) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
 	
 
 }
