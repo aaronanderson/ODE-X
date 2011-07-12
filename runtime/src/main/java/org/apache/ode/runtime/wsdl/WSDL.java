@@ -32,7 +32,7 @@ import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XMLSchemaContext;
+import org.apache.ode.spi.compiler.XSDContext;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.Validate;
@@ -57,7 +57,7 @@ public class WSDL {
 	@Inject
 	WSDLComponent wsdlComponent;
 	@Inject
-	Provider<XMLSchemaContext> schemaProvider;
+	Provider<XSDContext> schemaProvider;
 	@Inject
 	Provider<WSDLContext> wsdlProvider;
 	
@@ -87,9 +87,10 @@ public class WSDL {
 		platform.registerComponent(wsdlComponent);
 		Compiler wsdlCompiler = compilers.newInstance();
 		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSets().get(0).getName());
-		wsdlCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
+		wsdlCompiler.addSubContext(XSDContext.ID, schemaProvider);
 		wsdlCompiler.addSubContext(WSDLContext.ID,wsdlProvider);
 		WSDLCompiler compiler = new WSDLCompiler();
+		wsdlCompiler.addCompilerPass(CompilerPhase.INITIALIZE, compiler);
 		wsdlCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
 		wsdlCompiler.addCompilerPass(CompilerPhase.EMIT, compiler);
 		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());

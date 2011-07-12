@@ -47,6 +47,7 @@ import org.apache.ode.runtime.build.xml.Target;
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.Component;
@@ -83,103 +84,136 @@ public class BuildExecutor implements CommandObject {
 		} catch (IOException ie) {
 			throw new BuildException(ie);
 		}
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		factory.setNamespaceAware(true);
-		DocumentBuilder db;
-		try {
-			db = factory.newDocumentBuilder();
-		} catch (ParserConfigurationException pe) {
-			throw new BuildException(pe);
-		}
 		BuildPlan plan = root.getValue();
 		for (Target target : plan.getTarget()) {
-			List<Source> srcs = new ArrayList<Source>();
-			Map<String, CompilerImpl> compilerCache = new HashMap<String, CompilerImpl>();
-			Set<String> jaxbContexts = new HashSet<String>();
-			Map<String, Object> subContexts = new HashMap<String, Object>();
-			BuildSource main = target.getMain().getArtifact();
-			srcs.add(preProcess(main, SourceType.MAIN));
-			addCompiler(main, compilerCache, jaxbContexts, subContexts);
-			if (target.getIncludes() != null) {
-				for (BuildSource src : target.getIncludes().getArtifact()) {
-					srcs.add(preProcess(src, SourceType.INCLUDE));
-					addCompiler(src, compilerCache, jaxbContexts, subContexts);
-				}
-			}
-			StringBuilder contextPath = new StringBuilder();
-			contextPath.append("org.apache.ode.spi.exec.xml");
-			for (String path : jaxbContexts) {
-				contextPath.append(':');
-				contextPath.append(path);
-			}
-			Executable exec = new Executable();
-			org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
-			JAXBElement<Executable> execBase = of.createExecutable(exec);
-			JAXBContext jc;
-
-			Binder<Node> binder;
-			Document execDoc;
-			try {
-				jc = JAXBContext.newInstance(contextPath.toString());
-				binder = jc.createBinder();
-				execDoc = db.newDocument();
-				binder.marshal(execBase, execDoc);
-			} catch (Exception jbe) {
-				throw new BuildException(jbe);
-			}
-			CompilerContextImpl ctx = new CompilerContextImpl(exec, binder, subContexts);
-
-			for (CompilerPhase phase : CompilerPhase.values()) {
-				for (Source src : srcs) {
-					CompilerImpl compiler = compilerCache.get(src.getContentType());
-					for (CompilerPass pass : compiler.getCompilerPasses(phase)) {
-						pass.compile(phase, ctx, src);
-					}
-				}
-			}
-			/*
-			 * try { binder.marshal(execBase, execDoc); } catch (Exception jbe)
-			 * { throw new BuildException(jbe); }
-			 */
-			byte[] contents = null;
-			try {
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				Marshaller u = jc.createMarshaller();
-				u.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-				u.marshal(execBase, bos);
-				contents = bos.toByteArray();
-			} catch (Exception jbe) {
-				throw new BuildException(jbe);
-			}
-			try {
-				repo.create(target.getArtifact().getQname(), target.getArtifact().getContentType(), target.getArtifact().getVersion(), contents);
-			} catch (Exception re) {
-				throw new BuildException(re);
-			}
+			processTarget(target);
 		}
 	}
 
-	void addCompiler(BuildSource src, Map<String, CompilerImpl> compilerCache, Set<String> jaxbContexts, Map<String, Object> subContexts) throws BuildException {
-		if (!compilerCache.containsKey(src.getContentType())) {
-			CompilerImpl impl = (CompilerImpl) compilers.getCompiler(src.getContentType());
-			if (impl == null) {
-				throw new BuildException(String.format("Unable to locate compiler form contentType %s", src.getContentType()));
+	void processTarget(Target target) throws BuildException {
+		List<CompilerContextImpl> contexts = new ArrayList<CompilerContextImpl>();
+		Compilation compilation = new Compilation();
+
+		BuildSource main = target.getMain().getArtifact();
+		addCompiler(main.getContentType(), compilation);
+		contexts.add(new CompilerContextImpl(preProcess(main, SourceType.MAIN), compilation));
+
+		if (target.getIncludes() != null) {
+			for (BuildSource src : target.getIncludes().getArtifact()) {
+				addCompiler(src.getContentType(), compilation);
+				contexts.add(new CompilerContextImpl(preProcess(src, SourceType.INCLUDE), compilation));
 			}
-			compilerCache.put(src.getContentType(), impl);
+		}
+		//TODO make this multithreaded by using a threadpool and execute each pass in a runnable synchronizing on a countdown barrier
+		for (CompilerPhase phase : CompilerPhase.values()) {
+			switch (phase) {
+			case DISCOVERY:
+				executePass(contexts, phase, compilation);
+				while (!compilation.getAddedSources().isEmpty()) {
+					InlineSource src = compilation.getAddedSources().remove();
+					addCompiler(src.inlineContentType(), compilation);
+					CompilerContextImpl ctx = new CompilerContextImpl(src, compilation);
+					contexts.add(ctx);
+					executePass(ctx, CompilerPhase.INITIALIZE, compilation);
+					executePass(ctx, CompilerPhase.DISCOVERY, compilation);
+				}
+
+				break;
+			case EMIT:
+				StringBuilder contextPath = new StringBuilder();
+				contextPath.append("org.apache.ode.spi.exec.xml");
+				for (String path : compilation.getJaxbContexts()) {
+					contextPath.append(':');
+					contextPath.append(path);
+				}
+
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				factory.setNamespaceAware(true);
+				DocumentBuilder db;
+				try {
+					db = factory.newDocumentBuilder();
+				} catch (ParserConfigurationException pe) {
+					throw new BuildException(pe);
+				}
+				Executable exec = new Executable();
+				compilation.setExecutable(exec);
+				org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
+				compilation.setExecBase(of.createExecutable(exec));
+
+				Binder<Node> binder;
+				Document execDoc;
+				try {
+					compilation.setJaxbContext(JAXBContext.newInstance(contextPath.toString()));
+					binder = compilation.getJaxbContext().createBinder();
+					compilation.setBinder(binder);
+					execDoc = db.newDocument();
+					binder.marshal(compilation.getExecBase(), execDoc);
+				} catch (Exception jbe) {
+					throw new BuildException(jbe);
+				}
+			default:
+				executePass(contexts, phase, compilation);
+				break;
+			}
+
+		}
+		/*
+		 * try { binder.marshal(execBase, execDoc); } catch (Exception jbe)
+		 * { throw new BuildException(jbe); }
+		 */
+		byte[] contents = null;
+		try {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			Marshaller u = compilation.getJaxbContext().createMarshaller();
+			u.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+			u.marshal(compilation.getExecBase(), bos);
+			contents = bos.toByteArray();
+		} catch (Exception jbe) {
+			throw new BuildException(jbe);
+		}
+		try {
+			repo.create(target.getArtifact().getQname(), target.getArtifact().getContentType(), target.getArtifact().getVersion(), contents);
+		} catch (Exception re) {
+			throw new BuildException(re);
+		}
+
+	}
+
+	void executePass(List<CompilerContextImpl> contexts, CompilerPhase phase, Compilation compilation) {
+		for (CompilerContextImpl ctx : contexts) {
+			executePass(ctx, phase, compilation);
+		}
+	}
+
+	void executePass(CompilerContextImpl context, CompilerPhase phase, Compilation compilation) {
+		context.setPhase(phase);
+		CompilerImpl compiler = compilation.getCompilers().get(context.getContentType());
+		for (CompilerPass pass : compiler.getCompilerPasses(phase)) {
+			pass.compile(context);
+		}
+	}
+
+	void addCompiler(String contentType, Compilation compilation) throws BuildException {
+		if (!compilation.getCompilers().containsKey(contentType)) {
+			CompilerImpl impl = (CompilerImpl) compilers.getCompiler(contentType);
+			if (impl == null) {
+				throw new BuildException(String.format("Unable to locate compiler form contentType %s", contentType));
+			}
+			compilation.getCompilers().put(contentType, impl);
 			for (QName iset : impl.getInstructionSets()) {
 				Component c = platform.getComponent(iset);
 				if (c == null) {
 					throw new BuildException(String.format("Unsupported instructionset %s", iset));
 				}
-				for (InstructionSet is: c.instructionSets()){
-					jaxbContexts.add(is.getJAXBContextPath());
+				for (InstructionSet is : c.instructionSets()) {
+					compilation.getJaxbContexts().add(is.getJAXBContextPath());
 				}
-				
+
 			}
 
 			for (Map.Entry<String, Provider<?>> p : impl.getSubContexts().entrySet()) {
-				if (!subContexts.containsKey(p.getKey())) {
-					subContexts.put(p.getKey(), p.getValue().get());
+				if (!compilation.getSubContext().containsKey(p.getKey())) {
+					compilation.getSubContext().put(p.getKey(), p.getValue().get());
 				}
 
 			}

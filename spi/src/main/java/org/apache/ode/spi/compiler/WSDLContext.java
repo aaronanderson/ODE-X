@@ -23,6 +23,8 @@ import javax.wsdl.xml.WSDLLocator;
 import javax.wsdl.xml.WSDLReader;
 import javax.xml.namespace.QName;
 
+import org.w3c.dom.Element;
+
 public interface WSDLContext {
 
 	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
@@ -32,8 +34,12 @@ public interface WSDLContext {
 
 	public ExtensionRegistry getExtensionRegistry();
 
-	public WSDLReader getWSDLReader();
+	public WSDLReader createWSDLReader();
 	
-	public WSDLLocator getWSDLLocator(byte [] src);
+	public QName declareWSDL(Source src);
+	
+	public QName declareWSDL(Element src);
+	
+	public WSDLLocator getWSDLLocator(QName src, XSDContext ctx);
 
 }

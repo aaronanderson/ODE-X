@@ -18,6 +18,20 @@
  */
 package org.apache.ode.bpel.compiler;
 
+import org.apache.ode.bpel.compiler.model.ProcessModel;
+import org.apache.ode.bpel.spi.BPELContext;
+
 public class BPELContextImpl implements BPELContext {
+
+	ProcessModel mainModel;
+
+	public void setMainModel(ProcessModel model) {
+		this.mainModel=model;
+	}
+
+	@Override
+	public ProcessModel mainModel() {
+		return mainModel;
+	}
 
 }

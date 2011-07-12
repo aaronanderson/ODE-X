@@ -16,33 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.repo;
+package org.apache.ode.bpel.compiler.model;
 
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.ode.spi.repo.ArtifactDataSource;
-import org.apache.ode.spi.repo.DependentArtifactDataSource;
+public class ExecutableProcessModel extends ProcessModel {
 
-public class DependentArtifactDataSourceImpl extends ArtifactDataSourceImpl implements DependentArtifactDataSource {
-
-	private Map<Object, ArtifactDataSource> dependencies = new HashMap<Object, ArtifactDataSource>();
-
-	@Override
-	public void configure(ArtifactDataSource dataSource) {
-		this.artifact = ((ArtifactDataSourceImpl) dataSource).artifact;
-
-	}
-
-	@Override
-	public <K> void addDependency(K mappedKey, ArtifactDataSource dataSource) {
-		dependencies.put(mappedKey, dataSource);
-
-	}
-
-	@Override
-	public <K> ArtifactDataSource getDependency(K mappedKey) {
-		return dependencies.get(mappedKey);
-	}
-
+	
 }

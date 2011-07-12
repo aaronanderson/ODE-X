@@ -18,23 +18,20 @@
  */
 package org.apache.ode.runtime.wsdl;
 
-import java.io.IOException;
-import java.util.logging.Level;
+import java.io.ByteArrayInputStream;
 import java.util.logging.Logger;
 
-import javax.activation.DataSource;
-
-import org.apache.ode.spi.repo.DependentArtifactDataSource;
+import org.apache.ode.runtime.xsd.XSDContextImpl;
 import org.xml.sax.InputSource;
 
-public class WSDLLocator implements javax.wsdl.xml.WSDLLocator {
-	DependentArtifactDataSource dataSource;
+public class WSDLLocatorImpl implements javax.wsdl.xml.WSDLLocator {
+	byte[] contents;
 	String lastResolved = null;
-	
-	private static final Logger log = Logger.getLogger(WSDLLocator.class.getName());
 
-	public WSDLLocator(DependentArtifactDataSource dataSource) {
-		this.dataSource = dataSource;
+	private static final Logger log = Logger.getLogger(WSDLLocatorImpl.class.getName());
+
+	public WSDLLocatorImpl(byte[] contents, WSDLContextImpl wsdls, XSDContextImpl xsds) {
+		this.contents = contents;
 	}
 
 	@Override
@@ -44,38 +41,34 @@ public class WSDLLocator implements javax.wsdl.xml.WSDLLocator {
 
 	@Override
 	public InputSource getBaseInputSource() {
-		try {
-			return new InputSource(dataSource.getInputStream());
-		} catch (IOException e) {
-			log.log(Level.SEVERE,"",e);
-			return null;
-		}
+		log.info("getBaseInputSource");
+		return new InputSource(new ByteArrayInputStream(contents));
 	}
 
 	@Override
 	public String getBaseURI() {
+		log.info("getBaseURI");
 		return null;
 	}
 
 	@Override
 	public InputSource getImportInputSource(String parentLocation, String importLocation) {
-		DataSource ds = dataSource.getDependency(importLocation);
-		if (ds != null) {
-			try {
-				InputSource source = new InputSource(ds.getInputStream());
-				lastResolved = importLocation;
-				return source;
-			} catch (IOException e) {
-				log.log(Level.SEVERE,"",e);
-				return null;
-			}
-		}
+		/*try {
+			//InputSource source = new InputSource(ds.getInputStream());
+			//lastResolved = importLocation;
+			//return source;
+		} catch (IOException e) {
+			log.log(Level.SEVERE,"",e);
+			return null;
+		}*/
+		log.info("getImportInputSource");
 		return null;
 
 	}
-	
+
 	@Override
 	public String getLatestImportURI() {
+		log.info("getLatestImportURI");
 		return lastResolved;
 	}
 

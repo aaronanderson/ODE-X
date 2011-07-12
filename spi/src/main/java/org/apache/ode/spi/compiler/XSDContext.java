@@ -18,8 +18,16 @@
  */
 package org.apache.ode.spi.compiler;
 
-public interface CompilerPass {
+import javax.xml.namespace.QName;
+
+import org.w3c.dom.Element;
+
+public interface XSDContext {
 	
-	void compile(CompilerContext ctx);
+	public static final String ID ="XMLSchemaContext";
+	
+	public QName declareXSD(Source src);
+	
+	public QName declareXSD(Element src);
 
 }

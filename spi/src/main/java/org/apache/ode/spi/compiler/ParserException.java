@@ -18,8 +18,15 @@
  */
 package org.apache.ode.spi.compiler;
 
-public interface CompilerPass {
-	
-	void compile(CompilerContext ctx);
+import org.apache.ode.spi.xml.HandlerException;
 
+public class ParserException extends HandlerException {
+
+	public ParserException(String msg) {
+		super(msg);
+	}
+
+	public ParserException(Exception e) {
+		super(e);
+	}
 }

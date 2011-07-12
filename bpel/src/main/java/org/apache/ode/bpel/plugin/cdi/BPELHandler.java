@@ -33,9 +33,9 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Singleton;
 
 import org.apache.ode.bpel.BPEL;
-import org.apache.ode.bpel.compiler.BPELContext;
 import org.apache.ode.bpel.compiler.BPELContextImpl;
 import org.apache.ode.bpel.exec.BPELComponent;
+import org.apache.ode.bpel.spi.BPELContext;
 import org.apache.ode.spi.cdi.Handler;
 
 public class BPELHandler extends Handler {

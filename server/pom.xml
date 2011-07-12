@@ -215,7 +215,7 @@
 				<parallel>classes</parallel>
 				-->
 					<argLine>-Djava.endorsed.dirs=${project.build.directory}${file.separator}endorsed -Dode.config=test</argLine>
-					
+
 				</configuration>
 			</plugin>
 			<plugin>

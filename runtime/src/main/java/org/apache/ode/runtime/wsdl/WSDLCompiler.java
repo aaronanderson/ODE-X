@@ -18,9 +18,12 @@
  */
 package org.apache.ode.runtime.wsdl;
 
+import java.util.logging.Logger;
+
 import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
 import javax.wsdl.xml.WSDLReader;
+import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.wsdl.xml.Configuration;
 import org.apache.ode.runtime.exec.wsdl.xml.ObjectFactory;
@@ -30,32 +33,42 @@ import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.compiler.WSDLContext;
+import org.apache.ode.spi.compiler.XSDContext;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.Installation;
 import org.apache.ode.spi.exec.xml.InstructionSets;
 
 public class WSDLCompiler implements CompilerPass {
+	WSDLContext wsdlCtx;
+	XSDContext xsdContext;
+	QName wsdlQName;
+	Definition wsdlDefinition;
+
+	private static final Logger log = Logger.getLogger(WSDLCompiler.class.getName());
 
 	@Override
-	public void compile(CompilerPhase phase, CompilerContext ctx, Source artifact) {
-		if (artifact.sourceType() == SourceType.MAIN) {
-			ctx.addError("WSDL is not a supported target executable", null);
+	public void compile(CompilerContext ctx) {
+		if (ctx.source().sourceType() == SourceType.MAIN) {
+			ctx.addError(null,"WSDL is not a supported target executable", null);
 			ctx.terminate();
 			return;
 		}
-		WSDLContext wsdlCtx = (WSDLContext) ctx.getSubContext(WSDLContext.ID);
 
-		switch (phase) {
+		switch (ctx.phase()) {
 		case INITIALIZE:
+			wsdlCtx = (WSDLContext) ctx.subContext(WSDLContext.ID);
+			xsdContext = (XSDContext) ctx.subContext(XSDContext.ID);
+			wsdlQName = wsdlCtx.declareWSDL(ctx.source());
 			wsdlCtx.getExtensionRegistry();
 			break;
 
 		case DISCOVERY:
-			WSDLReader reader = wsdlCtx.getWSDLReader();
+			WSDLReader reader = wsdlCtx.createWSDLReader();
 			try {
-				Definition definition = reader.readWSDL(wsdlCtx.getWSDLLocator(artifact.getContent()));
+				wsdlDefinition = reader.readWSDL(wsdlCtx.getWSDLLocator(wsdlQName, xsdContext));
+				//log.info("got definition "+wsdlDefinition);
 			} catch (WSDLException we) {
-				ctx.addError(String.format("failed to read WSDL %s", artifact), we);
+				ctx.addError(null,String.format("failed to read WSDL %s", ctx.source()), we);
 			}
 			// QName schemaLocation = (QName) definition.getExtensionAttribute(SCHEMA_LOCATION);
 			break;

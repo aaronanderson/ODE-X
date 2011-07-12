@@ -16,10 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.bpel.compiler.model;
 
-public interface CompilerPass {
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.ode.bpel.exec.xml.Process;
+
+public class ProcessModel extends ActivityModel {
+
+	final Process process;
+	List<Import> imports = new ArrayList<Import>();
 	
-	void compile(CompilerContext ctx);
+	public ProcessModel(){
+		process = new Process();
+		block.getBody().add(process);
+	}
+	
+	public Process getProcess(){
+		return process;
+	}
+
+	public static class Import {
+
+	}
+
+	public static class PartnerLink {
+
+	}
 
 }

@@ -18,22 +18,26 @@
  */
 package org.apache.ode.bpel.tests;
 
+import static org.apache.ode.spi.repo.DataContentHandler.readStream;
+
+import org.apache.ode.api.BuildSystem;
+import org.apache.ode.api.Repository;
+import org.apache.ode.api.Repository.ArtifactId;
 import org.apache.ode.bpel.plugin.cdi.BPELHandler;
 import org.apache.ode.server.Server;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
 import org.apache.ode.server.cdi.StaticHandler;
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class CompilerTest {
 	
 	private static Server server;
+	private static BuildSystem buildSystem;
+	private static Repository repo;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -45,6 +49,8 @@ public class CompilerTest {
 		
 		server = new Server();
 		server.start();
+		buildSystem = server.getBeanInstance(BuildSystem.class);
+		repo = server.getBeanInstance(Repository.class);
 	}
 
 	@AfterClass
@@ -54,7 +60,9 @@ public class CompilerTest {
 
 	@Test
 	public void testCompileHelloWorld() throws Exception {
-		
+		repo.importArtifact(new ArtifactId("{http://ode/bpel/unit-test.wsdl}HelloService", null, null), "HelloWorld.wsdl", true, true, readStream(Thread.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.wsdl")));
+		repo.importArtifact(new ArtifactId("{http://ode/bpel/unit-test}HelloWorld", null, null), "HelloWorld.bpel", true, true, readStream(Thread.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.bpel")));
+		buildSystem.build(readStream(Thread.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.build")));
 	}
 
 }

@@ -20,72 +20,151 @@ package org.apache.ode.runtime.build;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.xml.bind.Binder;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
+import org.apache.ode.runtime.build.SourceImpl.InlineSourceImpl;
 import org.apache.ode.spi.compiler.CompilerContext;
+import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.InlineSource;
+import org.apache.ode.spi.compiler.Location;
+import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.compiler.Source;
+import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.xml.HandlerRegistry;
 import org.w3c.dom.Node;
 
 public class CompilerContextImpl implements CompilerContext {
 
-	private Executable executable;
-	private Binder<Node> binder;
-	private Map<String, Object> subContext;
-	boolean terminated;
-	private StringBuilder messages;
+	private Source src;
+	private CompilerPhase phase;
+	private HandlerRegistry<CompilerContext> registry;
+	private Compilation state;
 
-	public CompilerContextImpl(Executable executable, Binder<Node> binder, Map<String, Object> subContext) {
-		this.executable = executable;
-		this.binder = binder;
-		this.subContext = subContext;
-		terminated = false;
-		messages = new StringBuilder();
+	public CompilerContextImpl(Source src, Compilation state) {
+		this.src = src;
+		this.phase = CompilerPhase.INITIALIZE;
+		this.registry = state.getCompilers().get(src.getContentType()).getParserRegistry();
+		this.state = state;
 
 	}
 
 	@Override
-	public <C> C getSubContext(String id) {
-		return (C) subContext.get(id);
+	public CompilerPhase phase() {
+		return phase;
+	}
+
+	public void setPhase(CompilerPhase phase) {
+		this.phase = phase;
+	}
+
+	@Override
+	public Source source() {
+		return src;
+	}
+
+	String getContentType() {
+		if (src.sourceType() == SourceType.INLINE) {
+			return ((InlineSource) src).inlineContentType();
+		}
+		return src.getContentType();
+	}
+
+	@Override
+	public <C> C subContext(String id) {
+		return (C) state.getSubContext().get(id);
 	}
 
 	@Override
 	public Executable executable() {
-		return executable;
+		return state.getExecutable();
 	}
 
 	@Override
 	public Binder<Node> executableBinder() {
-		return binder;
+		return state.getBinder();
 	}
 
 	@Override
-	public void addWarning(String msg, Throwable t) {
-		messages.append("warning: ");
+	public ReadWriteLock executableLock() {
+		return state.getExecutableLock();
+	}
+
+	@Override
+	public void addWarning(Location location, String msg, Throwable t) {
+		log("warning", location, msg, t);
+	}
+
+	void log(String type, Location location, String msg, Throwable t) {
+		StringBuilder messages = new StringBuilder();
+		messages.append(type);
+		messages.append(": Source ");
+		messages.append(src.getQName());
+		messages.append(":");
+		messages.append(src.getContentType());
+		messages.append(" ");
+		if (location != null) {
+			messages.append("[");
+			messages.append(location.getLine());
+			messages.append(",");
+			messages.append(location.getColumn());
+			messages.append("] ");
+		}
 		messages.append(msg);
-		StringWriter sw = new StringWriter();
-		t.printStackTrace(new PrintWriter(sw));
-		messages.append(sw.toString());
+		if (t != null) {
+			StringWriter sw = new StringWriter();
+			t.printStackTrace(new PrintWriter(sw));
+			messages.append(sw.toString());
+		}
+		messages.append("\n");
+		state.getLogLock().lock();
+		try {
+			state.getMessages().append(messages);
+		} finally {
+			state.getLogLock().unlock();
+		}
 
 	}
 
 	@Override
-	public void addError(String msg, Throwable t) {
-		messages.append("error: ");
-		messages.append(msg);
-		StringWriter sw = new StringWriter();
-		t.printStackTrace(new PrintWriter(sw));
-		messages.append(sw.toString());
-	}
-
-	public StringBuilder getMessages() {
-		return messages;
+	public void addError(Location location, String msg, Throwable t) {
+		log("error", location, msg, t);
 	}
 
 	@Override
 	public void terminate() {
-		terminated = true;
+		state.setTerminated(true);
+	}
+
+	@Override
+	public void declareSource(String contentType, Location start, Location end) {
+		if (CompilerPhase.DISCOVERY != phase) {
+			addError(null, "Sources may only be added during the discovery phase", null);
+			terminate();
+			return;
+		}
+		state.getAddedSources().add(new InlineSourceImpl(src, contentType, start, end));
+
+	}
+
+	@Override
+	public <N> void parseContent(XMLStreamReader input, N subModel) throws XMLStreamException, ParserException {
+		if (input.getEventType() != XMLStreamConstants.START_ELEMENT) {
+			throw new ParserException("invalid state");
+		}
+		Parser<N> handler = (Parser<N>) registry.retrieve(input.getName(), subModel != null ? subModel.getClass() : null);
+		if (handler != null) {
+			handler.parse(input, subModel, this);
+		} else {
+			throw new ParserException(String.format("Unable to locate handler for %s", input.getName()));
+
+		}
 	}
 
 }

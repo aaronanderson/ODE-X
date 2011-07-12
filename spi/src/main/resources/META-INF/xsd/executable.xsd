@@ -66,14 +66,15 @@
 	</complexType>
 
 
-	<complexType name="sourceRef" abstract="true">
+	<complexType name="sourceRefType" abstract="true">
 		<attribute name="sref" type="IDREF" use="required" />
-		<attribute name="line" type="integer" use="required" />
+		<attribute name="line" type="int" use="required" />
+		<attribute name="column" type="int" use="required" />
 	</complexType>
 
 	<complexType name="instructionType" abstract="true">
 		<complexContent>
-			<extension base="tns:sourceRef" />
+			<extension base="tns:sourceRefType" />
 		</complexContent>
 	</complexType>
 
@@ -86,7 +87,7 @@
 
 	<complexType name="invocationType" abstract="true">
 		<complexContent>
-			<extension base="tns:sourceRef">
+			<extension base="tns:sourceRefType">
 				<attribute name="save" type="boolean" use="optional"
 					default="true" />
 				<attribute name="mode" type="tns:syncMode" use="optional"

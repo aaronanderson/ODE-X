@@ -20,11 +20,14 @@ package org.apache.ode.spi.compiler;
 
 import org.apache.ode.spi.repo.Artifact;
 
-public interface Source extends Artifact{
-	
+public interface Source extends Artifact {
+
 	SourceType sourceType();
+                                          
 	
-	public static enum SourceType{
-		MAIN, INCLUDE
+	public static enum SourceType {
+		MAIN, INCLUDE, INLINE;
 	}
+
+	
 }

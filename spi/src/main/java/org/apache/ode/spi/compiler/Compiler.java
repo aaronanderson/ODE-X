@@ -21,9 +21,20 @@ package org.apache.ode.spi.compiler;
 import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.xml.ElementHandler;
+import org.apache.ode.spi.xml.HandlerRegistry;
+
+/**
+ * Represents a singleton compiler definition for a given contentType
+ * 
+ */
 public interface Compiler {
 
 	void addCompilerPass(CompilerPhase phase, CompilerPass compilerPasses);
+
 	<C> void addSubContext(String id, Provider<C> type);
+
 	void addInstructionSet(QName instructionSet);
+
+	public <M> void addContentParser(QName qname, Class<M> clazz, Parser<M> parser);
 }

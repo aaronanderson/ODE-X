@@ -18,10 +18,11 @@
  */
 package org.apache.ode.spi.xml;
 
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-public interface ElementHandler<M,C> {
-	
-	void process (XMLStreamReader input, M model, C context);
-	
+public interface ElementHandler<M, C> {
+
+	void parse(XMLStreamReader input, M model, C context) throws XMLStreamException, HandlerException;
+
 }

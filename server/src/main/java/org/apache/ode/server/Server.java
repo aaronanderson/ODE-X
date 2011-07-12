@@ -20,11 +20,16 @@ package org.apache.ode.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.util.AnnotationLiteral;
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
@@ -38,6 +43,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
 import org.apache.ode.server.xml.ServerConfig;
+import org.apache.ode.spi.repo.Repository;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 
@@ -177,12 +183,23 @@ public class Server {
 		 */
 
 	}
-	
-	public BeanManager getBeanManager(){
+
+	public BeanManager getBeanManager() {
 		return container.getBeanManager();
 	}
-	
-	public Event<Object> createEvent(){
+
+	public <C> C getBeanInstance(Class<C> clazz) {
+		Set<Bean<?>> beans = container.getBeanManager().getBeans(clazz, new AnnotationLiteral<Any>() {
+		});
+		if (beans.size() > 0) {
+			Bean<C> bean = (Bean<C>) beans.iterator().next();
+			CreationalContext<C> ctx = container.getBeanManager().createCreationalContext(bean);
+			return (C) container.getBeanManager().getReference(bean, clazz, ctx);
+		}
+		return null;
+	}
+
+	public Event<Object> createEvent() {
 		return container.event();
 	}
 

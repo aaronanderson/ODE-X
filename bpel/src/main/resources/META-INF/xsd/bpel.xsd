@@ -10,13 +10,13 @@
 	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
-<schema targetNamespace="http://ode.apache.org/bpel"
-	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
+<schema targetNamespace="http://ode.apache.org/bpel" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:exec="http://ode.apache.org/executable" xmlns:tns="http://ode.apache.org/bpel">
 
 	<import namespace="http://ode.apache.org/executable" />
 
-	<complexType name="processType">
+	<element name="process">
+		<complexType>
 		<complexContent>
 			<extension base="exec:instructionType">
 				<attribute name="name" type="string" use="required" />
@@ -24,8 +24,95 @@
 				<attribute name="expressionLanguage" type="string" use="optional" />
 			</extension>
 		</complexContent>
-	</complexType>
-	
-	<element name="process" type="tns:processType" />
+		</complexType>
+	</element>
+
+	<element name="partnerLinksType">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="partnerLink">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="variables">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="variable">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="sequence">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="receive">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="assign">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="copy">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="to">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="from">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="reply">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
 
 </schema>

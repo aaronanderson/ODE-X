@@ -24,58 +24,54 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.activation.ActivationDataFlavor;
 import javax.activation.DataSource;
 import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
 import javax.wsdl.factory.WSDLFactory;
+import javax.wsdl.xml.WSDLLocator;
 import javax.wsdl.xml.WSDLReader;
 import javax.wsdl.xml.WSDLWriter;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.ode.spi.repo.DependentArtifactDataSource;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 
 public class WSDLDataContentHandler extends XMLDataContentHandler {
 
 	public static final ActivationDataFlavor WSDL_FLAVOR = new ActivationDataFlavor(Definition.class, "application/wsdl; x-java-class=WSDL4J", "WSDL");
 
+	private static final Logger log = Logger.getLogger(WSDLDataContentHandler.class.getName());
+	
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
-		if (dataSource instanceof DependentArtifactDataSource) {
-			try {
-				WSDLFactory factory = WSDLFactory.newInstance();
-				WSDLReader reader = factory.newWSDLReader();
-				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource) dataSource));
-			} catch (WSDLException je) {
-				throw new IOException(je);
-			}
+		try {
+			WSDLFactory factory = WSDLFactory.newInstance();
+			WSDLReader reader = factory.newWSDLReader();
+			return reader.readWSDL(new DSWSDLLocatorImpl(dataSource));
+		} catch (WSDLException je) {
+			throw new IOException(je);
 		}
-		throw new IOException("Unable to process WSDL without dependencies");
-
 	}
 
 	@Override
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
 		if (Definition.class.equals(flavor.getDefaultRepresentationClass())) {
-			if (!(dataSource instanceof DependentArtifactDataSource)) {
-				throw new IOException("Unable to process WSDL without dependencies");
-			}
 			try {
 				WSDLFactory factory = WSDLFactory.newInstance();
 				WSDLReader reader = factory.newWSDLReader();
-				return reader.readWSDL(new WSDLLocator((DependentArtifactDataSource) dataSource));
+				return reader.readWSDL(new DSWSDLLocatorImpl(dataSource));
 			} catch (WSDLException je) {
 				throw new IOException(je);
 			}
@@ -118,20 +114,20 @@ public class WSDLDataContentHandler extends XMLDataContentHandler {
 			XPathFactory xfactory = XPathFactory.newInstance();
 			XPath xpath = xfactory.newXPath();
 			xpath.setNamespaceContext(new NamespaceContext() {
-				
+
 				@Override
 				public Iterator getPrefixes(String namespaceURI) {
 					return null;
 				}
-				
+
 				@Override
 				public String getPrefix(String namespaceURI) {
 					return null;
 				}
-				
+
 				@Override
 				public String getNamespaceURI(String prefix) {
-					if ("wsdl".equals(prefix)){
+					if ("wsdl".equals(prefix)) {
 						return "http://schemas.xmlsoap.org/wsdl/";
 					}
 					return null;
@@ -146,6 +142,47 @@ public class WSDLDataContentHandler extends XMLDataContentHandler {
 		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	class DSWSDLLocatorImpl implements WSDLLocator {
+		DataSource dataSource;
+		String lastResolved = null;
+
+		public DSWSDLLocatorImpl(DataSource dataSource) {
+			this.dataSource = dataSource;
+		}
+
+		@Override
+		public void close() {
+
+		}
+
+		@Override
+		public InputSource getBaseInputSource() {
+			try {
+				return new InputSource(dataSource.getInputStream());
+			} catch (IOException e) {
+				log.log(Level.SEVERE, "", e);
+				return null;
+			}
+		}
+
+		@Override
+		public String getBaseURI() {
+			return null;
+		}
+
+		@Override
+		public InputSource getImportInputSource(String parentLocation, String importLocation) {
+			return null;
+
+		}
+
+		@Override
+		public String getLatestImportURI() {
+			return lastResolved;
+		}
+
 	}
 
 }

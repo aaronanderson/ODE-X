@@ -16,11 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.bpel.compiler.model;
 
-public interface XMLSchemaContext {
-	
-	public static final String ID ="XMLSchemaContext";
-	
+import org.apache.ode.spi.exec.xml.Block;
+
+public class ActivityModel {
+
+	Block block = new Block();
+
+	public Block getBlock() {
+		return block;
+	}
 
 }

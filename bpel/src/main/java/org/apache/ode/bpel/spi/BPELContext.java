@@ -16,10 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.bpel.spi;
 
-public interface CompilerPass {
+import org.apache.ode.bpel.compiler.model.ProcessModel;
+
+public interface BPELContext {
 	
-	void compile(CompilerContext ctx);
-
+   public static final String ID ="BPELContext";
+   
+   ProcessModel mainModel();
 }

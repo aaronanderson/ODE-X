@@ -18,8 +18,14 @@
  */
 package org.apache.ode.spi.compiler;
 
-public interface CompilerPass {
-	
-	void compile(CompilerContext ctx);
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
+import org.apache.ode.spi.xml.ElementHandler;
+
+public interface Parser<M> extends ElementHandler<M, CompilerContext> {
+
+	@Override
+	void parse(XMLStreamReader input, M model, CompilerContext context) throws XMLStreamException, ParserException;
 
 }

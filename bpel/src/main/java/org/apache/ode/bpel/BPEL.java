@@ -34,14 +34,17 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.ode.bpel.compiler.BPELContext;
 import org.apache.ode.bpel.compiler.DiscoveryPass;
+import org.apache.ode.bpel.compiler.EmitPass;
+import org.apache.ode.bpel.compiler.model.ExecutableProcessModel;
+import org.apache.ode.bpel.compiler.parser.ExecutableProcessParser;
 import org.apache.ode.bpel.exec.BPELComponent;
+import org.apache.ode.bpel.spi.BPELContext;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XMLSchemaContext;
+import org.apache.ode.spi.compiler.XSDContext;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.WSDLComponent;
 import org.apache.ode.spi.repo.Repository;
@@ -73,10 +76,10 @@ public class BPEL {
 	@Inject
 	Provider<BPELContext> ctxProvider;
 	@Inject
-	Provider<XMLSchemaContext> schemaProvider;
+	Provider<XSDContext> schemaProvider;
 	@Inject
 	Provider<WSDLContext> wsdlProvider;
-
+	
 	@PostConstruct
 	public void init() {
 		log.fine("Initializing BPELPlugin");
@@ -133,11 +136,12 @@ public class BPEL {
 		Compiler bpelCompiler = compilers.newInstance();
 		bpelCompiler.addInstructionSet(bpelComponent.instructionSets().get(0).getName());
 		bpelCompiler.addInstructionSet(WSDLComponent.WSDL_INSTRUCTION_SET);
-		bpelCompiler.addSubContext(XMLSchemaContext.ID, schemaProvider);
+		bpelCompiler.addSubContext(XSDContext.ID, schemaProvider);
 		bpelCompiler.addSubContext(WSDLContext.ID, wsdlProvider);
 		bpelCompiler.addSubContext(BPELContext.ID, ctxProvider);
+		bpelCompiler.addCompilerPass(CompilerPhase.INITIALIZE, new DiscoveryPass());
 		bpelCompiler.addCompilerPass(CompilerPhase.DISCOVERY, new DiscoveryPass());
-		bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
+		bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new EmitPass());
 		// bpelCompiler.addCompilerPass(CompilerPhase.LINK, new
 		// DiscoveryPass());
 		// bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new
@@ -149,7 +153,9 @@ public class BPEL {
 		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new
 		// DiscoveryPass());
 		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
-
+		
+		
+		bpelCompiler.addContentParser(ExecutableProcessParser.EXECUTABLE, ExecutableProcessModel.class, new ExecutableProcessParser());
 		log.fine("BPELPlugin Initialized");
 
 	}

@@ -30,14 +30,19 @@ import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.compiler.Compiler;
+import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.xml.ElementHandler;
+import org.apache.ode.spi.xml.HandlerRegistry;
 
 public class CompilerImpl implements Compiler {
 
 	private Map<CompilerPhase, List<CompilerPass>> passes = new ConcurrentHashMap<CompilerPhase, List<CompilerPass>>();
 	private Map<String, Provider<?>> contexts = new ConcurrentHashMap<String, Provider<?>>();
 	private Set<QName> instructionSets = new CopyOnWriteArraySet<QName>();
+	private HandlerRegistry<CompilerContext> registry = new HandlerRegistry<CompilerContext>();
 
 	@Override
 	public void addCompilerPass(CompilerPhase phase, CompilerPass pass) {
@@ -73,6 +78,15 @@ public class CompilerImpl implements Compiler {
 
 	public Set<QName> getInstructionSets() {
 		return instructionSets;
+	}
+
+	@Override
+	public <M> void addContentParser(QName qname, Class<M> clazz, Parser<M> parser) {
+		registry.register(qname, clazz, (ElementHandler<M, CompilerContext>) parser);
+	}
+
+	HandlerRegistry<CompilerContext> getParserRegistry() {
+		return registry;
 	}
 
 }

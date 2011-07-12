@@ -20,6 +20,8 @@ package org.apache.ode.runtime.build;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.compiler.InlineSource;
+import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source;
 
 public class SourceImpl implements Source {
@@ -73,5 +75,35 @@ public class SourceImpl implements Source {
 	@Override
 	public String toString() {
 		return String.format("QName: %s ContentType: %s Version: %s", qname, contentType, version);
+	}
+
+	public static class InlineSourceImpl extends SourceImpl implements InlineSource {
+
+		String inlineContentType;
+		Location start;
+		Location end;
+
+		public InlineSourceImpl(Source parent, String inlineCT, Location start, Location end) {
+			super(parent.getQName(), parent.getContentType(), parent.getVersion(), parent.getCheckSum(), parent.getContent(), SourceType.INLINE);
+			this.inlineContentType = inlineCT;
+			this.start = start;
+			this.end = end;
+		}
+
+		@Override
+		public String inlineContentType() {
+			return inlineContentType;
+		}
+
+		@Override
+		public Location start() {
+			return start;
+		}
+
+		@Override
+		public Location end() {
+			return end;
+		}
+
 	}
 }

@@ -24,9 +24,11 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.wsdl.WSDLException;
 import javax.wsdl.factory.WSDLFactory;
+import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XMLSchemaContext;
+import org.apache.ode.spi.compiler.XSDContext;
 import org.apache.ws.commons.schema.XmlSchemaCollection;
 import org.apache.ws.commons.schema.XmlSchemaComplexType;
 import org.apache.ws.commons.schema.XmlSchemaElement;
@@ -34,12 +36,13 @@ import org.apache.ws.commons.schema.XmlSchemaObject;
 import org.apache.ws.commons.schema.XmlSchemaSequence;
 import org.apache.ws.commons.schema.XmlSchemaSimpleType;
 import org.apache.ws.commons.schema.XmlSchemaType;
+import org.w3c.dom.Element;
 
-public class XMLSchemaContextImpl implements XMLSchemaContext {
+public class XSDContextImpl implements XSDContext {
 	
 	private SchemaResolver resolver;
 	
-	private static final Logger log = Logger.getLogger(XMLSchemaContext.class.getName());
+	private static final Logger log = Logger.getLogger(XSDContext.class.getName());
 	
 	@PostConstruct
 	void init() {
@@ -50,6 +53,18 @@ public class XMLSchemaContextImpl implements XMLSchemaContext {
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "", e);
 		}
+	}
+
+	@Override
+	public QName declareXSD(Source src) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public QName declareXSD(Element src) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

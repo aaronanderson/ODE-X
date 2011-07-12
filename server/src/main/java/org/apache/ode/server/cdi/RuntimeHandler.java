@@ -38,7 +38,7 @@ import javax.management.ObjectName;
 import org.apache.ode.runtime.build.BuildExecutor;
 import org.apache.ode.runtime.build.BuildSystem;
 import org.apache.ode.runtime.build.CompilersImpl;
-import org.apache.ode.runtime.xsd.XMLSchemaContextImpl;
+import org.apache.ode.runtime.xsd.XSDContextImpl;
 import org.apache.ode.runtime.exec.Exec;
 import org.apache.ode.runtime.exec.platform.ActionExecutor;
 import org.apache.ode.runtime.exec.platform.ActionPoll;
@@ -90,7 +90,7 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(BuildExecutor.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(CompilersImpl.class));
 		// bbd.addAnnotatedType(bm.createAnnotatedType(CompilerProducer.class));
-		bbd.addAnnotatedType(bm.createAnnotatedType(XMLSchemaContextImpl.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(XSDContextImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLContextImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLComponentImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(Exec.class));

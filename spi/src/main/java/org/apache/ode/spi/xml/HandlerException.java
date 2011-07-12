@@ -16,20 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.repo;
+package org.apache.ode.spi.xml;
 
-/**
- * 
- * Represents a DataSource that is dependent upon other DataSources in order to
- * read/write to it.
- * 
- */
-public interface DependentArtifactDataSource extends ArtifactDataSource {
+public class HandlerException extends Exception {
 
-	public void configure(ArtifactDataSource dataSource);
+	public HandlerException(String msg) {
+		super(msg);
+	}
 
-	public <K> void addDependency(K mappedKey, ArtifactDataSource dataSource);
-
-	public <K> ArtifactDataSource getDependency(K mappedKey);
-
+	public HandlerException(Exception e) {
+		super(e);
+	}
 }

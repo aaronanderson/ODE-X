@@ -18,18 +18,47 @@
  */
 package org.apache.ode.spi.compiler;
 
+import java.util.concurrent.locks.ReadWriteLock;
+
 import javax.xml.bind.Binder;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.spi.exec.xml.Executable;
 import org.w3c.dom.Node;
 
+/**
+ * Defines contextual compilation operations For a specific content type compiler instance.
+ * 
+ */
 public interface CompilerContext {
-	
-	<C> C getSubContext(String id);
-    Executable executable();
-    Binder<Node> executableBinder();
-    void addWarning(String msg, Throwable t);
-    void addError(String msg, Throwable t);
-    void terminate();
-    
+
+	CompilerPhase phase();
+
+	Source source();
+
+	/**
+	 * Generic context shared amongst compiler instances participating in group compilation
+	 * 
+	 * @param id
+	 * @return
+	 */
+	<C> C subContext(String id);
+
+	Executable executable();
+
+	Binder<Node> executableBinder();
+
+	ReadWriteLock executableLock();
+
+	void addWarning(Location location, String msg, Throwable t);
+
+	void addError(Location location, String msg, Throwable t);
+
+	void declareSource(String contentType, Location start, Location end);
+
+	public <N> void parseContent(XMLStreamReader input, N subModel) throws XMLStreamException, ParserException;
+
+	void terminate();
+
 }

@@ -20,7 +20,6 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-bpel</artifactId>
 	<name>ODE BPEL</name>
 	<description>ODE BPEL.</description>

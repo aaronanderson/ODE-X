@@ -18,8 +18,24 @@
  */
 package org.apache.ode.bpel.compiler;
 
-public interface BPELContext {
+import org.apache.ode.bpel.spi.BPELContext;
+import org.apache.ode.spi.compiler.CompilerContext;
+import org.apache.ode.spi.compiler.CompilerPass;
+import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.Source;
+
+
+
+public class InitPass implements CompilerPass{
 	
-   public static final String ID ="BPELContext";
+	@Override
+	public void compile(CompilerContext ctx){
+		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID);
+		switch (ctx.phase()){
+		case INITIALIZE:
+			
+			break;
+		}
+	}
 
 }
