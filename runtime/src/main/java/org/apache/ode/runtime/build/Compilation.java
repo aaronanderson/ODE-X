@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -13,13 +14,13 @@ import javax.xml.bind.Binder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.runtime.build.SourceImpl.InlineSourceImpl;
 import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.w3c.dom.Node;
 
 public class Compilation {
+	private AtomicInteger srcIdCounter=new AtomicInteger();
 	private Executable executable;
 	private Binder<Node> binder;
 	private final Set<String> jaxbContexts = new HashSet<String>();
@@ -28,11 +29,15 @@ public class Compilation {
 	boolean terminated = false;
 	private final StringBuilder messages = new StringBuilder();
 	private final ReentrantLock logLock = new ReentrantLock();
-	private final Queue<InlineSource> addedSources = new ConcurrentLinkedQueue<InlineSource>();
+	private final Queue<InlineSourceImpl> addedSources = new ConcurrentLinkedQueue<InlineSourceImpl>();
 	private final Map<String, CompilerImpl> compilers = new HashMap<String, CompilerImpl>();
 	private JAXBContext jaxbContext;
 	JAXBElement<Executable> execBase;
 
+	public String nextSrcId() {
+		return "s"+srcIdCounter.getAndIncrement();
+	}
+	
 	public Executable getExecutable() {
 		return executable;
 	}
@@ -73,7 +78,7 @@ public class Compilation {
 		return logLock;
 	}
 
-	public Queue<InlineSource> getAddedSources() {
+	public Queue<InlineSourceImpl> getAddedSources() {
 		return addedSources;
 	}
 

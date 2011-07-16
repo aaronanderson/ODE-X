@@ -18,7 +18,7 @@
 	<element name="process">
 		<complexType>
 		<complexContent>
-			<extension base="exec:instructionType">
+			<extension base="exec:contextType">
 				<attribute name="name" type="string" use="required" />
 				<attribute name="queryLanguage" type="string" use="optional" />
 				<attribute name="expressionLanguage" type="string" use="optional" />

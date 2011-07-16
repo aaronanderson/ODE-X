@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://ode.apache.org/server"
-	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
+<schema targetNamespace="http://ode.apache.org/server" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:tns="http://ode.apache.org/server">
 
 	<complexType name="serverType">
 		<sequence>
-			<element name="handlers" type="tns:handlersType" minOccurs="0"
-				maxOccurs="1" />
-			<element name="datasources" type="tns:dataSourceType"
-				minOccurs="0" maxOccurs="unbounded" />
+			<element name="handlers" type="tns:handlersType" minOccurs="0" maxOccurs="1" />
+			<element name="action-execution" type="tns:actionExecutionType" minOccurs="0" maxOccurs="1" />
+			<element name="datasources" type="tns:dataSourceType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="jmxURL" type="string" />
 		<attribute name="host" type="string" default="localhost" />
@@ -19,13 +17,19 @@
 		<attribute name="maxThreads" type="integer" default="10" />
 		<attribute name="queueSize" type="integer" default="100" />
 		<attribute name="nodeId" type="string" />
-		<attribute name="clusterId" type="string" default="default_cluster"/>
+		<attribute name="clusterId" type="string" default="default_cluster" />
+	</complexType>
+
+	<complexType name="actionExecutionType">
+		<attribute name="queue-size" type="int" default="100" />
+		<attribute name="max-threads" type="int" default="20" />
+		<attribute name="thread-timeout" type="int" default="30" />
+		<attribute name="shutdown-wait-time" type="int" default="30" />
 	</complexType>
 
 	<complexType name="dataSourceType">
 		<sequence>
-			<element name="pool-class" type="string" minOccurs="1"
-				maxOccurs="1" />
+			<element name="pool-class" type="string" minOccurs="1" maxOccurs="1" />
 			<element name="url" type="string" minOccurs="1" maxOccurs="1" />
 		</sequence>
 		<attribute name="jndi-name" type="string" />
@@ -33,8 +37,7 @@
 
 	<complexType name="handlersType">
 		<sequence>
-			<element name="handler-class" type="string" minOccurs="0"
-				maxOccurs="unbounded" />
+			<element name="handler-class" type="string" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 

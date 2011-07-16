@@ -18,6 +18,7 @@
   ~ under the License.
   -->
   <server xmlns="http://ode.apache.org/server" nodeId="testNode1" clusterId="test-cluster">
+  <action-execution queue-size="100" max-threads="20" thread-timeout="10" shutdown-wait-time="10" />
   <handlers>
   <handler-class>org.apache.ode.server.cdi.StaticHandler</handler-class>
   </handlers>

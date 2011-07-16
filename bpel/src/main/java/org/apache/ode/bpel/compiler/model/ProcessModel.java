@@ -25,16 +25,21 @@ import org.apache.ode.bpel.exec.xml.Process;
 
 public class ProcessModel extends ActivityModel {
 
-	final Process process;
+	final Process startProcess;
+	final Process endProcess;
 	List<Import> imports = new ArrayList<Import>();
-	
-	public ProcessModel(){
-		process = new Process();
-		block.getBody().add(process);
+
+	public ProcessModel() {
+		startProcess = new Process();
+		endProcess = new Process();
 	}
-	
-	public Process getProcess(){
-		return process;
+
+	public Process getStartProcess() {
+		return startProcess;
+	}
+
+	public Process getEndProcess() {
+		return endProcess;
 	}
 
 	public static class Import {

@@ -44,6 +44,8 @@ public class BuildSystem {
 	Repository repository;
 	@Inject
 	Provider<BuildExecutor> buildProvider;
+	@Inject
+	Provider<DumpSources> dumpProvider;
 	
 	private static final Logger log = Logger.getLogger(BuildSystem.class.getName());
 
@@ -53,7 +55,8 @@ public class BuildSystem {
 		log.fine("Initializing BuildSystem");
 		repository.registerFileExtension("build", BUILDPLAN_MIMETYPE);
 		repository.registerFileExtension(BUILDPLAN_NAMESPACE, BUILDPLAN_MIMETYPE);
-		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, "build", true, buildProvider);
+		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, BuildExecutor.BUILD_CMD, true, buildProvider);
+		repository.registerCommandInfo(BUILDPLAN_MIMETYPE, DumpSources.DUMPSRC_CMD, true, dumpProvider);
 		try {
 			JAXBContext jc = JAXBContext.newInstance("org.apache.ode.runtime.build.xml");
 			repository.registerHandler(BUILDPLAN_MIMETYPE, new JAXBDataContentHandler(jc) {

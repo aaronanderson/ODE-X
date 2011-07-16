@@ -25,16 +25,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -51,7 +47,6 @@ import javax.persistence.PersistenceUnit;
 import javax.persistence.RollbackException;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.runtime.exec.cluster.xml.ActionExecution;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask;
@@ -62,6 +57,7 @@ import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogType;
 import org.apache.ode.spi.exec.ActionTask.ActionState;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.MasterActionTask.MasterActionContext;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.Platform.PlatformAction;
@@ -80,13 +76,15 @@ public class ActionExecutor {
 	@Inject
 	Provider<InstallSlaveAction> installSlaveActionProvider;
 
+	@Inject
+	Executors executors;
+
 	Map<QName, ActionEntry> actions = new HashMap<QName, ActionEntry>();
 
 	ConcurrentHashMap<Long, ActionRunnable> executingTasks = new ConcurrentHashMap<Long, ActionRunnable>();
 
 	private String nodeId;
-	private ActionExecution config;
-	private ThreadPoolExecutor exec;
+	private ExecutorService exec;
 
 	private static final Logger log = Logger.getLogger(ActionExecutor.class.getName());
 
@@ -97,40 +95,16 @@ public class ActionExecutor {
 
 	}
 
-	public void online() {
-		BlockingQueue<Runnable> actionQueue = new ArrayBlockingQueue<Runnable>(config.getQueueSize());
-		RejectedActionExecution rejectionHandler = new RejectedActionExecution();
-		exec = new ThreadPoolExecutor(config.getMaxThreads(), config.getMaxThreads(), config.getThreadTimeout(), TimeUnit.SECONDS, actionQueue,
-				new ThreadFactory() {
-
-					private final ThreadFactory factory = Executors.defaultThreadFactory();
-					private long id = 0;
-
-					@Override
-					public Thread newThread(Runnable r) {
-						Thread t = factory.newThread(r);
-						t.setName("ODE-X Cluster Action Executor - " + ++id);
-						t.setDaemon(true);
-						return t;
-					}
-				}, rejectionHandler);
-		exec.allowCoreThreadTimeOut(true);
+	public void online() throws PlatformException {
+		exec = executors.onlineClusterActionExecutor(new RejectedActionExecution());
 	}
 
 	public void offline() throws PlatformException {
-		if (exec != null) {
-			exec.shutdown();
-			try {
-				exec.awaitTermination(config.getShutdownWaitTime(), TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				throw new PlatformException(e);
-			}
-		}
+		executors.offlineClusterActionExecutor();
 	}
 
-	public void init(String nodeId, ActionExecution config) {
+	public void init(String nodeId) {
 		this.nodeId = nodeId;
-		this.config = config;
 	}
 
 	ConcurrentHashMap<Long, ActionRunnable> getExecutingTasks() {

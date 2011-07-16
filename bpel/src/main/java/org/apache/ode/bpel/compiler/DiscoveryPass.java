@@ -29,8 +29,7 @@ import org.apache.ode.bpel.compiler.parser.ExecutableProcessParser;
 import org.apache.ode.bpel.spi.BPELContext;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.CompilerPhase;
-import org.apache.ode.spi.compiler.Source;
+import org.apache.ode.spi.compiler.Location;
 
 public class DiscoveryPass implements CompilerPass {
 
@@ -47,15 +46,15 @@ public class DiscoveryPass implements CompilerPass {
 					int type = reader.next();
 					switch (type) {
 					case XMLStreamConstants.START_ELEMENT:
-						if (ExecutableProcessParser.EXECUTABLE.equals(reader.getName())){
+						if (ExecutableProcessParser.EXECUTABLE.equals(reader.getName())) {
 							ExecutableProcessModel model = new ExecutableProcessModel();
 							bctx.setMainModel(model);
 							ctx.parseContent(reader, model);
+						} else {
+							ctx.addError(new Location(reader.getLocation()), String.format("Unsupported root element %s", reader.getName()), null);
+							ctx.terminate();
+							return;
 						}
-						break;
-					case XMLStreamConstants.START_DOCUMENT:
-					case XMLStreamConstants.END_ELEMENT:
-					case XMLStreamConstants.END_DOCUMENT:
 						break;
 					}
 				}

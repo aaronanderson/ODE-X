@@ -64,7 +64,7 @@ public class JMXServer {
 			log.finer("Started jmxServer");
 			log.log(Level.INFO, "JMX Address: {0}", address);
 		} catch (IOException e) {
-			log.log(Level.SEVERE,"",e);
+			log.log(Level.SEVERE, "", e);
 		}
 	}
 
@@ -90,11 +90,25 @@ public class JMXServer {
 	void shutdown() {
 		try {
 			log.finer("Stoping jmxServer");
+			for (int i = 0; i < 100; i++) {
+				int clients = cntorServer.getConnectionIds().length;
+				if (clients == 0) {
+					break;
+				}
+				if (i % 25 == 0) {
+					log.log(Level.INFO, "Waiting for {0} client connections to close", clients);
+				}
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					log.log(Level.SEVERE, "", e);
+				}
+			}
 			cntorServer.stop();
 			MBeanServerFactory.releaseMBeanServer(mbeanServer);
 			log.finer("Stopped jmxServer");
 		} catch (IOException e) {
-			log.log(Level.SEVERE,"",e);
+			log.log(Level.SEVERE, "", e);
 		}
 	}
 

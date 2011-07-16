@@ -19,6 +19,10 @@
 
 		<jxb:bindings node="//xs:complexType[@name='serverType']">
 			<jxb:class name="ServerConfig" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='actionExecutionType']">
+			<jxb:class name="ActionExecution" />
 		</jxb:bindings>		
 
 		<jxb:bindings node="//xs:complexType[@name='dataSourceType']">

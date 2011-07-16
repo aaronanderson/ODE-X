@@ -33,5 +33,9 @@ public interface BuildSystem {
 	public void build(ArtifactId artifact) throws IOException;
 
 	public void build(byte[] contents) throws IOException;
+	
+	public byte[][] dumpSources(ArtifactId artifact, String targetName, String srcName) throws IOException;
 
+	public byte[][] dumpSources(byte[] contents, String targetName, String srcName) throws IOException;
+	
 }

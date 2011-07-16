@@ -20,8 +20,6 @@
 				minOccurs="0" maxOccurs="1" />
 			<element name="action-check" type="tns:actionCheckType"
 				minOccurs="0" maxOccurs="1" />
-			<element name="action-execution" type="tns:actionExecutionType"
-				minOccurs="0" maxOccurs="1" />
 			<element name="nodes" type="tns:nodesType" minOccurs="1"
 				maxOccurs="1" />
 		</sequence>
@@ -37,13 +35,6 @@
 	<complexType name="actionCheckType">
 		<attribute name="frequency" type="long" default="750" />
 		<attribute name="action-timeout" type="long" default="30000" />
-	</complexType>
-
-	<complexType name="actionExecutionType">
-		<attribute name="queue-size" type="int" default="100" />
-		<attribute name="max-threads" type="int" default="20" />
-		<attribute name="thread-timeout" type="int" default="30" />
-		<attribute name="shutdown-wait-time" type="int" default="30" />
 	</complexType>
 
 	<complexType name="nodesType">

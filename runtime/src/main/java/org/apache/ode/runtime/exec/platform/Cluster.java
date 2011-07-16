@@ -25,10 +25,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -53,6 +50,7 @@ import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
@@ -76,12 +74,12 @@ public class Cluster {
 	public static final String CLUSTER_CONFIG_NAMESPACE = "http://ode.apache.org/cluster-config";
 	public static JAXBContext CLUSTER_JAXB_CTX;
 	private static final Logger log = Logger.getLogger(Cluster.class.getName());
-	
+
 	static {
 		try {
 			CLUSTER_JAXB_CTX = JAXBContext.newInstance("org.apache.ode.runtime.exec.cluster.xml");
 		} catch (JAXBException je) {
-			log.log(Level.SEVERE,"",je);
+			log.log(Level.SEVERE, "", je);
 		}
 	}
 	@ClusterId
@@ -108,9 +106,8 @@ public class Cluster {
 
 	AtomicReference<NodeState> localNodeState = new AtomicReference<NodeState>();
 
-	ScheduledExecutorService clusterScheduler;
-
-	
+	@Inject
+	Executors executors;
 
 	@PostConstruct
 	public void init() {
@@ -146,36 +143,34 @@ public class Cluster {
 		localNodeState.set(NodeState.OFFLINE);
 		org.apache.ode.runtime.exec.cluster.xml.HealthCheck healthCheckConfig = config.getHealthCheck() != null ? config.getHealthCheck()
 				: new org.apache.ode.runtime.exec.cluster.xml.HealthCheck();
-		org.apache.ode.runtime.exec.cluster.xml.ActionExecution actionExecConfig = config.getActionExecution() != null ? config.getActionExecution()
-				: new org.apache.ode.runtime.exec.cluster.xml.ActionExecution();
 		org.apache.ode.runtime.exec.cluster.xml.ActionCheck actionCheckConfig = config.getActionCheck() != null ? config.getActionCheck()
 				: new org.apache.ode.runtime.exec.cluster.xml.ActionCheck();
 		healthCheck.init(clusterId, nodeId, localNodeState, healthCheckConfig);
-		actionExec.init(nodeId, actionExecConfig);
+		actionExec.init(nodeId);
 		actionPoll.init(clusterId, nodeId, localNodeState, actionExec, actionCheckConfig);
-		clusterScheduler = new ScheduledThreadPoolExecutor(2, new ThreadFactory() {
 
-			private final ThreadFactory factory = Executors.defaultThreadFactory();
-
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = factory.newThread(r);
-				t.setName("ODE-X Cluster Scheduler");
-				t.setDaemon(true);
-				return t;
-			}
-		});
 		// Prime the health check to make sure it runs at least once before
 		// continuing startup
 		// healthCheck.run();
-		clusterScheduler.scheduleAtFixedRate(healthCheck, 0, healthCheckConfig.getFrequency(), TimeUnit.MILLISECONDS);
-		clusterScheduler.scheduleAtFixedRate(actionPoll, 0, actionCheckConfig.getFrequency(), TimeUnit.MILLISECONDS);
+		ScheduledExecutorService clusterScheduler;
+		try {
+			clusterScheduler = executors.initClusterScheduler();
+			clusterScheduler.scheduleAtFixedRate(healthCheck, 0, healthCheckConfig.getFrequency(), TimeUnit.MILLISECONDS);
+			clusterScheduler.scheduleAtFixedRate(actionPoll, 0, actionCheckConfig.getFrequency(), TimeUnit.MILLISECONDS);
+		} catch (PlatformException pe) {
+			log.log(Level.SEVERE, "", pe);
+		}
 		log.fine("Cluster Initialized");
 	}
 
 	@PreDestroy
 	public void destroy() {
-		clusterScheduler.shutdownNow();
+		try {
+			executors.destroyClusterScheduler();
+		} catch (PlatformException pe) {
+			log.log(Level.SEVERE, "", pe);
+		}
+		
 	}
 
 	public void online() throws PlatformException {
@@ -328,7 +323,7 @@ public class Cluster {
 			JAXBElement<ClusterConfig> config = repo.read(configName, CLUSTER_CONFIG_MIMETYPE, "1.0", JAXBElement.class);
 			return config.getValue();
 		} catch (RepositoryException e) {
-	
+
 		}
 		log.log(Level.WARNING, "Unable to load cluster config, using default config");
 		try {
@@ -337,7 +332,7 @@ public class Cluster {
 			repo.create(configName, CLUSTER_CONFIG_MIMETYPE, "1.0", config);
 			return config.getValue();
 		} catch (Exception e) {
-			log.log(Level.SEVERE,"",e);
+			log.log(Level.SEVERE, "", e);
 		}
 		return null;
 	}

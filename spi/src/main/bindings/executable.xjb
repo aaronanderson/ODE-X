@@ -10,8 +10,8 @@
 	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
-<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
-	xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0">
+<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	version="2.0">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.xml" />
@@ -20,58 +20,74 @@
 		<jxb:bindings node="//xs:complexType[@name='executableType']">
 			<jxb:class name="Executable" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='instructionSetsType']">
 			<jxb:class name="InstructionSets" />
-		</jxb:bindings>	
-		
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='installDataType']">
 			<jxb:class name="InstallData" />
-		</jxb:bindings>	
-		
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='installationType']">
 			<jxb:class name="Installation" />
-		</jxb:bindings>		
-		
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='sourcesType']">
 			<jxb:class name="Sources" />
-		</jxb:bindings>	
-		
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='sourceType']">
 			<jxb:class name="Source" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='sourceRefType']">
 			<jxb:class name="SourceRef" />
 		</jxb:bindings>
-		
+
+		<jxb:bindings node="//xs:complexType[@name='sourceRefType']/xs:attribute[@name='sref']">
+			<jxb:property>
+				<jxb:baseType name="Source" />
+			</jxb:property>
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='instructionType']">
 			<jxb:class name="Instruction" />
 		</jxb:bindings>
 		
+		<jxb:bindings node="//xs:complexType[@name='contextType']">
+			<jxb:class name="Context" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='contextType']/xs:complexContent/xs:extension/xs:attribute[@name='ctx']">
+			<jxb:property>
+				<jxb:baseType name="Context" />
+			</jxb:property>
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='operationType']">
 			<jxb:class name="Operation" />
-		</jxb:bindings>		
-		
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='blockType']">
 			<jxb:class name="Block" />
 		</jxb:bindings>
-		
-		 <jxb:bindings node="//xs:complexType[@name='blockType']//xs:choice">
-            <jxb:property name="Body"/>
-        </jxb:bindings>
-        
+
+		<jxb:bindings node="//xs:complexType[@name='blockType']//xs:choice">
+			<jxb:property name="Body" />
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='variableType']">
 			<jxb:class name="Variable" />
-		</jxb:bindings>				
-		
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='inType']">
 			<jxb:class name="In" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='outType']">
 			<jxb:class name="Out" />
-		</jxb:bindings>				
+		</jxb:bindings>
 
 	</jxb:bindings>
 </jxb:bindings>

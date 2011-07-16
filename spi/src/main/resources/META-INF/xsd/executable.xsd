@@ -10,22 +10,16 @@
 	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
-<schema targetNamespace="http://ode.apache.org/executable"
-	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
+<schema targetNamespace="http://ode.apache.org/executable" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:tns="http://ode.apache.org/executable">
 
 	<complexType name="executableType">
 		<sequence>
-			<element name="instruction-sets" type="tns:instructionSetsType"
-				minOccurs="0" maxOccurs="1" />
-			<element name="installation" type="tns:installationType"
-				minOccurs="1" maxOccurs="1" />
-			<element name="sources" type="tns:sourcesType" minOccurs="1"
-				maxOccurs="1" />
-			<element name="operation" type="tns:operationType" minOccurs="1"
-				maxOccurs="unbounded" />
-			<element name="block" type="tns:blockType" minOccurs="1"
-				maxOccurs="unbounded" />
+			<element name="instruction-sets" type="tns:instructionSetsType" minOccurs="0" maxOccurs="1" />
+			<element name="installation" type="tns:installationType" minOccurs="1" maxOccurs="1" />
+			<element name="sources" type="tns:sourcesType" minOccurs="1" maxOccurs="1" />
+			<element name="operation" type="tns:operationType" minOccurs="1" maxOccurs="unbounded" />
+			<element name="block" type="tns:blockType" minOccurs="1" maxOccurs="unbounded" />
 			<!-- <choice maxOccurs="unbounded"> <element name="operation" type="tns:operationType" 
 				/> <element name="block" type="tns:blockType" /> </choice> -->
 		</sequence>
@@ -35,8 +29,7 @@
 
 	<complexType name="instructionSetsType">
 		<sequence>
-			<element name="instruction-set" type="QName" minOccurs="1"
-				maxOccurs="unbounded" />
+			<element name="instruction-set" type="QName" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
@@ -44,15 +37,13 @@
 
 	<complexType name="installationType">
 		<sequence>
-			<any namespace="##other" processContents="strict" minOccurs="0"
-				maxOccurs="unbounded" />
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
 	<complexType name="sourcesType">
 		<sequence>
-			<element name="sources" type="tns:sourceType" minOccurs="1"
-				maxOccurs="unbounded" />
+			<element name="sources" type="tns:sourceType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
@@ -74,7 +65,25 @@
 
 	<complexType name="instructionType" abstract="true">
 		<complexContent>
-			<extension base="tns:sourceRefType" />
+			<extension base="tns:sourceRefType">
+				<attribute name="ins" type="ID" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="contextMode">
+		<restriction base="string">
+			<enumeration value="START" />
+			<enumeration value="END" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="contextType" abstract="true">
+		<complexContent>
+			<extension base="tns:instructionType">
+				<attribute name="mode" type="tns:contextMode" default="START" use="optional" />
+				<attribute name="ctx" type="IDREF" use="optional" />
+			</extension>
 		</complexContent>
 	</complexType>
 
@@ -88,11 +97,9 @@
 	<complexType name="invocationType" abstract="true">
 		<complexContent>
 			<extension base="tns:sourceRefType">
-				<attribute name="save" type="boolean" use="optional"
-					default="true" />
-				<attribute name="mode" type="tns:syncMode" use="optional"
-					default="SYNC" />
-				<attribute name="id" type="ID" use="required" />
+				<attribute name="save" type="boolean" use="optional" default="true" />
+				<attribute name="mode" type="tns:syncMode" use="optional" default="SYNC" />
+				<attribute name="inv" type="ID" use="required" />
 			</extension>
 		</complexContent>
 	</complexType>
@@ -110,11 +117,10 @@
 				<element name="variable" type="tns:variableType" />
 				<element name="in" type="tns:inType" />
 				<element name="out" type="tns:outType" />
-				<any namespace="##other" processContents="strict" minOccurs="0"
-					maxOccurs="unbounded" />
+				<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 			</choice>
-
 		</sequence>
+		<attribute name="blc" type="ID" use="required" />
 	</complexType>
 
 	<attribute name="operationAttr" type="IDREF" />
@@ -129,10 +135,8 @@
 		<sequence>
 			<!-- <element type="tns:operationCtxType" minOccurs="0" maxOccurs="unbounded" 
 				/> -->
-			<any namespace="##other" processContents="strict" minOccurs="0"
-				maxOccurs="unbounded" />
-			<element name="parameter" type="tns:parameterType" minOccurs="0"
-				maxOccurs="unbounded" />
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
+			<element name="parameter" type="tns:parameterType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="label" type="ID" use="required" />
 		<attribute name="name" type="QName" use="required" />
@@ -148,8 +152,7 @@
 		<sequence>
 			<!-- <element type="tns:parameterCtxType" minOccurs="0" maxOccurs="unbounded" 
 				/> -->
-			<any namespace="##other" processContents="strict" minOccurs="0"
-				maxOccurs="unbounded" />
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="id" type="integer" use="required" />
 		<attribute name="name" type="QName" use="required" />
@@ -169,8 +172,7 @@
 		<sequence>
 			<!-- <element type="tns:variableCtxType" minOccurs="0" maxOccurs="unbounded" 
 				/> -->
-			<any namespace="##other" processContents="strict" minOccurs="0"
-				maxOccurs="unbounded" />
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="id" type="ID" use="required" />
 		<attribute name="name" type="QName" use="required" />
@@ -189,8 +191,7 @@
 				<sequence>
 					<!-- <element type="tns:inCtxType" minOccurs="0" maxOccurs="unbounded" 
 						/> -->
-					<any namespace="##other" processContents="strict" minOccurs="0"
-						maxOccurs="unbounded" />
+					<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 				</sequence>
 				<attribute ref="tns:operationAttr" />
 			</extension>
@@ -209,8 +210,7 @@
 				<sequence>
 					<!-- <element type="tns:outCtxType" minOccurs="0" maxOccurs="unbounded" 
 						/> -->
-					<any namespace="##other" processContents="strict" minOccurs="0"
-						maxOccurs="unbounded" />
+					<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 				</sequence>
 				<attribute ref="tns:operationAttr" />
 			</extension>
@@ -219,7 +219,7 @@
 	</complexType>
 
 	<element name="executable" type="tns:executableType" />
-	
+
 	<element name="installation" type="tns:installationType" />
 
 </schema>

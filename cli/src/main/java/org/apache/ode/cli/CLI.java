@@ -39,6 +39,8 @@ public class CLI {
 		jc.addCommand("delete", deleteCmd);
 		BuildCommand buildCmd = new BuildCommand(con,out);
 		jc.addCommand("build", buildCmd);
+		SrcDumpCommand sdumpCmd = new SrcDumpCommand(con, out);
+		jc.addCommand("sdump", sdumpCmd);
 		ListTypesCommand listTypesCmd = new ListTypesCommand(con,out);
 		jc.addCommand("listTypes", listTypesCmd);
 		ListArtifactsCommand listArtifactsCmd = new ListArtifactsCommand(con,out);

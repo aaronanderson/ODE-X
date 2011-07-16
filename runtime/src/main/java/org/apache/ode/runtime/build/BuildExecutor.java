@@ -21,11 +21,8 @@ package org.apache.ode.runtime.build;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.activation.CommandObject;
 import javax.activation.DataHandler;
@@ -40,19 +37,28 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.ode.runtime.build.SourceImpl.InlineSourceImpl;
 import org.apache.ode.runtime.build.xml.BuildPlan;
 import org.apache.ode.runtime.build.xml.BuildSource;
+import org.apache.ode.runtime.build.xml.Java;
 import org.apache.ode.runtime.build.xml.PreProcessor;
 import org.apache.ode.runtime.build.xml.Target;
+import org.apache.ode.runtime.build.xml.Xpath;
+import org.apache.ode.runtime.build.xml.Xpath.Annotation;
+import org.apache.ode.runtime.build.xml.Xslt;
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.InlineSource;
-import org.apache.ode.spi.compiler.Source;
+import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.xml.Block;
 import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.xml.Sources;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -96,21 +102,21 @@ public class BuildExecutor implements CommandObject {
 
 		BuildSource main = target.getMain().getArtifact();
 		addCompiler(main.getContentType(), compilation);
-		contexts.add(new CompilerContextImpl(preProcess(main, SourceType.MAIN), compilation));
+		contexts.add(new CompilerContextImpl(preProcess(main, compilation.nextSrcId(), SourceType.MAIN), compilation));
 
 		if (target.getIncludes() != null) {
 			for (BuildSource src : target.getIncludes().getArtifact()) {
 				addCompiler(src.getContentType(), compilation);
-				contexts.add(new CompilerContextImpl(preProcess(src, SourceType.INCLUDE), compilation));
+				contexts.add(new CompilerContextImpl(preProcess(src, compilation.nextSrcId(), SourceType.INCLUDE), compilation));
 			}
 		}
-		//TODO make this multithreaded by using a threadpool and execute each pass in a runnable synchronizing on a countdown barrier
+		// TODO make this multithreaded by using a threadpool and execute each pass in a runnable synchronizing on a countdown barrier
 		for (CompilerPhase phase : CompilerPhase.values()) {
 			switch (phase) {
 			case DISCOVERY:
 				executePass(contexts, phase, compilation);
 				while (!compilation.getAddedSources().isEmpty()) {
-					InlineSource src = compilation.getAddedSources().remove();
+					InlineSourceImpl src = compilation.getAddedSources().remove();
 					addCompiler(src.inlineContentType(), compilation);
 					CompilerContextImpl ctx = new CompilerContextImpl(src, compilation);
 					contexts.add(ctx);
@@ -120,37 +126,10 @@ public class BuildExecutor implements CommandObject {
 
 				break;
 			case EMIT:
-				StringBuilder contextPath = new StringBuilder();
-				contextPath.append("org.apache.ode.spi.exec.xml");
-				for (String path : compilation.getJaxbContexts()) {
-					contextPath.append(':');
-					contextPath.append(path);
-				}
-
-				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-				factory.setNamespaceAware(true);
-				DocumentBuilder db;
-				try {
-					db = factory.newDocumentBuilder();
-				} catch (ParserConfigurationException pe) {
-					throw new BuildException(pe);
-				}
-				Executable exec = new Executable();
-				compilation.setExecutable(exec);
-				org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
-				compilation.setExecBase(of.createExecutable(exec));
-
-				Binder<Node> binder;
-				Document execDoc;
-				try {
-					compilation.setJaxbContext(JAXBContext.newInstance(contextPath.toString()));
-					binder = compilation.getJaxbContext().createBinder();
-					compilation.setBinder(binder);
-					execDoc = db.newDocument();
-					binder.marshal(compilation.getExecBase(), execDoc);
-				} catch (Exception jbe) {
-					throw new BuildException(jbe);
-				}
+				emitBase(contexts, compilation);
+				executePass(contexts, phase, compilation);
+				populateIds(compilation);
+				break;
 			default:
 				executePass(contexts, phase, compilation);
 				break;
@@ -179,17 +158,79 @@ public class BuildExecutor implements CommandObject {
 
 	}
 
-	void executePass(List<CompilerContextImpl> contexts, CompilerPhase phase, Compilation compilation) {
+	void executePass(List<CompilerContextImpl> contexts, CompilerPhase phase, Compilation compilation) throws BuildException {
 		for (CompilerContextImpl ctx : contexts) {
 			executePass(ctx, phase, compilation);
 		}
 	}
 
-	void executePass(CompilerContextImpl context, CompilerPhase phase, Compilation compilation) {
+	void executePass(CompilerContextImpl context, CompilerPhase phase, Compilation compilation) throws BuildException {
 		context.setPhase(phase);
 		CompilerImpl compiler = compilation.getCompilers().get(context.getContentType());
 		for (CompilerPass pass : compiler.getCompilerPasses(phase)) {
 			pass.compile(context);
+		}
+		if (compilation.isTerminated()) {
+			throw new BuildException(compilation.getMessages().toString());
+		}
+	}
+
+	void emitBase(List<CompilerContextImpl> contexts, Compilation compilation) throws BuildException {
+		StringBuilder contextPath = new StringBuilder();
+		contextPath.append("org.apache.ode.spi.exec.xml");
+		for (String path : compilation.getJaxbContexts()) {
+			contextPath.append(':');
+			contextPath.append(path);
+		}
+
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		factory.setNamespaceAware(true);
+		DocumentBuilder db;
+		try {
+			db = factory.newDocumentBuilder();
+		} catch (ParserConfigurationException pe) {
+			throw new BuildException(pe);
+		}
+		Executable exec = new Executable();
+		Sources srcs = new Sources();
+		exec.setSources(srcs);
+		for (CompilerContextImpl impl : contexts) {
+			if (!(impl.source() instanceof InlineSource)) {
+				srcs.getSources().add(impl.source().id());
+			}
+		}
+
+		compilation.setExecutable(exec);
+		org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
+		compilation.setExecBase(of.createExecutable(exec));
+
+		Binder<Node> binder;
+		Document execDoc;
+		try {
+			compilation.setJaxbContext(JAXBContext.newInstance(contextPath.toString()));
+			binder = compilation.getJaxbContext().createBinder();
+			compilation.setBinder(binder);
+			execDoc = db.newDocument();
+			binder.marshal(compilation.getExecBase(), execDoc);
+		} catch (Exception jbe) {
+			throw new BuildException(jbe);
+		}
+
+	}
+
+	void populateIds(Compilation compilation) {
+		Executable exec = compilation.getExecutable();
+		int blockId = 0;
+		for (Block b : exec.getBlock()) {
+			String bid = "b" + blockId++;
+			b.setBlc(bid);
+			int insId = 0;
+			for (Object o : b.getBody()) {
+				if (o instanceof Instruction) {
+					((Instruction) o).setIns(bid + "i" + insId++);
+				}
+			}
+
 		}
 	}
 
@@ -220,7 +261,7 @@ public class BuildExecutor implements CommandObject {
 		}
 	}
 
-	Source preProcess(BuildSource source, SourceType sourceType) throws BuildException {
+	SourceImpl preProcess(BuildSource source, String id, SourceType sourceType) throws BuildException {
 		Artifact artifact = null;
 		try {
 			artifact = repo.read(source.getQname(), source.getContentType(), source.getVersion(), Artifact.class);
@@ -228,11 +269,32 @@ public class BuildExecutor implements CommandObject {
 			throw new BuildException(re);
 		}
 		byte[] contents = artifact.getContent();
-		if (source.getPreprocessor() != null) {
-			PreProcessor processor = source.getPreprocessor();
+		try {
+			Document intermediate = ParserUtils.inlineLocation(contents);
+			if (source.getPreprocessor() != null) {
+				preProcess(intermediate, source.getPreprocessor(), repo);
+			}
+			contents = ParserUtils.domToContent(intermediate);
+		} catch (ParserException pe) {
+			throw new BuildException(pe);
 		}
-		return new SourceImpl(artifact.getQName(), artifact.getContentType(), artifact.getVersion(), artifact.getCheckSum(), contents, sourceType);
+		return new SourceImpl(artifact.getQName(), artifact.getContentType(), artifact.getVersion(), artifact.getCheckSum(), contents, id, sourceType);
 
+	}
+
+	public static void preProcess(Document src, PreProcessor processor, Repository repo) throws BuildException {
+		if (processor instanceof Xpath) {
+			Xpath xpath = (Xpath) processor;
+			for (Annotation a : xpath.getAnnotation()) {
+				for (Object o : a.getAny()) {
+
+				}
+			}
+		} else if (processor instanceof Java) {
+
+		} else if (processor instanceof Xslt) {
+
+		}
 	}
 
 }

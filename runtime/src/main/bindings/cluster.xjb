@@ -28,9 +28,6 @@
 		<jxb:bindings node="//xs:complexType[@name='actionCheckType']">
 			<jxb:class name="ActionCheck" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='actionExecutionType']">
-			<jxb:class name="ActionExecution" />
-		</jxb:bindings>
 		<jxb:bindings node="//xs:complexType[@name='nodeMessagesType']">
 			<jxb:class name="Messages" />
 		</jxb:bindings>

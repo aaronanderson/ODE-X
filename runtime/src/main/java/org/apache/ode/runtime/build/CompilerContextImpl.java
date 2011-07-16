@@ -42,12 +42,12 @@ import org.w3c.dom.Node;
 
 public class CompilerContextImpl implements CompilerContext {
 
-	private Source src;
+	private SourceImpl src;
 	private CompilerPhase phase;
 	private HandlerRegistry<CompilerContext> registry;
 	private Compilation state;
 
-	public CompilerContextImpl(Source src, Compilation state) {
+	public CompilerContextImpl(SourceImpl src, Compilation state) {
 		this.src = src;
 		this.phase = CompilerPhase.INITIALIZE;
 		this.registry = state.getCompilers().get(src.getContentType()).getParserRegistry();

@@ -29,31 +29,32 @@ import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Parser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
-import org.apache.ode.spi.xml.ElementHandler;
 
 public class ExecutableProcessParser implements Parser<ExecutableProcessModel> {
 	public static final QName EXECUTABLE = new QName(BPEL.BPEL_EXEC_NAMESPACE, "process");
 
 	@Override
 	public void parse(XMLStreamReader input, ExecutableProcessModel model, CompilerContext context) throws XMLStreamException, ParserException {
-		ParserUtils.assertStart(input, EXECUTABLE);
-		ParserUtils.configureSource(input,model.getProcess());
-		model.getProcess().setQueryLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "queryLanguage"));
-		model.getProcess().setExpressionLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "expressionLanguage"));
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
 			case XMLStreamConstants.START_ELEMENT:
+				ParserUtils.assertStart(input, EXECUTABLE);
+				ParserUtils.startContext(input, context.source().id(), model.getStartProcess());
+				ParserUtils.endContext(input, context.source().id(), model.getEndProcess());
+				model.getStartProcess().setQueryLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "queryLanguage"));
+				model.getStartProcess().setExpressionLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "expressionLanguage"));
+				model.getBlock().getBody().add(model.getStartProcess());
 				ParserUtils.skip(input);
 				break;
 
 			case XMLStreamConstants.END_ELEMENT:
 				ParserUtils.assertEnd(input, EXECUTABLE);
+				model.getBlock().getBody().add(model.getEndProcess());
 				return;
 			}
 		}
 
 	}
 
-	
 }

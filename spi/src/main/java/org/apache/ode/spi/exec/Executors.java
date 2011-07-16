@@ -16,20 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.spi.exec;
 
-import org.apache.ode.spi.repo.Artifact;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ScheduledExecutorService;
 
-public interface Source extends Artifact {
+public interface Executors {
 
-	org.apache.ode.spi.exec.xml.Source id();
-	
-	SourceType sourceType();
-                                          
-	
-	public static enum SourceType {
-		MAIN, INCLUDE, INLINE;
-	}
+	public ScheduledExecutorService initClusterScheduler() throws PlatformException;
 
-	
+	public void destroyClusterScheduler() throws PlatformException;
+
+	public ExecutorService onlineClusterActionExecutor(RejectedExecutionHandler handler) throws PlatformException;
+
+	public void offlineClusterActionExecutor() throws PlatformException;
 }

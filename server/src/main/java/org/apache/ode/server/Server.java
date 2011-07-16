@@ -103,14 +103,14 @@ public class Server {
 			JMXConnector jmxc = JMXConnectorFactory.connect(url, null);
 			MBeanServerConnection jmxConnection = jmxc.getMBeanServerConnection();
 			ServerStopMBean stopServer = JMX.newMBeanProxy(jmxConnection, new ObjectName(OBJECTNAME), ServerStopMBean.class);
-			stopServer.stop();
+			stopServer.shutdown();
 			jmxc.close();
-			for (int i = 0; i < 15; i++) {
+			/*for (int i = 0; i < 40; i++) {
 				try {
 					jmxc = JMXConnectorFactory.connect(url, null);
 					jmxc.close();
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(250);
 					} catch (InterruptedException e) {
 						log.log(Level.SEVERE, "", e);
 						break;
@@ -118,7 +118,7 @@ public class Server {
 				} catch (IOException ie) {
 					break;
 				}
-			}
+			}*/
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "", e);
 		}
@@ -231,32 +231,30 @@ public class Server {
 
 	public static interface ServerStopMBean {
 
-		public void stop();
+		public void shutdown();
 	}
 
 	public class ServerStop implements ServerStopMBean {
 
-		public void stop() {
-			// We will shutdown the server in a separate thread so
-			// the JMX client can gracefully close it's connection before
-			// The JMX server closes the listener
+		public void shutdown() {
+			/* We will run the shutdown in a separate thread so that the remote
+			 * client can successfully disconnect. The JMX clients should gracefully 
+			 * close their connections within 10 seconds of a shutdown request 
+			 * before The JMX server closes the server listener
+			
+			 */
 			Thread shutdownThread = new Thread(new Runnable() {
 
 				@Override
 				public void run() {
-					try {
-						Thread.sleep(3000);
-					} catch (InterruptedException e) {
-						log.log(Level.SEVERE, "", e);
-					}
-					log.fine("Shutting down ODE Server");
+					log.info("Remote shutdown of ODE Server");
 					stop();
-
 				}
 
 			}, "ODE Shutdown Thread");
 			shutdownThread.setDaemon(false);
 			shutdownThread.start();
+
 		}
 	}
 

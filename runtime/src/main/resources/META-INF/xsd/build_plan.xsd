@@ -10,14 +10,12 @@
 	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
-<schema targetNamespace="http://ode.apache.org/build-plan"
-	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
+<schema targetNamespace="http://ode.apache.org/build-plan" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:tns="http://ode.apache.org/build-plan">
 
 	<complexType name="buildPlanType">
 		<sequence>
-			<element name="target" type="tns:targetType" minOccurs="1"
-				maxOccurs="unbounded" />
+			<element name="target" type="tns:targetType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="targetNamespace" type="string" use="optional" />
 		<attribute name="name" type="string" use="optional" />
@@ -25,15 +23,12 @@
 
 	<complexType name="targetType">
 		<sequence>
-			<element name="artifact" type="tns:artifactType" minOccurs="1"
-				maxOccurs="1" />
-			<element name="main" type="tns:mainType" minOccurs="1"
-				maxOccurs="1" />
-			<element name="includes" type="tns:includesType" minOccurs="0"
-				maxOccurs="1" />
+			<element name="artifact" type="tns:artifactType" minOccurs="1" maxOccurs="1" />
+			<element name="main" type="tns:mainType" minOccurs="1" maxOccurs="1" />
+			<element name="includes" type="tns:includesType" minOccurs="0" maxOccurs="1" />
 		</sequence>
+		<attribute name="name" type="string" use="optional" />
 	</complexType>
-
 
 	<complexType name="artifactType">
 		<attribute name="qname" type="QName" use="required" />
@@ -43,25 +38,21 @@
 
 	<complexType name="mainType">
 		<sequence>
-			<element name="artifact" type="tns:sourceType" minOccurs="1"
-				maxOccurs="1" />
+			<element name="artifact" type="tns:sourceType" minOccurs="1" maxOccurs="1" />
 		</sequence>
 	</complexType>
 
 	<complexType name="includesType">
 		<sequence>
-			<element name="artifact" type="tns:sourceType" minOccurs="1"
-				maxOccurs="unbounded" />
+			<element name="artifact" type="tns:sourceType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
-
 
 	<complexType name="sourceType">
 		<complexContent>
 			<extension base="tns:artifactType">
 				<sequence>
-					<element name="preprocessor" type="tns:preprocessorType"
-						minOccurs="0" maxOccurs="1" />
+					<element name="preprocessor" type="tns:preprocessorType" minOccurs="0" maxOccurs="1" />
 				</sequence>
 			</extension>
 		</complexContent>
@@ -69,34 +60,58 @@
 
 	<complexType name="preprocessorType" abstract="true" />
 
-	<complexType name="preprocessorRefType">
-		<complexContent>
-			<extension base="tns:preprocessorType">
-				<attribute name="qname" type="QName" use="required" />
-				<attribute name="contentType" type="string" use="required" />
-				<attribute name="version" type="string" use="required" />
-			</extension>
-		</complexContent>
-	</complexType>
+	<element name="repo">
+		<complexType>
+			<complexContent>
+				<extension base="tns:preprocessorType">
+					<attribute name="qname" type="QName" use="required" />
+					<attribute name="contentType" type="string" use="required" />
+					<attribute name="version" type="string" use="required" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
 
-	<complexType name="preprocessorInlineType">
-		<complexContent>
-			<extension base="tns:preprocessorType">
-				<attribute name="language" type="string" default="xslt" />
-			</extension>
-		</complexContent>
-	</complexType>
-	
-	<complexType name="preprocessorJavaType">
-		<complexContent>
-			<extension base="tns:preprocessorType">
-				<attribute name="class" type="string" />
-			</extension>
-		</complexContent>
-	</complexType>
-	
+	<element name="xslt">
+		<complexType>
+			<complexContent>
+				<extension base="tns:preprocessorType">
+					<sequence>
+						<any namespace="##other" processContents="strict" minOccurs="1" maxOccurs="1" />
+					</sequence>
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
 
+	<element name="java">
+		<complexType>
+			<complexContent>
+				<extension base="tns:preprocessorType">
+					<attribute name="class" type="string" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
 
+	<element name="xpath">
+		<complexType>
+			<complexContent>
+				<extension base="tns:preprocessorType">
+					<sequence>
+						<element name="annotation" minOccurs="0" maxOccurs="unbounded">
+							<complexType>
+								<sequence>
+									<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
+								</sequence>
+								<attribute name="path" type="string" />
+							</complexType>
+						</element>
+					</sequence>
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
 
 	<element name="build-plan" type="tns:buildPlanType" />
 

@@ -41,13 +41,13 @@ public class WSDLLocatorImpl implements javax.wsdl.xml.WSDLLocator {
 
 	@Override
 	public InputSource getBaseInputSource() {
-		log.info("getBaseInputSource");
+		//log.info("getBaseInputSource");
 		return new InputSource(new ByteArrayInputStream(contents));
 	}
 
 	@Override
 	public String getBaseURI() {
-		log.info("getBaseURI");
+		//log.info("getBaseURI");
 		return null;
 	}
 
@@ -61,14 +61,14 @@ public class WSDLLocatorImpl implements javax.wsdl.xml.WSDLLocator {
 			log.log(Level.SEVERE,"",e);
 			return null;
 		}*/
-		log.info("getImportInputSource");
+		//log.info("getImportInputSource");
 		return null;
 
 	}
 
 	@Override
 	public String getLatestImportURI() {
-		log.info("getLatestImportURI");
+		//log.info("getLatestImportURI");
 		return lastResolved;
 	}
 

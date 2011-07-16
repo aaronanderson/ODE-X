@@ -32,14 +32,34 @@ public class SourceImpl implements Source {
 	String checkSum;
 	byte[] contents;
 	SourceType sourceType;
+	org.apache.ode.spi.exec.xml.Source xmlSrc;
 
-	public SourceImpl(QName qname, String contentType, String version, String checkSum, byte[] contents, SourceType sourceType) {
+	public SourceImpl(QName qname, String contentType, String version, String checkSum, byte[] contents, String id, SourceType sourceType) {
 		this.qname = qname;
 		this.contentType = contentType;
 		this.version = version;
 		this.checkSum = checkSum;
 		this.contents = contents;
+		this.xmlSrc= new org.apache.ode.spi.exec.xml.Source();
+		this.xmlSrc.setSrc(id);
+		this.xmlSrc.setQname(qname);
+		this.xmlSrc.setContentType(contentType);
+		this.xmlSrc.setVersion(version);
 		this.sourceType = sourceType;
+	}
+	
+	public SourceImpl(SourceImpl impl) {
+		this.qname = impl.getQName();
+		this.contentType = impl.getContentType();
+		this.version = impl.getVersion();
+		this.checkSum = impl.getCheckSum();
+		this.contents = impl.getContent();
+		this.xmlSrc= impl.xmlSrc();
+		this.sourceType = impl.sourceType();
+	}
+	
+	org.apache.ode.spi.exec.xml.Source xmlSrc(){
+		return xmlSrc;
 	}
 
 	@Override
@@ -68,6 +88,11 @@ public class SourceImpl implements Source {
 	}
 
 	@Override
+	public org.apache.ode.spi.exec.xml.Source id() {
+		return xmlSrc;
+	}
+
+	@Override
 	public SourceType sourceType() {
 		return sourceType;
 	}
@@ -83,8 +108,8 @@ public class SourceImpl implements Source {
 		Location start;
 		Location end;
 
-		public InlineSourceImpl(Source parent, String inlineCT, Location start, Location end) {
-			super(parent.getQName(), parent.getContentType(), parent.getVersion(), parent.getCheckSum(), parent.getContent(), SourceType.INLINE);
+		public InlineSourceImpl(SourceImpl parent, String inlineCT, Location start, Location end) {
+			super(parent);
 			this.inlineContentType = inlineCT;
 			this.start = start;
 			this.end = end;

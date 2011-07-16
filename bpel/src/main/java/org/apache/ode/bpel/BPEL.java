@@ -134,7 +134,7 @@ public class BPEL {
 		});
 		platform.registerComponent(bpelComponent);
 		Compiler bpelCompiler = compilers.newInstance();
-		bpelCompiler.addInstructionSet(bpelComponent.instructionSets().get(0).getName());
+		bpelCompiler.addInstructionSet(BPELComponent.BPEL_INSTRUCTION_SET);
 		bpelCompiler.addInstructionSet(WSDLComponent.WSDL_INSTRUCTION_SET);
 		bpelCompiler.addSubContext(XSDContext.ID, schemaProvider);
 		bpelCompiler.addSubContext(WSDLContext.ID, wsdlProvider);
