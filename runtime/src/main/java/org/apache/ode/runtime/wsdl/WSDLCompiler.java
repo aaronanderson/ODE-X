@@ -32,8 +32,8 @@ import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
-import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XSDContext;
+import org.apache.ode.spi.compiler.wsdl.WSDLContext;
+import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.Installation;
 import org.apache.ode.spi.exec.xml.InstructionSets;
@@ -58,19 +58,9 @@ public class WSDLCompiler implements CompilerPass {
 		case INITIALIZE:
 			wsdlCtx = (WSDLContext) ctx.subContext(WSDLContext.ID);
 			xsdContext = (XSDContext) ctx.subContext(XSDContext.ID);
-			wsdlQName = wsdlCtx.declareWSDL(ctx.source());
-			wsdlCtx.getExtensionRegistry();
 			break;
 
 		case DISCOVERY:
-			WSDLReader reader = wsdlCtx.createWSDLReader();
-			try {
-				wsdlDefinition = reader.readWSDL(wsdlCtx.getWSDLLocator(wsdlQName, xsdContext));
-				//log.info("got definition "+wsdlDefinition);
-			} catch (WSDLException we) {
-				ctx.addError(null,String.format("failed to read WSDL %s", ctx.source()), we);
-			}
-			// QName schemaLocation = (QName) definition.getExtensionAttribute(SCHEMA_LOCATION);
 			break;
 
 		case EMIT:

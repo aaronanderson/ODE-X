@@ -36,15 +36,17 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.bpel.compiler.DiscoveryPass;
 import org.apache.ode.bpel.compiler.EmitPass;
-import org.apache.ode.bpel.compiler.model.ExecutableProcessModel;
 import org.apache.ode.bpel.compiler.parser.ExecutableProcessParser;
+import org.apache.ode.bpel.compiler.parser.PartnerLinksParser;
+import org.apache.ode.bpel.compiler.parser.SequenceParser;
+import org.apache.ode.bpel.compiler.parser.VariablesParser;
 import org.apache.ode.bpel.exec.BPELComponent;
 import org.apache.ode.bpel.spi.BPELContext;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
-import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XSDContext;
+import org.apache.ode.spi.compiler.wsdl.WSDLContext;
+import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.WSDLComponent;
 import org.apache.ode.spi.repo.Repository;
@@ -79,7 +81,7 @@ public class BPEL {
 	Provider<XSDContext> schemaProvider;
 	@Inject
 	Provider<WSDLContext> wsdlProvider;
-	
+
 	@PostConstruct
 	public void init() {
 		log.fine("Initializing BPELPlugin");
@@ -92,7 +94,7 @@ public class BPEL {
 				try {
 					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/ws-bpel_executable.xsd")) };
 				} catch (Exception e) {
-					log.log(Level.SEVERE,"",e);
+					log.log(Level.SEVERE, "", e);
 					return null;
 				}
 			}
@@ -105,7 +107,7 @@ public class BPEL {
 				try {
 					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/ws-bpel_plnktype.xsd")) };
 				} catch (Exception e) {
-					log.log(Level.SEVERE,"",e);
+					log.log(Level.SEVERE, "", e);
 					return null;
 				}
 			}
@@ -153,9 +155,10 @@ public class BPEL {
 		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new
 		// DiscoveryPass());
 		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
-		
-		
-		bpelCompiler.addContentParser(ExecutableProcessParser.EXECUTABLE, ExecutableProcessModel.class, new ExecutableProcessParser());
+		bpelCompiler.addContentParser(new ExecutableProcessParser(), ExecutableProcessParser.EXECUTABLE);
+		bpelCompiler.addContentParser(new PartnerLinksParser(), PartnerLinksParser.PARTNERLINKS);
+		bpelCompiler.addContentParser(new VariablesParser(), VariablesParser.VARIABLES);
+		bpelCompiler.addContentParser(new SequenceParser(), SequenceParser.SEQUENCE);
 		log.fine("BPELPlugin Initialized");
 
 	}

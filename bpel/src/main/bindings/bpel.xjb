@@ -17,5 +17,10 @@
 			<jxb:package name="org.apache.ode.bpel.exec.xml" />
 		</jxb:schemaBindings>
 		
+		<jxb:bindings node="//xs:complexType[@name='scopeType']">
+			<jxb:class name="Scope" />
+		</jxb:bindings>
+		
+		
 	</jxb:bindings>
 </jxb:bindings>

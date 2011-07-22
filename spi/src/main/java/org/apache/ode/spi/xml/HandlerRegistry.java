@@ -18,51 +18,13 @@
  */
 package org.apache.ode.spi.xml;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.xml.namespace.QName;
 
-public class HandlerRegistry<C> {
+public interface HandlerRegistry<M, C, H extends ElementHandler<M, C>, K> {
 
-	Map<QName, Map<Class<?>, ElementHandler<?, C>>> handlers = new HashMap<QName, Map<Class<?>, ElementHandler<?, C>>>();
+	public void register(QName qname, K modelkey, H handler);
 
-	public <M> void register(QName qname, Class<M> clazz, ElementHandler<M, C> handler) {
-		Map<Class<?>, ElementHandler<?, C>> entry = handlers.get(qname);
-		if (entry == null) {
-			entry = new HashMap<Class<?>, ElementHandler<?, C>>();
-			handlers.put(qname, entry);
-		}
-		if (clazz != null) {
-			entry.put(clazz, handler);
-		} else {
-			entry.put(Object.class, handler);
-		}
-	}
+	public void unregister(QName qname, K modelkey);
 
-	public <M> void unregister(QName qname, Class<M> clazz) {
-
-	}
-
-	public <M> ElementHandler<M, C> retrieve(QName qname, Class<M> clazz) {
-		Map<Class<?>, ElementHandler<?, C>> entry = handlers.get(qname);
-		if (entry != null) {
-			if (clazz != null) {
-				ElementHandler<M, C> handler = (ElementHandler<M, C>) entry.get(clazz);
-				if (handler == null) {
-					for (Map.Entry<Class<?>, ElementHandler<?, C>> canidates : entry.entrySet()) {
-						if (clazz.isAssignableFrom(canidates.getKey())) {
-							handler = (ElementHandler<M, C>) canidates.getValue();
-							break;
-						}
-					}
-				}
-				return handler;
-			} else {
-				return (ElementHandler<M, C>) entry.values().iterator().next();
-			}
-		}
-		return null;
-	}
-
+	public H retrieve(QName qname, M model);
 }

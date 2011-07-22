@@ -31,7 +31,7 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
-import org.apache.ode.spi.compiler.XSDContext;
+import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.Validate;
 import org.apache.ode.spi.repo.XMLDataContentHandler;

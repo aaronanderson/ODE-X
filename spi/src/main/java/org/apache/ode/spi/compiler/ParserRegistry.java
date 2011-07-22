@@ -16,38 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler.model;
+package org.apache.ode.spi.compiler;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.xml.namespace.QName;
 
-import org.apache.ode.bpel.exec.xml.Process;
+import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.xml.HandlerRegistry;
 
-public class ProcessModel extends ActivityModel {
+public interface ParserRegistry<K> extends HandlerRegistry<Unit<? extends Instruction>, CompilerContext, Parser<Unit<? extends Instruction>>, K> {
 
-	final Process startProcess;
-	final Process endProcess;
-	List<Import> imports = new ArrayList<Import>();
+	@Override
+	public void register(QName qname, K modelkey, Parser<Unit<? extends Instruction>> handler);
 
-	public ProcessModel() {
-		startProcess = new Process();
-		endProcess = new Process();
-	}
+	@Override
+	public void unregister(QName qname, K modelkey);
 
-	public Process getStartProcess() {
-		return startProcess;
-	}
-
-	public Process getEndProcess() {
-		return endProcess;
-	}
-
-	public static class Import {
-
-	}
-
-	public static class PartnerLink {
-
-	}
+	@Override
+	public Parser<Unit<? extends Instruction>> retrieve(QName qname, Unit model);
 
 }

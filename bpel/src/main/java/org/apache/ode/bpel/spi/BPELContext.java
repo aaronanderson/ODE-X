@@ -18,11 +18,12 @@
  */
 package org.apache.ode.bpel.spi;
 
-import org.apache.ode.bpel.compiler.model.ProcessModel;
+import org.apache.ode.bpel.exec.xml.Process;
+import org.apache.ode.spi.compiler.Contextual;
 
 public interface BPELContext {
 	
    public static final String ID ="BPELContext";
    
-   ProcessModel mainModel();
+   Contextual<Process> mainModel();
 }

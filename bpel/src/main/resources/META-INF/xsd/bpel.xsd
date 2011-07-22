@@ -15,22 +15,50 @@
 
 	<import namespace="http://ode.apache.org/executable" />
 
+	<complexType name="scopeType">
+		<complexContent>
+			<extension base="exec:contextType" />
+		</complexContent>
+	</complexType>
+
 	<element name="process">
 		<complexType>
-		<complexContent>
-			<extension base="exec:contextType">
-				<attribute name="name" type="string" use="required" />
-				<attribute name="queryLanguage" type="string" use="optional" />
-				<attribute name="expressionLanguage" type="string" use="optional" />
-			</extension>
-		</complexContent>
+			<complexContent>
+				<extension base="tns:scopeType">
+					<attribute name="name" type="string" use="required" />
+					<attribute name="queryLanguage" type="string" use="optional" />
+					<attribute name="expressionLanguage" type="string" use="optional" />
+				</extension>
+			</complexContent>
 		</complexType>
 	</element>
 
-	<element name="partnerLinksType">
+	<element name="import">
 		<complexType>
 			<complexContent>
-				<extension base="exec:instructionType" />
+				<extension base="exec:compilerSettingType">
+					<attribute name="namespace" type="string" use="required" />
+					<attribute name="location" type="string" use="optional" />
+					<attribute name="type" type="string" use="optional" default="wsdl" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="extension">
+		<complexType>
+			<complexContent>
+				<extension base="exec:compilerSettingType">
+					<attribute name="name" type="string" use="required" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="partnerLinks">
+		<complexType>
+			<complexContent>
+				<extension base="exec:contextType" />
 			</complexContent>
 		</complexType>
 	</element>
@@ -46,7 +74,7 @@
 	<element name="variables">
 		<complexType>
 			<complexContent>
-				<extension base="exec:instructionType" />
+				<extension base="exec:contextType" />
 			</complexContent>
 		</complexType>
 	</element>
@@ -62,7 +90,7 @@
 	<element name="sequence">
 		<complexType>
 			<complexContent>
-				<extension base="exec:instructionType" />
+				<extension base="tns:scopeType" />
 			</complexContent>
 		</complexType>
 	</element>

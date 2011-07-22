@@ -16,30 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.spi.compiler.wsdl;
 
-import javax.wsdl.extensions.ExtensionRegistry;
-import javax.wsdl.xml.WSDLLocator;
-import javax.wsdl.xml.WSDLReader;
-import javax.xml.namespace.QName;
 
-import org.w3c.dom.Element;
+public class Operation {
 
-public interface WSDLContext {
-
-	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
-	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
-
-	public static final String ID = "WSDLContext";
-
-	public ExtensionRegistry getExtensionRegistry();
-
-	public WSDLReader createWSDLReader();
-	
-	public QName declareWSDL(Source src);
-	
-	public QName declareWSDL(Element src);
-	
-	public WSDLLocator getWSDLLocator(QName src, XSDContext ctx);
 
 }

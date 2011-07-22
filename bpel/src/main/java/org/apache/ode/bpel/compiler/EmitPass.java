@@ -29,24 +29,23 @@ import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.exec.xml.Block;
 import org.apache.ode.spi.exec.xml.InstructionSets;
 
+public class EmitPass implements CompilerPass {
 
-
-public class EmitPass implements CompilerPass{
-	
 	@Override
-	public void compile(CompilerContext ctx){
+	public void compile(CompilerContext ctx) {
 		BPELContext bctx = ctx.subContext(BPELContext.ID);
 		bctx.getClass();
-		ObjectFactory bpelFactory = new ObjectFactory();
-		switch (ctx.phase()){
+		switch (ctx.phase()) {
 		case EMIT:
 			InstructionSets set = ctx.executable().getInstructionSets();
-			if (set == null){
+			if (set == null) {
 				set = new InstructionSets();
 				ctx.executable().setInstructionSets(set);
 			}
 			set.getInstructionSet().add(BPELComponent.BPEL_INSTRUCTION_SET);
-			ctx.executable().getBlock().add(bctx.mainModel().getBlock());
+			Block main = new Block();
+			bctx.mainModel().emit(main);
+			ctx.executable().getBlock().add(main);
 			break;
 		}
 	}

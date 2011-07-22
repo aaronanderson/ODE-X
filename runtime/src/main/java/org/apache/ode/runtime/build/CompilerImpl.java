@@ -29,20 +29,21 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.runtime.build.ParserRegistryImpl.UnitKey;
 import org.apache.ode.spi.compiler.Compiler;
-import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Parser;
-import org.apache.ode.spi.xml.ElementHandler;
-import org.apache.ode.spi.xml.HandlerRegistry;
+import org.apache.ode.spi.compiler.ParserRegistry;
+import org.apache.ode.spi.compiler.Unit;
+import org.apache.ode.spi.exec.xml.Instruction;
 
 public class CompilerImpl implements Compiler {
 
 	private Map<CompilerPhase, List<CompilerPass>> passes = new ConcurrentHashMap<CompilerPhase, List<CompilerPass>>();
 	private Map<String, Provider<?>> contexts = new ConcurrentHashMap<String, Provider<?>>();
 	private Set<QName> instructionSets = new CopyOnWriteArraySet<QName>();
-	private HandlerRegistry<CompilerContext> registry = new HandlerRegistry<CompilerContext>();
+	private ParserRegistryImpl registry = new ParserRegistryImpl();
 
 	@Override
 	public void addCompilerPass(CompilerPhase phase, CompilerPass pass) {
@@ -81,11 +82,13 @@ public class CompilerImpl implements Compiler {
 	}
 
 	@Override
-	public <M> void addContentParser(QName qname, Class<M> clazz, Parser<M> parser) {
-		registry.register(qname, clazz, (ElementHandler<M, CompilerContext>) parser);
+	public <M extends Unit<? extends Instruction>> void addContentParser(Parser<M> parser, QName... qname) {
+		for (QName q : qname) {
+			registry.register(q, (Parser<Unit<? extends Instruction>>) parser);
+		}
 	}
 
-	HandlerRegistry<CompilerContext> getParserRegistry() {
+	ParserRegistry getParserRegistry() {
 		return registry;
 	}
 

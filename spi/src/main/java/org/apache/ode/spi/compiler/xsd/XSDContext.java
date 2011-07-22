@@ -16,10 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler.model;
+package org.apache.ode.spi.compiler.xsd;
 
+import javax.xml.namespace.QName;
 
-public class ExecutableProcessModel extends ProcessModel {
+import org.apache.ode.spi.compiler.Source;
+import org.w3c.dom.Element;
 
+public interface XSDContext {
 	
+	public static final String ID ="XMLSchemaContext";
+	
+	public QName declareXSD(Source src);
+	
+	public QName declareXSD(Element src);
+
 }

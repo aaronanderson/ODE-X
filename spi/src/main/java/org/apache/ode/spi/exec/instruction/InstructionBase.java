@@ -16,16 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler.model;
+package org.apache.ode.spi.exec.instruction;
 
-import org.apache.ode.spi.exec.xml.Block;
-
-public class ActivityModel {
-
-	Block block = new Block();
-
-	public Block getBlock() {
-		return block;
-	}
+public class InstructionBase {
 
 }

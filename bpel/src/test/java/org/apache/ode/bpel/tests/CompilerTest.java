@@ -84,6 +84,7 @@ public class CompilerTest {
 		buildSystem.build(readStream(Thread.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.build")));
 		byte[] content = repo.exportArtifact(new ArtifactId("{http://ode/bpel/unit-test}HelloWorld", "application/ode-executable", "1.0"));
 		assertNotNull(content);
+		//System.out.println(new String(content));
 		Document doc = ParserUtils.contentToDom(content);
 		XPathFactory xpFactory = XPathFactory.newInstance();
 		XPath xPath = xpFactory.newXPath();

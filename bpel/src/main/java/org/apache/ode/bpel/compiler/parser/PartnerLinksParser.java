@@ -24,65 +24,67 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.bpel.BPEL;
-import org.apache.ode.bpel.exec.xml.Import;
-import org.apache.ode.bpel.exec.xml.Process;
+import org.apache.ode.bpel.exec.xml.PartnerLink;
+import org.apache.ode.bpel.exec.xml.PartnerLinks;
+import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
+import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.Parser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
-public class ExecutableProcessParser implements Parser<Contextual<Process>> {
-	public static final QName EXECUTABLE = new QName(BPEL.BPEL_EXEC_NAMESPACE, "process");
-	public static final QName IMPORT = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
-	public static final QName IMPORT_SETTING = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
+public class PartnerLinksParser implements Parser<Contextual<Scope>> {
+	public static final QName PARTNERLINKS = new QName(BPEL.BPEL_EXEC_NAMESPACE, "partnerLinks");
+	public static final QName PARTNERLINK = new QName(BPEL.BPEL_EXEC_NAMESPACE, "partnerLink");
+
+	QName varsName;
+
+	public PartnerLinksParser(/*QName varsName*/) {
+		// this.varsName = varsName;
+	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Process> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
 			case XMLStreamConstants.START_ELEMENT:
-				ParserUtils.assertStart(input, EXECUTABLE);
-				ParserUtils.setLocation(input, context.source().srcRef(), model);
-				model.beginContext().setQueryLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "queryLanguage"));
-				model.beginContext().setExpressionLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "expressionLanguage"));
-
-				// ParserUtils.skipChildren(input);
-
+				ParserUtils.assertStart(input, PARTNERLINKS);
+				Contextual<PartnerLinks> links = new Contextual<PartnerLinks>(PARTNERLINKS, PartnerLinks.class, model);
+				ParserUtils.setLocation(input, context.source().srcRef(), links);
+				model.children().add(links);
 				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-					if (IMPORT.equals(input.getName())) {
-						parseImport(input, model, context);
+					if (PARTNERLINK.equals(input.getName())) {
+						parsePartnerLink(input, links, context);
 					} else {
-						context.parseContent(input, model);
+						context.parseContent(input, links);
 					}
 				}
 				break;
 			case XMLStreamConstants.END_ELEMENT:
-				ParserUtils.assertEnd(input, EXECUTABLE);
+				ParserUtils.assertEnd(input, PARTNERLINKS);
 				return;
 			}
 		}
 
 	}
 
-	public void parseImport(XMLStreamReader input, Contextual<Process> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parsePartnerLink(XMLStreamReader input, Contextual<PartnerLinks> links, CompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
 			case XMLStreamConstants.START_ELEMENT:
-				ParserUtils.assertStart(input, IMPORT);
-				Import imprt = new Import();
-				imprt.setType(input.getAttributeValue(IMPORT.getNamespaceURI(), "importType"));
-				imprt.setNamespace(input.getAttributeValue(IMPORT.getNamespaceURI(), "namespace"));
-				imprt.setLocation(input.getAttributeValue(IMPORT.getNamespaceURI(), "location"));
-				// model.settings().put(, value);
+				ParserUtils.assertStart(input, PARTNERLINK);
+				Instructional<PartnerLink> link = new Instructional<PartnerLink>(PARTNERLINK, PartnerLink.class, links);
+				ParserUtils.setLocation(input, context.source().srcRef(), link);
+				links.children().add(link);
 				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-					context.parseContent(input, model);
+					context.parseContent(input, link);
 				}
 				break;
 			case XMLStreamConstants.END_ELEMENT:
-				ParserUtils.assertEnd(input, IMPORT);
+				ParserUtils.assertEnd(input, PARTNERLINK);
 				return;
 			}
 		}

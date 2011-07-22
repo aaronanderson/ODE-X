@@ -51,14 +51,18 @@
 			</jxb:property>
 		</jxb:bindings>
 
+		<jxb:bindings node="//xs:complexType[@name='compilerSettingType']">
+			<jxb:class name="CompilerSetting" />
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='instructionType']">
 			<jxb:class name="Instruction" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='contextType']">
 			<jxb:class name="Context" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='contextType']/xs:complexContent/xs:extension/xs:attribute[@name='ctx']">
 			<jxb:property>
 				<jxb:baseType name="Context" />

@@ -24,65 +24,68 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.bpel.BPEL;
-import org.apache.ode.bpel.exec.xml.Import;
-import org.apache.ode.bpel.exec.xml.Process;
+import org.apache.ode.bpel.exec.xml.Scope;
+import org.apache.ode.bpel.exec.xml.Variable;
+import org.apache.ode.bpel.exec.xml.Variables;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
+import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.Parser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
+import org.apache.ode.spi.exec.xml.Context;
 
-public class ExecutableProcessParser implements Parser<Contextual<Process>> {
-	public static final QName EXECUTABLE = new QName(BPEL.BPEL_EXEC_NAMESPACE, "process");
-	public static final QName IMPORT = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
-	public static final QName IMPORT_SETTING = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
+public class VariablesParser implements Parser<Contextual<Scope>> {
+	public static final QName VARIABLES = new QName(BPEL.BPEL_EXEC_NAMESPACE, "variables");
+	public static final QName VARIABLE = new QName(BPEL.BPEL_EXEC_NAMESPACE, "variable");
+
+	// QName varsName;
+
+	public VariablesParser(/*QName varsName*/) {
+		// this.varsName = varsName;
+	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Process> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
 			case XMLStreamConstants.START_ELEMENT:
-				ParserUtils.assertStart(input, EXECUTABLE);
-				ParserUtils.setLocation(input, context.source().srcRef(), model);
-				model.beginContext().setQueryLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "queryLanguage"));
-				model.beginContext().setExpressionLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "expressionLanguage"));
-
-				// ParserUtils.skipChildren(input);
-
+				ParserUtils.assertStart(input, VARIABLES);
+				Contextual<Variables> vars = new Contextual<Variables>(VARIABLES, Variables.class, model);
+				ParserUtils.setLocation(input, context.source().srcRef(), vars);
+				model.children().add(vars);
 				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-					if (IMPORT.equals(input.getName())) {
-						parseImport(input, model, context);
+					if (VARIABLE.equals(input.getName())) {
+						parseVariable(input, vars, context);
 					} else {
-						context.parseContent(input, model);
+						context.parseContent(input, vars);
 					}
 				}
 				break;
 			case XMLStreamConstants.END_ELEMENT:
-				ParserUtils.assertEnd(input, EXECUTABLE);
+				ParserUtils.assertEnd(input, VARIABLES);
 				return;
 			}
 		}
 
 	}
 
-	public void parseImport(XMLStreamReader input, Contextual<Process> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parseVariable(XMLStreamReader input, Contextual<Variables> vars, CompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
 			case XMLStreamConstants.START_ELEMENT:
-				ParserUtils.assertStart(input, IMPORT);
-				Import imprt = new Import();
-				imprt.setType(input.getAttributeValue(IMPORT.getNamespaceURI(), "importType"));
-				imprt.setNamespace(input.getAttributeValue(IMPORT.getNamespaceURI(), "namespace"));
-				imprt.setLocation(input.getAttributeValue(IMPORT.getNamespaceURI(), "location"));
-				// model.settings().put(, value);
+				ParserUtils.assertStart(input, VARIABLE);
+				Instructional<Variable> var = new Instructional<Variable>(VARIABLE, Variable.class, vars);
+				ParserUtils.setLocation(input, context.source().srcRef(), var);
+				vars.children().add(var);
 				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-					context.parseContent(input, model);
+					context.parseContent(input, var);
 				}
 				break;
 			case XMLStreamConstants.END_ELEMENT:
-				ParserUtils.assertEnd(input, IMPORT);
+				ParserUtils.assertEnd(input, VARIABLE);
 				return;
 			}
 		}

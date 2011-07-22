@@ -62,7 +62,9 @@
 		<attribute name="line" type="int" use="required" />
 		<attribute name="column" type="int" use="required" />
 	</complexType>
-
+	
+	<complexType name="compilerSettingType" abstract="true"/>
+	
 	<complexType name="instructionType" abstract="true">
 		<complexContent>
 			<extension base="tns:sourceRefType">

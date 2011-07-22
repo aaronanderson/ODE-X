@@ -34,17 +34,19 @@ import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Parser;
 import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.compiler.ParserRegistry;
 import org.apache.ode.spi.compiler.Source;
+import org.apache.ode.spi.compiler.Unit;
 import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.xml.HandlerRegistry;
+import org.apache.ode.spi.exec.xml.Instruction;
 import org.w3c.dom.Node;
 
 public class CompilerContextImpl implements CompilerContext {
 
 	private SourceImpl src;
 	private CompilerPhase phase;
-	private HandlerRegistry<CompilerContext> registry;
+	private ParserRegistry registry;
 	private Compilation state;
 
 	public CompilerContextImpl(SourceImpl src, Compilation state) {
@@ -118,6 +120,7 @@ public class CompilerContextImpl implements CompilerContext {
 		}
 		messages.append(msg);
 		if (t != null) {
+			messages.append(" ");
 			StringWriter sw = new StringWriter();
 			t.printStackTrace(new PrintWriter(sw));
 			messages.append(sw.toString());
@@ -154,15 +157,16 @@ public class CompilerContextImpl implements CompilerContext {
 	}
 
 	@Override
-	public <N> void parseContent(XMLStreamReader input, N subModel) throws XMLStreamException, ParserException {
+	public <U extends Unit<? extends Instruction>> void parseContent(XMLStreamReader input, U subModel) throws XMLStreamException, ParserException {
 		if (input.getEventType() != XMLStreamConstants.START_ELEMENT) {
-			throw new ParserException("invalid state");
+			return;
 		}
-		Parser<N> handler = (Parser<N>) registry.retrieve(input.getName(), subModel != null ? subModel.getClass() : null);
+		Parser<U> handler = (Parser<U>) registry.retrieve(input.getName(), subModel);
 		if (handler != null) {
 			handler.parse(input, subModel, this);
 		} else {
-			throw new ParserException(String.format("Unable to locate handler for %s", input.getName()));
+			throw new ParserException(String.format("[%d,%d] Unable to locate handler for %s", input.getLocation().getLineNumber(), input.getLocation()
+					.getColumnNumber(), input.getName()));
 
 		}
 	}

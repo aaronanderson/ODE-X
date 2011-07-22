@@ -18,22 +18,49 @@
  */
 package org.apache.ode.spi.compiler;
 
-import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.xml.Block;
+import org.apache.ode.spi.exec.xml.Context;
 import org.apache.ode.spi.exec.xml.Instruction;
 
 /**
- * Represents a singleton compiler definition for a given contentType
+ * Akin to a leaf node
  * 
  */
-public interface Compiler {
+public class Instructional<I extends Instruction> extends Unit<I> {
 
-	void addCompilerPass(CompilerPhase phase, CompilerPass compilerPasses);
+	final I ins;
+	final Contextual<? extends Context> parent;
 
-	<C> void addSubContext(String id, Provider<C> type);
+	public Instructional(QName name, Class<I> type, Contextual<? extends Context> parent) throws ParserException {
+		super(name, type);
+		try {
+			this.ins = type.newInstance();
+		} catch (Exception e) {
+			throw new ParserException(e);
+		}
+		this.parent = parent;
+	}
 
-	void addInstructionSet(QName instructionSet);
+	@Override
+	public QName name() {
+		return name;
+	}
 
-	public <M extends Unit<? extends Instruction>> void addContentParser(Parser<M> parser, QName... qname);
+	public I instruction() {
+		return ins;
+	}
+
+	@Override
+	public void emit(Block block) {
+		if (ins != null) {
+			block.getBody().add(ins);
+		}
+	}
+
+	public Contextual<? extends Context> parent() {
+		return parent;
+	}
+
 }

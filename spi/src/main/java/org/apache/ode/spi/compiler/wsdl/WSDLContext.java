@@ -16,18 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler;
+package org.apache.ode.spi.compiler.wsdl;
 
 import javax.xml.namespace.QName;
 
-import org.w3c.dom.Element;
+public interface WSDLContext {
 
-public interface XSDContext {
+	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
+	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
+
+	public static final String ID = "WSDLContext";
 	
-	public static final String ID ="XMLSchemaContext";
-	
-	public QName declareXSD(Source src);
-	
-	public QName declareXSD(Element src);
+	public void addOperation(Operation def);
 
 }

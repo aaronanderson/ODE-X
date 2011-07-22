@@ -27,8 +27,8 @@ import javax.wsdl.factory.WSDLFactory;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XSDContext;
+import org.apache.ode.spi.compiler.wsdl.WSDLContext;
+import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ws.commons.schema.XmlSchemaCollection;
 import org.apache.ws.commons.schema.XmlSchemaComplexType;
 import org.apache.ws.commons.schema.XmlSchemaElement;

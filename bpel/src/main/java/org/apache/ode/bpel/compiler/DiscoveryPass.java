@@ -24,13 +24,13 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.ode.bpel.compiler.model.ExecutableProcessModel;
 import org.apache.ode.bpel.compiler.parser.ExecutableProcessParser;
 import org.apache.ode.bpel.spi.BPELContext;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
+import org.apache.ode.spi.compiler.Contextual;
 import org.apache.ode.spi.compiler.Location;
-
+import org.apache.ode.bpel.exec.xml.Process;
 public class DiscoveryPass implements CompilerPass {
 
 	@Override
@@ -47,7 +47,7 @@ public class DiscoveryPass implements CompilerPass {
 					switch (type) {
 					case XMLStreamConstants.START_ELEMENT:
 						if (ExecutableProcessParser.EXECUTABLE.equals(reader.getName())) {
-							ExecutableProcessModel model = new ExecutableProcessModel();
+							Contextual<Process> model = new Contextual<Process>(ExecutableProcessParser.EXECUTABLE, Process.class,null);
 							bctx.setMainModel(model);
 							ctx.parseContent(reader, model);
 						} else {
@@ -59,7 +59,8 @@ public class DiscoveryPass implements CompilerPass {
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				ctx.addError(null,"Unable to parse BPEL document",e);
+				ctx.terminate();
 			}
 			break;
 		}

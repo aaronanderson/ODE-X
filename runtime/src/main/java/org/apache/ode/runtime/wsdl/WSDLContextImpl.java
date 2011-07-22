@@ -24,7 +24,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
+import javax.wsdl.Definition;
 import javax.wsdl.WSDLException;
+import javax.wsdl.extensions.AttributeExtensible;
 import javax.wsdl.extensions.ExtensionRegistry;
 import javax.wsdl.factory.WSDLFactory;
 import javax.wsdl.xml.WSDLLocator;
@@ -32,58 +34,26 @@ import javax.wsdl.xml.WSDLReader;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.xsd.XSDContextImpl;
+import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.compiler.WSDLContext;
-import org.apache.ode.spi.compiler.XSDContext;
+import org.apache.ode.spi.compiler.wsdl.Operation;
+import org.apache.ode.spi.compiler.wsdl.WSDLContext;
+import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.w3c.dom.Element;
 
 public class WSDLContextImpl implements WSDLContext {
 
 	private static final Logger log = Logger.getLogger(WSDLContext.class.getName());
-	private WSDLFactory factory;
-	private ExtensionRegistry extensions;
-	private Map<QName,byte[]> wsdls;
 	
 	@PostConstruct
 	void init() {
-		wsdls = new HashMap<QName,byte[]>();
-		try {
-			factory = WSDLFactory.newInstance();
-			extensions = factory.newPopulatedExtensionRegistry();
-		} catch (WSDLException e) {
-			log.log(Level.SEVERE, "", e);
-		}
 	}
 
 	@Override
-	public ExtensionRegistry getExtensionRegistry() {
-		return extensions;
-	}
-
-	@Override
-	public WSDLReader createWSDLReader() {
-		WSDLReader reader = factory.newWSDLReader();
-		reader.setFeature("javax.wsdl.verbose", log.isLoggable(Level.FINE));
-		reader.setExtensionRegistry(extensions);
-		return reader;
-	}
-	
-
-	@Override
-	public QName declareWSDL(Source src) {
-		wsdls.put(src.getQName(), src.getContent());
-		return src.getQName();
-	}
-
-	@Override
-	public QName declareWSDL(Element src) {
+	public void addOperation(Operation def) {
 		// TODO Auto-generated method stub
-		return null;
+		
 	}
 
-	@Override
-	public WSDLLocator getWSDLLocator(QName src, XSDContext ctx) {
-		return new WSDLLocatorImpl(wsdls.get(src),this,(XSDContextImpl)ctx);
-	}
-
+	
 }

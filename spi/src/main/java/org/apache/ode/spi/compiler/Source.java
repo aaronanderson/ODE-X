@@ -22,7 +22,7 @@ import org.apache.ode.spi.repo.Artifact;
 
 public interface Source extends Artifact {
 
-	org.apache.ode.spi.exec.xml.Source id();
+	org.apache.ode.spi.exec.xml.Source srcRef();
 	
 	SourceType sourceType();
                                           

@@ -88,7 +88,7 @@ public class SourceImpl implements Source {
 	}
 
 	@Override
-	public org.apache.ode.spi.exec.xml.Source id() {
+	public org.apache.ode.spi.exec.xml.Source srcRef() {
 		return xmlSrc;
 	}
 

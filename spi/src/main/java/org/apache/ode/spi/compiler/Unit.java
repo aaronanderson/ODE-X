@@ -18,6 +18,43 @@
  */
 package org.apache.ode.spi.compiler;
 
-public class ControlBase {
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.namespace.QName;
+
+import org.apache.ode.spi.exec.xml.Block;
+import org.apache.ode.spi.exec.xml.CompilerSetting;
+import org.apache.ode.spi.exec.xml.Instruction;
+
+/**
+ * Represents a singleton compiler definition for a given contentType
+ * 
+ */
+public abstract class Unit<I extends Instruction> {
+
+	final QName name;
+	final Class<I> clazz;
+	final Map<QName, CompilerSetting> settings;
+
+	public Unit(QName name, Class<I> clazz) {
+		this.name = name;
+		this.clazz = clazz;
+		this.settings = new HashMap<QName, CompilerSetting>();
+	}
+
+	public QName name() {
+		return name;
+	}
+
+	public Class<I> type() {
+		return clazz;
+	}
+
+	public <S extends CompilerSetting> Map<QName, S> settings() {
+		return (Map<QName, S>) settings;
+	}
+
+	abstract void emit(Block block);
 
 }

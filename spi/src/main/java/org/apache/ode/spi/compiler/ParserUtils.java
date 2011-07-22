@@ -66,23 +66,20 @@ public class ParserUtils {
 	public static final String LOCATION_END_LINE_NSATTR = LOCATION_NS_PREFIX + ":" + LOCATION_END_LINE_ATTR;
 	public static final String LOCATION_END_COL_NSATTR = LOCATION_NS_PREFIX + ":" + LOCATION_END_COL_ATTR;
 
-	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, SourceRef srcRef) throws XMLStreamException {
-		srcRef.setSref(src);
-		srcRef.setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
-		srcRef.setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));
+	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Instructional ins) throws XMLStreamException {
+		ins.instruction().setSref(src);
+		ins.instruction().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
+		ins.instruction().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));
 	}
 
-	public static void startContext(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Context ctx) throws XMLStreamException {
-		ctx.setSref(src);
-		ctx.setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));
-		ctx.setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_COL_ATTR)));
-	}
-
-	public static void endContext(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Context ctx) throws XMLStreamException {
-		ctx.setSref(src);
-		ctx.setMode(ContextMode.END);
-		ctx.setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
-		ctx.setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));
+	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Contextual ctx) throws XMLStreamException {
+		ctx.beginContext().setSref(src);
+		ctx.beginContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));
+		ctx.beginContext().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_COL_ATTR)));
+		ctx.endContext().setSref(src);
+		ctx.endContext().setMode(ContextMode.END);
+		ctx.endContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
+		ctx.endContext().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));
 	}
 
 	public static Document inlineLocation(byte[] content) throws ParserException {
@@ -193,11 +190,18 @@ public class ParserUtils {
 
 	}
 
-	public static void skip(XMLStreamReader input) throws XMLStreamException, ParserException {
+	public static void skipChildren(XMLStreamReader input) throws XMLStreamException, ParserException {
+		skip(1, input);
+	}
+
+	public static void skipSiblings(XMLStreamReader input) throws XMLStreamException, ParserException {
+		skip(0, input);
+	}
+
+	public static void skip(int level, XMLStreamReader input) throws XMLStreamException, ParserException {
 		if (input.getEventType() != XMLStreamConstants.START_ELEMENT) {
 			throw new ParserException("reader must be in the start element state");
 		}
-		int level = 1;
 		while (input.hasNext()) {
 			int type = input.next();
 			if (type == XMLStreamConstants.START_ELEMENT) {

@@ -25,6 +25,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.exec.xml.Instruction;
 import org.w3c.dom.Node;
 
 /**
@@ -57,7 +58,7 @@ public interface CompilerContext {
 
 	void declareSource(String contentType, Location start, Location end);
 
-	public <N> void parseContent(XMLStreamReader input, N subModel) throws XMLStreamException, ParserException;
+	public <U extends Unit<? extends Instruction>> void parseContent(XMLStreamReader input, U subModel) throws XMLStreamException, ParserException;
 
 	void terminate();
 

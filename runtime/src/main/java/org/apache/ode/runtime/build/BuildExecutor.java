@@ -196,7 +196,7 @@ public class BuildExecutor implements CommandObject {
 		exec.setSources(srcs);
 		for (CompilerContextImpl impl : contexts) {
 			if (!(impl.source() instanceof InlineSource)) {
-				srcs.getSources().add(impl.source().id());
+				srcs.getSources().add(impl.source().srcRef());
 			}
 		}
 
