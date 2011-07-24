@@ -25,20 +25,22 @@ import java.util.Map;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.compiler.AttributeParser;
+import org.apache.ode.spi.compiler.ElementParser;
 import org.apache.ode.spi.compiler.ParserRegistry;
 import org.apache.ode.spi.compiler.Unit;
 import org.apache.ode.spi.exec.xml.Instruction;
 
 public class ParserRegistryImpl implements ParserRegistry<org.apache.ode.runtime.build.ParserRegistryImpl.UnitKey> {
 
-	Map<QName, Map<UnitKey, Parser>> handlers = new HashMap<QName, Map<UnitKey, Parser>>();
+	Map<QName, Map<UnitKey, ElementParser>> elHandlers = new HashMap<QName, Map<UnitKey, ElementParser>>();
+	Map<QName, Map<QName, Map<UnitKey, AttributeParser>>> attHandlers = new HashMap<QName, Map<QName, Map<UnitKey, AttributeParser>>>();
 
-	public void register(QName qname, Parser<Unit<? extends Instruction>> handler) {
+	public void register(QName qname, ElementParser<Unit<? extends Instruction>> handler) {
 		for (Type t : handler.getClass().getGenericInterfaces()) {
 			if (t instanceof ParameterizedType) {
 				ParameterizedType pt = (ParameterizedType) t;
-				if (pt.getRawType() instanceof Class && Parser.class.equals(pt.getRawType())) {
+				if (pt.getRawType() instanceof Class && ElementParser.class.equals(pt.getRawType())) {
 					ParameterizedType ct = (ParameterizedType) pt.getActualTypeArguments()[0];
 					register(qname, new UnitKey((Class) ct.getActualTypeArguments()[0], (Class) ct.getRawType()), handler);
 					return;
@@ -48,11 +50,11 @@ public class ParserRegistryImpl implements ParserRegistry<org.apache.ode.runtime
 	}
 
 	@Override
-	public void register(QName qname, UnitKey modelkey, Parser<Unit<? extends Instruction>> handler) {
-		Map<UnitKey, Parser> entry = handlers.get(qname);
+	public void register(QName qname, UnitKey modelkey, ElementParser<Unit<? extends Instruction>> handler) {
+		Map<UnitKey, ElementParser> entry = elHandlers.get(qname);
 		if (entry == null) {
-			entry = new HashMap<UnitKey, Parser>();
-			handlers.put(qname, entry);
+			entry = new HashMap<UnitKey, ElementParser>();
+			elHandlers.put(qname, entry);
 		}
 		entry.put((UnitKey) modelkey, handler);
 
@@ -64,14 +66,14 @@ public class ParserRegistryImpl implements ParserRegistry<org.apache.ode.runtime
 	}
 
 	@Override
-	public Parser<Unit<? extends Instruction>> retrieve(QName qname, Unit model) {
+	public ElementParser<Unit<? extends Instruction>> retrieve(QName qname, Unit model) {
 		UnitKey modelKey = new UnitKey((Class<? extends Instruction>) model.type(), (Class<? extends Unit<?>>) model.getClass());
-		Map<UnitKey, Parser> entry = handlers.get(qname);
+		Map<UnitKey, ElementParser> entry = elHandlers.get(qname);
 		if (entry != null) {
 			if (modelKey != null) {
-				Parser handler = entry.get(modelKey);
+				ElementParser handler = entry.get(modelKey);
 				if (handler == null) {
-					for (Map.Entry<UnitKey, Parser> canidates : entry.entrySet()) {
+					for (Map.Entry<UnitKey, ElementParser> canidates : entry.entrySet()) {
 						if (canidates.getKey().isAssignable(modelKey)) {
 							handler = canidates.getValue();
 							break;
@@ -81,6 +83,65 @@ public class ParserRegistryImpl implements ParserRegistry<org.apache.ode.runtime
 				return handler;
 			} else {
 				return entry.values().iterator().next();
+			}
+		}
+		return null;
+	}
+
+	public void register(QName ename, QName aname, AttributeParser<Unit<? extends Instruction>> handler) {
+		for (Type t : handler.getClass().getGenericInterfaces()) {
+			if (t instanceof ParameterizedType) {
+				ParameterizedType pt = (ParameterizedType) t;
+				if (pt.getRawType() instanceof Class && ElementParser.class.equals(pt.getRawType())) {
+					ParameterizedType ct = (ParameterizedType) pt.getActualTypeArguments()[0];
+					register(ename, aname, new UnitKey((Class) ct.getActualTypeArguments()[0], (Class) ct.getRawType()), handler);
+					return;
+				}
+			}
+		}
+	}
+
+	@Override
+	public void register(QName ename, QName aname, UnitKey modelkey, AttributeParser<Unit<? extends Instruction>> handler) {
+		Map<QName, Map<UnitKey, AttributeParser>> eentry = attHandlers.get(ename);
+		if (eentry == null) {
+			eentry = new HashMap<QName, Map<UnitKey, AttributeParser>>();
+			attHandlers.put(ename, eentry);
+		}
+		Map<UnitKey, AttributeParser> aentry = eentry.get(aname);
+		if (aentry == null) {
+			aentry = new HashMap<UnitKey, AttributeParser>();
+			eentry.put(aname, aentry);
+		}
+		aentry.put((UnitKey) modelkey, handler);
+	}
+
+	@Override
+	public void unregister(QName ename, QName aname, UnitKey modelkey) {
+
+	}
+
+	@Override
+	public AttributeParser<Unit<? extends Instruction>> retrieve(QName ename, QName aname, Unit model) {
+		UnitKey modelKey = new UnitKey((Class<? extends Instruction>) model.type(), (Class<? extends Unit<?>>) model.getClass());
+		Map<QName, Map<UnitKey, AttributeParser>> eentry = attHandlers.get(ename);
+		if (eentry != null) {
+			Map<UnitKey, AttributeParser> aentry = eentry.get(aname);
+			if (aentry != null) {
+				if (modelKey != null) {
+					AttributeParser handler = aentry.get(modelKey);
+					if (handler == null) {
+						for (Map.Entry<UnitKey, AttributeParser> canidates : aentry.entrySet()) {
+							if (canidates.getKey().isAssignable(modelKey)) {
+								handler = canidates.getValue();
+								break;
+							}
+						}
+					}
+					return handler;
+				} else {
+					return aentry.values().iterator().next();
+				}
 			}
 		}
 		return null;

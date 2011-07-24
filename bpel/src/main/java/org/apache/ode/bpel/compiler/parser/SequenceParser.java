@@ -28,13 +28,13 @@ import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.bpel.exec.xml.Sequence;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
-import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.compiler.ElementParser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
-public class SequenceParser implements Parser<Contextual<Scope>> {
+public class SequenceParser implements ElementParser<Contextual<Scope>> {
 	public static final QName SEQUENCE = new QName(BPEL.BPEL_EXEC_NAMESPACE, "sequence");
-	
+
 	// QName varsName;
 
 	public SequenceParser(/*QName varsName*/) {
@@ -51,11 +51,9 @@ public class SequenceParser implements Parser<Contextual<Scope>> {
 				Contextual<Sequence> seq = new Contextual<Sequence>(SEQUENCE, Sequence.class, model);
 				ParserUtils.setLocation(input, context.source().srcRef(), seq);
 				model.children().add(seq);
-				ParserUtils.skipChildren(input);
-				/*
 				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-						context.parseContent(input, seq);
-				}*/
+					context.parseContent(input, seq);
+				}
 				break;
 			case XMLStreamConstants.END_ELEMENT:
 				ParserUtils.assertEnd(input, SEQUENCE);

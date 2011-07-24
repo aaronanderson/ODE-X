@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.xml.XMLConstants;
@@ -44,9 +45,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.apache.ode.spi.exec.xml.Context;
 import org.apache.ode.spi.exec.xml.ContextMode;
-import org.apache.ode.spi.exec.xml.SourceRef;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -66,23 +65,37 @@ public class ParserUtils {
 	public static final String LOCATION_END_LINE_NSATTR = LOCATION_NS_PREFIX + ":" + LOCATION_END_LINE_ATTR;
 	public static final String LOCATION_END_COL_NSATTR = LOCATION_NS_PREFIX + ":" + LOCATION_END_COL_ATTR;
 
+	public static boolean isContextual(XMLStreamReader input) throws XMLStreamException {
+		return input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR) != null ? true : false;
+	}
+
 	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Instructional ins) throws XMLStreamException {
 		ins.instruction().setSref(src);
-		ins.instruction().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
-		ins.instruction().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));
+		ins.instruction().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));
+		ins.instruction().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_COL_ATTR)));
 	}
 
 	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Contextual ctx) throws XMLStreamException {
 		ctx.beginContext().setSref(src);
+		ctx.endContext().setMode(ContextMode.START);
 		ctx.beginContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));
 		ctx.beginContext().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_COL_ATTR)));
 		ctx.endContext().setSref(src);
+		ctx.endContext().setCtx(ctx.beginContext());
 		ctx.endContext().setMode(ContextMode.END);
 		ctx.endContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
 		ctx.endContext().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));
 	}
 
-	public static Document inlineLocation(byte[] content) throws ParserException {
+	/**
+	 * We do not want to track compiler related directives in sources so we will not add in line information for them.
+	 * 
+	 * @param content
+	 * @param pragma
+	 * @return
+	 * @throws ParserException
+	 */
+	public static Document inlineLocation(byte[] content, Set<String> pragma) throws ParserException {
 		try {
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			dbf.setNamespaceAware(true);
@@ -126,8 +139,13 @@ public class ParserUtils {
 						}
 
 					}
-					el.setAttributeNS(LOCATION_NS, LOCATION_START_LINE_NSATTR, String.valueOf(reader.getLocation().getLineNumber()));
-					el.setAttributeNS(LOCATION_NS, LOCATION_START_COL_NSATTR, String.valueOf(reader.getLocation().getColumnNumber()));
+					if (el.getNamespaceURI() == null || !pragma.contains(el.getNamespaceURI())) {
+						if (!stack.empty()) {
+							stack.peek().setUserData("IS_CONTEXTUAL", "true", null);
+						}
+						el.setAttributeNS(LOCATION_NS, LOCATION_START_LINE_NSATTR, String.valueOf(reader.getLocation().getLineNumber()));
+						el.setAttributeNS(LOCATION_NS, LOCATION_START_COL_NSATTR, String.valueOf(reader.getLocation().getColumnNumber()));
+					}
 					stack.push(el);
 					break;
 
@@ -142,13 +160,15 @@ public class ParserUtils {
 
 					}
 					Element top = stack.pop();
-					String endLine = String.valueOf(reader.getLocation().getLineNumber());
-					String endColumn = String.valueOf(reader.getLocation().getColumnNumber());
-					String startLine = top.getAttributeNS(LOCATION_NS, LOCATION_START_LINE_NSATTR);
-					String startColumn = top.getAttributeNS(LOCATION_NS, LOCATION_START_COL_NSATTR);
-					if (!startLine.equals(endLine) || !startColumn.equals(endColumn)) {
-						top.setAttributeNS(LOCATION_NS, LOCATION_END_LINE_NSATTR, endLine);
-						top.setAttributeNS(LOCATION_NS, LOCATION_END_COL_NSATTR, endColumn);
+					if (top.getNamespaceURI() == null || !pragma.contains(top.getNamespaceURI())) {
+						String endLine = String.valueOf(reader.getLocation().getLineNumber());
+						String endColumn = String.valueOf(reader.getLocation().getColumnNumber());
+						String startLine = top.getAttributeNS(LOCATION_NS, LOCATION_START_LINE_ATTR);
+						String startColumn = top.getAttributeNS(LOCATION_NS, LOCATION_START_COL_ATTR);
+						if ("true".equals(top.getUserData("IS_CONTEXTUAL")) && !startLine.equals(endLine) || !startColumn.equals(endColumn)) {
+							top.setAttributeNS(LOCATION_NS, LOCATION_END_LINE_NSATTR, endLine);
+							top.setAttributeNS(LOCATION_NS, LOCATION_END_COL_NSATTR, endColumn);
+						}
 					}
 					if (!stack.isEmpty()) {
 						Element parent = stack.peek();
@@ -176,18 +196,13 @@ public class ParserUtils {
 		}
 	}
 
-	public static void assertStart(XMLStreamReader input, QName element) throws ParserException {
-		if (input.getEventType() != XMLStreamConstants.START_ELEMENT || !element.equals(input.getName())) {
-			throw new ParserException("Start element assertion failed");
-		}
+	public static void assertStart(XMLStreamReader input, QName element) throws XMLStreamException {
+		input.require(XMLStreamConstants.START_ELEMENT, element.getNamespaceURI(), element.getLocalPart());
 
 	}
 
-	public static void assertEnd(XMLStreamReader input, QName element) throws ParserException {
-		if (input.getEventType() != XMLStreamConstants.END_ELEMENT || !element.equals(input.getName())) {
-			throw new ParserException("End element assertion failed");
-		}
-
+	public static void assertEnd(XMLStreamReader input, QName element) throws XMLStreamException {
+		input.require(XMLStreamConstants.END_ELEMENT, element.getNamespaceURI(), element.getLocalPart());
 	}
 
 	public static void skipChildren(XMLStreamReader input) throws XMLStreamException, ParserException {

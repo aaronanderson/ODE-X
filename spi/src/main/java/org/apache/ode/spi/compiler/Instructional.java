@@ -43,6 +43,12 @@ public class Instructional<I extends Instruction> extends Unit<I> {
 		this.parent = parent;
 	}
 
+	public Instructional(QName name, I ins, Contextual<? extends Context> parent) throws ParserException {
+		super(name, (Class<I>) ins.getClass());
+		this.ins = ins;
+		this.parent = parent;
+	}
+
 	@Override
 	public QName name() {
 		return name;

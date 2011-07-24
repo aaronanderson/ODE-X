@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.activation.CommandObject;
 import javax.activation.DataHandler;
@@ -101,13 +102,13 @@ public class BuildExecutor implements CommandObject {
 		Compilation compilation = new Compilation();
 
 		BuildSource main = target.getMain().getArtifact();
-		addCompiler(main.getContentType(), compilation);
-		contexts.add(new CompilerContextImpl(preProcess(main, compilation.nextSrcId(), SourceType.MAIN), compilation));
+		CompilerImpl compiler = addCompiler(main.getContentType(), compilation);
+		contexts.add(new CompilerContextImpl(preProcess(main, compilation.nextSrcId(), compiler.getPragmas(), SourceType.MAIN), compilation));
 
 		if (target.getIncludes() != null) {
 			for (BuildSource src : target.getIncludes().getArtifact()) {
-				addCompiler(src.getContentType(), compilation);
-				contexts.add(new CompilerContextImpl(preProcess(src, compilation.nextSrcId(), SourceType.INCLUDE), compilation));
+				compiler = addCompiler(src.getContentType(), compilation);
+				contexts.add(new CompilerContextImpl(preProcess(src, compilation.nextSrcId(), compiler.getPragmas(), SourceType.INCLUDE), compilation));
 			}
 		}
 		// TODO make this multithreaded by using a threadpool and execute each pass in a runnable synchronizing on a countdown barrier
@@ -234,9 +235,10 @@ public class BuildExecutor implements CommandObject {
 		}
 	}
 
-	void addCompiler(String contentType, Compilation compilation) throws BuildException {
-		if (!compilation.getCompilers().containsKey(contentType)) {
-			CompilerImpl impl = (CompilerImpl) compilers.getCompiler(contentType);
+	CompilerImpl addCompiler(String contentType, Compilation compilation) throws BuildException {
+		CompilerImpl impl = (CompilerImpl) compilation.getCompilers().get(contentType);
+		if (impl == null) {
+			impl = (CompilerImpl) compilers.getCompiler(contentType);
 			if (impl == null) {
 				throw new BuildException(String.format("Unable to locate compiler form contentType %s", contentType));
 			}
@@ -259,9 +261,10 @@ public class BuildExecutor implements CommandObject {
 
 			}
 		}
+		return impl;
 	}
 
-	SourceImpl preProcess(BuildSource source, String id, SourceType sourceType) throws BuildException {
+	SourceImpl preProcess(BuildSource source, String id, Set<String> pragmaNS, SourceType sourceType) throws BuildException {
 		Artifact artifact = null;
 		try {
 			artifact = repo.read(source.getQname(), source.getContentType(), source.getVersion(), Artifact.class);
@@ -270,7 +273,7 @@ public class BuildExecutor implements CommandObject {
 		}
 		byte[] contents = artifact.getContent();
 		try {
-			Document intermediate = ParserUtils.inlineLocation(contents);
+			Document intermediate = ParserUtils.inlineLocation(contents, pragmaNS);
 			if (source.getPreprocessor() != null) {
 				preProcess(intermediate, source.getPreprocessor(), repo);
 			}

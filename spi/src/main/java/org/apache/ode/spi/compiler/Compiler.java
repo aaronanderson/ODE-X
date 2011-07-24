@@ -35,5 +35,9 @@ public interface Compiler {
 
 	void addInstructionSet(QName instructionSet);
 
-	public <M extends Unit<? extends Instruction>> void addContentParser(Parser<M> parser, QName... qname);
+	public void declarePragmaNS(String namespace);
+
+	public <M extends Unit<? extends Instruction>> void addContentParser(ElementParser<M> parser, QName... qname);
+
+	public <M extends Unit<? extends Instruction>> void addAttributeParser(AttributeParser<M> parser, QName aname, QName... qname);
 }

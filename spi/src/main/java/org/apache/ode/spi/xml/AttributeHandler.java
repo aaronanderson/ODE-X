@@ -19,18 +19,10 @@
 package org.apache.ode.spi.xml;
 
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLStreamException;
 
-public interface HandlerRegistry<M, C, E extends ElementHandler<M, C>, A extends AttributeHandler<M, C>, K> {
+public interface AttributeHandler<M, C> {
 
-	public void register(QName qname, K modelkey, E handler);
+	void parse(QName ename, QName aname, String value, M model, C context) throws XMLStreamException, HandlerException;
 
-	public void unregister(QName qname, K modelkey);
-
-	public E retrieve(QName qname, M model);
-
-	public void register(QName ename, QName aname, K modelkey, A handler);
-
-	public void unregister(QName ename, QName aname, K modelkey);
-
-	public A retrieve(QName ename, QName aname, M model);
 }

@@ -40,7 +40,7 @@ public class Contextual<C extends Context> extends Unit<C> {
 	final List<Unit<? extends Instruction>> children;
 
 	public Contextual(QName name, Class<C> type, Contextual<? extends Context> parent) throws ParserException {
-		super(name,type);
+		super(name, type);
 		try {
 			this.start = type.newInstance();
 			this.end = type.newInstance();
@@ -50,7 +50,23 @@ public class Contextual<C extends Context> extends Unit<C> {
 		this.parents = new Stack<Contextual<? extends Context>>();
 		if (parent != null) {
 			if (!(this instanceof Contextual)) {
-				throw new ParserException("Parent must be ActivityContextual");
+				throw new ParserException("Parent must be Contextual");
+			}
+			this.parents.addAll(parent.parents());
+			this.parents.push(parent);
+		}
+		this.children = new ArrayList<Unit<? extends Instruction>>();
+
+	}
+
+	public Contextual(QName name, C begin, C end, Contextual<? extends Context> parent) throws ParserException {
+		super(name, (Class<C>) begin.getClass());
+		this.start = begin;
+		this.end = end;
+		this.parents = new Stack<Contextual<? extends Context>>();
+		if (parent != null) {
+			if (!(this instanceof Contextual)) {
+				throw new ParserException("Parent must be Contextual");
 			}
 			this.parents.addAll(parent.parents());
 			this.parents.push(parent);

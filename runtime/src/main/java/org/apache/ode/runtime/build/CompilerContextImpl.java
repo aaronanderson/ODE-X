@@ -20,6 +20,10 @@ package org.apache.ode.runtime.build;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.xml.bind.Binder;
@@ -28,16 +32,18 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.build.SourceImpl.InlineSourceImpl;
+import org.apache.ode.spi.compiler.AttributeParser;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPhase;
+import org.apache.ode.spi.compiler.ElementParser;
 import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.Location;
-import org.apache.ode.spi.compiler.Parser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserRegistry;
+import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.compiler.Unit;
 import org.apache.ode.spi.compiler.Source.SourceType;
+import org.apache.ode.spi.compiler.Unit;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.Instruction;
 import org.w3c.dom.Node;
@@ -161,7 +167,8 @@ public class CompilerContextImpl implements CompilerContext {
 		if (input.getEventType() != XMLStreamConstants.START_ELEMENT) {
 			return;
 		}
-		Parser<U> handler = (Parser<U>) registry.retrieve(input.getName(), subModel);
+
+		ElementParser<U> handler = (ElementParser<U>) registry.retrieve(input.getName(), subModel);
 		if (handler != null) {
 			handler.parse(input, subModel, this);
 		} else {
@@ -169,6 +176,48 @@ public class CompilerContextImpl implements CompilerContext {
 					.getColumnNumber(), input.getName()));
 
 		}
+	}
+
+	@Override
+	public <U extends Unit<? extends Instruction>> String[] parseAttributes(XMLStreamReader input, U subModel, String... attrName) throws XMLStreamException,
+			ParserException {
+		if (input.getEventType() != XMLStreamConstants.START_ELEMENT) {
+			return null;
+		}
+		String[] results = null;
+		Map<String, Integer> attrNames = new HashMap<String, Integer>();
+		if (attrName != null) {
+			results = new String[attrName.length];
+			for (int i = 0; i < attrName.length; i++) {
+				attrNames.put(attrName[i], i);
+			}
+		}
+		for (int i = 0; i < input.getAttributeCount(); i++) {
+			if (ParserUtils.LOCATION_NS.equals(input.getAttributeNamespace(i))) {
+				continue;
+			}
+			boolean handled = false;
+			for (Iterator<Map.Entry<String, Integer>> j = attrNames.entrySet().iterator(); j.hasNext();) {
+				Map.Entry<String, Integer> reqAttrName = j.next();
+				if (reqAttrName.getKey().equals(input.getAttributeLocalName(i))) {
+					String attrNS = input.getAttributeNamespace(i);
+					if (attrNS.length() == 0 || attrNS.equals(input.getNamespaceURI())) {
+						j.remove();
+						results[reqAttrName.getValue()] = input.getAttributeValue(i);
+						handled = true;
+						break;
+					}
+
+				}
+			}
+			if (!handled) {
+				AttributeParser<U> handler = registry.retrieve(input.getName(), input.getAttributeName(i), subModel);
+				if (handler != null) {
+					handler.parse(input.getName(), input.getAttributeName(i), input.getAttributeValue(i), subModel, this);
+				}
+			}
+		}
+		return results;
 	}
 
 }

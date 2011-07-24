@@ -59,6 +59,8 @@ public interface CompilerContext {
 	void declareSource(String contentType, Location start, Location end);
 
 	public <U extends Unit<? extends Instruction>> void parseContent(XMLStreamReader input, U subModel) throws XMLStreamException, ParserException;
+	
+	public <U extends Unit<? extends Instruction>> String [] parseAttributes(XMLStreamReader input, U subModel, String ... attrName) throws XMLStreamException, ParserException;
 
 	void terminate();
 

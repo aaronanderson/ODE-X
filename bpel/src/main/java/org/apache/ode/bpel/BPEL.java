@@ -36,8 +36,11 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.bpel.compiler.DiscoveryPass;
 import org.apache.ode.bpel.compiler.EmitPass;
+import org.apache.ode.bpel.compiler.parser.AssignParser;
 import org.apache.ode.bpel.compiler.parser.ExecutableProcessParser;
 import org.apache.ode.bpel.compiler.parser.PartnerLinksParser;
+import org.apache.ode.bpel.compiler.parser.ReceiveParser;
+import org.apache.ode.bpel.compiler.parser.ReplyParser;
 import org.apache.ode.bpel.compiler.parser.SequenceParser;
 import org.apache.ode.bpel.compiler.parser.VariablesParser;
 import org.apache.ode.bpel.exec.BPELComponent;
@@ -159,6 +162,9 @@ public class BPEL {
 		bpelCompiler.addContentParser(new PartnerLinksParser(), PartnerLinksParser.PARTNERLINKS);
 		bpelCompiler.addContentParser(new VariablesParser(), VariablesParser.VARIABLES);
 		bpelCompiler.addContentParser(new SequenceParser(), SequenceParser.SEQUENCE);
+		bpelCompiler.addContentParser(new AssignParser(), AssignParser.ASSIGN);
+		bpelCompiler.addContentParser(new ReceiveParser(), ReceiveParser.RECEIVE);
+		bpelCompiler.addContentParser(new ReplyParser(), ReplyParser.REPLY);
 		log.fine("BPELPlugin Initialized");
 
 	}

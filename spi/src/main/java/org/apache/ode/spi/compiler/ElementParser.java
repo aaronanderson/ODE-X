@@ -24,7 +24,7 @@ import javax.xml.stream.XMLStreamReader;
 import org.apache.ode.spi.exec.xml.Instruction;
 import org.apache.ode.spi.xml.ElementHandler;
 
-public interface Parser<M extends Unit<? extends Instruction>> extends ElementHandler<M, CompilerContext> {
+public interface ElementParser<M extends Unit<? extends Instruction>> extends ElementHandler<M, CompilerContext> {
 
 	@Override
 	void parse(XMLStreamReader input, M model, CompilerContext context) throws XMLStreamException, ParserException;

@@ -83,7 +83,7 @@
 	<complexType name="contextType" abstract="true">
 		<complexContent>
 			<extension base="tns:instructionType">
-				<attribute name="mode" type="tns:contextMode" default="START" use="optional" />
+				<attribute name="mode" type="tns:contextMode" use="optional" />
 				<attribute name="ctx" type="IDREF" use="optional" />
 			</extension>
 		</complexContent>

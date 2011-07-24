@@ -30,10 +30,11 @@ import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.build.ParserRegistryImpl.UnitKey;
+import org.apache.ode.spi.compiler.AttributeParser;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
-import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.compiler.ElementParser;
 import org.apache.ode.spi.compiler.ParserRegistry;
 import org.apache.ode.spi.compiler.Unit;
 import org.apache.ode.spi.exec.xml.Instruction;
@@ -43,6 +44,7 @@ public class CompilerImpl implements Compiler {
 	private Map<CompilerPhase, List<CompilerPass>> passes = new ConcurrentHashMap<CompilerPhase, List<CompilerPass>>();
 	private Map<String, Provider<?>> contexts = new ConcurrentHashMap<String, Provider<?>>();
 	private Set<QName> instructionSets = new CopyOnWriteArraySet<QName>();
+	private Set<String> pragmas = new CopyOnWriteArraySet<String>();
 	private ParserRegistryImpl registry = new ParserRegistryImpl();
 
 	@Override
@@ -82,14 +84,31 @@ public class CompilerImpl implements Compiler {
 	}
 
 	@Override
-	public <M extends Unit<? extends Instruction>> void addContentParser(Parser<M> parser, QName... qname) {
+	public <M extends Unit<? extends Instruction>> void addContentParser(ElementParser<M> parser, QName... qname) {
 		for (QName q : qname) {
-			registry.register(q, (Parser<Unit<? extends Instruction>>) parser);
+			registry.register(q, (ElementParser<Unit<? extends Instruction>>) parser);
 		}
 	}
 
 	ParserRegistry getParserRegistry() {
 		return registry;
+	}
+
+	@Override
+	public void declarePragmaNS(String namespace) {
+		pragmas.add(namespace);
+	}
+
+	Set<String> getPragmas() {
+		return pragmas;
+	}
+
+	@Override
+	public <M extends Unit<? extends Instruction>> void addAttributeParser(AttributeParser<M> parser, QName aname, QName... qname) {
+		for (QName q : qname) {
+			registry.register(q, aname, (AttributeParser<Unit<? extends Instruction>>) parser);
+		}
+
 	}
 
 }

@@ -30,11 +30,11 @@ import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
 import org.apache.ode.spi.compiler.Instructional;
-import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.compiler.ElementParser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
-public class PartnerLinksParser implements Parser<Contextual<Scope>> {
+public class PartnerLinksParser implements ElementParser<Contextual<Scope>> {
 	public static final QName PARTNERLINKS = new QName(BPEL.BPEL_EXEC_NAMESPACE, "partnerLinks");
 	public static final QName PARTNERLINK = new QName(BPEL.BPEL_EXEC_NAMESPACE, "partnerLink");
 

@@ -18,46 +18,24 @@
  */
 package org.apache.ode.runtime.build;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.activation.CommandObject;
 import javax.activation.DataHandler;
 import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.xml.bind.Binder;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
-import javax.xml.bind.Marshaller;
-import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.ode.runtime.build.SourceImpl.InlineSourceImpl;
 import org.apache.ode.runtime.build.xml.BuildPlan;
 import org.apache.ode.runtime.build.xml.BuildSource;
-import org.apache.ode.runtime.build.xml.PreProcessor;
 import org.apache.ode.runtime.build.xml.Target;
-import org.apache.ode.runtime.exec.platform.PlatformImpl;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.CompilerPhase;
-import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
-import org.apache.ode.spi.compiler.Source.SourceType;
-import org.apache.ode.spi.exec.Component;
-import org.apache.ode.spi.exec.Component.InstructionSet;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Sources;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 public class DumpSources implements CommandObject {
 
@@ -65,6 +43,9 @@ public class DumpSources implements CommandObject {
 
 	@Inject
 	Repository repo;
+
+	@Inject
+	CompilersImpl compilers;
 
 	DataHandler handler;
 
@@ -144,17 +125,23 @@ public class DumpSources implements CommandObject {
 		} catch (RepositoryException re) {
 			throw new BuildException(re);
 		}
-		byte[] contents = artifact.getContent();
-		try {
-			Document intermediate = ParserUtils.inlineLocation(contents);
-			if (source.getPreprocessor() != null) {
-				BuildExecutor.preProcess(intermediate, source.getPreprocessor(), repo);
+
+		CompilerImpl c = (CompilerImpl) compilers.getCompiler(source.getContentType());
+		if (c != null) {
+			byte[] contents = artifact.getContent();
+			try {
+				Document intermediate = ParserUtils.inlineLocation(contents, c.getPragmas());
+				if (source.getPreprocessor() != null) {
+					BuildExecutor.preProcess(intermediate, source.getPreprocessor(), repo);
+				}
+				contents = ParserUtils.domToContent(intermediate);
+			} catch (ParserException pe) {
+				throw new BuildException(pe);
 			}
-			contents = ParserUtils.domToContent(intermediate);
-		} catch (ParserException pe) {
-			throw new BuildException(pe);
+			return contents;
+		} else {
+			throw new BuildException(String.format("Unable to locate compiler for contentType %s", source.getContentType()));
 		}
-		return contents;
 
 	}
 

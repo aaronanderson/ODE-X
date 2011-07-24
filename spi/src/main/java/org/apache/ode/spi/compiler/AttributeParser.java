@@ -16,21 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.xml;
+package org.apache.ode.spi.compiler;
 
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLStreamException;
 
-public interface HandlerRegistry<M, C, E extends ElementHandler<M, C>, A extends AttributeHandler<M, C>, K> {
+import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.xml.AttributeHandler;
 
-	public void register(QName qname, K modelkey, E handler);
+public interface AttributeParser<M extends Unit<? extends Instruction>> extends AttributeHandler<M, CompilerContext> {
 
-	public void unregister(QName qname, K modelkey);
+	@Override
+	void parse(QName ename, QName aname, String value, M model, CompilerContext context) throws XMLStreamException, ParserException;
 
-	public E retrieve(QName qname, M model);
-
-	public void register(QName ename, QName aname, K modelkey, A handler);
-
-	public void unregister(QName ename, QName aname, K modelkey);
-
-	public A retrieve(QName ename, QName aname, M model);
 }

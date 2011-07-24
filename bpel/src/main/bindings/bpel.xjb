@@ -21,6 +21,9 @@
 			<jxb:class name="Scope" />
 		</jxb:bindings>
 		
+		<jxb:bindings node="//xs:complexType[@name='activityType']">
+			<jxb:class name="Activity" />
+		</jxb:bindings>
 		
 	</jxb:bindings>
 </jxb:bindings>

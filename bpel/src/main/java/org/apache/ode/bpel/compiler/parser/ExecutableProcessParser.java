@@ -28,11 +28,11 @@ import org.apache.ode.bpel.exec.xml.Import;
 import org.apache.ode.bpel.exec.xml.Process;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
-import org.apache.ode.spi.compiler.Parser;
+import org.apache.ode.spi.compiler.ElementParser;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
-public class ExecutableProcessParser implements Parser<Contextual<Process>> {
+public class ExecutableProcessParser implements ElementParser<Contextual<Process>> {
 	public static final QName EXECUTABLE = new QName(BPEL.BPEL_EXEC_NAMESPACE, "process");
 	public static final QName IMPORT = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
 	public static final QName IMPORT_SETTING = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
@@ -45,8 +45,15 @@ public class ExecutableProcessParser implements Parser<Contextual<Process>> {
 			case XMLStreamConstants.START_ELEMENT:
 				ParserUtils.assertStart(input, EXECUTABLE);
 				ParserUtils.setLocation(input, context.source().srcRef(), model);
-				model.beginContext().setQueryLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "queryLanguage"));
-				model.beginContext().setExpressionLanguage(input.getAttributeValue(BPEL.BPEL_EXEC_NAMESPACE, "expressionLanguage"));
+				String[] attrs = context.parseAttributes(input, model, "name", "targetNamespace", "queryLanguage", "expressionLanguage", "suppressJoinFailure",
+						"exitOnStandardFault");
+
+				model.beginContext().setName(attrs[0]);
+				model.beginContext().setTargetNamespace(attrs[1]);
+				model.beginContext().setQueryLanguage(attrs[2]);
+				model.beginContext().setExpressionLanguage(attrs[3]);
+				model.beginContext().setSuppressJoinFailure("yes".equals(attrs[4]) ? true : false);
+				model.beginContext().setExitOnStandardFault("yes".equals(attrs[5]) ? true : false);
 
 				// ParserUtils.skipChildren(input);
 

@@ -22,6 +22,7 @@ import static org.apache.ode.spi.repo.DataContentHandler.readStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -84,7 +85,7 @@ public class CompilerTest {
 		buildSystem.build(readStream(Thread.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.build")));
 		byte[] content = repo.exportArtifact(new ArtifactId("{http://ode/bpel/unit-test}HelloWorld", "application/ode-executable", "1.0"));
 		assertNotNull(content);
-		//System.out.println(new String(content));
+		System.out.println(new String(content));
 		Document doc = ParserUtils.contentToDom(content);
 		XPathFactory xpFactory = XPathFactory.newInstance();
 		XPath xPath = xpFactory.newXPath();
@@ -101,7 +102,7 @@ public class CompilerTest {
 	public void testLocatorPreProcessor() throws Exception {
 		byte[] bpel = readStream(Thread
 				.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.bpel"));
-		Document doc = ParserUtils.inlineLocation(bpel);
+		Document doc = ParserUtils.inlineLocation(bpel, Collections.EMPTY_SET);
 		assertNotNull(doc);
 		Element p = (Element)doc.getDocumentElement();
 		assertNotNull(p);
@@ -111,7 +112,6 @@ public class CompilerTest {
 		a = p.getAttributeNodeNS(ParserUtils.LOCATION_NS, ParserUtils.LOCATION_END_LINE_ATTR);
 		assertNotNull(a);
 		assertEquals("64",a.getTextContent());
-
 		//System.out.println(ParserUtils.domToString(doc));
 	}
 	

@@ -23,15 +23,26 @@ import javax.xml.namespace.QName;
 import org.apache.ode.spi.exec.xml.Instruction;
 import org.apache.ode.spi.xml.HandlerRegistry;
 
-public interface ParserRegistry<K> extends HandlerRegistry<Unit<? extends Instruction>, CompilerContext, Parser<Unit<? extends Instruction>>, K> {
+public interface ParserRegistry<K>
+		extends
+		HandlerRegistry<Unit<? extends Instruction>, CompilerContext, ElementParser<Unit<? extends Instruction>>, AttributeParser<Unit<? extends Instruction>>, K> {
 
 	@Override
-	public void register(QName qname, K modelkey, Parser<Unit<? extends Instruction>> handler);
+	public void register(QName qname, K modelkey, ElementParser<Unit<? extends Instruction>> handler);
 
 	@Override
 	public void unregister(QName qname, K modelkey);
 
 	@Override
-	public Parser<Unit<? extends Instruction>> retrieve(QName qname, Unit model);
+	public ElementParser<Unit<? extends Instruction>> retrieve(QName qname, Unit model);
+
+	@Override
+	public void register(QName ename, QName aname, K modelkey, AttributeParser<Unit<? extends Instruction>> handler);
+
+	@Override
+	public void unregister(QName ename, QName aname, K modelkey);
+
+	@Override
+	public AttributeParser<Unit<? extends Instruction>> retrieve(QName ename, QName aname, Unit model);
 
 }
