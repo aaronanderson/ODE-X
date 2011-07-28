@@ -18,8 +18,13 @@
  */
 package org.apache.ode.spi.compiler.wsdl;
 
+import javax.xml.namespace.QName;
 
-public class Operation {
+public class Operation extends Unit {
+
+	public Operation(QName name) {
+		super(name);
+	}
 
 
 }

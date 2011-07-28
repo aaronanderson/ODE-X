@@ -21,6 +21,7 @@ package org.apache.ode.spi.compiler;
 import org.apache.ode.spi.xml.HandlerException;
 
 public class ParserException extends HandlerException {
+	private static final long serialVersionUID = 1L;
 
 	public ParserException(String msg) {
 		super(msg);

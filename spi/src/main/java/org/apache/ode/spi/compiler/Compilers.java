@@ -18,8 +18,20 @@
  */
 package org.apache.ode.spi.compiler;
 
+import org.apache.ode.spi.xml.AttributeHandler;
+import org.apache.ode.spi.xml.ElementHandler;
+import org.apache.ode.spi.xml.HandlerException;
+import org.apache.ode.spi.xml.HandlerRegistry;
+
 public interface Compilers {
-	Compiler newInstance();
-	void register(Compiler compiler, String contentType);
-	Compiler getCompiler(String contentType);
+
+	<M, C extends CompilerContext, P extends Compiler<M, C>> void register(P compiler, String contentType);
+
+	<M, C extends CompilerContext, P extends Compiler<M, C>> void unregister(String contentType, Class<P> type);
+
+	<M, C extends CompilerContext, P extends Compiler<M, C>> P getCompiler(String contentType, Class<P> type);
+
+	<M, X extends HandlerException, C extends XMLCompilerContext<M, X>, E extends ElementHandler<? extends M, C, X>, A extends AttributeHandler<? extends M, C, X>, H extends HandlerRegistry<M, C, X, E, A>, P extends XMLCompiler<M, X, C, E, A, H>> P getXMLCompiler(
+			String contentType, Class<P> type);
+
 }

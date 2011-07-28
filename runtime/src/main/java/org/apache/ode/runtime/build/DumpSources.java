@@ -30,6 +30,7 @@ import javax.xml.bind.JAXBElement;
 import org.apache.ode.runtime.build.xml.BuildPlan;
 import org.apache.ode.runtime.build.xml.BuildSource;
 import org.apache.ode.runtime.build.xml.Target;
+import org.apache.ode.spi.compiler.AbstractCompiler;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.repo.Artifact;
@@ -126,11 +127,11 @@ public class DumpSources implements CommandObject {
 			throw new BuildException(re);
 		}
 
-		CompilerImpl c = (CompilerImpl) compilers.getCompiler(source.getContentType());
+		AbstractCompiler<?,?> c =  compilers.getCompiler(source.getContentType(), AbstractCompiler.class);
 		if (c != null) {
 			byte[] contents = artifact.getContent();
 			try {
-				Document intermediate = ParserUtils.inlineLocation(contents, c.getPragmas());
+				Document intermediate = ParserUtils.inlineLocation(contents, c.getPragmaNS());
 				if (source.getPreprocessor() != null) {
 					BuildExecutor.preProcess(intermediate, source.getPreprocessor(), repo);
 				}

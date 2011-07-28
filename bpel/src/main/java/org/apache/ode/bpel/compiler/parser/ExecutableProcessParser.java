@@ -29,6 +29,7 @@ import org.apache.ode.bpel.exec.xml.Process;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
 import org.apache.ode.spi.compiler.ElementParser;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
@@ -38,7 +39,7 @@ public class ExecutableProcessParser implements ElementParser<Contextual<Process
 	public static final QName IMPORT_SETTING = new QName(BPEL.BPEL_EXEC_NAMESPACE, "import");
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Process> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Process> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -73,7 +74,7 @@ public class ExecutableProcessParser implements ElementParser<Contextual<Process
 
 	}
 
-	public void parseImport(XMLStreamReader input, Contextual<Process> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parseImport(XMLStreamReader input, Contextual<Process> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {

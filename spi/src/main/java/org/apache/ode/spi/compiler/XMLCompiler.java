@@ -16,24 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler;
+package org.apache.ode.spi.compiler;
 
-import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.ExecCompilerContext;
+import org.apache.ode.spi.xml.AttributeHandler;
+import org.apache.ode.spi.xml.ElementHandler;
+import org.apache.ode.spi.xml.HandlerException;
+import org.apache.ode.spi.xml.HandlerRegistry;
 
+/**
+ * Represents a singleton compiler definition for a given contentType
+ * 
+ */
+public interface XMLCompiler<M, X extends HandlerException, C extends XMLCompilerContext<M, X>, E extends ElementHandler<? extends M, C, X>, A extends AttributeHandler<? extends M, C, X>, H extends HandlerRegistry<M, C, X, E, A>>
+		extends Compiler<M, C> {
 
-
-public class InitPass implements CompilerPass<ExecCompilerContext>{
-	
-	@Override
-	public void compile(ExecCompilerContext ctx){
-		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID, BPELContext.class);
-		switch (ctx.phase()){
-		case INITIALIZE:
-			
-			break;
-		}
-	}
-
+	public H handlerRegistry(Class<H> type);
 }

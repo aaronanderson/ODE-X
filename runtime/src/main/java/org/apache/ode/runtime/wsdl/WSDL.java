@@ -28,9 +28,9 @@ import javax.inject.Singleton;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.wsdl.WSDLCompiler;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.Platform;
@@ -85,11 +85,11 @@ public class WSDL {
 		repository.registerCommandInfo(WSDL_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(WSDL_MIMETYPE, new WSDLDataContentHandler());
 		platform.registerComponent(wsdlComponent);
-		Compiler wsdlCompiler = compilers.newInstance();
+		WSDLCompiler wsdlCompiler = new WSDLCompiler();
 		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSets().get(0).getName());
 		wsdlCompiler.addSubContext(XSDContext.ID, schemaProvider);
 		wsdlCompiler.addSubContext(WSDLContext.ID,wsdlProvider);
-		WSDLCompiler compiler = new WSDLCompiler();
+		WSDLCompilerPass compiler = new WSDLCompilerPass();
 		wsdlCompiler.addCompilerPass(CompilerPhase.INITIALIZE, compiler);
 		wsdlCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
 		wsdlCompiler.addCompilerPass(CompilerPhase.EMIT, compiler);

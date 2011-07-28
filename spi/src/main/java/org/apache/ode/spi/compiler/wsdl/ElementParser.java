@@ -16,24 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler;
+package org.apache.ode.spi.compiler.wsdl;
 
-import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.ExecCompilerContext;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
+import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.xml.ElementHandler;
 
+public interface ElementParser<M extends Unit> extends ElementHandler<M, WSDLCompilerContext, ParserException> {
 
-public class InitPass implements CompilerPass<ExecCompilerContext>{
-	
 	@Override
-	public void compile(ExecCompilerContext ctx){
-		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID, BPELContext.class);
-		switch (ctx.phase()){
-		case INITIALIZE:
-			
-			break;
-		}
-	}
+	void parse(XMLStreamReader input, M model, WSDLCompilerContext context) throws XMLStreamException, ParserException;
 
 }

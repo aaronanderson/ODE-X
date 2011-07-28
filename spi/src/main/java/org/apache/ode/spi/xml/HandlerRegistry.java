@@ -20,17 +20,18 @@ package org.apache.ode.spi.xml;
 
 import javax.xml.namespace.QName;
 
-public interface HandlerRegistry<M, C, E extends ElementHandler<M, C>, A extends AttributeHandler<M, C>, K> {
+public interface HandlerRegistry<M, C, X extends HandlerException, E extends ElementHandler<? extends M, C, X>, A extends AttributeHandler<? extends M, C, X>> {
 
-	public void register(QName qname, K modelkey, E handler);
+	public void register(E handler, QName... ename) throws X;
 
-	public void unregister(QName qname, K modelkey);
+	public void unregister(QName ename, Class<E> type) throws X;
 
-	public E retrieve(QName qname, M model);
+	public E retrieve(QName ename, M model) throws X;
 
-	public void register(QName ename, QName aname, K modelkey, A handler);
+	public void register(A handler, QName aname, QName... ename) throws X;
 
-	public void unregister(QName ename, QName aname, K modelkey);
+	public void unregister(QName ename, QName aname, Class<A> type) throws X;
 
-	public A retrieve(QName ename, QName aname, M model);
+	public A retrieve(QName ename, QName aname, M model) throws X;
+
 }

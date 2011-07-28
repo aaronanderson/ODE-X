@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.build;
+package org.apache.ode.spi.compiler;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,36 +29,25 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.runtime.build.ParserRegistryImpl.UnitKey;
-import org.apache.ode.spi.compiler.AttributeParser;
-import org.apache.ode.spi.compiler.Compiler;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.CompilerPhase;
-import org.apache.ode.spi.compiler.ElementParser;
-import org.apache.ode.spi.compiler.ParserRegistry;
-import org.apache.ode.spi.compiler.Unit;
-import org.apache.ode.spi.exec.xml.Instruction;
+public abstract class AbstractCompiler<M, C extends CompilerContext> implements Compiler<M, C> {
 
-public class CompilerImpl implements Compiler {
-
-	private Map<CompilerPhase, List<CompilerPass>> passes = new ConcurrentHashMap<CompilerPhase, List<CompilerPass>>();
+	private Map<CompilerPhase, List<CompilerPass<C>>> passes = new ConcurrentHashMap<CompilerPhase, List<CompilerPass<C>>>();
 	private Map<String, Provider<?>> contexts = new ConcurrentHashMap<String, Provider<?>>();
 	private Set<QName> instructionSets = new CopyOnWriteArraySet<QName>();
 	private Set<String> pragmas = new CopyOnWriteArraySet<String>();
-	private ParserRegistryImpl registry = new ParserRegistryImpl();
 
 	@Override
-	public void addCompilerPass(CompilerPhase phase, CompilerPass pass) {
-		List<CompilerPass> passList = passes.get(phase);
+	public void addCompilerPass(CompilerPhase phase, CompilerPass<C> pass) {
+		List<CompilerPass<C>> passList = passes.get(phase);
 		if (passList == null) {
-			passList = new ArrayList<CompilerPass>();
+			passList = new ArrayList<CompilerPass<C>>();
 			passes.put(phase, passList);
 		}
 		passList.add(pass);
 	}
 
-	public List<CompilerPass> getCompilerPasses(CompilerPhase phase) {
-		List<CompilerPass> passList = passes.get(phase);
+	public List<CompilerPass<C>> getCompilerPasses(CompilerPhase phase) {
+		List<CompilerPass<C>> passList = passes.get(phase);
 		if (passList == null) {
 			return Collections.EMPTY_LIST;
 		}
@@ -66,7 +55,7 @@ public class CompilerImpl implements Compiler {
 	}
 
 	@Override
-	public <C> void addSubContext(String id, Provider<C> type) {
+	public <S> void addSubContext(String id, Provider<S> type) {
 		contexts.put(id, type);
 	}
 
@@ -84,31 +73,15 @@ public class CompilerImpl implements Compiler {
 	}
 
 	@Override
-	public <M extends Unit<? extends Instruction>> void addContentParser(ElementParser<M> parser, QName... qname) {
-		for (QName q : qname) {
-			registry.register(q, (ElementParser<Unit<? extends Instruction>>) parser);
-		}
-	}
-
-	ParserRegistry getParserRegistry() {
-		return registry;
-	}
-
-	@Override
 	public void declarePragmaNS(String namespace) {
 		pragmas.add(namespace);
 	}
 
-	Set<String> getPragmas() {
+	public Set<String> getPragmaNS() {
 		return pragmas;
 	}
-
+	
 	@Override
-	public <M extends Unit<? extends Instruction>> void addAttributeParser(AttributeParser<M> parser, QName aname, QName... qname) {
-		for (QName q : qname) {
-			registry.register(q, aname, (AttributeParser<Unit<? extends Instruction>>) parser);
-		}
-
-	}
+	abstract public C newContext();
 
 }

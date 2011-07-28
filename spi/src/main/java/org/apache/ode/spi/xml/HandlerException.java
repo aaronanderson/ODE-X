@@ -19,6 +19,7 @@
 package org.apache.ode.spi.xml;
 
 public class HandlerException extends Exception {
+	private static final long serialVersionUID = 1L;
 
 	public HandlerException(String msg) {
 		super(msg);

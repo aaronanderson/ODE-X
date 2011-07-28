@@ -18,26 +18,26 @@
  */
 package org.apache.ode.bpel.compiler.parser;
 
+import static org.apache.ode.bpel.compiler.parser.ReceiveParser.CORRELATIONS;
+import static org.apache.ode.bpel.compiler.parser.ReceiveParser.parseCorrelations;
+
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.bpel.BPEL;
-import org.apache.ode.bpel.exec.xml.Receive;
 import org.apache.ode.bpel.exec.xml.Reply;
 import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.bpel.exec.xml.ToPart;
 import org.apache.ode.bpel.exec.xml.ToParts;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
-import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.ElementParser;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
+import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
-
-import static org.apache.ode.bpel.compiler.parser.ReceiveParser.CORRELATIONS;
-import static org.apache.ode.bpel.compiler.parser.ReceiveParser.parseCorrelations;
 
 public class ReplyParser implements ElementParser<Contextual<Scope>> {
 	public static final QName REPLY = new QName(BPEL.BPEL_EXEC_NAMESPACE, "reply");
@@ -51,7 +51,7 @@ public class ReplyParser implements ElementParser<Contextual<Scope>> {
 	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -88,7 +88,7 @@ public class ReplyParser implements ElementParser<Contextual<Scope>> {
 
 	}
 
-	public void parseToParts(XMLStreamReader input, Contextual<Reply> reply, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parseToParts(XMLStreamReader input, Contextual<Reply> reply, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {

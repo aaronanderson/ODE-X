@@ -18,8 +18,8 @@
  */
 package org.apache.ode.spi.compiler;
 
-public interface CompilerPass {
-	
-	void compile(CompilerContext ctx);
+public interface CompilerPass<C extends CompilerContext> {
+
+	void compile(C ctx);
 
 }

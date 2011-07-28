@@ -24,9 +24,9 @@ import javax.xml.stream.XMLStreamException;
 import org.apache.ode.spi.exec.xml.Instruction;
 import org.apache.ode.spi.xml.AttributeHandler;
 
-public interface AttributeParser<M extends Unit<? extends Instruction>> extends AttributeHandler<M, CompilerContext> {
+public interface AttributeParser<M extends Unit<? extends Instruction>> extends AttributeHandler<M, ExecCompilerContext, ParserException> {
 
 	@Override
-	void parse(QName ename, QName aname, String value, M model, CompilerContext context) throws XMLStreamException, ParserException;
+	void parse(QName ename, QName aname, String value, M model, ExecCompilerContext context) throws XMLStreamException, ParserException;
 
 }

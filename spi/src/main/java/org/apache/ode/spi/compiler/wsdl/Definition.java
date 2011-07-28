@@ -16,24 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler;
+package org.apache.ode.spi.compiler.wsdl;
 
-import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.ExecCompilerContext;
+import javax.xml.namespace.QName;
 
+public class Definition extends Unit {
 
-
-public class InitPass implements CompilerPass<ExecCompilerContext>{
-	
-	@Override
-	public void compile(ExecCompilerContext ctx){
-		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID, BPELContext.class);
-		switch (ctx.phase()){
-		case INITIALIZE:
-			
-			break;
-		}
+	public Definition(QName name) {
+		super(name);
 	}
+
 
 }

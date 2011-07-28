@@ -16,24 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler;
+package org.apache.ode.spi.compiler.xsd;
 
-import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.ExecCompilerContext;
+import java.util.HashMap;
+import java.util.Map;
 
+import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.xml.CompilerSetting;
 
-public class InitPass implements CompilerPass<ExecCompilerContext>{
-	
-	@Override
-	public void compile(ExecCompilerContext ctx){
-		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID, BPELContext.class);
-		switch (ctx.phase()){
-		case INITIALIZE:
-			
-			break;
-		}
+/**
+ * Represents a singleton compiler definition for a given contentType
+ * 
+ */
+public abstract class Unit {
+
+	final QName name;
+	final Map<QName, CompilerSetting> settings;
+
+	public Unit(QName name) {
+		this.name = name;
+		this.settings = new HashMap<QName, CompilerSetting>();
 	}
+
+	public QName name() {
+		return name;
+	}
+
+	public <S extends CompilerSetting> Map<QName, S> settings() {
+		return (Map<QName, S>) settings;
+	}
+
 
 }

@@ -21,8 +21,8 @@ package org.apache.ode.spi.xml;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
 
-public interface AttributeHandler<M, C> {
+public interface AttributeHandler<M, C, E extends HandlerException> {
 
-	void parse(QName ename, QName aname, String value, M model, C context) throws XMLStreamException, HandlerException;
+	void parse(QName ename, QName aname, String value, M model, C context) throws XMLStreamException, E;
 
 }

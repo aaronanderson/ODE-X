@@ -21,11 +21,8 @@ package org.apache.ode.spi.compiler;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.xml.bind.Binder;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Instruction;
 import org.w3c.dom.Node;
 
 /**
@@ -44,7 +41,7 @@ public interface CompilerContext {
 	 * @param id
 	 * @return
 	 */
-	<C> C subContext(String id);
+	<S> S subContext(String id, Class<S> type);
 
 	Executable executable();
 
@@ -58,10 +55,7 @@ public interface CompilerContext {
 
 	void declareSource(String contentType, Location start, Location end);
 
-	public <U extends Unit<? extends Instruction>> void parseContent(XMLStreamReader input, U subModel) throws XMLStreamException, ParserException;
-	
-	public <U extends Unit<? extends Instruction>> String [] parseAttributes(XMLStreamReader input, U subModel, String ... attrName) throws XMLStreamException, ParserException;
-
 	void terminate();
+	
 
 }

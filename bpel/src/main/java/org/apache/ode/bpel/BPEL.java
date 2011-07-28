@@ -45,9 +45,11 @@ import org.apache.ode.bpel.compiler.parser.SequenceParser;
 import org.apache.ode.bpel.compiler.parser.VariablesParser;
 import org.apache.ode.bpel.exec.BPELComponent;
 import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.ExecCompiler;
+import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.compiler.ParserRegistry;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.Platform;
@@ -138,7 +140,8 @@ public class BPEL {
 			}
 		});
 		platform.registerComponent(bpelComponent);
-		Compiler bpelCompiler = compilers.newInstance();
+		//(ExecCompiler) new XMLCompilerImpl<Unit<? extends Instruction>, ExecCompilerContext, ElementParser<? extends Unit<? extends Instruction>>, AttributeParser<? extends Unit<? extends Instruction>>>
+		ExecCompiler bpelCompiler = new ExecCompiler();
 		bpelCompiler.addInstructionSet(BPELComponent.BPEL_INSTRUCTION_SET);
 		bpelCompiler.addInstructionSet(WSDLComponent.WSDL_INSTRUCTION_SET);
 		bpelCompiler.addSubContext(XSDContext.ID, schemaProvider);
@@ -158,13 +161,18 @@ public class BPEL {
 		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new
 		// DiscoveryPass());
 		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
-		bpelCompiler.addContentParser(new ExecutableProcessParser(), ExecutableProcessParser.EXECUTABLE);
-		bpelCompiler.addContentParser(new PartnerLinksParser(), PartnerLinksParser.PARTNERLINKS);
-		bpelCompiler.addContentParser(new VariablesParser(), VariablesParser.VARIABLES);
-		bpelCompiler.addContentParser(new SequenceParser(), SequenceParser.SEQUENCE);
-		bpelCompiler.addContentParser(new AssignParser(), AssignParser.ASSIGN);
-		bpelCompiler.addContentParser(new ReceiveParser(), ReceiveParser.RECEIVE);
-		bpelCompiler.addContentParser(new ReplyParser(), ReplyParser.REPLY);
+		ParserRegistry preg = bpelCompiler.handlerRegistry(ParserRegistry.class);
+		try{
+		preg.register(new ExecutableProcessParser(), ExecutableProcessParser.EXECUTABLE);
+		preg.register(new PartnerLinksParser(), PartnerLinksParser.PARTNERLINKS);
+		preg.register(new VariablesParser(), VariablesParser.VARIABLES);
+		preg.register(new SequenceParser(), SequenceParser.SEQUENCE);
+		preg.register(new AssignParser(), AssignParser.ASSIGN);
+		preg.register(new ReceiveParser(), ReceiveParser.RECEIVE);
+		preg.register(new ReplyParser(), ReplyParser.REPLY);
+		}catch (ParserException pe){
+			log.log(Level.SEVERE, "", pe);
+		}
 		log.fine("BPELPlugin Initialized");
 
 	}

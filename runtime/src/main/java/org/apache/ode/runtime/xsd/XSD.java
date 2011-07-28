@@ -28,9 +28,9 @@ import javax.inject.Singleton;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.xsd.XSDCompiler;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.Validate;
@@ -76,9 +76,9 @@ public class XSD {
 		repository.registerCommandInfo(XSD_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(XSD_MIMETYPE, new XMLDataContentHandler());
 
-		Compiler schemaCompiler = compilers.newInstance();
+		XSDCompiler schemaCompiler = new XSDCompiler();
 		schemaCompiler.addSubContext(XSDContext.ID, schemaProvider);
-		XSDCompiler compiler = new XSDCompiler();
+		XSDCompilerPass compiler = new XSDCompilerPass();
 		schemaCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
 		// bpelCompiler.addCompilerPass(CompilerPhase.LINK, new
 		// DiscoveryPass());

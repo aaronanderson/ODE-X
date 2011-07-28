@@ -22,20 +22,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
-import javax.wsdl.WSDLException;
-import javax.wsdl.factory.WSDLFactory;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ws.commons.schema.XmlSchemaCollection;
-import org.apache.ws.commons.schema.XmlSchemaComplexType;
-import org.apache.ws.commons.schema.XmlSchemaElement;
-import org.apache.ws.commons.schema.XmlSchemaObject;
-import org.apache.ws.commons.schema.XmlSchemaSequence;
-import org.apache.ws.commons.schema.XmlSchemaSimpleType;
-import org.apache.ws.commons.schema.XmlSchemaType;
 import org.w3c.dom.Element;
 
 public class XSDContextImpl implements XSDContext {

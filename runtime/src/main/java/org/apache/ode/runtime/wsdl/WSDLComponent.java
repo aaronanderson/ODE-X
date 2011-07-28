@@ -19,15 +19,12 @@
 package org.apache.ode.runtime.wsdl;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Action;
-import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Component.InstructionSet;
 
 public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponent {
 

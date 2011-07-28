@@ -19,6 +19,7 @@
 package org.apache.ode.bpel.compiler.parser;
 
 import static org.apache.ode.bpel.compiler.parser.VariablesParser.FROM;
+import static org.apache.ode.bpel.compiler.parser.VariablesParser.QUERY;
 import static org.apache.ode.bpel.compiler.parser.VariablesParser.parseFrom;
 
 import javax.xml.namespace.QName;
@@ -33,15 +34,13 @@ import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.bpel.exec.xml.To;
 import org.apache.ode.bpel.exec.xml.To.Query;
 import org.apache.ode.bpel.exec.xml.To.Value;
-import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
 import org.apache.ode.spi.compiler.ElementParser;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
 import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
-
-import static org.apache.ode.bpel.compiler.parser.VariablesParser.QUERY;
 
 public class AssignParser implements ElementParser<Contextual<Scope>> {
 	public static final QName ASSIGN = new QName(BPEL.BPEL_EXEC_NAMESPACE, "assign");
@@ -55,7 +54,7 @@ public class AssignParser implements ElementParser<Contextual<Scope>> {
 	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -80,7 +79,7 @@ public class AssignParser implements ElementParser<Contextual<Scope>> {
 
 	}
 
-	public void parseCopy(XMLStreamReader input, Contextual<Assign> assign, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parseCopy(XMLStreamReader input, Contextual<Assign> assign, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {

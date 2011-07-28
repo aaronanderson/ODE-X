@@ -32,8 +32,9 @@ import org.apache.ode.bpel.exec.xml.Receive;
 import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
-import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.ElementParser;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
+import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
@@ -51,7 +52,7 @@ public class ReceiveParser implements ElementParser<Contextual<Scope>> {
 	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -90,7 +91,7 @@ public class ReceiveParser implements ElementParser<Contextual<Scope>> {
 
 	}
 
-	public static void parseCorrelations(XMLStreamReader input, Contextual<?> ctx, CompilerContext context) throws XMLStreamException, ParserException {
+	public static void parseCorrelations(XMLStreamReader input, Contextual<?> ctx, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -120,7 +121,7 @@ public class ReceiveParser implements ElementParser<Contextual<Scope>> {
 		}
 	}
 
-	public void parseFromParts(XMLStreamReader input, Contextual<Receive> receive, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parseFromParts(XMLStreamReader input, Contextual<Receive> receive, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {

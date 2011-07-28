@@ -16,24 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler;
+package org.apache.ode.spi.compiler.xsd;
 
-import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.ExecCompilerContext;
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLStreamException;
 
+import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.xml.AttributeHandler;
 
+public interface AttributeParser<M extends Unit> extends AttributeHandler<M, XSDCompilerContext,ParserException> {
 
-public class InitPass implements CompilerPass<ExecCompilerContext>{
-	
 	@Override
-	public void compile(ExecCompilerContext ctx){
-		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID, BPELContext.class);
-		switch (ctx.phase()){
-		case INITIALIZE:
-			
-			break;
-		}
-	}
+	void parse(QName ename, QName aname, String value, M model, XSDCompilerContext context) throws XMLStreamException, ParserException;
 
 }

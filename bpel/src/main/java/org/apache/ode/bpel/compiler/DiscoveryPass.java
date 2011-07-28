@@ -25,17 +25,17 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.bpel.compiler.parser.ExecutableProcessParser;
+import org.apache.ode.bpel.exec.xml.Process;
 import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.Contextual;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
 import org.apache.ode.spi.compiler.Location;
-import org.apache.ode.bpel.exec.xml.Process;
-public class DiscoveryPass implements CompilerPass {
+public class DiscoveryPass implements CompilerPass<ExecCompilerContext> {
 
 	@Override
-	public void compile(CompilerContext ctx) {
-		BPELContextImpl bctx = ctx.subContext(BPELContext.ID);
+	public void compile(ExecCompilerContext ctx) {
+		BPELContext bctx = ctx.subContext(BPELContext.ID, BPELContext.class);
 		bctx.getClass();
 		switch (ctx.phase()) {
 		case DISCOVERY:

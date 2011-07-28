@@ -26,4 +26,6 @@ public interface BPELContext {
    public static final String ID ="BPELContext";
    
    Contextual<Process> mainModel();
+   
+   public void setMainModel(Contextual<Process> model);
 }

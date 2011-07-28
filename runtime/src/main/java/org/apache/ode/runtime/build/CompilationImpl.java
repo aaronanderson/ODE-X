@@ -1,5 +1,7 @@
 package org.apache.ode.runtime.build;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -7,6 +9,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -15,11 +18,14 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 
 import org.apache.ode.runtime.build.SourceImpl.InlineSourceImpl;
-import org.apache.ode.spi.compiler.InlineSource;
+import org.apache.ode.spi.compiler.AbstractCompiler;
+import org.apache.ode.spi.compiler.AbstractCompilerContext.Compilation;
+import org.apache.ode.spi.compiler.Location;
+import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.w3c.dom.Node;
 
-public class Compilation {
+public class CompilationImpl implements Compilation{
 	private AtomicInteger srcIdCounter=new AtomicInteger();
 	private Executable executable;
 	private Binder<Node> binder;
@@ -30,7 +36,7 @@ public class Compilation {
 	private final StringBuilder messages = new StringBuilder();
 	private final ReentrantLock logLock = new ReentrantLock();
 	private final Queue<InlineSourceImpl> addedSources = new ConcurrentLinkedQueue<InlineSourceImpl>();
-	private final Map<String, CompilerImpl> compilers = new HashMap<String, CompilerImpl>();
+	private final Map<String, AbstractCompiler<?,?>> compilers = new HashMap<String, AbstractCompiler<?,?>>();
 	private JAXBContext jaxbContext;
 	JAXBElement<Executable> execBase;
 
@@ -38,6 +44,20 @@ public class Compilation {
 		return "s"+srcIdCounter.getAndIncrement();
 	}
 	
+	public Map<String, Object> getSubContexts(){
+		return subContext;
+	}
+	
+	@Override
+	public <S> S getSubContext(String id, Class<S> type){
+		return (S)subContext.get(id);
+	}
+	@Override
+	 public ReadWriteLock getExecutableLock(){
+		return executableLock;
+	}
+	
+	@Override
 	public Executable getExecutable() {
 		return executable;
 	}
@@ -46,6 +66,7 @@ public class Compilation {
 		this.executable = executable;
 	}
 
+	@Override
 	public Binder<Node> getBinder() {
 		return binder;
 	}
@@ -54,30 +75,58 @@ public class Compilation {
 		this.binder = binder;
 	}
 
-	public ReentrantReadWriteLock getExecutableLock() {
-		return executableLock;
+	@Override
+	public void log(Source src, String type, Location location, String msg, Throwable t) {
+		StringBuilder messages = new StringBuilder();
+		messages.append(type);
+		messages.append(": Source ");
+		messages.append(src.getQName());
+		messages.append(":");
+		messages.append(src.getContentType());
+		messages.append(" ");
+		if (location != null) {
+			messages.append("[");
+			messages.append(location.getLine());
+			messages.append(",");
+			messages.append(location.getColumn());
+			messages.append("] ");
+		}
+		messages.append(msg);
+		if (t != null) {
+			messages.append(" ");
+			StringWriter sw = new StringWriter();
+			t.printStackTrace(new PrintWriter(sw));
+			messages.append(sw.toString());
+		}
+		messages.append("\n");
+		logLock.lock();
+		try {
+			this.messages.append(messages);
+		} finally {
+			logLock.unlock();
+		}
+
+	}
+	
+	public StringBuilder getMessages(){
+		return messages;
 	}
 
-	public Map<String, Object> getSubContext() {
-		return subContext;
-	}
+	@Override
+	public void declareSource(Source src, String contentType, Location start, Location end) {
+		addedSources.add(new InlineSourceImpl((SourceImpl)src, contentType, start, end));
 
+	}
 	public boolean isTerminated() {
 		return terminated;
 	}
 
+	@Override
 	public void setTerminated(boolean value) {
 		terminated = value;
 	}
 
-	public StringBuilder getMessages() {
-		return messages;
-	}
-
-	public ReentrantLock getLogLock() {
-		return logLock;
-	}
-
+	
 	public Queue<InlineSourceImpl> getAddedSources() {
 		return addedSources;
 	}
@@ -86,7 +135,7 @@ public class Compilation {
 		return jaxbContexts;
 	}
 
-	public Map<String, CompilerImpl> getCompilers() {
+	public Map<String, AbstractCompiler<?,?>> getCompilers() {
 		return compilers;
 	}
 

@@ -23,27 +23,51 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Singleton;
 
+import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Compiler;
 import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.XMLCompiler;
+import org.apache.ode.spi.compiler.XMLCompilerContext;
+import org.apache.ode.spi.xml.AttributeHandler;
+import org.apache.ode.spi.xml.ElementHandler;
+import org.apache.ode.spi.xml.HandlerException;
+import org.apache.ode.spi.xml.HandlerRegistry;
 
 @Singleton
 public class CompilersImpl implements Compilers {
-	
-	Map<String, Compiler> compilers = new ConcurrentHashMap<String, Compiler>();
-	
+
+	Map<String, Compiler<?, ?>> compilers = new ConcurrentHashMap<String, Compiler<?, ?>>();
+	Map<String, XMLCompiler<?, ?, ?, ?, ?, ?>> xmlCompilers = new ConcurrentHashMap<String, XMLCompiler<?, ?, ?, ?, ?, ?>>();
+
 	@Override
-	public Compiler newInstance() {
-		return new CompilerImpl();
+	public <M, C extends CompilerContext, P extends Compiler<M, C>> void register(P compiler, String contentType) {
+		if (compiler instanceof XMLCompiler) {
+			xmlCompilers.put(contentType, (XMLCompiler<?, ?, ?, ?, ?, ?>) compiler);
+		} else {
+			compilers.put(contentType, compiler);
+		}
+
 	}
 
 	@Override
-	public void register(Compiler compiler, String contentType) {
-		compilers.put(contentType, compiler);
+	public <M, C extends CompilerContext, P extends Compiler<M, C>> void unregister(String contentType, Class<P> type) {
+		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public  Compiler getCompiler(String contentType) {
-		return compilers.get(contentType);
+	public <M, C extends CompilerContext, P extends Compiler<M, C>> P getCompiler(String contentType, Class<P> type) {
+		P compiler = (P) compilers.get(contentType);
+		if (compiler == null) {
+			compiler = (P) xmlCompilers.get(contentType);
+		}
+		return compiler;
 	}
+
+	@Override
+	public <M, X extends HandlerException, C extends XMLCompilerContext<M, X>, E extends ElementHandler<? extends M, C, X>, A extends AttributeHandler<? extends M, C, X>, H extends HandlerRegistry<M, C, X, E, A>, P extends XMLCompiler<M, X, C, E, A, H>> P getXMLCompiler(
+			String contentType, Class<P> type) {
+		return (P) xmlCompilers.get(contentType);
+	}
+
 }

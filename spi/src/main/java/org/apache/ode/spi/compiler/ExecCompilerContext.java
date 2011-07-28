@@ -16,24 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.bpel.compiler;
+package org.apache.ode.spi.compiler;
 
-import org.apache.ode.bpel.spi.BPELContext;
-import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.ExecCompilerContext;
+import org.apache.ode.spi.exec.xml.Instruction;
 
-
-
-public class InitPass implements CompilerPass<ExecCompilerContext>{
-	
-	@Override
-	public void compile(ExecCompilerContext ctx){
-		BPELContext bctx = ctx.<BPELContext>subContext(BPELContext.ID, BPELContext.class);
-		switch (ctx.phase()){
-		case INITIALIZE:
-			
-			break;
-		}
-	}
+/**
+ * Defines contextual compilation operations For a specific content type compiler instance.
+ * 
+ */
+public class ExecCompilerContext
+		extends
+		AbstractXMLCompilerContext<Unit<? extends Instruction>, ParserException, ExecCompilerContext, ElementParser<? extends Unit<? extends Instruction>>, AttributeParser<? extends Unit<? extends Instruction>>> {
 
 }

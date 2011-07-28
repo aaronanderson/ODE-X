@@ -34,10 +34,12 @@ import org.apache.ode.bpel.exec.xml.Variables;
 import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
 import org.apache.ode.spi.compiler.ElementParser;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
 import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Unit;
+import org.apache.ode.spi.exec.xml.Instruction;
 
 public class VariablesParser implements ElementParser<Contextual<Scope>> {
 	public static final QName VARIABLES = new QName(BPEL.BPEL_EXEC_NAMESPACE, "variables");
@@ -53,7 +55,7 @@ public class VariablesParser implements ElementParser<Contextual<Scope>> {
 	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -78,7 +80,7 @@ public class VariablesParser implements ElementParser<Contextual<Scope>> {
 
 	}
 
-	public void parseVariable(XMLStreamReader input, Contextual<Variables> vars, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parseVariable(XMLStreamReader input, Contextual<Variables> vars, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {
@@ -114,7 +116,7 @@ public class VariablesParser implements ElementParser<Contextual<Scope>> {
 		}
 	}
 
-	public void setVariableAttrs(XMLStreamReader input, Unit<Variable> var, CompilerContext context) throws ParserException, XMLStreamException {
+	public void setVariableAttrs(XMLStreamReader input, Unit<Variable> var, ExecCompilerContext context) throws ParserException, XMLStreamException {
 		String[] attributes = context.parseAttributes(input, var, "name", "messageType", "type", "element");
 		Variable ins = null;
 		if (var instanceof Instructional) {
@@ -135,7 +137,7 @@ public class VariablesParser implements ElementParser<Contextual<Scope>> {
 
 	}
 
-	public static void parseFrom(XMLStreamReader input, Contextual<?> ctx, CompilerContext context) throws XMLStreamException, ParserException {
+	public static void parseFrom(XMLStreamReader input, Contextual<?> ctx, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {

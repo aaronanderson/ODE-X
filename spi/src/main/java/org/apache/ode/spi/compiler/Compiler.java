@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -21,23 +21,20 @@ package org.apache.ode.spi.compiler;
 import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.xml.Instruction;
-
 /**
  * Represents a singleton compiler definition for a given contentType
  * 
  */
-public interface Compiler {
+public interface Compiler<M, C extends CompilerContext> {
 
-	void addCompilerPass(CompilerPhase phase, CompilerPass compilerPasses);
+	void addCompilerPass(CompilerPhase phase, CompilerPass<C> compilerPasses);
 
-	<C> void addSubContext(String id, Provider<C> type);
+	<S> void addSubContext(String id, Provider<S> type);
 
 	void addInstructionSet(QName instructionSet);
 
 	public void declarePragmaNS(String namespace);
+	
+	public C newContext();
 
-	public <M extends Unit<? extends Instruction>> void addContentParser(ElementParser<M> parser, QName... qname);
-
-	public <M extends Unit<? extends Instruction>> void addAttributeParser(AttributeParser<M> parser, QName aname, QName... qname);
 }

@@ -21,33 +21,29 @@ package org.apache.ode.runtime.wsdl;
 import java.util.logging.Logger;
 
 import javax.wsdl.Definition;
-import javax.wsdl.WSDLException;
-import javax.wsdl.xml.WSDLReader;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.wsdl.xml.Configuration;
 import org.apache.ode.runtime.exec.wsdl.xml.ObjectFactory;
-import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
-import org.apache.ode.spi.compiler.CompilerPhase;
-import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.compiler.Source.SourceType;
+import org.apache.ode.spi.compiler.wsdl.WSDLCompilerContext;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.Installation;
 import org.apache.ode.spi.exec.xml.InstructionSets;
 
-public class WSDLCompiler implements CompilerPass {
+public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 	WSDLContext wsdlCtx;
 	XSDContext xsdContext;
 	QName wsdlQName;
 	Definition wsdlDefinition;
 
-	private static final Logger log = Logger.getLogger(WSDLCompiler.class.getName());
+	private static final Logger log = Logger.getLogger(WSDLCompilerPass.class.getName());
 
 	@Override
-	public void compile(CompilerContext ctx) {
+	public void compile(WSDLCompilerContext ctx) {
 		if (ctx.source().sourceType() == SourceType.MAIN) {
 			ctx.addError(null,"WSDL is not a supported target executable", null);
 			ctx.terminate();
@@ -56,8 +52,8 @@ public class WSDLCompiler implements CompilerPass {
 
 		switch (ctx.phase()) {
 		case INITIALIZE:
-			wsdlCtx = (WSDLContext) ctx.subContext(WSDLContext.ID);
-			xsdContext = (XSDContext) ctx.subContext(XSDContext.ID);
+			wsdlCtx = (WSDLContext) ctx.subContext(WSDLContext.ID, WSDLContext.class);
+			xsdContext = (XSDContext) ctx.subContext(XSDContext.ID,XSDContext.class);
 			break;
 
 		case DISCOVERY:

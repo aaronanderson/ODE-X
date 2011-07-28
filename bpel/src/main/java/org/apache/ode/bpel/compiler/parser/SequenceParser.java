@@ -26,9 +26,9 @@ import javax.xml.stream.XMLStreamReader;
 import org.apache.ode.bpel.BPEL;
 import org.apache.ode.bpel.exec.xml.Scope;
 import org.apache.ode.bpel.exec.xml.Sequence;
-import org.apache.ode.spi.compiler.CompilerContext;
 import org.apache.ode.spi.compiler.Contextual;
 import org.apache.ode.spi.compiler.ElementParser;
+import org.apache.ode.spi.compiler.ExecCompilerContext;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 
@@ -42,7 +42,7 @@ public class SequenceParser implements ElementParser<Contextual<Scope>> {
 	}
 
 	@Override
-	public void parse(XMLStreamReader input, Contextual<Scope> model, CompilerContext context) throws XMLStreamException, ParserException {
+	public void parse(XMLStreamReader input, Contextual<Scope> model, ExecCompilerContext context) throws XMLStreamException, ParserException {
 		while (input.hasNext()) {
 			int type = input.getEventType();
 			switch (type) {

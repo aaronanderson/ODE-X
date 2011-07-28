@@ -48,6 +48,11 @@ import org.apache.ode.runtime.build.xml.Xpath;
 import org.apache.ode.runtime.build.xml.Xpath.Annotation;
 import org.apache.ode.runtime.build.xml.Xslt;
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
+import org.apache.ode.spi.compiler.AbstractCompiler;
+import org.apache.ode.spi.compiler.AbstractCompilerContext;
+import org.apache.ode.spi.compiler.AbstractHandlerRegistry;
+import org.apache.ode.spi.compiler.AbstractXMLCompiler;
+import org.apache.ode.spi.compiler.AbstractXMLCompilerContext;
 import org.apache.ode.spi.compiler.CompilerPass;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.InlineSource;
@@ -63,6 +68,7 @@ import org.apache.ode.spi.exec.xml.Sources;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
+import org.apache.ode.spi.xml.HandlerRegistry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -98,17 +104,19 @@ public class BuildExecutor implements CommandObject {
 	}
 
 	void processTarget(Target target) throws BuildException {
-		List<CompilerContextImpl> contexts = new ArrayList<CompilerContextImpl>();
-		Compilation compilation = new Compilation();
+		List<AbstractCompilerContext<?>> contexts = new ArrayList<AbstractCompilerContext<?>>();
+		CompilationImpl compilation = new CompilationImpl();
 
 		BuildSource main = target.getMain().getArtifact();
-		CompilerImpl compiler = addCompiler(main.getContentType(), compilation);
-		contexts.add(new CompilerContextImpl(preProcess(main, compilation.nextSrcId(), compiler.getPragmas(), SourceType.MAIN), compilation));
+		AbstractCompiler<?, ?> compiler = addCompiler(main.getContentType(), compilation);
+		SourceImpl src = preProcess(main, compilation.nextSrcId(), compiler.getPragmaNS(), SourceType.MAIN);
+		contexts.add(newCompilerContext(src, compiler, compilation));
 
 		if (target.getIncludes() != null) {
-			for (BuildSource src : target.getIncludes().getArtifact()) {
-				compiler = addCompiler(src.getContentType(), compilation);
-				contexts.add(new CompilerContextImpl(preProcess(src, compilation.nextSrcId(), compiler.getPragmas(), SourceType.INCLUDE), compilation));
+			for (BuildSource bsrc : target.getIncludes().getArtifact()) {
+				compiler = addCompiler(bsrc.getContentType(), compilation);
+				src = preProcess(bsrc, compilation.nextSrcId(), compiler.getPragmaNS(), SourceType.INCLUDE);
+				contexts.add(newCompilerContext(src, compiler, compilation));
 			}
 		}
 		// TODO make this multithreaded by using a threadpool and execute each pass in a runnable synchronizing on a countdown barrier
@@ -117,9 +125,9 @@ public class BuildExecutor implements CommandObject {
 			case DISCOVERY:
 				executePass(contexts, phase, compilation);
 				while (!compilation.getAddedSources().isEmpty()) {
-					InlineSourceImpl src = compilation.getAddedSources().remove();
-					addCompiler(src.inlineContentType(), compilation);
-					CompilerContextImpl ctx = new CompilerContextImpl(src, compilation);
+					InlineSourceImpl isrc = compilation.getAddedSources().remove();
+					compiler = addCompiler(isrc.inlineContentType(), compilation);
+					AbstractCompilerContext<?> ctx = newCompilerContext(src, compiler, compilation);
 					contexts.add(ctx);
 					executePass(ctx, CompilerPhase.INITIALIZE, compilation);
 					executePass(ctx, CompilerPhase.DISCOVERY, compilation);
@@ -159,15 +167,15 @@ public class BuildExecutor implements CommandObject {
 
 	}
 
-	void executePass(List<CompilerContextImpl> contexts, CompilerPhase phase, Compilation compilation) throws BuildException {
-		for (CompilerContextImpl ctx : contexts) {
+	void executePass(List<AbstractCompilerContext<?>> contexts, CompilerPhase phase, CompilationImpl compilation) throws BuildException {
+		for (AbstractCompilerContext<?> ctx : contexts) {
 			executePass(ctx, phase, compilation);
 		}
 	}
 
-	void executePass(CompilerContextImpl context, CompilerPhase phase, Compilation compilation) throws BuildException {
+	void executePass(AbstractCompilerContext<?> context, CompilerPhase phase, CompilationImpl compilation) throws BuildException {
 		context.setPhase(phase);
-		CompilerImpl compiler = compilation.getCompilers().get(context.getContentType());
+		AbstractCompiler<?, ?> compiler = compilation.getCompilers().get(context.source().getContentType());
 		for (CompilerPass pass : compiler.getCompilerPasses(phase)) {
 			pass.compile(context);
 		}
@@ -176,7 +184,7 @@ public class BuildExecutor implements CommandObject {
 		}
 	}
 
-	void emitBase(List<CompilerContextImpl> contexts, Compilation compilation) throws BuildException {
+	void emitBase(List<AbstractCompilerContext<?>> contexts, CompilationImpl compilation) throws BuildException {
 		StringBuilder contextPath = new StringBuilder();
 		contextPath.append("org.apache.ode.spi.exec.xml");
 		for (String path : compilation.getJaxbContexts()) {
@@ -195,7 +203,7 @@ public class BuildExecutor implements CommandObject {
 		Executable exec = new Executable();
 		Sources srcs = new Sources();
 		exec.setSources(srcs);
-		for (CompilerContextImpl impl : contexts) {
+		for (AbstractCompilerContext<?> impl : contexts) {
 			if (!(impl.source() instanceof InlineSource)) {
 				srcs.getSources().add(impl.source().srcRef());
 			}
@@ -219,7 +227,7 @@ public class BuildExecutor implements CommandObject {
 
 	}
 
-	void populateIds(Compilation compilation) {
+	void populateIds(CompilationImpl compilation) {
 		Executable exec = compilation.getExecutable();
 		int blockId = 0;
 		for (Block b : exec.getBlock()) {
@@ -235,10 +243,23 @@ public class BuildExecutor implements CommandObject {
 		}
 	}
 
-	CompilerImpl addCompiler(String contentType, Compilation compilation) throws BuildException {
-		CompilerImpl impl = (CompilerImpl) compilation.getCompilers().get(contentType);
+	AbstractCompilerContext<?> newCompilerContext(SourceImpl src, AbstractCompiler<?, ?> compiler, CompilationImpl state) {
+		AbstractCompilerContext<?> ctx = (AbstractCompilerContext<?>) compiler.newContext();
+		if (compiler instanceof AbstractXMLCompiler) {
+			AbstractXMLCompiler<?,?,?,?,?,?> xcompiler = (AbstractXMLCompiler<?,?,?,?,?,?>) compiler;
+			AbstractXMLCompilerContext<?,?,?,?,?> xctx = (AbstractXMLCompilerContext<?,?,?,?,?>)ctx;
+			xctx.init(src, state, (AbstractHandlerRegistry)xcompiler.handlerRegistry(null));
+		} else {
+			ctx.init(src, state);
+		}
+
+		return ctx;
+	}
+
+	AbstractCompiler<?, ?> addCompiler(String contentType, CompilationImpl compilation) throws BuildException {
+		AbstractCompiler<?, ?> impl = compilation.getCompilers().get(contentType);
 		if (impl == null) {
-			impl = (CompilerImpl) compilers.getCompiler(contentType);
+			impl = compilers.getCompiler(contentType, AbstractCompiler.class);
 			if (impl == null) {
 				throw new BuildException(String.format("Unable to locate compiler form contentType %s", contentType));
 			}
@@ -255,8 +276,8 @@ public class BuildExecutor implements CommandObject {
 			}
 
 			for (Map.Entry<String, Provider<?>> p : impl.getSubContexts().entrySet()) {
-				if (!compilation.getSubContext().containsKey(p.getKey())) {
-					compilation.getSubContext().put(p.getKey(), p.getValue().get());
+				if (!compilation.getSubContexts().containsKey(p.getKey())) {
+					compilation.getSubContexts().put(p.getKey(), p.getValue().get());
 				}
 
 			}
