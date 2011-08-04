@@ -28,8 +28,21 @@ import javax.inject.Singleton;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.ode.runtime.wsdl.compiler.WSDLCompilerPass;
+import org.apache.ode.runtime.wsdl.compiler.parser.BindingParser;
+import org.apache.ode.runtime.wsdl.compiler.parser.DefinitionParser;
+import org.apache.ode.runtime.wsdl.compiler.parser.MessageParser;
+import org.apache.ode.runtime.wsdl.compiler.parser.PortTypeParser;
+import org.apache.ode.runtime.wsdl.compiler.parser.ServiceParser;
 import org.apache.ode.spi.compiler.CompilerPhase;
 import org.apache.ode.spi.compiler.Compilers;
+import org.apache.ode.spi.compiler.ParserException;
+import org.apache.ode.spi.compiler.wsdl.Binding;
+import org.apache.ode.spi.compiler.wsdl.Definition;
+import org.apache.ode.spi.compiler.wsdl.Message;
+import org.apache.ode.spi.compiler.wsdl.ParserRegistry;
+import org.apache.ode.spi.compiler.wsdl.PortType;
+import org.apache.ode.spi.compiler.wsdl.Service;
 import org.apache.ode.spi.compiler.wsdl.WSDLCompiler;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
@@ -42,13 +55,13 @@ import org.apache.ode.spi.repo.XMLValidate.SchemaSource;
 @Singleton
 public class WSDL {
 
-	public static final String WSDL_MIMETYPE= "application/wsdl";
-	public static final String WSDL_NAMESPACE ="http://schemas.xmlsoap.org/wsdl/";
+	public static final String WSDL_MIMETYPE = "application/wsdl";
+	public static final String WSDL_NAMESPACE = "http://schemas.xmlsoap.org/wsdl/";
 
-	//@Inject WSDLPlugin wsdlPlugin;
+	// @Inject WSDLPlugin wsdlPlugin;
 	@Inject
 	Repository repository;
-	@Inject 
+	@Inject
 	XMLValidate xmlValidate;
 	@Inject
 	Compilers compilers;
@@ -60,24 +73,22 @@ public class WSDL {
 	Provider<XSDContext> schemaProvider;
 	@Inject
 	Provider<WSDLContext> wsdlProvider;
-	
+
 	private static final Logger log = Logger.getLogger(WSDL.class.getName());
 
-	
-	
 	@PostConstruct
-	public void init(){
+	public void init() {
 		log.fine("Initializing WSDL support");
 		repository.registerFileExtension("wsdl", WSDL_MIMETYPE);
 		repository.registerNamespace(WSDL_NAMESPACE, WSDL_MIMETYPE);
 		xmlValidate.registerSchemaSource(WSDL_MIMETYPE, new SchemaSource() {
-			
+
 			@Override
 			public Source[] getSchemaSource() {
 				try {
-					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/wsdl.xsd"))};
+					return new Source[] { new StreamSource(getClass().getResourceAsStream("/META-INF/xsd/wsdl.xsd")) };
 				} catch (Exception e) {
-					log.log(Level.SEVERE,"",e);
+					log.log(Level.SEVERE, "", e);
 					return null;
 				}
 			}
@@ -88,19 +99,31 @@ public class WSDL {
 		WSDLCompiler wsdlCompiler = new WSDLCompiler();
 		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSets().get(0).getName());
 		wsdlCompiler.addSubContext(XSDContext.ID, schemaProvider);
-		wsdlCompiler.addSubContext(WSDLContext.ID,wsdlProvider);
+		wsdlCompiler.addSubContext(WSDLContext.ID, wsdlProvider);
 		WSDLCompilerPass compiler = new WSDLCompilerPass();
 		wsdlCompiler.addCompilerPass(CompilerPhase.INITIALIZE, compiler);
 		wsdlCompiler.addCompilerPass(CompilerPhase.DISCOVERY, compiler);
 		wsdlCompiler.addCompilerPass(CompilerPhase.EMIT, compiler);
-		//bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
-		//bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+
+		// bpelCompiler.addCompilerPass(CompilerPhase.LINK, new DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.VALIDATE, new DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.EMIT, new DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.ANALYSIS, new DiscoveryPass());
+		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new DiscoveryPass());
+
+		ParserRegistry preg = wsdlCompiler.handlerRegistry(ParserRegistry.class);
+		try {
+			preg.register(new DefinitionParser(), Definition.DEFINITIONS);
+			preg.register(new MessageParser(), Message.MESSAGE);
+			preg.register(new PortTypeParser(), PortType.PORT_TYPE);
+			preg.register(new BindingParser(), Binding.BINDING);
+			preg.register(new ServiceParser(), Service.SERVICE);
+		} catch (ParserException pe) {
+			log.log(Level.SEVERE, "", pe);
+		}
 		compilers.register(wsdlCompiler, WSDL_MIMETYPE);
 		log.fine("WSDL support Initialized");
-		
+
 	}
-	
+
 }

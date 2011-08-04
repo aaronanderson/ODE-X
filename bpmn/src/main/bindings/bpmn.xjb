@@ -10,15 +10,13 @@
 	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
-<build-plan xmlns="http://ode.apache.org/build-plan"  xmlns:wsdl="http://ode/bpel/unit-test.wsdl" xmlns:bpel="http://ode/bpel/unit-test" targetNamespace="http://ode/bpel/unit-test">
-  <target>
-  <artifact version="1.0" qname="bpel:HelloWorld" contentType="application/ode-executable"/>
-  <main>
-  <artifact version="1.0" qname="bpel:HelloWorld" contentType="application/bpel-exec"/>
-  </main>
-  <includes>
-  <artifact version="1.0" qname="wsdl:HelloService" contentType="application/wsdl"/>
-  </includes>
-  </target>
-</build-plan>
-	
+<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0">
+	<jxb:bindings schemaLocation="../resources/META-INF/xsd/bpmn.xsd">
+		<jxb:schemaBindings>
+			<jxb:package name="org.apache.ode.bpmn.exec.xml" />
+		</jxb:schemaBindings>
+		
+		
+	</jxb:bindings>
+</jxb:bindings>

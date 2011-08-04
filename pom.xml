@@ -79,6 +79,8 @@
 		<module>cli</module>
 		<module>server</module>
 		<module>bpel</module>
+		<module>wsht</module>
+		<module>bpmn</module>
 		<module>tests</module>
 		<module>distro</module>
 

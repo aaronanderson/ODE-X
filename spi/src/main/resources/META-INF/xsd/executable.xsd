@@ -18,7 +18,8 @@
 			<element name="instruction-sets" type="tns:instructionSetsType" minOccurs="0" maxOccurs="1" />
 			<element name="installation" type="tns:installationType" minOccurs="1" maxOccurs="1" />
 			<element name="sources" type="tns:sourcesType" minOccurs="1" maxOccurs="1" />
-			<element name="operation" type="tns:operationType" minOccurs="1" maxOccurs="unbounded" />
+			<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" />
 			<element name="block" type="tns:blockType" minOccurs="1" maxOccurs="unbounded" />
 			<!-- <choice maxOccurs="unbounded"> <element name="operation" type="tns:operationType" 
 				/> <element name="block" type="tns:blockType" /> </choice> -->
@@ -62,9 +63,9 @@
 		<attribute name="line" type="int" use="required" />
 		<attribute name="column" type="int" use="required" />
 	</complexType>
-	
-	<complexType name="compilerSettingType" abstract="true"/>
-	
+
+	<complexType name="compilerSettingType" abstract="true" />
+
 	<complexType name="instructionType" abstract="true">
 		<complexContent>
 			<extension base="tns:sourceRefType">
@@ -115,6 +116,8 @@
 
 	<complexType name="blockType">
 		<sequence>
+			<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" />
 			<choice maxOccurs="unbounded">
 				<element name="variable" type="tns:variableType" />
 				<element name="in" type="tns:inType" />
@@ -124,6 +127,17 @@
 		</sequence>
 		<attribute name="blc" type="ID" use="required" />
 	</complexType>
+
+	<complexType name="typeCtxType" abstract="true" />
+
+	<complexType name="typeType">
+		<sequence>
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="typ" type="ID" use="required" />
+		<attribute name="name" type="QName" use="required" />
+	</complexType>
+
 
 	<attribute name="operationAttr" type="IDREF" />
 
@@ -178,7 +192,7 @@
 		</sequence>
 		<attribute name="id" type="ID" use="required" />
 		<attribute name="name" type="QName" use="required" />
-		<attribute name="type" type="QName" use="required" />
+		<attribute name="type" type="IDREF" use="required" />
 	</complexType>
 
 	<complexType name="inCtxType" abstract="true">

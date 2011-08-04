@@ -18,13 +18,36 @@
  */
 package org.apache.ode.spi.compiler.wsdl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.namespace.QName;
 
 public class Definition extends Unit {
+	private List<Message> messages = new ArrayList<Message>();
+	private List<PortType> portTypes = new ArrayList<PortType>();
+	private List<Binding> bindings = new ArrayList<Binding>();
+	private List<Service> services = new ArrayList<Service>();
+	public static final QName DEFINITIONS = new QName(WSDL_NS, "definitions");
 
-	public Definition(QName name) {
-		super(name);
+	public Definition() {
+		super(DEFINITIONS);
 	}
 
+	public List<Message> messages() {
+		return messages;
+	}
+
+	public List<PortType> portTypes() {
+		return portTypes;
+	}
+
+	public List<Binding> bindings() {
+		return bindings;
+	}
+
+	public List<Service> services() {
+		return services;
+	}
 
 }

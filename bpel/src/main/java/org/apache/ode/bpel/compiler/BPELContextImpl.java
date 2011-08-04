@@ -27,12 +27,12 @@ public class BPELContextImpl implements BPELContext {
 	Contextual<Process> mainModel;
 
 	@Override
-	public void setMainModel(Contextual<Process> model) {
-		this.mainModel=model;
+	public synchronized void setMainModel(Contextual<Process> model) {
+		this.mainModel = model;
 	}
 
 	@Override
-	public Contextual<Process> mainModel() {
+	public synchronized Contextual<Process> mainModel() {
 		return mainModel;
 	}
 

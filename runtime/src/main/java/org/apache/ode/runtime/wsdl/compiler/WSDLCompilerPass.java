@@ -16,17 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.wsdl;
+package org.apache.ode.runtime.wsdl.compiler;
 
+import java.io.ByteArrayInputStream;
 import java.util.logging.Logger;
 
-import javax.wsdl.Definition;
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.wsdl.xml.Configuration;
 import org.apache.ode.runtime.exec.wsdl.xml.ObjectFactory;
+import org.apache.ode.runtime.wsdl.WSDLComponent;
 import org.apache.ode.spi.compiler.CompilerPass;
+import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source.SourceType;
+import org.apache.ode.spi.compiler.wsdl.Definition;
 import org.apache.ode.spi.compiler.wsdl.WSDLCompilerContext;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
@@ -45,7 +51,7 @@ public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 	@Override
 	public void compile(WSDLCompilerContext ctx) {
 		if (ctx.source().sourceType() == SourceType.MAIN) {
-			ctx.addError(null,"WSDL is not a supported target executable", null);
+			ctx.addError(null, "WSDL is not a supported target executable", null);
 			ctx.terminate();
 			return;
 		}
@@ -53,10 +59,33 @@ public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 		switch (ctx.phase()) {
 		case INITIALIZE:
 			wsdlCtx = (WSDLContext) ctx.subContext(WSDLContext.ID, WSDLContext.class);
-			xsdContext = (XSDContext) ctx.subContext(XSDContext.ID,XSDContext.class);
+			xsdContext = (XSDContext) ctx.subContext(XSDContext.ID, XSDContext.class);
 			break;
 
 		case DISCOVERY:
+			try {
+				XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+				XMLStreamReader reader = inputFactory.createXMLStreamReader(new ByteArrayInputStream(ctx.source().getContent()));
+				while (reader.hasNext()) {
+					int type = reader.next();
+					switch (type) {
+					case XMLStreamConstants.START_ELEMENT:
+						if (Definition.DEFINITIONS.equals(reader.getName())) {
+							Definition def = new Definition();
+							wsdlCtx.addDefinitions(def);
+							ctx.parseContent(reader, def);
+						} else {
+							ctx.addError(new Location(reader.getLocation()), String.format("Unsupported root element %s", reader.getName()), null);
+							ctx.terminate();
+							return;
+						}
+						break;
+					}
+				}
+			} catch (Exception e) {
+				ctx.addError(null, "Unable to parse WSDL document", e);
+				ctx.terminate();
+			}
 			break;
 
 		case EMIT:

@@ -81,9 +81,10 @@ public class ExecutableProcessParser implements ElementParser<Contextual<Process
 			case XMLStreamConstants.START_ELEMENT:
 				ParserUtils.assertStart(input, IMPORT);
 				Import imprt = new Import();
-				imprt.setType(input.getAttributeValue(IMPORT.getNamespaceURI(), "importType"));
-				imprt.setNamespace(input.getAttributeValue(IMPORT.getNamespaceURI(), "namespace"));
-				imprt.setLocation(input.getAttributeValue(IMPORT.getNamespaceURI(), "location"));
+				String[] attrs = context.parseAttributes(input, model, "importType", "namespace", "location");
+				imprt.setType(attrs[0]);
+				imprt.setNamespace(attrs[1]);
+				imprt.setLocation(attrs[2]);
 				// model.settings().put(, value);
 				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
 					context.parseContent(input, model);

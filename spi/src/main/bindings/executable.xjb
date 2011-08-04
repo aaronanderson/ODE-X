@@ -69,6 +69,10 @@
 			</jxb:property>
 		</jxb:bindings>
 
+        <jxb:bindings node="//xs:complexType[@name='typeType']">
+			<jxb:class name="Type" />
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:complexType[@name='operationType']">
 			<jxb:class name="Operation" />
 		</jxb:bindings>

@@ -43,6 +43,7 @@ import org.apache.ode.bpel.compiler.parser.ReceiveParser;
 import org.apache.ode.bpel.compiler.parser.ReplyParser;
 import org.apache.ode.bpel.compiler.parser.SequenceParser;
 import org.apache.ode.bpel.compiler.parser.VariablesParser;
+import org.apache.ode.bpel.compiler.parser.WSDLPartnerLinkParser;
 import org.apache.ode.bpel.exec.BPELComponent;
 import org.apache.ode.bpel.spi.BPELContext;
 import org.apache.ode.spi.compiler.CompilerPhase;
@@ -50,6 +51,7 @@ import org.apache.ode.spi.compiler.Compilers;
 import org.apache.ode.spi.compiler.ExecCompiler;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserRegistry;
+import org.apache.ode.spi.compiler.wsdl.WSDLCompiler;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.Platform;
@@ -140,7 +142,8 @@ public class BPEL {
 			}
 		});
 		platform.registerComponent(bpelComponent);
-		//(ExecCompiler) new XMLCompilerImpl<Unit<? extends Instruction>, ExecCompilerContext, ElementParser<? extends Unit<? extends Instruction>>, AttributeParser<? extends Unit<? extends Instruction>>>
+		// (ExecCompiler) new XMLCompilerImpl<Unit<? extends Instruction>, ExecCompilerContext, ElementParser<? extends Unit<? extends Instruction>>,
+		// AttributeParser<? extends Unit<? extends Instruction>>>
 		ExecCompiler bpelCompiler = new ExecCompiler();
 		bpelCompiler.addInstructionSet(BPELComponent.BPEL_INSTRUCTION_SET);
 		bpelCompiler.addInstructionSet(WSDLComponent.WSDL_INSTRUCTION_SET);
@@ -160,17 +163,25 @@ public class BPEL {
 		// DiscoveryPass());
 		// bpelCompiler.addCompilerPass(CompilerPhase.FINALIZE, new
 		// DiscoveryPass());
-		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
 		ParserRegistry preg = bpelCompiler.handlerRegistry(ParserRegistry.class);
-		try{
-		preg.register(new ExecutableProcessParser(), ExecutableProcessParser.EXECUTABLE);
-		preg.register(new PartnerLinksParser(), PartnerLinksParser.PARTNERLINKS);
-		preg.register(new VariablesParser(), VariablesParser.VARIABLES);
-		preg.register(new SequenceParser(), SequenceParser.SEQUENCE);
-		preg.register(new AssignParser(), AssignParser.ASSIGN);
-		preg.register(new ReceiveParser(), ReceiveParser.RECEIVE);
-		preg.register(new ReplyParser(), ReplyParser.REPLY);
-		}catch (ParserException pe){
+		try {
+			preg.register(new ExecutableProcessParser(), ExecutableProcessParser.EXECUTABLE);
+			preg.register(new PartnerLinksParser(), PartnerLinksParser.PARTNERLINKS);
+			preg.register(new VariablesParser(), VariablesParser.VARIABLES);
+			preg.register(new SequenceParser(), SequenceParser.SEQUENCE);
+			preg.register(new AssignParser(), AssignParser.ASSIGN);
+			preg.register(new ReceiveParser(), ReceiveParser.RECEIVE);
+			preg.register(new ReplyParser(), ReplyParser.REPLY);
+		} catch (ParserException pe) {
+			log.log(Level.SEVERE, "", pe);
+		}
+		compilers.register(bpelCompiler, BPEL_EXEC_MIMETYPE);
+
+		WSDLCompiler wsdlCompiler = compilers.getCompiler(WSDL_MIMETYPE, WSDLCompiler.class);
+		org.apache.ode.spi.compiler.wsdl.ParserRegistry wpreg = wsdlCompiler.handlerRegistry(org.apache.ode.spi.compiler.wsdl.ParserRegistry.class);
+		try {
+			wpreg.register(new WSDLPartnerLinkParser(), WSDLPartnerLinkParser.PARTNER_LINK_TYPE);
+		} catch (ParserException pe) {
 			log.log(Level.SEVERE, "", pe);
 		}
 		log.fine("BPELPlugin Initialized");

@@ -16,15 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.compiler.wsdl;
+package org.apache.ode.wsht.compiler;
 
-import javax.xml.namespace.QName;
+import org.apache.ode.wsht.spi.WSHTContext;
 
-public class Operation extends Unit {
-
-	public Operation(QName name) {
-		super(name);
-	}
+public class WSHTContextImpl implements WSHTContext {
 
 
 }

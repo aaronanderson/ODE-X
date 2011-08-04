@@ -18,7 +18,9 @@
  */
 package org.apache.ode.spi.compiler.wsdl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.namespace.QName;
@@ -27,14 +29,13 @@ import org.apache.ode.spi.exec.xml.Block;
 import org.apache.ode.spi.exec.xml.CompilerSetting;
 import org.apache.ode.spi.exec.xml.Instruction;
 
-/**
- * Represents a singleton compiler definition for a given contentType
- * 
- */
 public abstract class Unit {
-
+	
+	final public static String WSDL_NS="http://schemas.xmlsoap.org/wsdl/";
 	final QName name;
 	final Map<QName, CompilerSetting> settings;
+	final List<? extends Unit> extensions = new ArrayList<Unit>();
+
 
 	public Unit(QName name) {
 		this.name = name;
@@ -47,6 +48,10 @@ public abstract class Unit {
 
 	public <S extends CompilerSetting> Map<QName, S> settings() {
 		return (Map<QName, S>) settings;
+	}
+	
+	public List<? extends Unit> extensions() {
+		return extensions;
 	}
 
 

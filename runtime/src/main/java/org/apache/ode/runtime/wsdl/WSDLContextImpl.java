@@ -18,28 +18,12 @@
  */
 package org.apache.ode.runtime.wsdl;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
-import javax.wsdl.Definition;
-import javax.wsdl.WSDLException;
-import javax.wsdl.extensions.AttributeExtensible;
-import javax.wsdl.extensions.ExtensionRegistry;
-import javax.wsdl.factory.WSDLFactory;
-import javax.wsdl.xml.WSDLLocator;
-import javax.wsdl.xml.WSDLReader;
-import javax.xml.namespace.QName;
 
-import org.apache.ode.runtime.xsd.XSDContextImpl;
-import org.apache.ode.spi.compiler.ParserUtils;
-import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.compiler.wsdl.Operation;
+import org.apache.ode.spi.compiler.wsdl.Definition;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
-import org.apache.ode.spi.compiler.xsd.XSDContext;
-import org.w3c.dom.Element;
 
 public class WSDLContextImpl implements WSDLContext {
 
@@ -50,7 +34,7 @@ public class WSDLContextImpl implements WSDLContext {
 	}
 
 	@Override
-	public void addOperation(Operation def) {
+	public void addDefinitions(Definition def) {
 		// TODO Auto-generated method stub
 		
 	}

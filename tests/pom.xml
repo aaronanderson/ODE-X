@@ -33,6 +33,13 @@
 			<artifactId>ode-bpel</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.ode</groupId>
+			<artifactId>ode-bpel</artifactId>
+			<classifier>it</classifier>
+			<version>${project.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.apache.ode</groupId>
@@ -92,6 +99,7 @@
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
 					<execution>
+						<id>jaxws</id>
 						<phase>validate</phase>
 						<goals>
 							<goal>copy</goal>
@@ -103,6 +111,23 @@
 									<artifactId>geronimo-jaxws_2.2_spec</artifactId>
 									<version>1.0</version>
 									<outputDirectory>${project.build.directory}${file.separator}endorsed</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+					<execution>
+						<id>it-resources</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.apache.ode</groupId>
+									<artifactId>ode-bpel</artifactId>
+									<classifier>it</classifier>
+									<outputDirectory>${project.build.testOutputDirectory}${file.separator}bpel</outputDirectory>
 								</artifactItem>
 							</artifactItems>
 						</configuration>

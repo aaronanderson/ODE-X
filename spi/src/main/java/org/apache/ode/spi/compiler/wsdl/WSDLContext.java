@@ -27,6 +27,6 @@ public interface WSDLContext {
 
 	public static final String ID = "WSDLContext";
 	
-	public void addOperation(Operation def);
+	public void addDefinitions(Definition def);
 
 }
