@@ -24,7 +24,7 @@ import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.wsdl.WSDLComponent;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.xml.InstallData;
+//import org.apache.ode.spi.exec.xml.InstallData;
 
 public class WSDLComponentImpl extends WSDLComponent {
 

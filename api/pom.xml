@@ -20,7 +20,6 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-api</artifactId>
 	<name>ODE API</name>
 	<description>ODE API.</description>

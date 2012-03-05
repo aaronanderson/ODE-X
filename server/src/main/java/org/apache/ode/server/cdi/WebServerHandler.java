@@ -25,10 +25,9 @@ import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeShutdown;
-import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Singleton;
 
-import org.apache.ode.jetty.JAXWSHandler;
+import org.apache.ode.runtime.ws.JAXWSServlet;
 import org.apache.ode.server.JMXServer;
 import org.apache.ode.server.WebServer;
 import org.apache.ode.spi.cdi.Handler;
@@ -41,11 +40,11 @@ public class WebServerHandler extends Handler {
 	@Singleton
 	public static class JAXWSHandlerProducer {
 
-		JAXWSHandler handler = new JAXWSHandler();
+		JAXWSServlet servlet = new JAXWSServlet();
 		
 		@Produces
-		public JAXWSHandler create() {
-			return handler;
+		public JAXWSServlet create() {
+			return servlet;
 		}
 
 	}

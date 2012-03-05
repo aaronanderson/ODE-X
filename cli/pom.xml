@@ -27,7 +27,6 @@
         <version>0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-cli</artifactId>
 	<name>ODE Command Line Interface</name>
 	<description>ODE Command Line Interface.</description>

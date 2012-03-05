@@ -20,7 +20,6 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-spi</artifactId>
 	<name>ODE SPI</name>
 	<description>ODE SPI.</description>

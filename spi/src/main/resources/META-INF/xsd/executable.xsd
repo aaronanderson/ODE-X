@@ -124,6 +124,7 @@
 				<element name="out" type="tns:outType" />
 				<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 			</choice>
+			<element name="block" type="tns:blockType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="blc" type="ID" use="required" />
 	</complexType>

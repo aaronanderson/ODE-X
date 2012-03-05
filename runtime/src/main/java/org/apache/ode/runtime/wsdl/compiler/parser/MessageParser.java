@@ -30,6 +30,7 @@ import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.wsdl.Definition;
 import org.apache.ode.spi.compiler.wsdl.ElementParser;
 import org.apache.ode.spi.compiler.wsdl.Message;
+import org.apache.ode.spi.compiler.wsdl.Message.Part;
 import org.apache.ode.spi.compiler.wsdl.Unit;
 import org.apache.ode.spi.compiler.wsdl.WSDLCompilerContext;
 
@@ -38,60 +39,34 @@ public class MessageParser implements ElementParser<Definition> {
 
 	@Override
 	public void parse(XMLStreamReader input, Definition def, WSDLCompilerContext context) throws XMLStreamException, ParserException {
-		while (input.hasNext()) {
-			int type = input.getEventType();
-			switch (type) {
-			case XMLStreamConstants.START_ELEMENT:
-				ParserUtils.assertStart(input, MESSAGE);
-				Message message = new Message();
-				String[] attrs = context.parseAttributes(input, message, "name");
-				
-				// ParserUtils.setLocation(input, context.source().srcRef(), assign);
-				// model.children().add(assign);
-				ParserUtils.skipChildren(input);
-				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-					if (PART.equals(input.getName())) {
-						String[] pattrs = context.parseAttributes(input, message, "name", "element", "type");
-					} else {
-						context.parseContent(input, def);
-					}
-				}
-				break;
-			case XMLStreamConstants.END_ELEMENT:
-				ParserUtils.assertEnd(input, MESSAGE);
-				return;
+		ParserUtils.assertStart(input, MESSAGE);
+		Message message = new Message();
+		String[] attrs = context.parseAttributes(input, message, "name");
+
+		// ParserUtils.setLocation(input, context.source().srcRef(), assign);
+		// model.children().add(assign);
+		// ParserUtils.skipChildren(input);
+		while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
+			if (PART.equals(input.getName())) {
+				parsePart(input, message, context);
+			} else {
+				context.parseContent(input, message);
 			}
 		}
+		ParserUtils.assertEnd(input, MESSAGE);
 
 	}
-	
-	public void parsePart(XMLStreamReader input, Definition def, WSDLCompilerContext context) throws XMLStreamException, ParserException {
-		while (input.hasNext()) {
-			int type = input.getEventType();
-			switch (type) {
-			case XMLStreamConstants.START_ELEMENT:
-				ParserUtils.assertStart(input, MESSAGE);
-				Message message = new Message();
-				String[] attrs = context.parseAttributes(input, message, "name");
-				
-				// ParserUtils.setLocation(input, context.source().srcRef(), assign);
-				// model.children().add(assign);
-				ParserUtils.skipChildren(input);
-				while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
-					if (PART.equals(input.getName())) {
-						String[] pattrs = context.parseAttributes(input, message, "name", "element", "type");
-					} else {
-						context.parseContent(input, def);
-					}
-				}
-				break;
-			case XMLStreamConstants.END_ELEMENT:
-				ParserUtils.assertEnd(input, MESSAGE);
-				return;
-			}
+
+	public void parsePart(XMLStreamReader input, Message msg, WSDLCompilerContext context) throws XMLStreamException, ParserException {
+		ParserUtils.assertStart(input, PART);
+		Part part = new Part();
+		String[] pattrs = context.parseAttributes(input, part, "name", "element", "type");
+
+		while (input.nextTag() == XMLStreamConstants.START_ELEMENT) {
+			context.parseContent(input, part);
 		}
+		ParserUtils.assertEnd(input, PART);
 
 	}
-	
 
 }

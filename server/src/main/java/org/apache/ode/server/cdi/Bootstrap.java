@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
@@ -57,9 +58,9 @@ public class Bootstrap implements Extension {
 	// We will bootstrap all CDI beans rather than using beans.xml for
 	// autodiscovery
 
-	ServerConfig server;
-	List<Handler> handlers = new ArrayList<Handler>();
-	List<AnnotatedType<?>> addedTypes = new ArrayList<AnnotatedType<?>>();
+	private ServerConfig server;
+	private List<Handler> handlers = new ArrayList<Handler>();
+	private List<AnnotatedType<?>> addedTypes = new ArrayList<AnnotatedType<?>>();
 
 	private static final Logger log = Logger.getLogger(Bootstrap.class.getName());
 
@@ -128,7 +129,7 @@ public class Bootstrap implements Extension {
 		AnnotatedType<ServerConfig> at = bm.createAnnotatedType(ServerConfig.class);
 		final InjectionTarget<ServerConfig> it = bm.createInjectionTarget(at);
 
-		Bean<ServerConfig> si = new Bean<ServerConfig>() {
+		class ServerConfigBean implements Bean<ServerConfig> {
 
 			public Set<Type> getTypes() {
 				Set<Type> types = new HashSet<Type>();
@@ -140,6 +141,9 @@ public class Bootstrap implements Extension {
 			public Set<Annotation> getQualifiers() {
 				Set<Annotation> qualifiers = new HashSet<Annotation>();
 				qualifiers.add(new AnnotationLiteral<Default>() {
+
+				});
+				qualifiers.add(new AnnotationLiteral<Any>() {
 
 				});
 				return qualifiers;
@@ -184,7 +188,7 @@ public class Bootstrap implements Extension {
 			public void destroy(ServerConfig instance, CreationalContext<ServerConfig> ctx) {
 			}
 		};
-		abd.addBean(si);
+		abd.addBean(new ServerConfigBean());
 
 	}
 
@@ -205,7 +209,6 @@ public class Bootstrap implements Extension {
 
 	public void processAnnotatedType(@Observes ProcessAnnotatedType<?> pa, BeanManager bm) {
 		log.finer("ProcessAnnotatedType");
-		System.exit(0);
 		for (Handler h : handlers) {
 			h.processAnnotatedType(pa, bm);
 		}

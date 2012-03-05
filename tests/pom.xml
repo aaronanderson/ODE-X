@@ -20,7 +20,6 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-test</artifactId>
 	<name>ODE Integration Tests</name>
 	<description>ODE Integration tests.</description>
@@ -98,23 +97,6 @@
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
-					<execution>
-						<id>jaxws</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>copy</goal>
-						</goals>
-						<configuration>
-							<artifactItems>
-								<artifactItem>
-									<groupId>org.apache.geronimo.specs</groupId>
-									<artifactId>geronimo-jaxws_2.2_spec</artifactId>
-									<version>1.0</version>
-									<outputDirectory>${project.build.directory}${file.separator}endorsed</outputDirectory>
-								</artifactItem>
-							</artifactItems>
-						</configuration>
-					</execution>
 					<execution>
 						<id>it-resources</id>
 						<phase>validate</phase>

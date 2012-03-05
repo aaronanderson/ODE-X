@@ -18,23 +18,14 @@
  */
 package org.apache.ode.runtime.ws;
 
-import java.io.IOException;
+import java.util.Set;
 
-import javax.inject.Inject;
-import javax.xml.ws.spi.http.HttpExchange;
-import javax.xml.ws.spi.http.HttpHandler;
+public interface JAXWSHandler {
 
-import org.apache.ode.spi.event.Channel;
-import org.apache.ode.spi.event.Publisher;
+	public JAXWSHttpContext register(String context, String path) throws Exception;
 
-public class JAXWSHandler extends HttpHandler{
-	
-	
+	public Set<JAXWSHttpContext> list(String context);
 
-	@Override
-	public void handle(HttpExchange exchange) throws IOException {
-		//TODO read request, write response
-		
-	}
+	public void unregister(JAXWSHttpContext context) throws Exception;
 
 }

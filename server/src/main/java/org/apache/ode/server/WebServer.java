@@ -18,7 +18,6 @@
  */
 package org.apache.ode.server;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +27,9 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.ode.jetty.JAXWSHandler;
+import org.apache.catalina.Context;
+import org.apache.catalina.startup.Tomcat;
+import org.apache.ode.runtime.ws.JAXWSServlet;
 import org.apache.ode.server.xml.ServerConfig;
 
 @Singleton
@@ -38,9 +39,9 @@ public class WebServer {
 	ServerConfig serverConfig;
 
 	@Inject
-	JAXWSHandler handler;
+	JAXWSServlet handler;
 
-	org.eclipse.jetty.server.Server server;
+	Tomcat server;
 
 	int httpPort = -1;
 	boolean sslEnabled = false;
@@ -60,14 +61,29 @@ public class WebServer {
 				server.close();
 			}
 		} catch (Exception e) {
-			log.log(Level.SEVERE,"",e);
+			log.log(Level.SEVERE, "", e);
 		}
 
 		try {
 			log.fine("Starting webServer");
-			server = new org.eclipse.jetty.server.Server(httpPort);
-			server.setHandler(handler);
+			server = new Tomcat();
+			server.setPort(httpPort);
+
+			// Context bootCtx = server.addContext("/boot", new
+			// java.io.File(".").getAbsolutePath());
+			Context baseCtx = server.addContext("", new java.io.File(".").getAbsolutePath());
+			Tomcat.addServlet(baseCtx, "JAXWSServlet", handler);
+			baseCtx.addServletMapping("/*", "JAXWSServlet");
+
 			server.start();
+
+			Thread tcThread = new Thread(new Runnable() {
+				public void run() {
+					server.getServer().await();
+				}
+			}, "ODE - Embedded Tomcat");
+			tcThread.setDaemon(true);
+			tcThread.start();
 			log.log(Level.INFO, "Started webServer on port {0}", httpPort);
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "", e);
@@ -80,6 +96,10 @@ public class WebServer {
 
 	public boolean isSSLEnabled() {
 		return isSSLEnabled();
+	}
+	
+	public Tomcat tomcat(){
+		return server;
 	}
 
 	@PreDestroy

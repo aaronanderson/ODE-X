@@ -84,7 +84,7 @@ public class WSHT {
 	@PostConstruct
 	public void init() {
 		log.fine("Initializing WSHTPlugin");
-		repository.registerFileExtension("wsht", WSHT_MIMETYPE);
+		repository.registerFileExtension("hi", WSHT_MIMETYPE);
 		repository.registerNamespace(WSHT_NAMESPACE, WSHT_MIMETYPE);
 		xmlValidate.registerSchemaSource(WSHT_MIMETYPE, new SchemaSource() {
 
