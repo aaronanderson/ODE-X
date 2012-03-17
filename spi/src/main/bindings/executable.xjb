@@ -11,7 +11,7 @@
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-	version="2.0">
+	version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.xml" />

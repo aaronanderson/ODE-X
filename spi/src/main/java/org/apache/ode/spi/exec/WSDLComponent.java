@@ -31,7 +31,7 @@ public abstract class WSDLComponent implements Component {
 	@Override
 	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> instructions = new ArrayList<InstructionSet>();
-		InstructionSet is = new InstructionSet(WSDL_INSTRUCTION_SET, null);
+		InstructionSet is = new InstructionSet(WSDL_INSTRUCTION_SET, null,null);
 		instructions.add(is);
 		return instructions;
 	}

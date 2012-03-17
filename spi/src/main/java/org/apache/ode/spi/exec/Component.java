@@ -27,20 +27,22 @@ public interface Component {
 	public QName name();
 
 	public List<InstructionSet> instructionSets();
-
+	
 	public List<Action> actions();
 
 	public void online() throws PlatformException;
 
 	public void offline() throws PlatformException;
 
-	public class InstructionSet {
+	public  class InstructionSet {
 		final QName name;
 		final String jaxbContextPath;
+		final Class<?> jaxbObjectFactory;
 
-		public InstructionSet(QName name, String jaxbContextPath) {
+		public InstructionSet(QName name, String jaxbContextPath, Class<?> jaxbObjectFactory) {
 			this.name = name;
 			this.jaxbContextPath = jaxbContextPath;
+			this.jaxbObjectFactory = jaxbObjectFactory;
 		}
 
 		public QName getName() {
@@ -50,5 +52,12 @@ public interface Component {
 		public String getJAXBContextPath() {
 			return jaxbContextPath;
 		}
+		
+		public Class<?> getJAXBObjectFactory(){
+			return jaxbObjectFactory;
+		}
 	}
+	
+	
+
 }

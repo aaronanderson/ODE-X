@@ -31,6 +31,7 @@ public interface Platform {
 
 	public static final String EXEC_MIMETYPE = "application/ode-executable";
 	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
+	public static final String EXEC_CTX_NAMESPACE = "http://ode.apache.org/execution-context";
 
 	public static final String PLATFORM_NAMESPACE = "http://ode.apache.org/platform";
 	public static final QName PLATFORM = new QName(PLATFORM_NAMESPACE,"platform");
@@ -50,7 +51,8 @@ public interface Platform {
 			return qname;
 		}
 	}
-
+	
+	
 	public void registerComponent(Component component);
 
 	public Set<NodeStatus> status();

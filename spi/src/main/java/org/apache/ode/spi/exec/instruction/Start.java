@@ -18,6 +18,19 @@
  */
 package org.apache.ode.spi.exec.instruction;
 
-public class ControlBase {
+
+public interface Start extends Instruction<Start.StartContext> {
+
+	public interface StartContext extends Instruction.ExecutionContext {
+
+	}
+	
+	public class Process implements Return {
+
+	}
+	
+	public class Thread implements Return {
+
+	}
 
 }

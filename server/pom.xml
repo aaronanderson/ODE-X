@@ -176,23 +176,68 @@
 				<artifactId>maven-jaxb2-plugin</artifactId>
 				<executions>
 					<execution>
+						<id>main</id>
+						<phase>generate-sources</phase>
 						<goals>
 							<goal>generate</goal>
 						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
-					<schemaIncludes>
-						<schemaInclude>server.xsd</schemaInclude>
-					</schemaIncludes>
-					<bindingDirectory>src/main/bindings</bindingDirectory>
-					<bindingIncludes>
-						<bindingInclude>server.xjb</bindingInclude>
-					</bindingIncludes>
-					<extension>true</extension>
+						<configuration>
+							<specVersion>2.2</specVersion>
+							<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
+							<schemaIncludes>
+								<schemaInclude>server.xsd</schemaInclude>
+							</schemaIncludes>
+							<bindingDirectory>src/main/bindings</bindingDirectory>
+							<bindingIncludes>
+								<bindingInclude>server.xjb</bindingInclude>
+							</bindingIncludes>
+							<extension>true</extension>
 					<!-- <args> <arg>-npa</arg> </args> -->
-				</configuration>
+						</configuration>
+					</execution>
+					<execution>
+						<id>test</id>
+						<phase>generate-test-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<addCompileSourceRoot>false</addCompileSourceRoot>
+							<addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+							<generateDirectory>${project.build.directory}/generated-test-sources/xjc</generateDirectory>
+							<specVersion>2.2</specVersion>
+							<schemaDirectory>src/test/resources/META-INF/xsd</schemaDirectory>
+							<schemaIncludes>
+								<schemaInclude>test.xsd</schemaInclude>
+							</schemaIncludes>
+							<bindingDirectory>src/test/bindings</bindingDirectory>
+							<bindingIncludes>
+								<bindingInclude>test.xjb</bindingInclude>
+							</bindingIncludes>
+							<catalog>src/test/bindings/catalog.xml</catalog>
+							<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>
+							<plugins>
+								<plugin>
+									<groupId>org.apache.ode</groupId>
+									<artifactId>ode-spi</artifactId>
+									<version>${project.version}</version>
+								</plugin>
+							</plugins>
+							<episodes>
+								<episode>
+									<groupId>org.apache.ode</groupId>
+									<artifactId>ode-spi</artifactId>
+									<version>${project.version}</version>
+								</episode>
+							</episodes>
+							<extension>true</extension>
+							<args>
+								<arg>-npa</arg>
+							</args>
+						</configuration>
+					</execution>
+
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

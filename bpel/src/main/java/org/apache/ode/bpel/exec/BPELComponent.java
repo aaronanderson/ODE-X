@@ -41,7 +41,7 @@ public class BPELComponent implements Component {
 	@Override
 	public List<InstructionSet> instructionSets(){
 		List<InstructionSet> iset = new ArrayList<InstructionSet>();
-		iset.add(new InstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml"));
+		iset.add(new InstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml",null));
 		return iset;
 	}
 

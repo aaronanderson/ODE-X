@@ -11,8 +11,12 @@
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
-	xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0">
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.1">	
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/cluster.xsd">
+	<!-- TODO 
+	http://java.net/jira/browse/JAXB-611 unless package name specified at XJC level adapters go into default package. Look into breaking out global bindings into sperate maven jaxb execution with package specified
+	try this approach to define custom adapter at package level http://blog.bdoughan.com/2012/02/jaxb-and-package-level-xmladapters.html#more
+	-->
 		<jxb:globalBindings>
 		  <jxb:javaType name="java.util.Calendar" xmlType="xs:dateTime" parseMethod="javax.xml.bind.DatatypeConverter.parseDateTime" printMethod="javax.xml.bind.DatatypeConverter.printDateTime"/>
 		</jxb:globalBindings>

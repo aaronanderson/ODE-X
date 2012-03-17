@@ -114,6 +114,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<specVersion>2.2</specVersion>
 					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
 					<schemaIncludes>
 						<schemaInclude>bpel.xsd</schemaInclude>

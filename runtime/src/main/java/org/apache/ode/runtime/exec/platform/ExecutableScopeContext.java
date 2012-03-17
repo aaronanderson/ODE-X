@@ -16,10 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+package org.apache.ode.runtime.exec.platform;
 
 
-public interface ExecutionContext {
-
+public interface ExecutableScopeContext  {
+	
+	public void create();
+	
+	<T> T newInstance(Class<T> clazz);
+	
+	/*
+	 * This could be used to expose JAXB created objects to the DI container.
+	 * Currently this is done using a custom JAXB Object factory registered with a proprietary unmarshaller property
+	 * Instead a JAXB Unmarshaller listener could be registered and in the beforeMarshall method wrap the JAXB object.
+	 * This way the object would be managed, i.e inject, post/destroy methods, etc.
+	 */
+	public void wrap(Object unmanaged);
+	
+	public void destroy();
 	
 }

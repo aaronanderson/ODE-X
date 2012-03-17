@@ -63,13 +63,16 @@
 					</execution>
 				</executions>
 				<configuration>
+				    <specVersion>2.2</specVersion>
 					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
 					<schemaIncludes>
 						<schemaInclude>executable.xsd</schemaInclude>
+						<schemaInclude>execution-context.xsd</schemaInclude>
 					</schemaIncludes>
 					<bindingDirectory>src/main/bindings</bindingDirectory>
 					<bindingIncludes>
 						<bindingInclude>executable.xjb</bindingInclude>
+						<bindingInclude>execution-context.xjb</bindingInclude>
 					</bindingIncludes>
 					<extension>true</extension>
 					<args>
@@ -108,6 +111,29 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!--  fix for http://java.net/jira/browse/JAXB-829  -->
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>                
+                <executions>
+                    <execution>
+                        <id>fix-episode</id>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <tasks>
+                                <!-- <mkdir dir="target/generated-resources/xml/xslt"/>
+                                <copy file="target/generated-sources/xjc/META-INF/sun-jaxb.episode" tofile=target/generated-resources/xml/xslt/sun-jaxb.episode" overwrite="true"/> -->
+                                <replaceregexp file="target/generated-sources/xjc/META-INF/sun-jaxb.episode" match=" xmlns:tns" replace=" if-exists=&quot;&quot; xmlns:tns" byline="true" />
+                                <!-- <xslt in="target/generated-resources/xml/xslt/sun-jaxb.episode" out="target/generated-sources/xjc/META-INF/sun-jaxb.episode" style="src/main/bindings/episode.xsl"/> -->
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 

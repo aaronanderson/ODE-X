@@ -18,6 +18,15 @@
  */
 package org.apache.ode.spi.exec.instruction;
 
-public class InstructionBase {
+
+public interface Joint extends Instruction<Joint.JointContext> {
+
+	public interface JointContext extends Instruction.ExecutionContext {
+
+	}
+	
+	public class Block implements Return {
+
+	}
 
 }
