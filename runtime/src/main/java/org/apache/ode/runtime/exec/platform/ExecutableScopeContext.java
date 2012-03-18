@@ -33,6 +33,10 @@ public interface ExecutableScopeContext  {
 	 */
 	public void wrap(Object unmanaged);
 	
+	public void begin();
+	
+	public void end();
+	
 	public void destroy();
 	
 }

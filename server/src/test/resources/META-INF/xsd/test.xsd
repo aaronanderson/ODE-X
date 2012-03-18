@@ -9,7 +9,15 @@
 
 	<import namespace="http://ode.apache.org/executable" />
 
-	<element name="instructionTest">
+    <element name="scopeTest">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType"/>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="attributeTest">
 		<complexType>
 			<complexContent>
 				<extension base="exec:instructionType">

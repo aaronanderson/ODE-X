@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.server.test.instruction.TestObjectFactory;
+import org.apache.ode.server.exec.instruction.TestObjectFactory;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Platform;

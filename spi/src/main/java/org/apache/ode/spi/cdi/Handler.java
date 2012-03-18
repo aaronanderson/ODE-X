@@ -69,8 +69,10 @@ public class Handler {
 		CDIContext ctx = ctxs.get(clazz);
 		if (ctx != null) {
 			return ctx.instance;
+		}else{
+			log.log(Level.SEVERE, "class {0} was not defined as being managed", clazz);
+			return null;
 		}
-		return null;
 	}
 
 	public void stop() {

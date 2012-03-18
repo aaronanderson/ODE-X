@@ -24,6 +24,7 @@ import java.util.Set;
 
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.AnnotatedField;
 import javax.enterprise.inject.spi.AnnotatedType;
@@ -60,6 +61,7 @@ import org.apache.ode.server.JMXServer;
 import org.apache.ode.server.WSDLComponentImpl;
 import org.apache.ode.server.xml.ServerConfig;
 import org.apache.ode.spi.cdi.Handler;
+import org.apache.ode.spi.exec.ExecutableScope;
 import org.apache.ode.spi.repo.XMLValidate;
 
 public class RuntimeHandler extends Handler {
@@ -80,6 +82,7 @@ public class RuntimeHandler extends Handler {
 	 * }
 	 */
 
+	@Override
 	public void beforeBeanDiscovery(BeforeBeanDiscovery bbd, BeanManager bm) {
 		bbd.addAnnotatedType(bm.createAnnotatedType(XSD.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(XML.class));
@@ -95,6 +98,8 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLContextImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(WSDLComponentImpl.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(Exec.class));
+		bbd.addAnnotatedType(bm.createAnnotatedType(ExecutableScopeContextImpl.class));
+		//bbd.addAnnotatedType(bm.createAnnotatedType(ExecutableScopeContextImpl.Producer.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(PlatformImpl.class));
 		bbd.addAnnotatedType(getClusterType(bm.createAnnotatedType(Cluster.class)));
 		bbd.addQualifier(ClusterId.class);
@@ -107,8 +112,17 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(InstallMasterAction.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(InstallSlaveAction.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(org.apache.ode.runtime.jmx.PlatformImpl.class));
+		bbd.addScope(ExecutableScope.class, false, false);
+	}
+	
+	
+	@Override
+	public void afterBeanDiscovery(AfterBeanDiscovery adv, BeanManager bm) {
+		adv.addContext(new ExecutableScopeContextImpl.CDIContextImpl());
 	}
 
+
+	@Override
 	public void afterDeploymentValidation(AfterDeploymentValidation adv, BeanManager bm) {
 		manage(XSD.class);
 		manage(XSD.class);
@@ -191,4 +205,6 @@ public class RuntimeHandler extends Handler {
 		}
 		return at;
 	}
+	
+	
 }
