@@ -40,7 +40,7 @@ public class BPMNComponent implements Component {
 	@Override
 	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> iset = new ArrayList<InstructionSet>();
-		iset.add(new InstructionSet(BPMN_INSTRUCTION_SET, "org.apache.ode.bpmn.exec.xml"));
+		iset.add(new InstructionSet(BPMN_INSTRUCTION_SET, "org.apache.ode.bpmn.exec.xml",null));
 		return iset;
 	}
 

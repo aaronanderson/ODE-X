@@ -24,6 +24,7 @@ import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.repo.Artifact;
 import org.w3c.dom.Document;
 
@@ -35,6 +36,10 @@ public interface Platform {
 
 	public static final String PLATFORM_NAMESPACE = "http://ode.apache.org/platform";
 	public static final QName PLATFORM = new QName(PLATFORM_NAMESPACE,"platform");
+	
+	public static final QName EXEC_INSTRUCTION_SET_NAME = new QName(EXEC_NAMESPACE, "Executable");
+	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.xml",org.apache.ode.spi.exec.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
+
 
 	public enum PlatformAction {
 

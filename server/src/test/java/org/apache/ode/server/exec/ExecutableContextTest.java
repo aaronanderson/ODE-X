@@ -127,7 +127,6 @@ public class ExecutableContextTest {
 			assertNotNull(st1_of1_esc1);
 			assertTrue(st1_of1_esc1.isStarted());
 			assertNotNull(st1_of1_esc1.getShared());
-			System.out.println("XXXXXXXXXXXXXXX");
 			ScopeInstruction st2_of1_esc1 = (ScopeInstruction) of1_esc1.createScopeTest();
 			assertNotNull(st2_of1_esc1);
 			assertFalse(st1_of1_esc1.equals(st2_of1_esc1));

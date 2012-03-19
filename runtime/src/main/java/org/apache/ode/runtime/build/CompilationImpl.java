@@ -22,6 +22,7 @@ import org.apache.ode.spi.compiler.AbstractCompiler;
 import org.apache.ode.spi.compiler.AbstractCompilerContext.Compilation;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.w3c.dom.Node;
 
@@ -29,7 +30,7 @@ public class CompilationImpl implements Compilation{
 	private AtomicInteger srcIdCounter=new AtomicInteger();
 	private Executable executable;
 	private Binder<Node> binder;
-	private final Set<String> jaxbContexts = new HashSet<String>();
+	private final Set<InstructionSet> instructionSets = new HashSet<InstructionSet>();
 	private final ReentrantReadWriteLock executableLock = new ReentrantReadWriteLock();
 	private final Map<String, Object> subContext = new HashMap<String, Object>();
 	boolean terminated = false;
@@ -131,8 +132,8 @@ public class CompilationImpl implements Compilation{
 		return addedSources;
 	}
 
-	public Set<String> getJaxbContexts() {
-		return jaxbContexts;
+	public Set<InstructionSet> getInstructionSets() {
+		return instructionSets;
 	}
 
 	public Map<String, AbstractCompiler<?,?>> getCompilers() {

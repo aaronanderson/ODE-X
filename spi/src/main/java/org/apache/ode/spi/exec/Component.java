@@ -27,37 +27,55 @@ public interface Component {
 	public QName name();
 
 	public List<InstructionSet> instructionSets();
-	
+
 	public List<Action> actions();
 
 	public void online() throws PlatformException;
 
 	public void offline() throws PlatformException;
 
-	public  class InstructionSet {
+	public class InstructionSet {
 		final QName name;
-		final String jaxbContextPath;
-		final Class<?> jaxbObjectFactory;
+		final String jaxbExecPath;
+		final Class<?> jaxbExecFactory;
+		final String jaxbExecContextPath;
+		final Class<?> jaxbExecContextFactory;
 
-		public InstructionSet(QName name, String jaxbContextPath, Class<?> jaxbObjectFactory) {
+		public InstructionSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory) {
 			this.name = name;
-			this.jaxbContextPath = jaxbContextPath;
-			this.jaxbObjectFactory = jaxbObjectFactory;
+			this.jaxbExecPath = jaxbExecPath;
+			this.jaxbExecFactory = jaxbExecFactory;
+			this.jaxbExecContextPath = null;
+			this.jaxbExecContextFactory = null;
+		}
+
+		public InstructionSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory, String jaxbExecContextPath, Class<?> jaxbExecContextFactory) {
+			this.name = name;
+			this.jaxbExecPath = jaxbExecPath;
+			this.jaxbExecFactory = jaxbExecFactory;
+			this.jaxbExecContextPath = jaxbExecContextPath;
+			this.jaxbExecContextFactory = jaxbExecContextFactory;
 		}
 
 		public QName getName() {
 			return name;
 		}
 
-		public String getJAXBContextPath() {
-			return jaxbContextPath;
+		public String getJAXBExecPath() {
+			return jaxbExecPath;
 		}
-		
-		public Class<?> getJAXBObjectFactory(){
-			return jaxbObjectFactory;
+
+		public Class<?> getJAXBExecFactory() {
+			return jaxbExecFactory;
+		}
+
+		public String getJAXBExecContextPath() {
+			return jaxbExecContextPath;
+		}
+
+		public Class<?> getJAXBExecContextFactory() {
+			return jaxbExecContextFactory;
 		}
 	}
-	
-	
 
 }

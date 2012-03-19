@@ -25,6 +25,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.repo.Repository;
 
@@ -37,7 +38,6 @@ public class Exec {
 	PlatformImpl platform;
 	
 	private static final Logger log = Logger.getLogger(Exec.class.getName());
-
 
 	@PostConstruct
 	public void init() {

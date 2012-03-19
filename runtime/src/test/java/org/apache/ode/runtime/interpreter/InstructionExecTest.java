@@ -19,15 +19,19 @@
 package org.apache.ode.runtime.interpreter;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
 import org.apache.ode.runtime.exec.test.xml.InstructionTest;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.instruction.Instruction.Return;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -51,15 +55,18 @@ public class InstructionExecTest {
 
 	@Test
 	public void instruction() throws Exception {
-		JAXBContext ctx = JAXBContext.newInstance("org.apache.ode.spi.exec.xml:org.apache.ode.runtime.exec.test.xml");
+		Set<InstructionSet> set = new HashSet<InstructionSet>();
+		set.add(new InstructionSet(null, "org.apache.ode.runtime.exec.test.xml", null));
+		JAXBContext ctx = JAXBRuntimeUtil.executableJAXBContextByPath(set);
 		Unmarshaller um = ctx.createUnmarshaller();
-		//um.setProperty("com.sun.xml.bind.ObjectFactory", new TestObjectFactory());
-		um.setProperty("com.sun.xml.internal.bind.ObjectFactory", new Object[]{ new TestObjectFactory()});
+		// um.setProperty("com.sun.xml.bind.ObjectFactory", new
+		// TestObjectFactory());
+		JAXBRuntimeUtil.setObjectFactories(um, new Object[] { new TestObjectFactory() });
 		Object o = um.unmarshal(getClass().getResourceAsStream("/test/instruction.xml"));
 		assertTrue(o instanceof InstructionTest);
 		assertTrue(o instanceof TestInstruction);
-		TestInstruction it = (TestInstruction)o;
-		assertEquals("arg1",it.getArg1());
+		TestInstruction it = (TestInstruction) o;
+		assertEquals("arg1", it.getArg1());
 		Return r = it.execute(null);
 		assertNotNull(r);
 	}

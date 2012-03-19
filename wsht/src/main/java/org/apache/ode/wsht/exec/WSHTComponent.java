@@ -40,7 +40,7 @@ public class WSHTComponent implements Component {
 	@Override
 	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> iset = new ArrayList<InstructionSet>();
-		iset.add(new InstructionSet(WSHT_INSTRUCTION_SET, "org.apache.ode.wsht.exec.xml"));
+		iset.add(new InstructionSet(WSHT_INSTRUCTION_SET, "org.apache.ode.wsht.exec.xml",null));
 		return iset;
 	}
 

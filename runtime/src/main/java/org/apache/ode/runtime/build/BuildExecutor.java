@@ -30,7 +30,6 @@ import javax.activation.DataHandler;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.xml.bind.Binder;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
@@ -47,6 +46,7 @@ import org.apache.ode.runtime.build.xml.Target;
 import org.apache.ode.runtime.build.xml.Xpath;
 import org.apache.ode.runtime.build.xml.Xpath.Annotation;
 import org.apache.ode.runtime.build.xml.Xslt;
+import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
 import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.compiler.AbstractCompiler;
 import org.apache.ode.spi.compiler.AbstractCompilerContext;
@@ -68,7 +68,6 @@ import org.apache.ode.spi.exec.xml.Sources;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
-import org.apache.ode.spi.xml.HandlerRegistry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -185,13 +184,7 @@ public class BuildExecutor implements CommandObject {
 	}
 
 	void emitBase(List<AbstractCompilerContext<?>> contexts, CompilationImpl compilation) throws BuildException {
-		StringBuilder contextPath = new StringBuilder();
-		contextPath.append("org.apache.ode.spi.exec.xml");
-		for (String path : compilation.getJaxbContexts()) {
-			contextPath.append(':');
-			contextPath.append(path);
-		}
-
+		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setNamespaceAware(true);
 		DocumentBuilder db;
@@ -216,7 +209,7 @@ public class BuildExecutor implements CommandObject {
 		Binder<Node> binder;
 		Document execDoc;
 		try {
-			compilation.setJaxbContext(JAXBContext.newInstance(contextPath.toString()));
+			compilation.setJaxbContext(JAXBRuntimeUtil.executableJAXBContextByPath(compilation.getInstructionSets()));
 			binder = compilation.getJaxbContext().createBinder();
 			compilation.setBinder(binder);
 			execDoc = db.newDocument();
@@ -270,7 +263,7 @@ public class BuildExecutor implements CommandObject {
 					throw new BuildException(String.format("Unsupported instructionset %s", iset));
 				}
 				for (InstructionSet is : c.instructionSets()) {
-					compilation.getJaxbContexts().add(is.getJAXBContextPath());
+					compilation.getInstructionSets().add(is);
 				}
 
 			}

@@ -32,36 +32,33 @@ public class BPELComponent implements Component {
 	public static final String BPEL_INSTRUCTION_SET_NS = "http://ode.apache.org/bpel";
 	public static final QName BPEL_INSTRUCTION_SET = new QName(BPEL_INSTRUCTION_SET_NS, "BPEL");
 
-	
 	@Override
 	public QName name() {
 		return BPEL_INSTRUCTION_SET;
 	}
-	
+
 	@Override
-	public List<InstructionSet> instructionSets(){
+	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> iset = new ArrayList<InstructionSet>();
-		iset.add(new InstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml",null));
+		iset.add(new InstructionSet(BPEL_INSTRUCTION_SET, "org.apache.ode.bpel.exec.xml", null));
 		return iset;
 	}
 
 	@Override
-	public List<Action> actions(){
+	public List<Action> actions() {
 		return null;
 	}
-	
 
 	@Override
 	public void online() throws PlatformException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void offline() throws PlatformException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
-	
 }

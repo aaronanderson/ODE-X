@@ -20,12 +20,12 @@ package org.apache.ode.runtime.exec.platform;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -39,6 +39,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component;
@@ -64,8 +65,6 @@ import org.w3c.dom.NodeList;
 @Singleton
 public class PlatformImpl implements Platform {
 
-	public static final String EXEC_JAXB_CTX = "org.apache.ode.spi.exec.xml";
-
 	@PersistenceContext(unitName = "platform")
 	private EntityManager pmgr;
 
@@ -78,14 +77,13 @@ public class PlatformImpl implements Platform {
 	private Cluster cluster;
 
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
-	private Map<QName, String> instructions = new ConcurrentHashMap<QName, String>();
+	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
 
-	
 	@Override
 	public void registerComponent(Component component) {
 		components.put(component.name(), component);
 		for (InstructionSet is : component.instructionSets()) {
-			instructions.put(is.getName(), is.getJAXBContextPath());
+			instructions.put(is.getName(), is);
 		}
 		cluster.addComponent(component);
 	}
@@ -177,20 +175,15 @@ public class PlatformImpl implements Platform {
 	}
 
 	public JAXBContext getJAXBContext(List<QName> isets) throws JAXBException {
-		StringBuilder ctxs = new StringBuilder(EXEC_JAXB_CTX);
-		try {
-			for (QName iset : isets) {
-				String jaxbPath = instructions.get(iset);
-				if (jaxbPath == null) {
-					throw new PlatformException("Unknown instruction set " + iset.toString());
-				}
-				ctxs.append(':');
-				ctxs.append(jaxbPath);
+		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
+		for (QName iset : isets) {
+			InstructionSet is = instructions.get(iset);
+			if (is == null) {
+				throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
 			}
-			return JAXBContext.newInstance(ctxs.toString());
-		} catch (Exception e) {
-			throw new JAXBException(e);
+			isetSet.add(is);
 		}
+		return JAXBRuntimeUtil.executableJAXBContextByPath(isetSet);
 	}
 
 	public List<QName> getInstructionSets(InputStream executable) throws PlatformException {
@@ -224,19 +217,18 @@ public class PlatformImpl implements Platform {
 	}
 
 	public JAXBContext getJAXBContext(Executable executable) throws JAXBException {
-		StringBuilder ctxs = new StringBuilder(EXEC_JAXB_CTX);
+		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
 		InstructionSets isets = executable.getInstructionSets();
 		if (isets != null) {
 			for (QName iset : isets.getInstructionSet()) {
-				String jaxbPath = instructions.get(iset);
-				if (jaxbPath == null) {
-					throw new JAXBException("Unknown instruction set " + iset.toString());
+				InstructionSet is = instructions.get(iset);
+				if (is == null) {
+					throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
 				}
-				ctxs.append(':');
-				ctxs.append(jaxbPath);
+				isetSet.add(is);
 			}
 		}
-		return JAXBContext.newInstance(ctxs.toString());
+		return JAXBRuntimeUtil.executableJAXBContextByPath(isetSet);
 	}
 
 	public List<QName> getInstructionSets(Executable executable) throws PlatformException {
