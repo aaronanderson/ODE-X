@@ -103,11 +103,14 @@ public class CompilerTest {
 		byte[] bpel = readStream(Thread
 				.currentThread().getContextClassLoader().getResourceAsStream("HelloWorld/HelloWorld.bpel"));
 		Document doc = ParserUtils.inlineLocation(bpel, Collections.EMPTY_SET);
+		System.out.println(ParserUtils.domToString(doc));
 		assertNotNull(doc);
 		Element p = (Element)doc.getDocumentElement();
 		assertNotNull(p);
 		Attr a = p.getAttributeNodeNS(ParserUtils.LOCATION_NS, ParserUtils.LOCATION_START_LINE_ATTR);
 		assertNotNull(a);
+		//if this is 21 instead of 13 then most likely woodstox was not used which sets location to the
+		//beginning of an element tag instead of the end.
 		assertEquals("13",a.getTextContent());
 		a = p.getAttributeNodeNS(ParserUtils.LOCATION_NS, ParserUtils.LOCATION_END_LINE_ATTR);
 		assertNotNull(a);

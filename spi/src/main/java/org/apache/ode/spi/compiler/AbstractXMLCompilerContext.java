@@ -81,7 +81,7 @@ public abstract class AbstractXMLCompilerContext<U, X extends HandlerException, 
 				Map.Entry<String, Integer> reqAttrName = j.next();
 				if (reqAttrName.getKey().equals(input.getAttributeLocalName(i))) {
 					String attrNS = input.getAttributeNamespace(i);
-					if (attrNS.length() == 0 || attrNS.equals(input.getNamespaceURI())) {
+					if (attrNS == null || attrNS.length() == 0 || attrNS.equals(input.getNamespaceURI())) {
 						j.remove();
 						results[reqAttrName.getValue()] = input.getAttributeValue(i);
 						handled = true;

@@ -88,7 +88,8 @@ public class ParserUtils {
 	}
 
 	/**
-	 * We do not want to track compiler related directives in sources so we will not add in line information for them.
+	 * We do not want to track compiler related directives in sources so we will
+	 * not add in line information for them.
 	 * 
 	 * @param content
 	 * @param pragma
@@ -111,7 +112,8 @@ public class ParserUtils {
 				switch (type) {
 				case XMLStreamConstants.START_ELEMENT:
 					if (textBuffer.length() > 0) {
-						if (!stack.isEmpty()) {// ignore text/whitespaces before root
+						if (!stack.isEmpty()) {// ignore text/whitespaces before
+												// root
 							Element top = stack.peek();
 							Text text = doc.createTextNode(textBuffer.toString());
 							top.appendChild(text);
@@ -123,19 +125,26 @@ public class ParserUtils {
 						doc = impl.createDocument(reader.getNamespaceURI(), reader.getLocalName(), null);
 						el = doc.getDocumentElement();
 					} else {
-						el = doc.createElement(reader.getPrefix().length() > 0 ? reader.getPrefix() + ":" + reader.getLocalName() : reader.getLocalName());
+						if (reader.getPrefix() != null && reader.getPrefix().length() > 0) {
+							el = doc.createElementNS(reader.getNamespaceURI(), reader.getPrefix() + ":" + reader.getLocalName());
+						} else {
+							el = doc.createElementNS(reader.getNamespaceURI(),reader.getLocalName());
+						}
+
 					}
 					for (int i = 0; i < reader.getNamespaceCount(); i++) {
-						if (reader.getNamespacePrefix(i).length() > 0) {
+						if (reader.getNamespacePrefix(i) != null && reader.getNamespacePrefix(i).length() > 0) {
 							el.setAttributeNS(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, "xmlns:" + reader.getNamespacePrefix(i), reader.getNamespaceURI(i));
+						} else {
+							el.setAttributeNS(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, "xmlns", reader.getNamespaceURI(i));
 						}
 					}
 					for (int i = 0; i < reader.getAttributeCount(); i++) {
-						if (reader.getAttributePrefix(i).length() > 0) {
+						if (reader.getAttributePrefix(i) != null && reader.getAttributePrefix(i).length() > 0) {
 							el.setAttributeNS(reader.getAttributeNamespace(i), reader.getAttributePrefix(i) + ":" + reader.getAttributeLocalName(i),
 									reader.getAttributeValue(i));
 						} else {
-							el.setAttribute(reader.getAttributeLocalName(i), reader.getAttributeValue(i));
+							el.setAttributeNS(reader.getAttributeNamespace(i),reader.getAttributeLocalName(i), reader.getAttributeValue(i));
 						}
 
 					}
@@ -151,7 +160,8 @@ public class ParserUtils {
 
 				case XMLStreamConstants.END_ELEMENT:
 					if (textBuffer.length() > 0) {
-						if (!stack.isEmpty()) {// ignore text/whitespaces before root
+						if (!stack.isEmpty()) {// ignore text/whitespaces before
+												// root
 							Element top = stack.peek();
 							Text text = doc.createTextNode(textBuffer.toString());
 							top.appendChild(text);
@@ -260,7 +270,8 @@ public class ParserUtils {
 
 	}
 
-	// TODO need a skip to location so that location can be preserved on inlined content
+	// TODO need a skip to location so that location can be preserved on inlined
+	// content
 	public static Element extract(XMLStreamReader input) throws ParserException {
 		try {
 			TransformerFactory transformFactory = TransformerFactory.newInstance();
