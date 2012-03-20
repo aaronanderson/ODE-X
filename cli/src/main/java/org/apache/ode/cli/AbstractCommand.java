@@ -18,12 +18,18 @@
  */
 package org.apache.ode.cli;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Formatter;
 
 import javax.management.MalformedObjectNameException;
 
+import com.beust.jcommander.Parameter;
+
 public abstract class AbstractCommand {
+	
+	@Parameter(names = "--verbose", description = "Verbose output")
+	public boolean verbose=false;
 	
 	protected Connection connection;
 	protected Formatter out;

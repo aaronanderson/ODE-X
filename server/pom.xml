@@ -68,12 +68,6 @@
 			<groupId>org.apache.ode</groupId>
 			<artifactId>ode-runtime</artifactId>
 			<version>${project.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.ws.commons.schema</groupId>
-					<artifactId>XmlSchema</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -106,6 +100,7 @@
 			<version>${tomcat.version}</version>
 		</dependency>
 
+<!-- 
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
 			<artifactId>cxf-rt-frontend-jaxws</artifactId>
@@ -117,7 +112,7 @@
 			<artifactId>cxf-rt-transports-http</artifactId>
 			<version>${cxf.version}</version>
 		</dependency>
-
+ -->
 		<dependency>
 			<groupId>org.jboss.weld.se</groupId>
 			<artifactId>weld-se</artifactId>

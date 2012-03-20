@@ -30,26 +30,27 @@ public class HelloWorldIT {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		StringBuilder output = new StringBuilder();
-		if (!CLI.execute(output, "--port", "9696", "import", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.wsdl")) {
+		if (!CLI.execute(output, "--port", "9696", "import", "--verbose", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.wsdl")) {
 			throw new Exception(output.toString());
 		}
-		if (!CLI.execute(output, "--port", "9696", "import", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.bpel")) {
-			throw new Exception(output.toString());
-		}
-
-		if (!CLI.execute(output, "--port", "9696", "build", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.build")) {
+		if (!CLI.execute(output, "--port", "9696", "import", "--verbose", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.bpel")) {
 			throw new Exception(output.toString());
 		}
 
-		if (!CLI.execute(output, "--port", "9696", "setup", "--name", "{http://ode/bpel/unit-test}HelloWorld", "--file", "target/installData.xml")) {
+		if (!CLI.execute(output, "--port", "9696", "build", "--verbose", "--file", "target/test-classes/bpel/HelloWorld/HelloWorld.build")) {
 			throw new Exception(output.toString());
 		}
 
-		if (!CLI.execute(output, "--port", "9696", "install", "--name", "{http://ode/bpel/unit-test}HelloWorld", "--file", "target/installData.xml")) {
+		if (!CLI.execute(output, "--port", "9696", "setup", "--verbose", "--name", "{http://ode/bpel/unit-test}HelloWorld", "--file", "target/installData.xml")) {
 			throw new Exception(output.toString());
 		}
-		
-		if (!CLI.execute(output, "--port", "9696", "start", "--name", "{http://ode/bpel/unit-test}HelloWorld")) {
+
+		if (!CLI.execute(output, "--port", "9696", "install", "--verbose", "--name", "{http://ode/bpel/unit-test}HelloWorld", "--file",
+				"target/installData.xml")) {
+			throw new Exception(output.toString());
+		}
+
+		if (!CLI.execute(output, "--port", "9696", "start", "--verbose", "--name", "{http://ode/bpel/unit-test}HelloWorld")) {
 			throw new Exception(output.toString());
 		}
 		/*

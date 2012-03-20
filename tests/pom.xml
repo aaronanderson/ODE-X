@@ -18,6 +18,19 @@
 	<description>ODE Integration tests.</description>
 	<packaging>jar</packaging>
 
+	<!-- 
+	To debug client run 
+	mvn -Dmaven.failsafe.debug clean install
+	
+	create eclipse debug profile for port 5005
+	
+	To debug server run
+	
+	mvnDebug clean install
+	
+	create eclipse debug profile for port 8000
+	
+	 -->
 	<dependencies>
 
 		<dependency>
