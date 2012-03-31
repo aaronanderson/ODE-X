@@ -35,6 +35,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.ode.api.Repository.ArtifactId;
+import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.repo.Artifact;
@@ -62,12 +63,7 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 			if (doc == null) {
 				return null;
 			}
-			TransformerFactory factory = TransformerFactory.newInstance();
-			Transformer tform = factory.newTransformer();
-			tform.setOutputProperty(OutputKeys.INDENT, "yes");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			return bos.toByteArray();
+			return ParserUtils.domToContent(doc);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
@@ -97,7 +93,7 @@ public class PlatformImpl implements org.apache.ode.api.Platform {
 
 			}
 
-			platform.install(idQname, artifact, installDoc, target);
+			platform.install(idQname, installDoc, target);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}

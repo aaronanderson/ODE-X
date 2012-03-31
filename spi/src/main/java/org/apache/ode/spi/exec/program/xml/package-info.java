@@ -16,25 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.server.exec.instruction;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = Platform.PROGRAM_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Platform.PROGRAM_NAMESPACE, prefix = "prg") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.spi.exec.program.xml;
 
-import org.apache.ode.server.test.xml.AttributeTest;
-import org.apache.ode.spi.exec.ExecutableScope;
-import org.apache.ode.spi.exec.instruction.ExecutionContext;
-import org.apache.ode.spi.exec.instruction.Instruction;
-import org.apache.ode.spi.exec.instruction.Instruction.Return;
-import org.apache.ode.spi.exec.instruction.Instruction.Success;
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 
-@ExecutableScope
-public class AttributeInstruction extends AttributeTest implements Instruction<ExecutionContext>{
-
-	@Override
-	public Return execute(ExecutionContext execCtx) {
-		String test = arg1;
-		return Success.success();
-		
-	}
-	
-}
-
+import org.apache.ode.spi.exec.Platform;
 

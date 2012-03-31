@@ -68,11 +68,13 @@
 					<schemaIncludes>
 						<schemaInclude>executable.xsd</schemaInclude>
 						<schemaInclude>execution-context.xsd</schemaInclude>
+						<schemaInclude>program.xsd</schemaInclude>
 					</schemaIncludes>
 					<bindingDirectory>src/main/bindings</bindingDirectory>
 					<bindingIncludes>
 						<bindingInclude>executable.xjb</bindingInclude>
 						<bindingInclude>execution-context.xjb</bindingInclude>
+						<bindingInclude>program.xjb</bindingInclude>
 					</bindingIncludes>
 					<extension>true</extension>
 					<args>

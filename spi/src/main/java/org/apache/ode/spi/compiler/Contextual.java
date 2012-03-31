@@ -88,11 +88,11 @@ public class Contextual<C extends Context> extends Unit<C> {
 
 	@Override
 	public void emit(Block block) {
-		block.getBody().add(start);
+		//block.getInstructions().add(start);
 		for (Unit<? extends Instruction> u : children) {
 			u.emit(block);
 		}
-		block.getBody().add(end);
+		//block.getInstructions().add(end);
 
 	}
 

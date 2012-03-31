@@ -227,7 +227,7 @@ public class BuildExecutor implements CommandObject {
 			String bid = "b" + blockId++;
 			b.setBlc(bid);
 			int insId = 0;
-			for (Object o : b.getBody()) {
+			for (Object o : b.getInstructions()) {
 				if (o instanceof Instruction) {
 					((Instruction) o).setIns(bid + "i" + insId++);
 				}

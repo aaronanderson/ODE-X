@@ -28,7 +28,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="process">
+	<element name="process" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="tns:scopeType">
@@ -65,7 +65,7 @@
 		</complexType>
 	</element>
 
-	<element name="partnerLinks">
+	<element name="partnerLinks" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType" />
@@ -73,7 +73,7 @@
 		</complexType>
 	</element>
 
-	<element name="partnerLink">
+	<element name="partnerLink" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:instructionType" />
@@ -81,7 +81,7 @@
 		</complexType>
 	</element>
 
-	<element name="variables">
+	<element name="variables" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType" />
@@ -89,7 +89,7 @@
 		</complexType>
 	</element>
 
-	<element name="variable">
+	<element name="variable" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType">
@@ -102,7 +102,7 @@
 		</complexType>
 	</element>
 
-	<element name="sequence">
+	<element name="sequence" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="tns:scopeType" />
@@ -110,7 +110,7 @@
 		</complexType>
 	</element>
 
-	<element name="assign">
+	<element name="assign" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="tns:activityType">
@@ -120,7 +120,7 @@
 		</complexType>
 	</element>
 
-	<element name="copy">
+	<element name="copy" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType">
@@ -131,7 +131,7 @@
 		</complexType>
 	</element>
 
-	<element name="to">
+	<element name="to" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType">
@@ -163,7 +163,7 @@
 		</complexType>
 	</element>
 
-	<element name="from">
+	<element name="from" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:instructionType">
@@ -203,7 +203,7 @@
 		</complexType>
 	</element>
 
-	<element name="receive">
+	<element name="receive" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="tns:activityType">
@@ -218,7 +218,7 @@
 		</complexType>
 	</element>
 
-	<element name="fromParts">
+	<element name="fromParts" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType" />
@@ -226,7 +226,7 @@
 		</complexType>
 	</element>
 
-	<element name="fromPart">
+	<element name="fromPart" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:instructionType">
@@ -237,7 +237,7 @@
 		</complexType>
 	</element>
 
-	<element name="toParts">
+	<element name="toParts" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType" />
@@ -245,7 +245,7 @@
 		</complexType>
 	</element>
 
-	<element name="toPart">
+	<element name="toPart" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:instructionType">
@@ -256,7 +256,7 @@
 		</complexType>
 	</element>
 
-	<element name="correlations">
+	<element name="correlations" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:contextType" />
@@ -264,7 +264,7 @@
 		</complexType>
 	</element>
 
-	<element name="correlation">
+	<element name="correlation" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="exec:instructionType">
@@ -275,7 +275,7 @@
 		</complexType>
 	</element>
 
-	<element name="reply">
+	<element name="reply" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
 				<extension base="tns:activityType">

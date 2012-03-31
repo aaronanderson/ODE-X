@@ -62,6 +62,7 @@ import org.apache.ode.server.WSDLComponentImpl;
 import org.apache.ode.server.xml.ServerConfig;
 import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.exec.ExecutableScope;
+import org.apache.ode.spi.exec.ProgramScope;
 import org.apache.ode.spi.repo.XMLValidate;
 
 public class RuntimeHandler extends Handler {
@@ -113,12 +114,14 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(InstallSlaveAction.class));
 		bbd.addAnnotatedType(bm.createAnnotatedType(org.apache.ode.runtime.jmx.PlatformImpl.class));
 		bbd.addScope(ExecutableScope.class, false, false);
+		bbd.addScope(ProgramScope.class, false, false);
 	}
 	
 	
 	@Override
 	public void afterBeanDiscovery(AfterBeanDiscovery adv, BeanManager bm) {
 		adv.addContext(new ExecutableScopeContextImpl.CDIContextImpl());
+		adv.addContext(new ProgramScopeContextImpl.CDIContextImpl());
 	}
 
 

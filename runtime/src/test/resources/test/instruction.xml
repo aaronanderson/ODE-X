@@ -1,2 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<test:instructionTest xmlns:test="http://ode.apache.org/executable-test" arg1="arg1" arg2="arg2"/>
+<exec:executable xmlns:exec="http://ode.apache.org/executable" xmlns:test="http://ode.apache.org/executable-test">
+	<exec:instruction-sets>
+		<exec:instruction-set>test:Test</exec:instruction-set>
+	</exec:instruction-sets>
+	<exec:installation />
+	<exec:sources>
+		<exec:sources version="1.0" checksum="" src="s0" qname="test:InstructionTest" contentType="" />
+	</exec:sources>
+	<exec:block blc="b0">
+		<test:instructionTest ins="b0i0" sref="s0" line="0" column="0" arg1="arg1" arg2="arg2" /> 
+		<!-- <exec:itest ins="b0i0" sref="s0" line="0" column="0"  /> --> 
+	</exec:block>
+</exec:executable>

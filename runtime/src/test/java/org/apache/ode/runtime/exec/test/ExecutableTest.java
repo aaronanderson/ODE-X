@@ -16,59 +16,50 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.server.exec.instruction;
+package org.apache.ode.runtime.exec.test;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import javax.inject.Named;
+import java.util.logging.Logger;
 
-import org.apache.ode.server.test.xml.ScopeTest;
-import org.apache.ode.spi.exec.ExecutableScope;
 import org.apache.ode.spi.exec.instruction.ExecutionContext;
 import org.apache.ode.spi.exec.instruction.Instruction;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-@ExecutableScope
-public class ScopeInstruction extends ScopeTest implements Instruction<ExecutionContext>{
+public class ExecutableTest {
+	private static final Logger log = Logger.getLogger(ExecutableTest.class.getName());
 
-	private boolean started=false;
-	private boolean stopped=false;
-	
-	@Inject
-	@Named("shared")
-	private ExecutableShared shared=null;
-	
-	
-	@PostConstruct
-	public void start(){
-		started=true;
-	}
-	
-	@PreDestroy
-	public void stop(){
-		stopped=true;
-	}
-	
-	@Override
-	public Return execute(ExecutionContext execCtx) {
-		return Success.success();
-		
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+
 	}
 
-	public boolean isStarted() {
-		return started;
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
 	}
 
-	public boolean isStopped() {
-		return stopped;
+	@Test
+	public void variable() throws Exception {
 	}
 
-	public ExecutableShared getShared() {
-		return shared;
+	@Test
+	public void instruction() throws Exception {
+	}
+
+	@Test
+	public void control() throws Exception {
+	}
+
+	@Test
+	public void exchange() throws Exception {
 	}
 	
+	@Test 
+	public void process() throws Exception {
+	}
 	
-	
+	@Test 
+	public void thread() throws Exception {
+	}
+
 }
-
-

@@ -11,7 +11,7 @@
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-	version="2.1">
+              xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.xml" />
@@ -58,6 +58,11 @@
 		<jxb:bindings node="//xs:complexType[@name='instructionType']">
 			<jxb:class name="Instruction" />
 		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:element[@name='instruction']">
+			<xjc:substitutable/>
+		</jxb:bindings>
+		
 
 		<jxb:bindings node="//xs:complexType[@name='contextType']">
 			<jxb:class name="Context" />
@@ -68,7 +73,7 @@
 				<jxb:baseType name="Context" />
 			</jxb:property>
 		</jxb:bindings>
-
+<!--
         <jxb:bindings node="//xs:complexType[@name='typeType']">
 			<jxb:class name="Type" />
 		</jxb:bindings>
@@ -76,15 +81,15 @@
 		<jxb:bindings node="//xs:complexType[@name='operationType']">
 			<jxb:class name="Operation" />
 		</jxb:bindings>
-
+-->
 		<jxb:bindings node="//xs:complexType[@name='blockType']">
 			<jxb:class name="Block" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='blockType']//xs:choice">
-			<jxb:property name="Body" />
+		<jxb:bindings node="//xs:complexType[@name='blockType']/xs:sequence/xs:element[@ref='tns:instruction']">
+			<jxb:property name="Instructions" />
 		</jxb:bindings>
-
+<!--
 		<jxb:bindings node="//xs:complexType[@name='variableType']">
 			<jxb:class name="Variable" />
 		</jxb:bindings>
@@ -96,6 +101,6 @@
 		<jxb:bindings node="//xs:complexType[@name='outType']">
 			<jxb:class name="Out" />
 		</jxb:bindings>
-
+-->
 	</jxb:bindings>
 </jxb:bindings>

@@ -34,14 +34,14 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 
-import org.apache.ode.runtime.exec.platform.ExecutableScopeContext;
-import org.apache.ode.spi.exec.ExecutableScope;
+import org.apache.ode.runtime.exec.platform.ProgramScopeContext;
+import org.apache.ode.spi.exec.ProgramScope;
 
 /*
  * I really hate thread locals but it seems that is the only way to get non-trivial custom scopes to work.
  */
 @Dependent
-public class ExecutableScopeContextImpl implements ExecutableScopeContext {
+public class ProgramScopeContextImpl implements ProgramScopeContext {
 
 	ThreadScope scope = null;
 	static ThreadLocal<ThreadScope> threadLocal = new ThreadLocal<ThreadScope>();
@@ -85,14 +85,7 @@ public class ExecutableScopeContextImpl implements ExecutableScopeContext {
 	}
 
 	@Override
-	public void wrap(Object unmanaged) {
-
-	}
-
-	@Override
 	public void destroy() {
-		//Since this is not a CDI NormalScope we are responsible for managing the entire lifecycle, including
-		//destroying the beans
 		for (ScopedInstance entry2 : scope.instances) {
 			entry2.bean.destroy(entry2.instance, entry2.ctx);
 		}
@@ -109,7 +102,7 @@ public class ExecutableScopeContextImpl implements ExecutableScopeContext {
 
 		@Override
 		public Class<? extends Annotation> getScope() {
-			return ExecutableScope.class;
+			return ProgramScope.class;
 		}
 
 		@Override
@@ -162,68 +155,6 @@ public class ExecutableScopeContextImpl implements ExecutableScopeContext {
 
 	}
 
-	/* Used for wrapping object
-	class ExecutableScopeBean implements Bean<?> {
-		
-		Object delegate;
-
-		public Set<Type> getTypes() {
-			Set<Type> types = new HashSet<Type>();
-			types.add(ServerConfig.class);
-			types.add(Object.class);
-			return types;
-		}
-
-		public Set<Annotation> getQualifiers() {
-			Set<Annotation> qualifiers = new HashSet<Annotation>();
-			qualifiers.add(new AnnotationLiteral<Default>() {
-
-			});
-			qualifiers.add(new AnnotationLiteral<Any>() {
-
-			});
-			return qualifiers;
-
-		}
-
-		public Class<? extends Annotation> getScope() {
-			return ExecutableScope.class;
-		}
-
-		public String getName() {
-			return delegate.class.getSimpleName();
-		}
-
-		public Set<Class<? extends Annotation>> getStereotypes() {
-			return Collections.EMPTY_SET;
-		}
-
-		public Class<?> getBeanClass() {
-			return delegate.getClass();
-		}
-
-		public boolean isAlternative() {
-			return false;
-		}
-
-		public boolean isNullable() {
-			return false;
-		}
-
-		public Set<InjectionPoint> getInjectionPoints() {
-			return it.getInjectionPoints();
-		}
-
-		@Override
-		public Object create(CreationalContext<?> ctx) {
-			return delegate;
-
-		}
-
-		@Override
-		public void destroy(Object instance, CreationalContext<?> ctx) {
-		}
-	};
-	*/
+	
 
 }

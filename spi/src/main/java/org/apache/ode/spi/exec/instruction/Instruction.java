@@ -18,36 +18,8 @@
  */
 package org.apache.ode.spi.exec.instruction;
 
-public interface Instruction<E extends Instruction.ExecutionContext> {
+public interface Instruction {
 
-	Return execute(E env);
-
-	public interface ExecutionContext {
-
-	}
-
-	public interface Return {
-
-	}
-
-	public class Success implements Return {
-		private static Success success = new Success();
-
-		private Success() {
-		}
-
-		public static Success success() {
-			return success;
-		}
-
-	}
-
-	public class Fault implements Return {
-
-	}
-
-	public class Store implements Return {
-
-	}
+	void execute(ExecutionContext execCtx);
 
 }

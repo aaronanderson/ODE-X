@@ -16,25 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.server.exec.instruction;
+package org.apache.ode.runtime.exec.platform;
 
-import org.apache.ode.server.test.xml.AttributeTest;
-import org.apache.ode.spi.exec.ExecutableScope;
-import org.apache.ode.spi.exec.instruction.ExecutionContext;
-import org.apache.ode.spi.exec.instruction.Instruction;
-import org.apache.ode.spi.exec.instruction.Instruction.Return;
-import org.apache.ode.spi.exec.instruction.Instruction.Success;
 
-@ExecutableScope
-public class AttributeInstruction extends AttributeTest implements Instruction<ExecutionContext>{
-
-	@Override
-	public Return execute(ExecutionContext execCtx) {
-		String test = arg1;
-		return Success.success();
+public interface ProgramScopeContext  {
+	
+	public void create();
+	
+	<T> T newInstance(Class<T> clazz);
 		
-	}
+	public void begin();
+	
+	public void end();
+	
+	public void destroy();
 	
 }
-
-

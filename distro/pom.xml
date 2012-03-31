@@ -27,7 +27,6 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-distro</artifactId>
 	<name>ODE Distribution</name>
 	<description>ODE Distribution.</description>

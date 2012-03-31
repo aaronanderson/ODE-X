@@ -1,4 +1,4 @@
-package org.apache.ode.runtime.interpreter;
+package org.apache.ode.runtime.exec.test;
 
 import javax.xml.bind.annotation.XmlRegistry;
 

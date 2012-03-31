@@ -78,6 +78,7 @@ public class PlatformImpl implements Platform {
 
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
 	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
+	private QName architecture;
 
 	@Override
 	public void registerComponent(Component component) {
@@ -93,33 +94,44 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public Document setup(Artifact executable) throws PlatformException {
-		try {
-			ArtifactDataSource ds = dsProvider.get();
-			ds.configure(executable);
-			DataHandler dh = repo.getDataHandler(ds);
-			Document exec = (Document) dh.getTransferData(XMLDataContentHandler.DOM_FLAVOR);
-			NodeList list = exec.getDocumentElement().getChildNodes();
-			int eCount = 0;
-			for (int i = 0; i < list.getLength(); i++) {
-				Node n = list.item(i);
-				if (n instanceof Element) {
-					Element e = (Element) n;
-					if ("installation".equals(e.getLocalName())) {
-						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-						factory.setNamespaceAware(true);
-						DocumentBuilder db = factory.newDocumentBuilder();
-						Document instData = db.newDocument();
-						instData.appendChild(instData.adoptNode(e.cloneNode(true)));
-						return instData;
-					} else if (++eCount > 2) {// if present should be 1st or 2nd
-												// child element
-						return null;
-					}
-				}
+	public QName architecture() {
+		return architecture;
+	}
 
+	public void setArchitecture(QName architecture) {
+		this.architecture = architecture;
+	}
+
+	@Override
+	public Document setup(Artifact... executables) throws PlatformException {
+		try {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setNamespaceAware(true);
+			DocumentBuilder db = factory.newDocumentBuilder();
+			Document programConfiguration = db.newDocument();
+			
+			for (Artifact ex : executables) {
+				ArtifactDataSource ds = dsProvider.get();
+				ds.configure(ex);
+				DataHandler dh = repo.getDataHandler(ds);
+				Document exec = (Document) dh.getTransferData(XMLDataContentHandler.DOM_FLAVOR);
+				NodeList list = exec.getDocumentElement().getChildNodes();
+				int eCount = 0;
+				for (int i = 0; i < list.getLength(); i++) {
+					Node n = list.item(i);
+					if (n instanceof Element) {
+						Element e = (Element) n;
+						if ("installation".equals(e.getLocalName())) {
+							programConfiguration.appendChild(programConfiguration.adoptNode(e.cloneNode(true)));
+						} else if (++eCount > 2) {// if present should be 1st or 2nd
+													// child element
+							return null;
+						}
+					}
+
+				}
 			}
-			return null;
+			return programConfiguration;
 		} catch (Exception e) {
 			throw new PlatformException(e);
 		}
@@ -127,7 +139,7 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public void install(QName id, Artifact executable, Document installData, Target... targets) throws PlatformException {
+	public void install(QName id, Document programConfiguration, Target... targets) throws PlatformException {
 		// cluster.execute(action, installData,targets);
 	}
 

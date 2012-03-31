@@ -190,6 +190,34 @@
 				</executions>
 
 			</plugin>
+			<!--  not sure why JAXB re-generated an ObjectFactory just for
+			the substitution group element when an ObjectFactory already existed.
+			I have given up trying to prevent JAXB from creating it so just delete it after generation.
+			 -->
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>2.4.1</version>
+				<executions>
+					<execution>
+						<id>auto-clean</id>
+						<phase>process-test-sources</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+						<configuration>
+							<excludeDefaultDirectories>true</excludeDefaultDirectories>
+							<filesets>
+								<fileset>
+									<directory>target/generated-test-sources/xjc</directory>
+									<includes>
+										<include>org/apache/ode/executable/**</include>
+									</includes>
+								</fileset>
+							</filesets>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

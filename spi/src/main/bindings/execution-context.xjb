@@ -16,7 +16,11 @@
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.instruction.xml" />
 		</jxb:schemaBindings>
-
+		
+		<jxb:bindings node="//xs:complexType[@name='executionContextType']">
+			<jxb:class name="ExecutionContext" />
+		</jxb:bindings>
+		
 		<jxb:bindings node="//xs:complexType[@name='scopeType']">
 			<jxb:class name="Scope" />
 		</jxb:bindings>

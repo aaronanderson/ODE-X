@@ -32,7 +32,10 @@ public class Instructional<I extends Instruction> extends Unit<I> {
 
 	final I ins;
 	final Contextual<? extends Context> parent;
-
+	
+	public Instructional(QName name, Class<I> type) throws ParserException {
+		this(name,type, null);
+	}
 	public Instructional(QName name, Class<I> type, Contextual<? extends Context> parent) throws ParserException {
 		super(name, type);
 		try {
@@ -43,6 +46,10 @@ public class Instructional<I extends Instruction> extends Unit<I> {
 		this.parent = parent;
 	}
 
+	public Instructional(QName name, I ins) throws ParserException {
+		this(name,ins,null);
+	}
+	
 	public Instructional(QName name, I ins, Contextual<? extends Context> parent) throws ParserException {
 		super(name, (Class<I>) ins.getClass());
 		this.ins = ins;
@@ -61,7 +68,7 @@ public class Instructional<I extends Instruction> extends Unit<I> {
 	@Override
 	public void emit(Block block) {
 		if (ins != null) {
-			block.getBody().add(ins);
+			//block.getInstructions().add(ins);
 		}
 	}
 

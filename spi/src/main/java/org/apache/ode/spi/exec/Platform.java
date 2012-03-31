@@ -33,9 +33,12 @@ public interface Platform {
 	public static final String EXEC_MIMETYPE = "application/ode-executable";
 	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
 	public static final String EXEC_CTX_NAMESPACE = "http://ode.apache.org/execution-context";
+	public static final String PROGRAM_NAMESPACE = "http://ode.apache.org/program";
 
 	public static final String PLATFORM_NAMESPACE = "http://ode.apache.org/platform";
 	public static final QName PLATFORM = new QName(PLATFORM_NAMESPACE,"platform");
+	
+	public static final String ARCHITECTURE_NAMESPACE = "http://ode.apache.org/architecture";
 	
 	public static final QName EXEC_INSTRUCTION_SET_NAME = new QName(EXEC_NAMESPACE, "Executable");
 	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.xml",org.apache.ode.spi.exec.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
@@ -57,14 +60,15 @@ public interface Platform {
 		}
 	}
 	
+	public QName architecture();
 	
 	public void registerComponent(Component component);
 
 	public Set<NodeStatus> status();
 
-	public Document setup(Artifact executable) throws PlatformException;
+	public Document setup(Artifact ... executables) throws PlatformException;
 
-	public void install(QName id, Artifact executable, Document installData, Target... targets) throws PlatformException;
+	public void install(QName id, Document programConfiguration, Target... targets) throws PlatformException;
 
 	public Program programInfo(QName id) throws PlatformException;
 
