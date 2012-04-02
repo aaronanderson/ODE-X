@@ -62,7 +62,10 @@ import org.apache.ode.server.WSDLComponentImpl;
 import org.apache.ode.server.xml.ServerConfig;
 import org.apache.ode.spi.cdi.Handler;
 import org.apache.ode.spi.exec.ExecutableScope;
+import org.apache.ode.spi.exec.InstructionScope;
+import org.apache.ode.spi.exec.ProcessScope;
 import org.apache.ode.spi.exec.ProgramScope;
+import org.apache.ode.spi.exec.ThreadScope;
 import org.apache.ode.spi.repo.XMLValidate;
 
 public class RuntimeHandler extends Handler {
@@ -115,13 +118,21 @@ public class RuntimeHandler extends Handler {
 		bbd.addAnnotatedType(bm.createAnnotatedType(org.apache.ode.runtime.jmx.PlatformImpl.class));
 		bbd.addScope(ExecutableScope.class, false, false);
 		bbd.addScope(ProgramScope.class, false, false);
+		bbd.addScope(ProcessScope.class, false, false);
+		bbd.addScope(ThreadScope.class, false, false);
+		bbd.addScope(InstructionScope.class, false, false);
+		
 	}
 	
 	
 	@Override
 	public void afterBeanDiscovery(AfterBeanDiscovery adv, BeanManager bm) {
-		adv.addContext(new ExecutableScopeContextImpl.CDIContextImpl());
-		adv.addContext(new ProgramScopeContextImpl.CDIContextImpl());
+		adv.addContext(new ExecutableScopeContextImpl.ExecutableCDIContextImpl());
+		adv.addContext(new ProgramScopeContextImpl.ProgramCDIContextImpl());
+		adv.addContext(new ProcessScopeContextImpl.ProcessCDIContextImpl());
+		adv.addContext(new ThreadScopeContextImpl.ThreadCDIContextImpl());
+		adv.addContext(new InstructionScopeContextImpl.InstructionCDIContextImpl() );
+		
 	}
 
 

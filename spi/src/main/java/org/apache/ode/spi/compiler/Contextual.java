@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import javax.xml.namespace.QName;
+import javax.xml.bind.JAXBElement;
 
 import org.apache.ode.spi.exec.xml.Block;
 import org.apache.ode.spi.exec.xml.Context;
@@ -39,14 +39,10 @@ public class Contextual<C extends Context> extends Unit<C> {
 	final Stack<Contextual<? extends Context>> parents;
 	final List<Unit<? extends Instruction>> children;
 
-	public Contextual(QName name, Class<C> type, Contextual<? extends Context> parent) throws ParserException {
-		super(name, type);
-		try {
-			this.start = type.newInstance();
-			this.end = type.newInstance();
-		} catch (Exception e) {
-			throw new ParserException(e);
-		}
+	public Contextual(JAXBElement<C> startElement, JAXBElement<C> endElement, Contextual<? extends Context> parent) throws ParserException {
+		super(startElement, endElement);
+		this.start = startElement.getValue();
+		this.end = endElement.getValue();
 		this.parents = new Stack<Contextual<? extends Context>>();
 		if (parent != null) {
 			if (!(this instanceof Contextual)) {
@@ -57,21 +53,6 @@ public class Contextual<C extends Context> extends Unit<C> {
 		}
 		this.children = new ArrayList<Unit<? extends Instruction>>();
 
-	}
-
-	public Contextual(QName name, C begin, C end, Contextual<? extends Context> parent) throws ParserException {
-		super(name, (Class<C>) begin.getClass());
-		this.start = begin;
-		this.end = end;
-		this.parents = new Stack<Contextual<? extends Context>>();
-		if (parent != null) {
-			if (!(this instanceof Contextual)) {
-				throw new ParserException("Parent must be Contextual");
-			}
-			this.parents.addAll(parent.parents());
-			this.parents.push(parent);
-		}
-		this.children = new ArrayList<Unit<? extends Instruction>>();
 	}
 
 	public C beginContext() {
@@ -88,11 +69,11 @@ public class Contextual<C extends Context> extends Unit<C> {
 
 	@Override
 	public void emit(Block block) {
-		//block.getInstructions().add(start);
+		block.getInstructions().add(elements[0]);
 		for (Unit<? extends Instruction> u : children) {
 			u.emit(block);
 		}
-		//block.getInstructions().add(end);
+		block.getInstructions().add(elements[1]);
 
 	}
 

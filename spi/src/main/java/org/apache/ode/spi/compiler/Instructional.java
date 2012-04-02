@@ -18,6 +18,7 @@
  */
 package org.apache.ode.spi.compiler;
 
+import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.xml.Block;
@@ -32,33 +33,20 @@ public class Instructional<I extends Instruction> extends Unit<I> {
 
 	final I ins;
 	final Contextual<? extends Context> parent;
-	
-	public Instructional(QName name, Class<I> type) throws ParserException {
-		this(name,type, null);
-	}
-	public Instructional(QName name, Class<I> type, Contextual<? extends Context> parent) throws ParserException {
-		super(name, type);
-		try {
-			this.ins = type.newInstance();
-		} catch (Exception e) {
-			throw new ParserException(e);
-		}
-		this.parent = parent;
+
+	public Instructional(JAXBElement<I> element) throws ParserException {
+		this(element, null);
 	}
 
-	public Instructional(QName name, I ins) throws ParserException {
-		this(name,ins,null);
-	}
-	
-	public Instructional(QName name, I ins, Contextual<? extends Context> parent) throws ParserException {
-		super(name, (Class<I>) ins.getClass());
-		this.ins = ins;
+	public Instructional(JAXBElement<I> element, Contextual<? extends Context> parent) throws ParserException {
+		super(element);
+		this.ins = element.getValue();
 		this.parent = parent;
 	}
 
 	@Override
 	public QName name() {
-		return name;
+		return elements[0].getName();
 	}
 
 	public I instruction() {
@@ -68,7 +56,7 @@ public class Instructional<I extends Instruction> extends Unit<I> {
 	@Override
 	public void emit(Block block) {
 		if (ins != null) {
-			//block.getInstructions().add(ins);
+			block.getInstructions().add(elements[0]);
 		}
 	}
 

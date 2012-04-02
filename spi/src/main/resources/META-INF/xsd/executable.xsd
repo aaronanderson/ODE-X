@@ -88,16 +88,18 @@
 
 	<element name="instruction" type="tns:instructionType" abstract="true" />
 	
-	<!--  Need at least one instruction defined in this schema so that JAXB generates a JAXBElement wrapper for the substitution group ->
+	<!--  Need at least one instruction defined in this schema so that JAXB generates a JAXBElement<? extends Instruction> wrapper for the substitution group 
+	see http://java.net/jira/browse/JAXB-893
+	-->
 
 	<element name="snapshot" substitutionGroup="tns:instruction">
 		<complexType>
 			<complexContent>
-				<extension base="tns:instructionType" />
+				<extension base="tns:instructionType"/>
 			</complexContent>
 		</complexType>
 	</element>
--->
+
 	<simpleType name="contextMode">
 		<restriction base="string">
 			<enumeration value="START" />

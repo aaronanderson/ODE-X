@@ -6,10 +6,10 @@ import org.apache.ode.runtime.exec.test.xml.InstructionTest;
 import org.apache.ode.runtime.exec.test.xml.ObjectFactory;
 
 @XmlRegistry
-public abstract class TestObjectFactory extends ObjectFactory {
+public abstract class TestCtxObjectFactory extends ObjectFactory {
 
 	@XmlRegistry
-	public static class TestObjectFactoryImpl extends TestObjectFactory {
+	public static class TestCtxObjectFactoryImpl extends TestCtxObjectFactory {
 
 		@Override
 		public InstructionTest createInstructionTest() {
@@ -18,4 +18,3 @@ public abstract class TestObjectFactory extends ObjectFactory {
 	}
 
 }
-

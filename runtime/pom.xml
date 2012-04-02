@@ -96,7 +96,14 @@
 			<version>4.8.1</version>
 			<scope>test</scope>
 		</dependency>
-
+		
+		<dependency>
+			<groupId>com.google.inject</groupId>
+			<artifactId>guice</artifactId>
+			<version>3.0</version>
+			<scope>test</scope>
+		</dependency>
+	
 	</dependencies>
 
 	<build>
@@ -161,10 +168,12 @@
 							<schemaDirectory>src/test/resources/META-INF/xsd</schemaDirectory>
 							<schemaIncludes>
 								<schemaInclude>test.xsd</schemaInclude>
+								<schemaInclude>test-context.xsd</schemaInclude>
 							</schemaIncludes>
 							<bindingDirectory>src/test/bindings</bindingDirectory>
 							<bindingIncludes>
 								<bindingInclude>test.xjb</bindingInclude>
+								<bindingInclude>test-context.xjb</bindingInclude>
 							</bindingIncludes>
 							<catalog>src/main/bindings/catalog.xml</catalog>
 							<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>

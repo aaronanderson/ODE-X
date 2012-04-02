@@ -21,6 +21,7 @@ package org.apache.ode.spi.compiler;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.xml.Block;
@@ -33,22 +34,21 @@ import org.apache.ode.spi.exec.xml.Instruction;
  */
 public abstract class Unit<I extends Instruction> {
 
-	final QName name;
-	final Class<I> clazz;
+	//not sure why this can't be JAXBElement<I> but contextual emit breaks 
+	final JAXBElement<I>[] elements;
 	final Map<QName, CompilerSetting> settings;
 
-	public Unit(QName name, Class<I> clazz) {
-		this.name = name;
-		this.clazz = clazz;
+	public Unit(JAXBElement<I> ...elements) { 
+		this.elements = elements;
 		this.settings = new HashMap<QName, CompilerSetting>();
 	}
 
 	public QName name() {
-		return name;
+		return elements[0].getName();
 	}
 
 	public Class<I> type() {
-		return clazz;
+		return (Class<I>) elements[0].getValue().getClass();
 	}
 
 	public <S extends CompilerSetting> Map<QName, S> settings() {

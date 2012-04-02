@@ -59,10 +59,11 @@
 			<jxb:class name="Instruction" />
 		</jxb:bindings>
 		
+		<!--
 		<jxb:bindings node="//xs:element[@name='instruction']">
 			<xjc:substitutable/>
 		</jxb:bindings>
-		
+		-->
 
 		<jxb:bindings node="//xs:complexType[@name='contextType']">
 			<jxb:class name="Context" />

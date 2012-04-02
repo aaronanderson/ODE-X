@@ -16,23 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.server.exec.instruction;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = "http://ode.apache.org/execution-context-test", xmlns = { @XmlNs(namespaceURI = "http://ode.apache.org/execution-context-test", prefix = "ectxtest") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.runtime.ectx.test.xml;
 
-import org.apache.ode.server.test.xml.AttributeTest;
-import org.apache.ode.spi.exec.ExecutableScope;
-import org.apache.ode.spi.exec.instruction.ExecutionContext;
-import org.apache.ode.spi.exec.instruction.Instruction;
-
-@ExecutableScope
-public class AttributeInstruction extends AttributeTest implements Instruction{
-
-	@Override
-	public void execute(ExecutionContext execCtx) {
-		String test = arg1;
-		
-		
-	}
-	
-}
-
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 

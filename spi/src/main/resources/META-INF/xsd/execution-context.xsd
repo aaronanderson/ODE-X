@@ -6,13 +6,73 @@
 	~ KIND, either express or implied. See the License for the ~ specific language governing permissions and limitations ~ under the License. -->
 <schema targetNamespace="http://ode.apache.org/execution-context" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/execution-context">
 
-	<complexType name="executionContextType">
-		<attribute name="name" type="string" use="required" />
+
+	<complexType name="operationType">
+
 	</complexType>
 
-	<complexType name="scopeType">
-		<attribute name="name" type="string" use="required" />
+	<complexType name="resultType">
+
 	</complexType>
+
+	<complexType name="newVariableType">
+		<complexContent>
+			<extension base="tns:operationType">
+				<attribute name="name" type="string" use="required" />
+				<attribute name="scope" type="tns:scopeType" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="newProcessType">
+		<complexContent>
+			<extension base="tns:operationType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="newThreadType">
+		<complexContent>
+			<extension base="tns:operationType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="handlerType">
+		<complexContent>
+			<extension base="tns:operationType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="raiseType">
+		<complexContent>
+			<extension base="tns:operationType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="insAddressType">
+		<restriction base="ID">
+			<pattern value="b\d+i\d+" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="invokeType">
+		<complexContent>
+			<extension base="tns:operationType">
+				<sequence>
+					<element name="parameter" />
+				</sequence>
+				<attribute name="ins" type="tns:insAddressType" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<simpleType name="scopeType">
+		<restriction base="string" />
+	</simpleType>
 
 	<complexType name="variableType">
 		<attribute name="name" type="string" use="required" />
@@ -24,13 +84,43 @@
 		</sequence>
 	</complexType>
 
+	<element name="frame" type="tns:frameType" abstract="true" />
+
+	<!-- Good insight - http://en.wikipedia.org/wiki/Call_stack  -->
 	<complexType name="stackType">
 		<sequence>
-			<element name="frame" type="tns:frameType" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:frame" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:stack" minOccurs="0" maxOccurs="unbounded" />
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
+	<element name="stack" type="tns:stackType" abstract="true" />
 
-	<element name="stack" type="tns:stackType" />
+	<complexType name="blockStackType">
+		<complexContent>
+			<extension base="tns:stackType" />
+		</complexContent>
+	</complexType>
+
+	<element name="block" type="tns:blockStackType" />
+	
+	<complexType name="contextStackType">
+		<complexContent>
+			<extension base="tns:stackType" />
+		</complexContent>
+	</complexType>
+
+	<element name="context" type="tns:contextStackType" />
+
+	<complexType name="executionContextType">
+		<sequence>
+			<element ref="tns:stack" />
+			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
+
+	<element name="ExecutionContext" type="tns:executionContextType" />
+
 
 </schema>

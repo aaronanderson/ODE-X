@@ -123,12 +123,12 @@
                         <id>fix-episode</id>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <!-- <mkdir dir="target/generated-resources/xml/xslt"/>
                                 <copy file="target/generated-sources/xjc/META-INF/sun-jaxb.episode" tofile=target/generated-resources/xml/xslt/sun-jaxb.episode" overwrite="true"/> -->
                                 <replaceregexp file="target/generated-sources/xjc/META-INF/sun-jaxb.episode" match=" xmlns:tns" replace=" if-exists=&quot;&quot; xmlns:tns" byline="true" />
                                 <!-- <xslt in="target/generated-resources/xml/xslt/sun-jaxb.episode" out="target/generated-sources/xjc/META-INF/sun-jaxb.episode" style="src/main/bindings/episode.xsl"/> -->
-                            </tasks>
+                            </target>
                         </configuration>
                         <goals>
                             <goal>run</goal>

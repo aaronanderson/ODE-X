@@ -21,31 +21,21 @@ package org.apache.ode.server.cdi;
 import java.lang.annotation.Annotation;
 
 import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
-import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
-import org.apache.ode.spi.exec.InstructionScope;
+import org.apache.ode.runtime.exec.platform.ScopeContext.ProcessScopeContext;
+import org.apache.ode.spi.exec.ProcessScope;
 
-/*
- * I really hate thread locals but it seems that is the only way to get non-trivial custom scopes to work.
- */
 @Dependent
-public class ExecutableScopeContextImpl extends ScopeContextImpl implements ExecutableScopeContext {
-
+public class ProcessScopeContextImpl extends ScopeContextImpl implements ProcessScopeContext {
+	
 	static ThreadLocal<ThreadLocalState> threadLocal = new ThreadLocal<ThreadLocalState>();
-
-	@Inject
-	Provider<InstructionScopeContextImpl> insScope;
-
+	
 	@Override
 	public ThreadLocal<ThreadLocalState> getThreadLocal() {
 		return threadLocal;
 	}
 
-	public static class ExecutableCDIContextImpl extends CDIContextImpl {
+	public static class ProcessCDIContextImpl extends CDIContextImpl {
 
 		@Override
 		public ThreadLocal<ThreadLocalState> getThreadLocal() {
@@ -53,16 +43,8 @@ public class ExecutableScopeContextImpl extends ScopeContextImpl implements Exec
 		}
 
 		@Override
-		public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
-			if (InstructionScopeContextImpl.threadLocal.get() != null) {
-				throw new IllegalArgumentException("Will not allocate ExecutableScope object While inside instructional scope");
-			}
-			return super.get(contextual, creationalContext);
-		}
-
-		@Override
 		public Class<? extends Annotation> getScope() {
-			return InstructionScope.class;
+			return ProcessScope.class;
 		}
 
 	}

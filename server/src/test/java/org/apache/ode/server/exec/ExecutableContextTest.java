@@ -18,11 +18,12 @@
  */
 package org.apache.ode.server.exec;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
@@ -31,8 +32,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.apache.ode.runtime.exec.platform.ExecutableScopeContext;
 import org.apache.ode.server.Server;
+import org.apache.ode.server.cdi.ExecutableScopeContextImpl;
 import org.apache.ode.server.cdi.JPAHandler;
 import org.apache.ode.server.cdi.RepoHandler;
 import org.apache.ode.server.cdi.RuntimeHandler;
@@ -41,7 +42,6 @@ import org.apache.ode.server.exec.instruction.AttributeInstruction;
 import org.apache.ode.server.exec.instruction.ExecutableShared;
 import org.apache.ode.server.exec.instruction.ScopeInstruction;
 import org.apache.ode.server.exec.instruction.TestObjectFactory;
-import org.apache.ode.server.test.xml.ScopeTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,7 +104,7 @@ public class ExecutableContextTest {
 	public static class ScopeProvider {
 
 		@Inject
-		Provider<ExecutableScopeContext> ctx;
+		Provider<ExecutableScopeContextImpl> ctx;
 
 	}
 
@@ -112,9 +112,9 @@ public class ExecutableContextTest {
 	public void testExecutableScope() throws Exception {
 		assertNotNull(execComponent);
 		assertNotNull(provider);
-		ExecutableScopeContext esc1 = provider.ctx.get();
+		ExecutableScopeContextImpl esc1 = provider.ctx.get();
 		assertNotNull(esc1);
-		ExecutableScopeContext esc2 = provider.ctx.get();
+		ExecutableScopeContextImpl esc2 = provider.ctx.get();
 		assertNotNull(esc2);
 		assertFalse(esc1.equals(esc2));
 		esc1.create();

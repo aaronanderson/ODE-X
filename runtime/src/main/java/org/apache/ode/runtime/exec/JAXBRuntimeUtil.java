@@ -1,5 +1,7 @@
 package org.apache.ode.runtime.exec;
 
+import static org.apache.ode.spi.exec.Platform.EXEC_INSTRUCTION_SET;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,11 +11,9 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.PropertyException;
 import javax.xml.bind.Unmarshaller;
 
-import org.apache.ode.runtime.exec.platform.ExecutableScopeContext;
+import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.w3c.dom.Node;
-
-import static org.apache.ode.spi.exec.Platform.EXEC_INSTRUCTION_SET;
 
 /*
  * This utility class creates JAXBContexts but more importantly binds custom ObjectFactories to the JAXB unmarshaller
