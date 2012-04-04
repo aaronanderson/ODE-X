@@ -23,6 +23,8 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.repo.Artifact;
+
 public interface Program {
 
 	QName id();
@@ -31,13 +33,9 @@ public interface Program {
 
 	Calendar installDate();
 
-	QName executableQName();
-
-	String executableVersion();
-
-	String executableCheckSum();
+	Artifact[] executables();
 	
-	byte[] installData();
+	byte[] configuration();
 	
 	List<String> nodes();
 

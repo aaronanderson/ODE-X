@@ -16,18 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
- * Added to specify namespace prefix during unmarshall
- */
-@XmlSchema(namespace = "http://ode.apache.org/execution-context-test", xmlns = { @XmlNs(namespaceURI = "http://ode.apache.org/execution-context-test", prefix = "ectxtest") }, elementFormDefault = XmlNsForm.QUALIFIED)
-/*
-@XmlJavaTypeAdapters
-({
-    @XmlJavaTypeAdapter(value=TestAdapter.class,type=TestMap.class)
-})*/
-package org.apache.ode.runtime.ectx.test.xml;
+package org.apache.ode.spi.exec;
 
-import javax.xml.bind.annotation.XmlNs;
-import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlSchema;
+public interface Thread {
 
+	public static interface ThreadId {
+
+	}
+
+}

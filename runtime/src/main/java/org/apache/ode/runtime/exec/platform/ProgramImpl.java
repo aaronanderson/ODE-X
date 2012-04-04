@@ -34,6 +34,7 @@ import javax.persistence.TemporalType;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Program;
+import org.apache.ode.spi.repo.Artifact;
 
 @Entity
 @Table(name = "PROGRAM")
@@ -50,19 +51,10 @@ public class ProgramImpl implements Program, Serializable {
 	@Column(name = "INSTALL_TIME")
 	private Calendar installDate;
 
-	@Column(name = "EXEC_CHECKSUM")
-	private String checksum;
-
-	@Column(name = "EXEC_QNAME")
-	private String qname;
-
-	@Column(name = "EXEC_VERSION")
-	private String version;
-
 	@Lob
 	@Basic(fetch = FetchType.LAZY)
-	@Column(name = "INSTALL_DATA")
-	private byte[] installData;
+	@Column(name = "CONFIGURATION")
+	private byte[] configuration;
 
 	public void setId(QName id) {
 		this.id = id.toString();
@@ -107,61 +99,28 @@ public class ProgramImpl implements Program, Serializable {
 	}
 
 
-	public void setInstallData(byte[] installData) {
-		this.installData = installData;
+	public void setConfiguration(byte[] configuration) {
+		this.configuration = configuration;
 	}
 
-	public byte[] getInstallData() {
-		return installData;
-	}
-
-	@Override
-	public byte[] installData() {
-		return getInstallData();
-	}
-
-	public void setCheckSum(String checksum) {
-		this.checksum = checksum;
-	}
-
-	public String getCheckSum() {
-		return checksum;
+	public byte[] getConfiguration() {
+		return configuration;
 	}
 
 	@Override
-	public String executableCheckSum() {
-		return getCheckSum();
+	public byte[] configuration() {
+		return getConfiguration();
 	}
-
-	public void setQName(QName qname) {
-		this.qname = qname.toString();
-	}
-
-	public QName getQName() {
-		return QName.valueOf(qname);
-	}
+		
 	
-	@Override
-	public QName executableQName() {
-		return getQName();
-	}
-
-	
-	public void setVersion(String version) {
-		this.version = version;
-	}
-
-	public String getVersion() {
-		return version;
-	}
-	
-	@Override
-	public String executableVersion() {
-		return getVersion();
-	}
-
 	@Override
 	public List<String> nodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Artifact[] executables() {
 		// TODO Auto-generated method stub
 		return null;
 	}

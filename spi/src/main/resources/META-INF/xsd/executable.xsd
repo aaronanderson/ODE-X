@@ -78,9 +78,17 @@
 		</restriction>
 	</simpleType>
 
+	<complexType name="operatorContextType" abstract="true"/>
+	
+	<element name="operatorContext" type="tns:operatorContextType" abstract="true" />
+
+
 	<complexType name="instructionType" abstract="true">
 		<complexContent>
 			<extension base="tns:sourceRefType">
+				<sequence>
+					<element ref="tns:operatorContext" minOccurs="0" maxOccurs="unbounded" />
+				</sequence>
 				<attribute name="ins" type="tns:insAddressType" use="required" />
 			</extension>
 		</complexContent>
@@ -95,7 +103,15 @@
 	<element name="snapshot" substitutionGroup="tns:instruction">
 		<complexType>
 			<complexContent>
-				<extension base="tns:instructionType"/>
+				<extension base="tns:instructionType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="in-memory-only" substitutionGroup="tns:operatorContext">
+		<complexType>
+			<complexContent>
+				<extension base="tns:operatorContextType" />
 			</complexContent>
 		</complexType>
 	</element>

@@ -7,17 +7,25 @@
 <schema targetNamespace="http://ode.apache.org/execution-context" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/execution-context">
 
 
-	<complexType name="operationType">
-
+	<complexType name="operationType" abstract="true">
+		<!--  <attribute name="name" type="QName" use="required" />-->
+		<attribute name="inputType" type="QName" use="required" />
+		<attribute name="resultType" type="QName" use="required" />
 	</complexType>
 
-	<complexType name="resultType">
+	<complexType name="inputType" abstract="true" />
 
-	</complexType>
+	<complexType name="resultType" abstract="true" />
 
 	<complexType name="newVariableType">
 		<complexContent>
-			<extension base="tns:operationType">
+			<extension base="tns:operationType" />
+		</complexContent>
+	</complexType>
+
+	<complexType name="newVariableInputType">
+		<complexContent>
+			<extension base="tns:inputType">
 				<attribute name="name" type="string" use="required" />
 				<attribute name="scope" type="tns:scopeType" use="required" />
 			</extension>
@@ -86,11 +94,19 @@
 
 	<element name="frame" type="tns:frameType" abstract="true" />
 
+    <complexType name="callFrameType">
+		<complexContent>
+			<extension base="tns:frameType"/>
+		</complexContent>
+	</complexType>
+
+	<element name="callFrame" type="tns:callFrameType" substitutionGroup="tns:frame" />
+
 	<!-- Good insight - http://en.wikipedia.org/wiki/Call_stack  -->
 	<complexType name="stackType">
 		<sequence>
 			<element ref="tns:frame" minOccurs="0" maxOccurs="unbounded" />
-			<element ref="tns:stack" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:stack" minOccurs="1" maxOccurs="1" />
 			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
@@ -103,24 +119,24 @@
 		</complexContent>
 	</complexType>
 
-	<element name="block" type="tns:blockStackType" />
-	
+	<element name="block" type="tns:blockStackType" substitutionGroup="tns:stack" />
+
 	<complexType name="contextStackType">
 		<complexContent>
 			<extension base="tns:stackType" />
 		</complexContent>
 	</complexType>
 
-	<element name="context" type="tns:contextStackType" />
+	<element name="context" type="tns:contextStackType" substitutionGroup="tns:stack" />
 
-	<complexType name="executionContextType">
+	<complexType name="executionStateType">
 		<sequence>
-			<element ref="tns:stack" />
+			<element ref="tns:stack" minOccurs="1" maxOccurs="1" />
 			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
-	<element name="ExecutionContext" type="tns:executionContextType" />
+	<element name="ExecutionState" type="tns:executionStateType" />
 
 
 </schema>

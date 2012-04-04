@@ -11,7 +11,8 @@
 	License for the ~ specific language governing permissions and limitations 
 	~ under the License. -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-              xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" version="2.1">
+              xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+              extensionBindingPrefixes="xjc" version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.xml" />
@@ -55,6 +56,10 @@
 			<jxb:class name="CompilerSetting" />
 		</jxb:bindings>
 
+        <jxb:bindings node="//xs:complexType[@name='operatorContextType']">
+			<jxb:class name="OperatorContext" />
+		</jxb:bindings>
+		
 		<jxb:bindings node="//xs:complexType[@name='instructionType']">
 			<jxb:class name="Instruction" />
 		</jxb:bindings>
@@ -64,7 +69,11 @@
 			<xjc:substitutable/>
 		</jxb:bindings>
 		-->
-
+		
+		<jxb:bindings node="//xs:complexType[@name='instructionType']/xs:complexContent/xs:extension/xs:sequence/xs:element[@ref='tns:operatorContext']">
+			<jxb:property name="OperatorContexts" />
+		</jxb:bindings>
+		
 		<jxb:bindings node="//xs:complexType[@name='contextType']">
 			<jxb:class name="Context" />
 		</jxb:bindings>

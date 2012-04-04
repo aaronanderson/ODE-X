@@ -6,7 +6,7 @@ import org.apache.ode.spi.exec.xml.ObjectFactory;
 
 //Convenience class for injecting multiple JAXB object factories
 @XmlRegistry
-public class ExecutableObjectFactory extends ObjectFactory {
+public abstract class ExecutableObjectFactory extends ObjectFactory {
 
 
 	

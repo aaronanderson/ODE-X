@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.xml.bind.Binder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
 import javax.xml.bind.Unmarshaller;
 
@@ -54,7 +55,7 @@ public class JAXBRuntimeUtil {
 				factoryClasses.add(Class.forName(is.getJAXBExecPath() + ".ObjectFactory"));
 			}
 		}
-		return (Class<?>[]) factoryClasses.toArray();
+		return (Class<?>[]) factoryClasses.toArray(new Class<?>[factoryClasses.size()]);
 
 	}
 
@@ -68,23 +69,23 @@ public class JAXBRuntimeUtil {
 		return paths.toString();
 	}
 
-	public static JAXBContext executableContextJAXBContext(Set<InstructionSet> instructionSets) throws JAXBException {
+	public static JAXBContext executionContextJAXBContext(Set<InstructionSet> instructionSets) throws JAXBException {
 		try {
-			return JAXBContext.newInstance(executableContextClasses(instructionSets));
+			return JAXBContext.newInstance(executionContextClasses(instructionSets));
 		} catch (ClassNotFoundException cnf) {
 			throw new JAXBException(cnf);
 		}
 	}
 	
-	public static JAXBContext executableContextJAXBContextByPath(Set<InstructionSet> instructionSets) throws JAXBException {
+	public static JAXBContext executionContextJAXBContextByPath(Set<InstructionSet> instructionSets) throws JAXBException {
 		try {
-			return JAXBContext.newInstance(executableContextPath(instructionSets));
+			return JAXBContext.newInstance(executionContextPath(instructionSets));
 		} catch (ClassNotFoundException cnf) {
 			throw new JAXBException(cnf);
 		}
 	}
 
-	public static Class<?>[] executableContextClasses(Set<InstructionSet> instructionSets) throws ClassNotFoundException {
+	public static Class<?>[] executionContextClasses(Set<InstructionSet> instructionSets) throws ClassNotFoundException {
 		Set<Class<?>> factoryClasses = new HashSet<Class<?>>();
 		factoryClasses.add(EXEC_INSTRUCTION_SET.getJAXBExecContextFactory());
 		for (InstructionSet is : instructionSets) {
@@ -94,10 +95,10 @@ public class JAXBRuntimeUtil {
 				factoryClasses.add(Class.forName(is.getJAXBExecContextPath() + ".ObjectFactory"));
 			}
 		}
-		return (Class<?>[]) factoryClasses.toArray();
+		return (Class<?>[]) factoryClasses.toArray(new Class<?>[factoryClasses.size()]);
 	}
 
-	public static String executableContextPath(Set<InstructionSet> instructionSets) throws ClassNotFoundException {
+	public static String executionContextPath(Set<InstructionSet> instructionSets) throws ClassNotFoundException {
 		StringBuilder paths = new StringBuilder();
 		paths.append(EXEC_INSTRUCTION_SET.getJAXBExecContextPath());
 		for (InstructionSet is : instructionSets) {
@@ -142,7 +143,7 @@ public class JAXBRuntimeUtil {
 			scope.begin();
 			try {
 				Set<Object> factories = new HashSet<Object>();
-				for (Class<?> c : executableContextClasses(instructionSets)) {
+				for (Class<?> c : executionContextClasses(instructionSets)) {
 					factories.add(scope.newInstance(c));
 				}
 				setObjectFactories(u, factories.toArray());
@@ -157,7 +158,7 @@ public class JAXBRuntimeUtil {
 	public static void registerExecContext(Binder<Node> b, Set<InstructionSet> instructionSets, ExecutableScopeContext scope) throws JAXBException {
 		try {
 			Set<Object> factories = new HashSet<Object>();
-			for (Class<?> c : executableContextClasses(instructionSets)) {
+			for (Class<?> c : executionContextClasses(instructionSets)) {
 				factories.add(scope.newInstance(c));
 			}
 			setObjectFactories(b, factories.toArray());

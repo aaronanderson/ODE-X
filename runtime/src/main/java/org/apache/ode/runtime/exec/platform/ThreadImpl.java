@@ -16,18 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
- * Added to specify namespace prefix during unmarshall
- */
-@XmlSchema(namespace = "http://ode.apache.org/execution-context-test", xmlns = { @XmlNs(namespaceURI = "http://ode.apache.org/execution-context-test", prefix = "ectxtest") }, elementFormDefault = XmlNsForm.QUALIFIED)
-/*
-@XmlJavaTypeAdapters
-({
-    @XmlJavaTypeAdapter(value=TestAdapter.class,type=TestMap.class)
-})*/
-package org.apache.ode.runtime.ectx.test.xml;
+package org.apache.ode.runtime.exec.platform;
 
-import javax.xml.bind.annotation.XmlNs;
-import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlSchema;
+import java.io.Serializable;
 
+import java.util.Calendar;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+import org.apache.ode.spi.exec.Thread;
+
+@Entity
+@Table(name = "THREAD")
+public class ThreadImpl implements Thread, Serializable {
+
+	@Id
+	@Column(name = "ID")
+	private String id;
+
+	@Column(name = "STATUS")
+	private String status;
+
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "START_TIME")
+	private Calendar startDate;
+
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "END_TIME")
+	private Calendar endDate;
+
+}

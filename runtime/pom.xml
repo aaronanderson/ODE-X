@@ -202,6 +202,7 @@
 			<!--  not sure why JAXB re-generated an ObjectFactory just for
 			the substitution group element when an ObjectFactory already existed.
 			I have given up trying to prevent JAXB from creating it so just delete it after generation.
+			 maybe try http://jaxb.java.net/guide/Customizing_Java_packages.html#Tip__get_rid_of_the_org_w3__2001_xmlschema_package
 			 -->
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
