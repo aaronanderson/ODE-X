@@ -81,6 +81,15 @@
 	</modules>
 	<build>
 		<plugins>
+		<!-- mvn license:check 
+			 mvn license:format -->
+			<plugin>
+				<groupId>com.mycila.maven-license-plugin</groupId>
+				<artifactId>maven-license-plugin</artifactId>
+				<configuration>
+					<header>src/header.txt</header>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
