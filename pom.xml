@@ -88,6 +88,42 @@
 				<artifactId>maven-license-plugin</artifactId>
 				<configuration>
 					<header>src/header.txt</header>
+					<strictCheck>true</strictCheck>
+					<useDefaultExcludes>true</useDefaultExcludes>
+					<excludes>
+						<exclude>**/src/main/resources/META-INF/xsd/ws-bpel*.xsd</exclude>
+						<exclude>**/src/main/resources/META-INF/xsd/BPMN20.xsd</exclude>
+						<exclude>**/src/main/resources/META-INF/xsd/Semantic.xsd</exclude>
+						<exclude>**/src/main/resources/META-INF/xsd/ws-wsdl.xsd</exclude>
+						<exclude>**/src/main/resources/META-INF/xsd/ws-humantask*</exclude>
+						<exclude>wsht/src/test/resources/**</exclude>
+						<exclude>bpmn/src/test/resources/**</exclude>
+					</excludes>
+					<mapping>
+						<serverdef>XML_STYLE</serverdef>
+						<java>JAVADOC_STYLE</java>
+						<svg>XML_STYLE</svg>
+						<xml>XML_STYLE</xml>
+						<bpmn>XML_STYLE</bpmn>
+						<wsdl>XML_STYLE</wsdl>
+						<xjb>XML_STYLE</xjb>
+						<xsd>XML_STYLE</xsd>
+						<html>XML_STYLE</html>
+						<htm>XML_STYLE</htm>
+						<xsl>XML_STYLE</xsl>
+						<apt>DOUBLETILDE_STYLE</apt>
+						<properties>SCRIPT_STYLE</properties>
+						<sh>SCRIPT_STYLE</sh>
+						<txt>TEXT</txt>
+						<bat>BATCH</bat>
+						<cmd>BATCH</cmd>
+						<sql>DOUBLEDASHES_STYLE</sql>
+						<ftl>FTL</ftl>
+						<xhtml>XML_STYLE</xhtml>
+						<vm>SHARPSTAR_STYLE</vm>
+						<jspx>XML_STYLE</jspx>
+					</mapping>
+
 				</configuration>
 			</plugin>
 			<plugin>
