@@ -81,7 +81,7 @@ public class ParserUtils {
 		ctx.beginContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));
 		ctx.beginContext().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_COL_ATTR)));
 		ctx.endContext().setSref(src);
-		ctx.endContext().setCtx(ctx.beginContext());
+		ctx.endContext().setCtx(ctx.beginContext().getCtx());
 		ctx.endContext().setMode(ContextMode.END);
 		ctx.endContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR)));
 		ctx.endContext().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_END_COL_ATTR)));

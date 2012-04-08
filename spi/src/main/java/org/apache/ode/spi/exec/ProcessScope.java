@@ -17,5 +17,5 @@ import javax.inject.Scope;
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface ProcessScope {
-
+	boolean singleton() default false;
 }

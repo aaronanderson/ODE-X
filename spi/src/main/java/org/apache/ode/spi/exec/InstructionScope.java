@@ -16,5 +16,5 @@ import javax.inject.Scope;
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface InstructionScope {
-
+	boolean singleton() default false;
 }

@@ -78,8 +78,14 @@
 		</restriction>
 	</simpleType>
 
-	<complexType name="operatorContextType" abstract="true"/>
-	
+	<simpleType name="insAddressRefType">
+		<restriction base="IDREF">
+			<pattern value="b\d+i\d+" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="operatorContextType" abstract="true" />
+
 	<element name="operatorContext" type="tns:operatorContextType" abstract="true" />
 
 
@@ -127,7 +133,7 @@
 		<complexContent>
 			<extension base="tns:instructionType">
 				<attribute name="mode" type="tns:contextMode" use="optional" />
-				<attribute name="ctx" type="IDREF" use="optional" />
+				<attribute name="ctx" type="tns:insAddressRefType" use="optional" />
 			</extension>
 		</complexContent>
 	</complexType>

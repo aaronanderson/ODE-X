@@ -62,8 +62,10 @@ import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.xml.Block;
+import org.apache.ode.spi.exec.xml.BlockAddress;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.xml.InstructionAddress;
 import org.apache.ode.spi.exec.xml.Sources;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
@@ -225,11 +227,11 @@ public class BuildExecutor implements CommandObject {
 		int blockId = 0;
 		for (Block b : exec.getBlock()) {
 			String bid = "b" + blockId++;
-			b.setBlc(bid);
+			b.setBlc(new BlockAddress(bid));
 			int insId = 0;
 			for (Object o : b.getInstructions()) {
 				if (o instanceof Instruction) {
-					((Instruction) o).setIns(bid + "i" + insId++);
+					((Instruction) o).setIns(new InstructionAddress(bid + "i" + insId++));
 				}
 			}
 

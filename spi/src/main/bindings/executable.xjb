@@ -12,8 +12,16 @@
 	~ under the License. -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
               xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+              xmlns:exec="http://ode.apache.org/executable"
               extensionBindingPrefixes="xjc" version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
+	
+		<jxb:globalBindings>
+		  <jxb:javaType name="org.apache.ode.spi.exec.xml.InstructionAddress" xmlType="exec:insAddressType" parseMethod="org.apache.ode.spi.exec.xml.InstructionAddress.parseAddress" printMethod="org.apache.ode.spi.exec.xml.InstructionAddress.printAddress"/>
+		  <jxb:javaType name="org.apache.ode.spi.exec.xml.InstructionAddress" xmlType="exec:insAddressRefType" parseMethod="org.apache.ode.spi.exec.xml.InstructionAddress.parseAddress" printMethod="org.apache.ode.spi.exec.xml.InstructionAddress.printAddress"/>
+		  <jxb:javaType name="org.apache.ode.spi.exec.xml.BlockAddress" xmlType="exec:blcAddressType" parseMethod="org.apache.ode.spi.exec.xml.BlockAddress.parseAddress" printMethod="org.apache.ode.spi.exec.xml.BlockAddress.printAddress"/>
+		</jxb:globalBindings>
+		
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.xml" />
 		</jxb:schemaBindings>
