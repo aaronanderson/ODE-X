@@ -96,8 +96,12 @@
 						<exclude>**/src/main/resources/META-INF/xsd/Semantic.xsd</exclude>
 						<exclude>**/src/main/resources/META-INF/xsd/ws-wsdl.xsd</exclude>
 						<exclude>**/src/main/resources/META-INF/xsd/ws-humantask*</exclude>
-						<exclude>wsht/src/test/resources/**</exclude>
-						<exclude>bpmn/src/test/resources/**</exclude>
+						<exclude>**/src/test/resources/deadlines/*</exclude>
+						<exclude>**/src/test/resources/deadlines/*</exclude>
+						<exclude>**/src/test/resources/reassignment/*</exclude>
+						<exclude>**/src/test/resources/topart/document/*</exclude>
+						<exclude>**/src/test/resources/topart/rpc/*</exclude>
+						<exclude>**/src/test/resources/emailvoting/*.bpmn</exclude>
 					</excludes>
 					<mapping>
 						<serverdef>XML_STYLE</serverdef>
@@ -105,6 +109,7 @@
 						<svg>XML_STYLE</svg>
 						<xml>XML_STYLE</xml>
 						<bpmn>XML_STYLE</bpmn>
+						<hi>XML_STYLE</hi>
 						<wsdl>XML_STYLE</wsdl>
 						<xjb>XML_STYLE</xjb>
 						<xsd>XML_STYLE</xsd>
