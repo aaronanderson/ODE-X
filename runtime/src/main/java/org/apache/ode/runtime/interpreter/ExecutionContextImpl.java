@@ -18,14 +18,13 @@
  */
 package org.apache.ode.runtime.interpreter;
 
-import javax.xml.bind.JAXBElement;
-
 import org.apache.ode.spi.exec.instruction.ExecutionContext;
 import org.apache.ode.spi.exec.instruction.Operation;
+import org.apache.ode.spi.exec.instruction.xml.BlockStack;
+import org.apache.ode.spi.exec.instruction.xml.ContextStack;
 import org.apache.ode.spi.exec.instruction.xml.ExecutionState;
 import org.apache.ode.spi.exec.instruction.xml.Input;
 import org.apache.ode.spi.exec.instruction.xml.Result;
-import org.apache.ode.spi.exec.instruction.xml.Stack;
 
 /*
   This class is intended as a shield so that instructions may only interact with
@@ -38,16 +37,30 @@ public class ExecutionContextImpl implements ExecutionContext {
 		this.state = state;
 	}
 	
-	public void push(JAXBElement<? extends Stack> newStack){
-		JAXBElement<? extends Stack> current = state.getStack();
-		state.setStack(newStack);
-		newStack.getValue().setStack(current);
+	public void pushBlock(BlockStack newStack){
+		BlockStack current = state.getBlock();
+		state.setBlock(newStack);
+		newStack.setBlock(current);
 	}
 	
-	public void pop(){
-		JAXBElement<? extends Stack> current = state.getStack();
-		JAXBElement<? extends Stack> newStack = current.getValue().getStack();
-		state.setStack(newStack);
+	public void popBlock(){
+		BlockStack current = state.getBlock();
+		BlockStack newStack = current.getBlock();
+		state.setBlock(newStack);
+	}
+
+	public void pushContext(ContextStack newStack){
+		BlockStack current = state.getBlock();
+		ContextStack currentCtx = current.getContext();
+		current.setContext(newStack);
+		newStack.setContext(currentCtx);
+	}
+	
+	public void popContext(){
+		BlockStack current = state.getBlock();
+		ContextStack currentCtx = current.getContext();
+		ContextStack newStack = currentCtx.getContext();
+		current.setContext(newStack);
 	}
 
 	@Override

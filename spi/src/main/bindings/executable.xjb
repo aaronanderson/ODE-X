@@ -19,21 +19,39 @@
     under the License.
 
 -->
-<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-              xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
-              xmlns:exec="http://ode.apache.org/executable"
-              extensionBindingPrefixes="xjc" version="2.1">
+<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+	xmlns:ode="http://ode.apache.org/xjc-extension" xmlns:exec="http://ode.apache.org/executable" extensionBindingPrefixes="xjc ode" version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
-	
-		<jxb:globalBindings>
-		  <jxb:javaType name="org.apache.ode.spi.exec.xml.InstructionAddress" xmlType="exec:insAddressType" parseMethod="org.apache.ode.spi.exec.xml.InstructionAddress.parseAddress" printMethod="org.apache.ode.spi.exec.xml.InstructionAddress.printAddress"/>
-		  <jxb:javaType name="org.apache.ode.spi.exec.xml.InstructionAddress" xmlType="exec:insAddressRefType" parseMethod="org.apache.ode.spi.exec.xml.InstructionAddress.parseAddress" printMethod="org.apache.ode.spi.exec.xml.InstructionAddress.printAddress"/>
-		  <jxb:javaType name="org.apache.ode.spi.exec.xml.BlockAddress" xmlType="exec:blcAddressType" parseMethod="org.apache.ode.spi.exec.xml.BlockAddress.parseAddress" printMethod="org.apache.ode.spi.exec.xml.BlockAddress.printAddress"/>
-		</jxb:globalBindings>
-		
+
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.xml" />
 		</jxb:schemaBindings>
+
+ <!--  add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->
+		<jxb:bindings node="//xs:simpleType[@name='srcIdType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.SrcId" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='srcIdRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.SrcIdRef" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='insAddressType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.InsAdd" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='insAddressRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.InsAddRef" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='blcAddressType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.BlcAdd" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='blcAddressRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.BlcAddRef" />
+		</jxb:bindings>
+
 
 		<jxb:bindings node="//xs:complexType[@name='executableType']">
 			<jxb:class name="Executable" />
@@ -63,20 +81,14 @@
 			<jxb:class name="SourceRef" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='sourceRefType']/xs:attribute[@name='sref']">
-			<jxb:property>
-				<jxb:baseType name="Source" />
-			</jxb:property>
-		</jxb:bindings>
-
 		<jxb:bindings node="//xs:complexType[@name='compilerSettingType']">
 			<jxb:class name="CompilerSetting" />
 		</jxb:bindings>
 
-        <jxb:bindings node="//xs:complexType[@name='operatorContextType']">
-			<jxb:class name="OperatorContext" />
+		<jxb:bindings node="//xs:complexType[@name='operationContextType']">
+			<jxb:class name="OperationContext" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='instructionType']">
 			<jxb:class name="Instruction" />
 		</jxb:bindings>
@@ -86,21 +98,21 @@
 			<xjc:substitutable/>
 		</jxb:bindings>
 		-->
-		
-		<jxb:bindings node="//xs:complexType[@name='instructionType']/xs:complexContent/xs:extension/xs:sequence/xs:element[@ref='tns:operatorContext']">
-			<jxb:property name="OperatorContexts" />
+
+		<jxb:bindings node="//xs:complexType[@name='instructionType']/xs:complexContent/xs:extension/xs:sequence/xs:element[@ref='tns:operationContext']">
+			<jxb:property name="OperationContexts" />
 		</jxb:bindings>
-		
+
 		<jxb:bindings node="//xs:complexType[@name='contextType']">
 			<jxb:class name="Context" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='contextType']/xs:complexContent/xs:extension/xs:attribute[@name='ctx']">
+<!--		<jxb:bindings node="//xs:complexType[@name='contextType']/xs:complexContent/xs:extension/xs:attribute[@name='ctx']">
 			<jxb:property>
 				<jxb:baseType name="Context" />
 			</jxb:property>
 		</jxb:bindings>
-<!--
+
         <jxb:bindings node="//xs:complexType[@name='typeType']">
 			<jxb:class name="Type" />
 		</jxb:bindings>

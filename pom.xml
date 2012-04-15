@@ -108,6 +108,7 @@
 						<java>JAVADOC_STYLE</java>
 						<svg>XML_STYLE</svg>
 						<xml>XML_STYLE</xml>
+						<bpel>XML_STYLE</bpel>
 						<bpmn>XML_STYLE</bpmn>
 						<hi>XML_STYLE</hi>
 						<wsdl>XML_STYLE</wsdl>

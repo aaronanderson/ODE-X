@@ -63,7 +63,13 @@
 			<pattern value="s\d+" />
 		</restriction>
 	</simpleType>
-
+	
+	<simpleType name="srcIdRefType">
+		<restriction base="IDREF">
+			<pattern value="s\d+" />
+		</restriction>
+	</simpleType>
+	
 	<complexType name="sourceType">
 		<attribute name="src" type="tns:srcIdType" use="required" />
 		<attribute name="qname" type="QName" use="required" />
@@ -74,7 +80,7 @@
 
 
 	<complexType name="sourceRefType" abstract="true">
-		<attribute name="sref" type="IDREF" use="required" />
+		<attribute name="sref" type="tns:srcIdRefType" use="required" />
 		<attribute name="line" type="int" use="required" />
 		<attribute name="column" type="int" use="required" />
 	</complexType>
@@ -93,16 +99,24 @@
 		</restriction>
 	</simpleType>
 
-	<complexType name="operatorContextType" abstract="true" />
+	<complexType name="operationContextType" abstract="true"/>
+	
+	<element name="operationContext" type="tns:operationContextType" abstract="true" />
 
-	<element name="operatorContext" type="tns:operatorContextType" abstract="true" />
+	<element name="in-memory-only" substitutionGroup="tns:operationContext">
+		<complexType>
+			<complexContent>
+				<extension base="tns:operationContextType" />
+			</complexContent>
+		</complexType>
+	</element>
 
 
 	<complexType name="instructionType" abstract="true">
 		<complexContent>
 			<extension base="tns:sourceRefType">
 				<sequence>
-					<element ref="tns:operatorContext" minOccurs="0" maxOccurs="unbounded" />
+					<element ref="tns:operationContext" minOccurs="0" maxOccurs="unbounded" />
 				</sequence>
 				<attribute name="ins" type="tns:insAddressType" use="required" />
 			</extension>
@@ -119,14 +133,6 @@
 		<complexType>
 			<complexContent>
 				<extension base="tns:instructionType" />
-			</complexContent>
-		</complexType>
-	</element>
-
-	<element name="in-memory-only" substitutionGroup="tns:operatorContext">
-		<complexType>
-			<complexContent>
-				<extension base="tns:operatorContextType" />
 			</complexContent>
 		</complexType>
 	</element>
@@ -174,6 +180,12 @@
  -->
 	<simpleType name="blcAddressType">
 		<restriction base="ID">
+			<pattern value="b\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="blcAddressRefType">
+		<restriction base="IDREF">
 			<pattern value="b\d+" />
 		</restriction>
 	</simpleType>

@@ -37,6 +37,18 @@
 		<jxb:bindings node="//xs:complexType[@name='resultType']">
 			<jxb:class name="Result" />
 		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='newVariableType']">
+			<jxb:class name="NewVariableOperation" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='newProcessType']">
+			<jxb:class name="NewProcessOperation" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='newThreadType']">
+			<jxb:class name="NewThreadOperation" />
+		</jxb:bindings>
 			
 		<jxb:bindings node="//xs:complexType[@name='frameType']">
 			<jxb:class name="Frame" />

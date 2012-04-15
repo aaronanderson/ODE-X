@@ -20,51 +20,51 @@ package org.apache.ode.spi.exec.xml;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-public class BlockAddress implements BlcAdd, BlcAddRef {
-	public BlockAddress() {
+public class SourceId implements SrcId, SrcIdRef {
+	public SourceId() {
 	}
 
-	public BlockAddress(String address) {
-		this.address = address;
+	public SourceId(String id) {
+		this.id = id;
 	}
 
-	private String address;
+	private String id;
 
 	@Override
-	public String address() {
-		return address;
+	public String id() {
+		return id;
 	}
 
-	public static class BlcAddRefAdapter extends XmlAdapter<String, BlcAddRef> {
+	public static class SrcIdAdapter extends XmlAdapter<String, SrcId> {
 
 		@Override
-		public String marshal(BlcAddRef addr) throws Exception {
-			if (addr != null) {
-				return addr.address();
+		public String marshal(SrcId id) throws Exception {
+			if (id != null) {
+				return id.id();
 			}
 			return null;
 		}
 
 		@Override
-		public BlcAddRef unmarshal(String addr) throws Exception {
-			return new BlockAddress(addr);
+		public SrcId unmarshal(String id) throws Exception {
+			return new SourceId(id);
 		}
 
 	}
 
-	public static class BlcAddAdapter extends XmlAdapter<String, BlcAdd> {
+	public static class SrcIdRefAdapter extends XmlAdapter<String, SrcIdRef> {
 
 		@Override
-		public String marshal(BlcAdd addr) throws Exception {
-			if (addr != null) {
-				return addr.address();
+		public String marshal(SrcIdRef id) throws Exception {
+			if (id != null) {
+				return id.id();
 			}
 			return null;
 		}
 
 		@Override
-		public BlcAdd unmarshal(String addr) throws Exception {
-			return new BlockAddress(addr);
+		public SrcIdRef unmarshal(String id) throws Exception {
+			return new SourceId(id);
 		}
 
 	}

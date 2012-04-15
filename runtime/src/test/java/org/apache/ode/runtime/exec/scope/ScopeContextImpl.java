@@ -103,6 +103,10 @@ public abstract class ScopeContextImpl implements ScopeContext {
 				public T get() {
 					T current = null;
 					ThreadLocalState tscope = getThreadLocal().get();
+					if (tscope == null) {
+						throw new IllegalStateException(String.format("Not in scope %s",scopeName()));
+					}
+				
 					Class<?> type = key.getTypeLiteral().getRawType();
 					Named named = type.getAnnotation(Named.class);
 					if (named != null) {
@@ -138,6 +142,8 @@ public abstract class ScopeContextImpl implements ScopeContext {
 			};
 
 		}
+
+		public abstract String scopeName();
 
 		public abstract ThreadLocal<ThreadLocalState> getThreadLocal();
 

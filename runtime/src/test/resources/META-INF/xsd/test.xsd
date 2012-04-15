@@ -35,6 +35,17 @@
 		</complexType>
 	</element>
 
+	<element name="addressTest" substitutionGroup="exec:instruction">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType">
+					<attribute name="bref" type="exec:blcAddressRefType" />
+					<attribute name="iref" type="exec:insAddressRefType" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
 	<element name="contextTest" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>
@@ -45,7 +56,7 @@
 			</complexContent>
 		</complexType>
 	</element>
-	
+
 	<element name="controlTest" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>

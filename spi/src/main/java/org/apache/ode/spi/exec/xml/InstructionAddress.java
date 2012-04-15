@@ -18,36 +18,56 @@
  */
 package org.apache.ode.spi.exec.xml;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlID;
-@XmlAccessorType(XmlAccessType.FIELD)
-public class InstructionAddress {
-	
-	@XmlID
-	 @XmlAttribute
-	private String insAddress;
+import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-	
-	public String getInsAddress() {
-		return insAddress;
+public class InstructionAddress implements InsAdd, InsAddRef {
+	public InstructionAddress() {
 	}
 
-	public void setInsAddress(String insAddress) {
-		this.insAddress = insAddress;
-	}
-	
-
-	public InstructionAddress(String insAddress) {
-		this.insAddress = insAddress;
+	public InstructionAddress(String address) {
+		this.address = address;
 	}
 
-	static String printAddress(InstructionAddress address) {
-		return address.insAddress;
+	private String address;
+
+	@Override
+	public String address() {
+		return address;
 	}
 
-	static InstructionAddress parseAddress(String insAddress) {
-		return new InstructionAddress(insAddress);
+	public static class InsAddRefAdapter extends XmlAdapter<String, InsAddRef> {
+
+		@Override
+		public String marshal(InsAddRef addr) throws Exception {
+			if (addr != null) {
+				return addr.address();
+			}
+			return null;
+		}
+
+		@Override
+		public InsAddRef unmarshal(String addr) throws Exception {
+			return new InstructionAddress(addr);
+		}
+
 	}
+
+	public static class InsAddAdapter extends XmlAdapter<String, InsAdd> {
+
+		@Override
+		public String marshal(InsAdd addr) throws Exception {
+			if (addr != null) {
+				return addr.address();
+			}
+			return null;
+		}
+
+		@Override
+		public InsAdd unmarshal(String addr) throws Exception {
+			InstructionAddress i = new InstructionAddress(addr);
+			return i;
+		}
+
+	}
+
 }

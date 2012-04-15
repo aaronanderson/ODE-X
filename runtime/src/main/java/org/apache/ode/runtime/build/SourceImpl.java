@@ -23,6 +23,7 @@ import javax.xml.namespace.QName;
 import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source;
+import org.apache.ode.spi.exec.xml.SourceId;
 
 public class SourceImpl implements Source {
 
@@ -41,7 +42,7 @@ public class SourceImpl implements Source {
 		this.checkSum = checkSum;
 		this.contents = contents;
 		this.xmlSrc= new org.apache.ode.spi.exec.xml.Source();
-		this.xmlSrc.setSrc(id);
+		this.xmlSrc.setSrc(new SourceId(id));
 		this.xmlSrc.setQname(qname);
 		this.xmlSrc.setContentType(contentType);
 		this.xmlSrc.setVersion(version);

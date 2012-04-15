@@ -24,8 +24,8 @@
 
 	<complexType name="operationType" abstract="true">
 		<!--  <attribute name="name" type="QName" use="required" />-->
-		<attribute name="inputType" type="QName" use="required" />
-		<attribute name="resultType" type="QName" use="required" />
+		<attribute name="inputType" type="Name" use="required" />
+		<attribute name="resultType" type="Name" use="required" />
 	</complexType>
 
 	<complexType name="inputType" abstract="true" />
@@ -75,6 +75,20 @@
 		</complexContent>
 	</complexType>
 
+	<simpleType name="varAddressType">
+		<restriction base="ID">
+			<pattern value="b\d+c\d*[vp]\d+" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="varAddressRefType">
+		<restriction base="IDREF">
+			<pattern value="b\d+c\d*[vp]\d+" />
+		</restriction>
+	</simpleType>
+
+
 	<simpleType name="insAddressType">
 		<restriction base="ID">
 			<pattern value="b\d+i\d+" />
@@ -101,17 +115,31 @@
 		<attribute name="name" type="string" use="required" />
 	</complexType>
 
-	<complexType name="frameType">
-		<sequence>
-			<element name="variable" type="tns:variableType" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
+	<complexType name="frameType" abstract="true" />
 
 	<element name="frame" type="tns:frameType" abstract="true" />
 
-    <complexType name="callFrameType">
+	<complexType name="variableDefType">
+		<attribute name="var" type="tns:varAddressType" use="required" />
+	</complexType>
+
+	<element name="variableDef" type="tns:variableDefType" />
+
+	<complexType name="variableFrameType">
 		<complexContent>
-			<extension base="tns:frameType"/>
+			<extension base="tns:frameType">
+				<sequence>
+					<element ref="tns:variableDef" minOccurs="1" maxOccurs="1" />
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="variableFrame" type="tns:variableFrameType" substitutionGroup="tns:frame" />
+
+	<complexType name="callFrameType">
+		<complexContent>
+			<extension base="tns:frameType" />
 		</complexContent>
 	</complexType>
 
@@ -121,7 +149,6 @@
 	<complexType name="stackType">
 		<sequence>
 			<element ref="tns:frame" minOccurs="0" maxOccurs="unbounded" />
-			<element ref="tns:stack" minOccurs="1" maxOccurs="1" />
 			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
@@ -130,7 +157,12 @@
 
 	<complexType name="blockStackType">
 		<complexContent>
-			<extension base="tns:stackType" />
+			<extension base="tns:stackType">
+				<sequence>
+					<element ref="tns:block" minOccurs="0" maxOccurs="1" />
+					<element ref="tns:context" minOccurs="0" maxOccurs="1" />
+				</sequence>
+			</extension>
 		</complexContent>
 	</complexType>
 
@@ -138,15 +170,69 @@
 
 	<complexType name="contextStackType">
 		<complexContent>
-			<extension base="tns:stackType" />
+			<extension base="tns:stackType">
+				<sequence>
+					<element ref="tns:context" minOccurs="0" maxOccurs="1" />
+				</sequence>
+			</extension>
 		</complexContent>
 	</complexType>
 
 	<element name="context" type="tns:contextStackType" substitutionGroup="tns:stack" />
 
+	<complexType name="statusType" abstract="true" />
+
+	<element name="status" type="tns:statusType" abstract="true" />
+
+	<element name="running" substitutionGroup="tns:status">
+		<complexType>
+			<complexContent>
+				<extension base="tns:statusType">
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	<element name="terminated" substitutionGroup="tns:status">
+		<complexType>
+			<complexContent>
+				<extension base="tns:statusType">
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	<element name="scheduled" substitutionGroup="tns:status">
+		<complexType>
+			<complexContent>
+				<extension base="tns:statusType">
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="locked" substitutionGroup="tns:status">
+		<complexType>
+			<complexContent>
+				<extension base="tns:statusType">
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="exchange" substitutionGroup="tns:status">
+		<complexType>
+			<complexContent>
+				<extension base="tns:statusType">
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
 	<complexType name="executionStateType">
 		<sequence>
-			<element ref="tns:stack" minOccurs="1" maxOccurs="1" />
+			<element ref="tns:status" minOccurs="1" maxOccurs="1" />
+			<element ref="tns:block" minOccurs="1" maxOccurs="1" />
 			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>

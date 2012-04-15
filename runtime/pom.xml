@@ -212,26 +212,23 @@
 			 maybe try http://jaxb.java.net/guide/Customizing_Java_packages.html#Tip__get_rid_of_the_org_w3__2001_xmlschema_package
 			 -->
 			<plugin>
-				<artifactId>maven-clean-plugin</artifactId>
-				<version>2.4.1</version>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.7</version>
 				<executions>
 					<execution>
-						<id>auto-clean</id>
+						<id>fix-objectfactory</id>
 						<phase>process-test-sources</phase>
-						<goals>
-							<goal>clean</goal>
-						</goals>
 						<configuration>
-							<excludeDefaultDirectories>true</excludeDefaultDirectories>
-							<filesets>
-								<fileset>
-									<directory>target/generated-test-sources/xjc</directory>
-									<includes>
-										<include>org/apache/ode/executable/**</include>
-									</includes>
-								</fileset>
-							</filesets>
+							<target>
+								<delete includeEmptyDirs="true">
+									<fileset dir="target/generated-test-sources/xjc/org/apache/ode/spi"/>
+								</delete>
+							</target>
 						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>

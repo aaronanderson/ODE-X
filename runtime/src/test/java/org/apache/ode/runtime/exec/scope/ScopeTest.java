@@ -64,6 +64,7 @@ public class ScopeTest {
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		ProgramGuiceScopeImpl.SINGLETONS.clear();
+		injector.destroy();
 	}
 
 	public static class ScopeTestModule extends AbstractModule {

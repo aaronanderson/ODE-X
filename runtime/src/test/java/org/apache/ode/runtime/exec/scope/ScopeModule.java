@@ -76,10 +76,15 @@ public class ScopeModule extends AbstractModule {
 		@Override
 		public boolean isSingleton(Class<?> clazz) {
 			ProgramScope scope = clazz.getAnnotation(ProgramScope.class);
-			if (scope!=null){
+			if (scope != null) {
 				return scope.singleton();
 			}
 			return false;
+		}
+
+		@Override
+		public String scopeName() {
+			return ProgramScope.class.getSimpleName();
 		}
 	}
 
@@ -105,15 +110,21 @@ public class ScopeModule extends AbstractModule {
 		public Set<Class<?>> getSingletons() {
 			return SINGLETONS;
 		}
-		
+
 		@Override
 		public boolean isSingleton(Class<?> clazz) {
 			ProcessScope scope = clazz.getAnnotation(ProcessScope.class);
-			if (scope!=null){
+			if (scope != null) {
 				return scope.singleton();
 			}
 			return false;
 		}
+
+		@Override
+		public String scopeName() {
+			return ProcessScope.class.getSimpleName();
+		}
+
 	}
 
 	public static class ThreadScopeContextImpl extends ScopeContextImpl implements ThreadScopeContext {
@@ -138,15 +149,21 @@ public class ScopeModule extends AbstractModule {
 		public Set<Class<?>> getSingletons() {
 			return SINGLETONS;
 		}
-		
+
 		@Override
 		public boolean isSingleton(Class<?> clazz) {
 			ThreadScope scope = clazz.getAnnotation(ThreadScope.class);
-			if (scope!=null){
+			if (scope != null) {
 				return scope.singleton();
 			}
 			return false;
 		}
+
+		@Override
+		public String scopeName() {
+			return ThreadScope.class.getSimpleName();
+		}
+
 	}
 
 	public static class InstructionScopeContextImpl extends ScopeContextImpl implements InstructionScopeContext {
@@ -171,17 +188,23 @@ public class ScopeModule extends AbstractModule {
 		public Set<Class<?>> getSingletons() {
 			return SINGLETONS;
 		}
-		
+
 		@Override
 		public boolean isSingleton(Class<?> clazz) {
 			InstructionScope scope = clazz.getAnnotation(InstructionScope.class);
-			if (scope!=null){
+			if (scope != null) {
 				return scope.singleton();
 			}
 			return false;
 		}
+
+		@Override
+		public String scopeName() {
+			return InstructionScope.class.getSimpleName();
+		}
+
 	}
-	
+
 	public static class ExecutableScopeContextImpl extends ScopeContextImpl implements ExecutableScopeContext {
 		static ThreadLocal<ThreadLocalState> executableState = new ThreadLocal<ThreadLocalState>();
 
@@ -204,16 +227,21 @@ public class ScopeModule extends AbstractModule {
 		public Set<Class<?>> getSingletons() {
 			return SINGLETONS;
 		}
-		
+
 		@Override
 		public boolean isSingleton(Class<?> clazz) {
 			ExecutableScope scope = clazz.getAnnotation(ExecutableScope.class);
-			if (scope!=null){
+			if (scope != null) {
 				return scope.singleton();
 			}
 			return false;
 		}
-	}
+		
+		@Override
+		public String scopeName() {
+			return ExecutableScope.class.getSimpleName();
+		}
 
+	}
 
 }

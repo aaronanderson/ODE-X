@@ -231,7 +231,8 @@ public class BuildExecutor implements CommandObject {
 			int insId = 0;
 			for (Object o : b.getInstructions()) {
 				if (o instanceof Instruction) {
-					((Instruction) o).setIns(new InstructionAddress(bid + "i" + insId++));
+					String iid=bid + "i" + insId++;
+					((Instruction) o).setIns(new InstructionAddress(iid));
 				}
 			}
 
