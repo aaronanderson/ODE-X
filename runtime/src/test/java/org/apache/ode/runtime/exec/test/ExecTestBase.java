@@ -29,6 +29,7 @@ import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.Unmarshaller.Listener;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -41,6 +42,7 @@ import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
 import org.apache.ode.runtime.exec.scope.ScopeModule;
 import org.apache.ode.runtime.exec.test.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
 import org.apache.ode.runtime.exec.test.TestObjectFactory.TestObjectFactoryImpl;
+import org.apache.ode.runtime.interpreter.IndexedExecutable;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.ExecutableObjectFactory;
 import org.apache.ode.spi.exec.instruction.ExecutionContextObjectFactory;
@@ -54,6 +56,7 @@ import com.mycila.inject.jsr250.Jsr250Injector;
 public abstract class ExecTestBase {
 	//protected static final Logger log = Logger.getLogger(ExecTestBase.class.getName());
 	protected static Block block;
+	protected static IndexedExecutable eIndex;
 	protected static Set<InstructionSet> set;
 	protected static Jsr250Injector injector;
 	protected static JAXBContext ectx;
@@ -84,13 +87,14 @@ public abstract class ExecTestBase {
 		ecctx = JAXBRuntimeUtil.executionContextJAXBContextByPath(set);
 
 		Unmarshaller eum = ectx.createUnmarshaller();
+		eIndex = IndexedExecutable.configure(eum);
 		eum.setSchema(eschema);
 		AbstractModule[] allModules = new AbstractModule[modules.length + 2];
 		allModules[0] = new BaseExecTestModule();
 		allModules[1] = new ScopeModule();
 		System.arraycopy(modules, 0, allModules, 2, modules.length);
 		injector = Jsr250.createInjector(allModules);
-	    esc = injector.getInstance(ExecutableScopeContext.class);
+		esc = injector.getInstance(ExecutableScopeContext.class);
 		esc.create();
 		try {
 			esc.begin();
@@ -102,8 +106,8 @@ public abstract class ExecTestBase {
 			o = ((JAXBElement<?>) o).getValue();
 			assertTrue(o instanceof Executable);
 			Executable e = (Executable) o;
-			assertEquals(1, e.getBlock().size());
-			block = e.getBlock().get(0);
+			assertEquals(1, e.getBlocks().size());
+			block = e.getBlocks().get(0);
 			assertTrue(block.getInstructions().size() > 0);
 		} finally {
 			esc.end();

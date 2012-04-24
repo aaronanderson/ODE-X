@@ -21,9 +21,7 @@ package org.apache.ode.spi.exec.xml;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
 public class InstructionAddress implements InsAdd, InsAddRef {
-	public InstructionAddress() {
-	}
-
+	
 	public InstructionAddress(String address) {
 		this.address = address;
 	}

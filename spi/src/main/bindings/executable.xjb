@@ -35,6 +35,14 @@
 		<jxb:bindings node="//xs:simpleType[@name='srcIdRefType']">
 			<jxb:class ref="org.apache.ode.spi.exec.xml.SrcIdRef" />
 		</jxb:bindings>
+
+        <jxb:bindings node="//xs:simpleType[@name='memAddressType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.MemAdd" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='memAddressRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.xml.MemAddRef" />
+		</jxb:bindings>
 		
 		<jxb:bindings node="//xs:simpleType[@name='insAddressType']">
 			<jxb:class ref="org.apache.ode.spi.exec.xml.InsAdd" />
@@ -55,6 +63,10 @@
 
 		<jxb:bindings node="//xs:complexType[@name='executableType']">
 			<jxb:class name="Executable" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='executableType']/xs:sequence/xs:element[@ref='tns:block']">
+			<jxb:property name="Blocks" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='instructionSetsType']">
@@ -77,10 +89,6 @@
 			<jxb:class name="Source" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='sourceRefType']">
-			<jxb:class name="SourceRef" />
-		</jxb:bindings>
-
 		<jxb:bindings node="//xs:complexType[@name='compilerSettingType']">
 			<jxb:class name="CompilerSetting" />
 		</jxb:bindings>
@@ -99,7 +107,7 @@
 		</jxb:bindings>
 		-->
 
-		<jxb:bindings node="//xs:complexType[@name='instructionType']/xs:complexContent/xs:extension/xs:sequence/xs:element[@ref='tns:operationContext']">
+		<jxb:bindings node="//xs:complexType[@name='instructionType']/xs:sequence/xs:element[@ref='tns:operationContext']">
 			<jxb:property name="OperationContexts" />
 		</jxb:bindings>
 
@@ -128,6 +136,11 @@
 		<jxb:bindings node="//xs:complexType[@name='blockType']/xs:sequence/xs:element[@ref='tns:instruction']">
 			<jxb:property name="Instructions" />
 		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='blockType']/xs:sequence/xs:element[@ref='tns:block']">
+			<jxb:property name="Blocks" />
+		</jxb:bindings>
+		
 <!--
 		<jxb:bindings node="//xs:complexType[@name='variableType']">
 			<jxb:class name="Variable" />

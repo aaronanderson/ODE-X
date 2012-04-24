@@ -20,9 +20,11 @@ package org.apache.ode.spi.exec.xml;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-public class BlockAddress implements BlcAdd, BlcAddRef {
-	
-	public BlockAddress(String address) {
+public class MemoryAddress implements MemAdd, MemAddRef {
+	public MemoryAddress() {
+	}
+
+	public MemoryAddress(String address) {
 		this.address = address;
 	}
 
@@ -33,10 +35,10 @@ public class BlockAddress implements BlcAdd, BlcAddRef {
 		return address;
 	}
 
-	public static class BlcAddRefAdapter extends XmlAdapter<String, BlcAddRef> {
+	public static class MemAddRefAdapter extends XmlAdapter<String, MemAddRef> {
 
 		@Override
-		public String marshal(BlcAddRef addr) throws Exception {
+		public String marshal(MemAddRef addr) throws Exception {
 			if (addr != null) {
 				return addr.address();
 			}
@@ -44,16 +46,16 @@ public class BlockAddress implements BlcAdd, BlcAddRef {
 		}
 
 		@Override
-		public BlcAddRef unmarshal(String addr) throws Exception {
-			return new BlockAddress(addr);
+		public MemAddRef unmarshal(String addr) throws Exception {
+			return new MemoryAddress(addr);
 		}
 
 	}
 
-	public static class BlcAddAdapter extends XmlAdapter<String, BlcAdd> {
+	public static class MemAddAdapter extends XmlAdapter<String, MemAdd> {
 
 		@Override
-		public String marshal(BlcAdd addr) throws Exception {
+		public String marshal(MemAdd addr) throws Exception {
 			if (addr != null) {
 				return addr.address();
 			}
@@ -61,8 +63,9 @@ public class BlockAddress implements BlcAdd, BlcAddRef {
 		}
 
 		@Override
-		public BlcAdd unmarshal(String addr) throws Exception {
-			return new BlockAddress(addr);
+		public MemAdd unmarshal(String addr) throws Exception {
+			MemoryAddress i = new MemoryAddress(addr);
+			return i;
 		}
 
 	}

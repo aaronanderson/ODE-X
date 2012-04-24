@@ -225,7 +225,7 @@ public class BuildExecutor implements CommandObject {
 	void populateIds(CompilationImpl compilation) {
 		Executable exec = compilation.getExecutable();
 		int blockId = 0;
-		for (Block b : exec.getBlock()) {
+		for (Block b : exec.getBlocks()) {
 			String bid = "b" + blockId++;
 			b.setBlc(new BlockAddress(bid));
 			int insId = 0;
