@@ -32,12 +32,13 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import org.apache.ode.runtime.exec.platform.ScopeModule;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.InstructionScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ProcessScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ProgramScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ThreadScopeContext;
-import org.apache.ode.runtime.exec.scope.ScopeModule.ProgramGuiceScopeImpl;
+import org.apache.ode.runtime.exec.platform.ScopeModule.ProgramGuiceScopeImpl;
 import org.apache.ode.spi.exec.ExecutableScope;
 import org.apache.ode.spi.exec.InstructionScope;
 import org.apache.ode.spi.exec.ProcessScope;

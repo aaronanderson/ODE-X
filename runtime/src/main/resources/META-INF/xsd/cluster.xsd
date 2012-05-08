@@ -19,20 +19,67 @@
     under the License.
 
 -->
-<schema targetNamespace="http://ode.apache.org/cluster-config"
-	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
-	xmlns:tns="http://ode.apache.org/cluster-config">
+<schema targetNamespace="http://ode.apache.org/cluster" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/cluster">
+
+	<simpleType name="NodeState">
+		<restriction base="string">
+			<enumeration value="ONLINE" />
+			<enumeration value="OFFLINE" />
+		</restriction>
+	</simpleType>
+
+
+	<element name="NodeStatus">
+		<complexType>
+			<attribute name="clusterId" type="string" />
+			<attribute name="nodeId" type="string" />
+			<attribute name="state" type="tns:NodeState" />
+			<attribute name="heartbeat" type="dateTime" use="required" />
+		</complexType>
+	</element>
+
+	<complexType name="actionRequestType" abstract="true" />
+
+	<complexType name="actionResponseType" abstract="true" />
+
+	<element name="installActionRequest">
+		<complexType>
+			<complexContent>
+				<extension base="tns:actionRequestType">
+					<sequence>
+						<element name="program" minOccurs="0" maxOccurs="1">
+							<complexType>
+								<attribute name="name" />
+							</complexType>
+						</element>
+					</sequence>
+					<attribute name="id" type="string" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="installActionResponse">
+		<complexType>
+			<complexContent>
+				<extension base="tns:actionResponseType">
+					<sequence>
+						<element name="result" type="tns:healthCheckType" minOccurs="0" maxOccurs="1" />
+					</sequence>
+					<attribute name="id" type="string" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
 
 	<complexType name="clusterConfigType">
 		<sequence>
-			<element name="health-check" type="tns:healthCheckType"
-				minOccurs="0" maxOccurs="1" />
-			<element name="action-check" type="tns:actionCheckType"
-				minOccurs="0" maxOccurs="1" />
-			<element name="nodes" type="tns:nodesType" minOccurs="1"
-				maxOccurs="1" />
+			<element name="health-check" type="tns:healthCheckType" minOccurs="0" maxOccurs="1" />
+			<element name="action-check" type="tns:actionCheckType" minOccurs="0" maxOccurs="1" />
+			<element name="nodes" type="tns:nodesType" minOccurs="1" maxOccurs="1" />
 		</sequence>
 		<attribute name="name" type="string" use="required" />
+		<attribute name="persist" type="boolean" use="optional" default="false" />
 	</complexType>
 
 	<complexType name="healthCheckType">
@@ -56,8 +103,7 @@
 
 	<complexType name="nodeMessagesType">
 		<sequence>
-			<element name="message" type="tns:nodeMessageType" minOccurs="1"
-				maxOccurs="unbounded" />
+			<element name="message" type="tns:nodeMessageType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 

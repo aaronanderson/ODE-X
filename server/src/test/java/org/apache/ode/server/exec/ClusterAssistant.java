@@ -32,9 +32,9 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceException;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.platform.ActionIdImpl;
 import org.apache.ode.runtime.exec.platform.HealthCheck;
 import org.apache.ode.runtime.exec.platform.Node;
+import org.apache.ode.runtime.exec.platform.action.ActionIdImpl;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionState;
 import org.apache.ode.spi.exec.NodeStatus;
@@ -80,7 +80,7 @@ public class ClusterAssistant {
 		this.clusterId = clusterId;
 		this.config = config;
 		nodeStatus.set(NodeState.OFFLINE);
-		healthCheck.init(clusterId, nodeId, nodeStatus, config.getHealthCheck());
+		healthCheck.config(clusterId, nodeId, nodeStatus, config.getHealthCheck());
 	}
 
 	public void online() {
@@ -117,7 +117,7 @@ public class ClusterAssistant {
 	public ActionId executeRemoteAction(Document actionInput, String target) throws PlatformException {
 		pmgr.getTransaction().begin();
 		try {
-			org.apache.ode.runtime.exec.platform.Action a = new org.apache.ode.runtime.exec.platform.Action();
+			org.apache.ode.runtime.exec.platform.action.Action a = new org.apache.ode.runtime.exec.platform.action.Action();
 			a.setActionType(ClusterComponent.TEST_REMOTE_ACTION);
 			a.setComponent(ClusterComponent.COMPONENT_NAME);
 			a.setNodeId(target);
@@ -136,7 +136,7 @@ public class ClusterAssistant {
 	public Document getResult(ActionId id) throws PlatformException {
 		try {
 			pmgr.clear();
-			org.apache.ode.runtime.exec.platform.Action a = pmgr.find(org.apache.ode.runtime.exec.platform.Action.class, ((ActionIdImpl) id).getId());
+			org.apache.ode.runtime.exec.platform.action.Action a = pmgr.find(org.apache.ode.runtime.exec.platform.action.Action.class, ((ActionIdImpl) id).getId());
 			return a.result();
 		} catch (PersistenceException pe) {
 			throw new PlatformException(pe);

@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ~ Licensed to the Apache Software Foundation (ASF) under one ~ or more contributor license agreements. See the NOTICE file ~ distributed with this work for 
-	additional information ~ regarding copyright ownership. The ASF licenses this file ~ to you under the Apache License, Version 2.0 (the ~ "License"); you may not 
-	use this file except in compliance ~ with the License. You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 ~ ~ Unless required 
-	by applicable law or agreed to in writing, ~ software distributed under the License is distributed on an ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY 
-	~ KIND, either express or implied. See the License for the ~ specific language governing permissions and limitations ~ under the License. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+<!-- ~ Licensed to the Apache Software Foundation (ASF) under one ~ or more 
+	contributor license agreements. See the NOTICE file ~ distributed with this 
+	work for additional information ~ regarding copyright ownership. The ASF 
+	licenses this file ~ to you under the Apache License, Version 2.0 (the ~ 
+	"License"); you may not use this file except in compliance ~ with the License. 
+	You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 
+	~ ~ Unless required by applicable law or agreed to in writing, ~ software 
+	distributed under the License is distributed on an ~ "AS IS" BASIS, WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
+	License for the ~ specific language governing permissions and limitations 
+	~ under the License. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
@@ -70,6 +77,12 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>geronimo-spec</groupId>
+			<artifactId>geronimo-spec-jms</artifactId>
+			<version>1.0-M1</version>
+			<scope>provided</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>wsdl4j</groupId>
@@ -104,6 +117,13 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.openjpa</groupId>
+			<artifactId>openjpa-all</artifactId>
+			<version>2.2.0</version>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- JSR 250 support -->
 		<dependency>
 			<groupId>com.mycila</groupId>
@@ -111,6 +131,22 @@
 			<version>2.8.ga</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-all</artifactId>
+			<version>5.5.1</version>
+			<scope>test</scope>
+		</dependency>
+
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.3.157</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -207,11 +243,10 @@
 				</executions>
 
 			</plugin>
-			<!--  not sure why JAXB re-generated an ObjectFactory just for
-			the substitution group element when an ObjectFactory already existed.
-			I have given up trying to prevent JAXB from creating it so just delete it after generation.
-			 maybe try http://jaxb.java.net/guide/Customizing_Java_packages.html#Tip__get_rid_of_the_org_w3__2001_xmlschema_package
-			 -->
+			<!-- not sure why JAXB re-generated an ObjectFactory just for the substitution 
+				group element when an ObjectFactory already existed. I have given up trying 
+				to prevent JAXB from creating it so just delete it after generation. maybe 
+				try http://jaxb.java.net/guide/Customizing_Java_packages.html#Tip__get_rid_of_the_org_w3__2001_xmlschema_package -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
@@ -223,7 +258,7 @@
 						<configuration>
 							<target>
 								<delete includeEmptyDirs="true">
-									<fileset dir="target/generated-test-sources/xjc/org/apache/ode/spi"/>
+									<fileset dir="target/generated-test-sources/xjc/org/apache/ode/spi" />
 								</delete>
 							</target>
 						</configuration>
