@@ -38,6 +38,38 @@
 						<class ref="org.apache.ode.spi.exec.xml.MemAddRef" />
 					</bindings>
 
+					<bindings scd="~tns:prgAddressType">
+						<class ref="org.apache.ode.spi.exec.xml.PrgAdd" />
+					</bindings>
+
+					<bindings scd="~tns:prgAddressRefType">
+						<class ref="org.apache.ode.spi.exec.xml.PrgAddRef" />
+					</bindings>
+
+					<bindings scd="~tns:prcAddressType">
+						<class ref="org.apache.ode.spi.exec.xml.PrcAdd" />
+					</bindings>
+
+					<bindings scd="~tns:prcAddressRefType">
+						<class ref="org.apache.ode.spi.exec.xml.PrcAddRef" />
+					</bindings>
+
+					<bindings scd="~tns:thdAddressType">
+						<class ref="org.apache.ode.spi.exec.xml.ThdAdd" />
+					</bindings>
+
+					<bindings scd="~tns:thdAddressRefType">
+						<class ref="org.apache.ode.spi.exec.xml.ThdAddRef" />
+					</bindings>
+
+					<bindings scd="~tns:stkAddressType">
+						<class ref="org.apache.ode.spi.exec.xml.StkAdd" />
+					</bindings>
+
+					<bindings scd="~tns:stkAddressRefType">
+						<class ref="org.apache.ode.spi.exec.xml.StkAddRef" />
+					</bindings>
+
 					<bindings scd="~tns:insAddressType">
 						<class ref="org.apache.ode.spi.exec.xml.InsAdd" />
 					</bindings>
