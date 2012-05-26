@@ -20,6 +20,7 @@ package org.apache.ode.spi.exec;
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 
 import javax.xml.namespace.QName;
 
@@ -33,11 +34,11 @@ public interface Program {
 
 	Calendar installDate();
 
-	Artifact[] executables();
+	//Artifact[] executables();
 	
 	byte[] configuration();
 	
-	List<String> nodes();
+	 Set<Target> targets();
 
 	public static enum Status {
 		STARTED, STOPPED;

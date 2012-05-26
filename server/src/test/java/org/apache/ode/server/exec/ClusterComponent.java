@@ -36,7 +36,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.ActionTask;
 import org.apache.ode.spi.exec.ActionTask.ActionContext;
-import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogType;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogLevel;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.MasterActionTask;
 import org.apache.ode.spi.exec.Platform;
@@ -57,7 +57,7 @@ public class ClusterComponent implements Component {
 	public static final QName TEST_LOG_ACTION = new QName(TEST_NS, "TestLogAction");
 	public static final QName TEST_CANCEL_ACTION = new QName(TEST_NS, "TestCancelAction");
 	public static final QName TEST_TIMEOUT_ACTION = new QName(TEST_NS, "TestTimeoutAction");
-	List<Action> supportedActions = new ArrayList<Action>();
+	List<TaskActionImpl> supportedActions = new ArrayList<TaskActionImpl>();
 
 	@Inject
 	Repository repository;
@@ -88,7 +88,7 @@ public class ClusterComponent implements Component {
 	}
 
 	@Override
-	public List<Action> actions() {
+	public List<TaskActionImpl> actions() {
 		return supportedActions;
 	}
 
@@ -357,17 +357,17 @@ public class ClusterComponent implements Component {
 
 		@Override
 		public void start(ActionContext ctx) throws PlatformException {
-			ctx.log(new ActionMessage(LogType.INFO, "start"));
+			ctx.log(new ActionMessage(LogLevel.INFO, "start"));
 		}
 
 		@Override
 		public void run(ActionContext ctx) {
-			ctx.log(new ActionMessage(LogType.WARNING, "run"));
+			ctx.log(new ActionMessage(LogLevel.WARNING, "run"));
 		}
 
 		@Override
 		public void finish(ActionContext ctx) throws PlatformException {
-			ctx.log(new ActionMessage(LogType.ERROR, "finish"));
+			ctx.log(new ActionMessage(LogLevel.ERROR, "finish"));
 			throw new PlatformException("exception");
 		}
 

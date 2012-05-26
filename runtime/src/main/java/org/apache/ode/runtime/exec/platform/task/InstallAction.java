@@ -16,35 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+package org.apache.ode.runtime.exec.platform.task;
 
-import java.util.Set;
+import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.Task.TaskActionContext;
+import org.apache.ode.spi.exec.Task.TaskActionExec;
 
-import org.apache.ode.spi.exec.ActionTask.ActionContext;
-import org.apache.ode.spi.exec.MasterActionTask.MasterActionContext;
-import org.w3c.dom.Document;
+public class InstallAction implements TaskActionExec {
 
-/**
- * 
- * Intended to run once only on a single node but coordinate with multiple slave
- * tasks across nodes
- * 
- */
-public interface MasterActionTask extends ActionTask<MasterActionContext> {
 
-	public interface MasterActionContext extends ActionContext {
-
-		public Set<ActionStatus> slaveStatus();
+	@Override
+	public void start(TaskActionContext ctx) throws PlatformException {
 		
-		public void updateInput(String nodeId, Document input) throws PlatformException;
-
-
 	}
 
-	public interface MasterActionStatus extends ActionStatus {
+	@Override
+	public void run(TaskActionContext ctx) {
+		
+	}
 
-		public Set<ActionStatus> slaveStatus();
-
+	@Override
+	public void finish(TaskActionContext ctx) throws PlatformException {
+		
 	}
 
 }

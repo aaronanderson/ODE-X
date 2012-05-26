@@ -22,13 +22,18 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.Task.TaskActionDefinition;
+import org.apache.ode.spi.exec.Task.TaskDefinition;
+
 public interface Component {
 
 	public QName name();
 
 	public List<InstructionSet> instructionSets();
 
-	public List<Action> actions();
+	public List<TaskDefinition> tasks();
+	
+	public List<TaskActionDefinition> actions();
 
 	public void online() throws PlatformException;
 

@@ -40,16 +40,17 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
-import org.apache.ode.spi.exec.ActionTask.ActionId;
-import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Message.LogLevel;
+import org.apache.ode.spi.exec.Message.MessageListener;
 import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Process;
 import org.apache.ode.spi.exec.Program;
 import org.apache.ode.spi.exec.Target;
+import org.apache.ode.spi.exec.Task;
+import org.apache.ode.spi.exec.Task.TaskId;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.InstructionSets;
 import org.apache.ode.spi.repo.Artifact;
@@ -79,6 +80,7 @@ public class PlatformImpl implements Platform {
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
 	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
 	private QName architecture;
+	private LogLevel logLevel = LogLevel.WARNING;
 
 	@Override
 	public void registerComponent(Component component) {
@@ -88,15 +90,19 @@ public class PlatformImpl implements Platform {
 		}
 		cluster.addComponent(component);
 	}
+	
+	public void setLogLevel(LogLevel logLevel){
+		this.logLevel=logLevel;
+	}
 
 	public Component getComponent(QName name) {
 		return components.get(name);
 	}
 
-	@Override
+	/*@Override
 	public QName architecture() {
 		return architecture;
-	}
+	}*/
 
 	public void setArchitecture(QName architecture) {
 		this.architecture = architecture;
@@ -150,8 +156,8 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public Process start(QName id, Target... targets) throws PlatformException {
-		return null;
+	public void start(QName id, Target... targets) throws PlatformException {
+		//return null;
 	}
 
 	@Override
@@ -164,18 +170,41 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public ActionId execute(QName action, Document actionInput, Target... targets) throws PlatformException {
-		return cluster.execute(action, actionInput, targets);
+	public TaskId execute(QName task, Document taskInput, Target... targets) throws PlatformException {
+		return cluster.execute(task, taskInput, targets);
 	}
 
 	@Override
-	public ActionStatus status(ActionId actionId) throws PlatformException {
-		return cluster.status(actionId);
+	public Task status(TaskId taskId) throws PlatformException {
+		return cluster.status(taskId);
 	}
 
 	@Override
-	public void cancel(ActionId actionId) throws PlatformException {
-		cluster.cancel(actionId);
+	public void cancel(TaskId taskId) throws PlatformException {
+		cluster.cancel(taskId);
+	}
+	
+	@Override
+	public Set<NodeStatus> status() {
+		return cluster.status();
+	}
+
+	@Override
+	public void registerListener(MessageListener listener) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void beginLogLevel(LogLevel level) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void endLogLevel() {
+		// TODO Auto-generated method stub
+		
 	}
 
 	public JAXBContext getJAXBContext(InputStream executable) throws JAXBException {
@@ -258,9 +287,6 @@ public class PlatformImpl implements Platform {
 		return isets;
 	}
 
-	@Override
-	public Set<NodeStatus> status() {
-		return cluster.status();
-	}
+	
 
 }

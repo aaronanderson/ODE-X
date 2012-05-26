@@ -47,19 +47,16 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.platform.action.ActionExecutor;
-import org.apache.ode.runtime.exec.platform.action.ActionIdImpl;
-import org.apache.ode.runtime.exec.platform.action.ActionPoll;
-import org.apache.ode.spi.exec.Action.TaskType;
-import org.apache.ode.spi.exec.ActionTask.ActionId;
-import org.apache.ode.spi.exec.ActionTask.ActionStatus;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
+import org.apache.ode.runtime.exec.platform.task.TaskPoll;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Target;
-import org.apache.ode.spi.exec.Target.TargetType;
+import org.apache.ode.spi.exec.Task;
+import org.apache.ode.spi.exec.Task.TaskId;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -105,10 +102,13 @@ public class Cluster {
 	HealthCheck healthCheck;
 
 	@Inject
-	ActionPoll actionPoll;
+	TaskPoll actionPoll;
 
 	@Inject
-	ActionExecutor actionExec;
+	MessagePoll messagePoll;
+
+	@Inject
+	TaskExecutor taskExec;
 
 	Set<Component> components = Collections.synchronizedSet(new HashSet<Component>());
 
@@ -123,7 +123,7 @@ public class Cluster {
 
 		localNodeState.set(NodeState.OFFLINE);
 		//healthCheck.config(clusterId, nodeId, localNodeState, healthCheckConfig);
-		actionExec.init(nodeId);
+		taskExec.init(nodeId);
 		//actionPoll.init(clusterId, nodeId, localNodeState, actionExec, actionCheckConfig);
 
 		// Prime the health check to make sure it runs at least once before
@@ -131,9 +131,10 @@ public class Cluster {
 		// healthCheck.run();
 		ScheduledExecutorService clusterScheduler;
 		try {
-			clusterScheduler = executors.initClusterScheduler();
+			clusterScheduler = executors.initClusterTaskScheduler();
 			clusterScheduler.scheduleAtFixedRate(healthCheck, 0, config.getHealthCheck().getFrequency(), TimeUnit.MILLISECONDS);
-			clusterScheduler.scheduleAtFixedRate(actionPoll, 0, config.getActionCheck().getFrequency(), TimeUnit.MILLISECONDS);
+			clusterScheduler.scheduleAtFixedRate(actionPoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
+			clusterScheduler.scheduleAtFixedRate(messagePoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
 		} catch (PlatformException pe) {
 			log.log(Level.SEVERE, "", pe);
 		}
@@ -143,7 +144,7 @@ public class Cluster {
 	@PreDestroy
 	public void destroy() {
 		try {
-			executors.destroyClusterScheduler();
+			executors.destroyClusterTaskScheduler();
 		} catch (PlatformException pe) {
 			log.log(Level.SEVERE, "", pe);
 		}
@@ -151,14 +152,14 @@ public class Cluster {
 	}
 
 	public void online() throws PlatformException {
-		actionExec.setupActions(components);
-		actionExec.online();
+		taskExec.setupTasks(components);
+		taskExec.online();
 		localNodeState.set(NodeState.ONLINE);
 		healthCheck.run();
 	}
 
 	public void offline() throws PlatformException {
-		actionExec.offline();
+		taskExec.offline();
 		localNodeState.set(NodeState.OFFLINE);
 		healthCheck.run();
 	}
@@ -167,8 +168,8 @@ public class Cluster {
 		this.components.add(component);
 	}
 
-	public ActionId execute(QName action, Document actionInput, Target... targets) throws PlatformException {
-		TaskType type = actionExec.actionType(action);
+	public TaskId execute(QName task, Document actionInput, Target... targets) throws PlatformException {
+		/*TaskType type = actionExec.actionType(task);
 
 		if (TaskType.ACTION.equals(type)) {
 			String target = getTarget(targets);
@@ -178,16 +179,18 @@ public class Cluster {
 			return actionExec.executeMasterAction(action, actionInput, slaveTargets);
 		} else {
 			throw new PlatformException("Unsupported ActionTask type");
-		}
+		}*/
+		return null;
 
 	}
 
-	public ActionStatus status(ActionId actionId) throws PlatformException {
-		return actionExec.status((ActionIdImpl) actionId);
+	public Task status(TaskId taskId) throws PlatformException {
+		//return actionExec.status((ActionIdImpl) actionId);
+		return null;
 	}
 
-	public void cancel(ActionId actionId) throws PlatformException {
-		actionExec.cancel((ActionIdImpl) actionId);
+	public void cancel(TaskId taskId) throws PlatformException {
+		//actionExec.cancel((ActionIdImpl) actionId);
 	}
 
 	/**
@@ -198,7 +201,7 @@ public class Cluster {
 	 * @throws PlatformException
 	 */
 	public String getTarget(Target[] targets) throws PlatformException {
-
+		/*
 		if (targets == null) {
 			targets = new Target[] { new Target(null, TargetType.LOCAL) };
 		}
@@ -241,40 +244,11 @@ public class Cluster {
 		}
 
 		return canidates.iterator().next();
+		*/
+		return null;
 	}
 
-	public Set<String> getMasterTargets(Target[] targets) throws PlatformException {
-		if (targets == null) {
-			targets = new Target[] { new Target(null, TargetType.ALL) };
-		}
-		Set<String> actionTarget = new HashSet<String>();
-		// Master/Slave Action
-		for (NodeStatus n : healthCheck.availableNodes()) {
-			if (NodeState.ONLINE.equals(n.state())) {
-				for (Target t : targets) {
-					switch (t.getTargetType()) {
-					case ALL:
-						actionTarget.add(n.nodeId());
-						break;
-					case CLUSTER:
-						if (n.clusterId().equals(t.getName())) {
-							actionTarget.add(n.nodeId());
-						}
-						break;
-					case NODE:
-						if (n.nodeId().equals(t.getName())) {
-							actionTarget.add(n.nodeId());
-						}
-						break;
-					case LOCAL:
-						actionTarget.add(nodeId);
-						break;
-					}
-				}
-			}
-		}
-		return actionTarget;
-	}
+	
 
 	public Set<NodeStatus> status() {
 		return healthCheck.availableNodes();
@@ -383,9 +357,13 @@ public class Cluster {
 			if (config.getHealthCheck() == null) {
 				config.setHealthCheck(new org.apache.ode.runtime.exec.cluster.xml.HealthCheck());
 			}
-			if (config.getActionCheck() == null) {
-				config.setActionCheck(new org.apache.ode.runtime.exec.cluster.xml.ActionCheck());
+			if (config.getTaskCheck() == null) {
+				config.setTaskCheck(new org.apache.ode.runtime.exec.cluster.xml.TaskCheck());
 			}
+			if (config.getMessageCheck() == null) {
+				config.setMessageCheck(new org.apache.ode.runtime.exec.cluster.xml.MessageCheck());
+			}
+
 		}
 	}
 

@@ -22,9 +22,10 @@ import java.util.Set;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.ActionTask.ActionId;
-import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Message.LogLevel;
+import org.apache.ode.spi.exec.Message.MessageListener;
+import org.apache.ode.spi.exec.Task.TaskId;
 import org.apache.ode.spi.repo.Artifact;
 import org.w3c.dom.Document;
 
@@ -60,7 +61,7 @@ public interface Platform {
 		}
 	}
 	
-	public QName architecture();
+	//public QName architecture(); 
 	
 	public void registerComponent(Component component);
 
@@ -72,15 +73,23 @@ public interface Platform {
 
 	public Program programInfo(QName id) throws PlatformException;
 
-	public Process start(QName id, Target... targets) throws PlatformException;
+	public void start(QName id, Target... targets) throws PlatformException;
 
 	public void stop(QName id, Target... targets) throws PlatformException;
 
 	public void uninstall(QName id, Target... targets) throws PlatformException;
 
-	public ActionId execute(QName action, Document actionInput, Target... targets) throws PlatformException;
+	public TaskId execute(QName task, Document taskInput, Target... targets) throws PlatformException;
 
-	public ActionStatus status(ActionId actionId) throws PlatformException;
+	public Task status(TaskId taskId) throws PlatformException;
+	
+	public void registerListener(MessageListener listener);
 
-	public void cancel(ActionId actionId) throws PlatformException;
+	public void cancel(TaskId taskId) throws PlatformException;
+	
+	//Thread Locals
+	public void beginLogLevel(LogLevel level);
+	
+	public void endLogLevel();
+	
 }

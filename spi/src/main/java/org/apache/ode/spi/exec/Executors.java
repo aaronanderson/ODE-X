@@ -24,11 +24,20 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public interface Executors {
 
-	public ScheduledExecutorService initClusterScheduler() throws PlatformException;
+	public ScheduledExecutorService initClusterTaskScheduler() throws PlatformException;
 
-	public void destroyClusterScheduler() throws PlatformException;
+	public void destroyClusterTaskScheduler() throws PlatformException;
 
-	public ExecutorService onlineClusterActionExecutor(RejectedExecutionHandler handler) throws PlatformException;
+	public ExecutorService initClusterTaskExecutor(RejectedExecutionHandler handler) throws PlatformException;
 
-	public void offlineClusterActionExecutor() throws PlatformException;
+	public void destroyClusterTaskExecutor() throws PlatformException;
+
+	public ExecutorService initProcessingUnitExecutor(RejectedExecutionHandler handler) throws PlatformException;
+
+	public void destroyProcessingUnitExecutor() throws PlatformException;
+
+	public ScheduledExecutorService initProcessingUnitScheduler() throws PlatformException;
+
+	public void destroyProcessingUnitScheduler() throws PlatformException;
+
 }

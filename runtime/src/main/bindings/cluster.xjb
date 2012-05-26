@@ -34,20 +34,38 @@
 		<jxb:bindings node="//xs:element[@name='NodeStatus']/xs:complexType">
 			<jxb:class name="NodeStatus" />
 		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='messageType']">
+			<jxb:class name="Message" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='inputType']">
+			<jxb:class name="Input" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='resultType']">
+			<jxb:class name="Result" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='taskType']">
+			<jxb:class name="Task" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='taskActionType']">
+			<jxb:class name="TaskAction" />
+		</jxb:bindings>
+		
+
 		<jxb:bindings node="//xs:complexType[@name='clusterConfigType']">
 			<jxb:class name="ClusterConfig" />
 		</jxb:bindings>
 		<jxb:bindings node="//xs:complexType[@name='healthCheckType']">
 			<jxb:class name="HealthCheck" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='actionCheckType']">
-			<jxb:class name="ActionCheck" />
+		<jxb:bindings node="//xs:complexType[@name='taskCheckType']">
+			<jxb:class name="TaskCheck" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='nodeMessagesType']">
-			<jxb:class name="Messages" />
+		<jxb:bindings node="//xs:complexType[@name='messageCheckType']">
+			<jxb:class name="MessageCheck" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='nodeMessageType']">
-			<jxb:class name="Message" />
+		<jxb:bindings node="//xs:complexType[@name='nodesType']">
+			<jxb:class name="Nodes" />
 		</jxb:bindings>
+
 	</jxb:bindings>
 </jxb:bindings>

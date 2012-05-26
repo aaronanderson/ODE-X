@@ -46,7 +46,7 @@ public class ExecutorsImpl implements Executors {
 	private ThreadPoolExecutor exec;
 
 	@Override
-	public ScheduledExecutorService initClusterScheduler() throws PlatformException {
+	public ScheduledExecutorService initClusterActionScheduler() throws PlatformException {
 		clusterScheduler = new ScheduledThreadPoolExecutor(2, new ThreadFactory() {
 
 			private final ThreadFactory factory = java.util.concurrent.Executors.defaultThreadFactory();
@@ -64,13 +64,13 @@ public class ExecutorsImpl implements Executors {
 	}
 
 	@Override
-	public void destroyClusterScheduler() throws PlatformException {
+	public void destroyClusterActionScheduler() throws PlatformException {
 		clusterScheduler.shutdownNow();
 
 	}
 
 	@Override
-	public ExecutorService onlineClusterActionExecutor(RejectedExecutionHandler handler) throws PlatformException {
+	public ExecutorService initClusterActionExecutor(RejectedExecutionHandler handler) throws PlatformException {
 
 		ActionExecution config = serverConfig.getActionExecution();
 		BlockingQueue<Runnable> actionQueue = new ArrayBlockingQueue<Runnable>(config.getQueueSize());
@@ -95,7 +95,7 @@ public class ExecutorsImpl implements Executors {
 	}
 
 	@Override
-	public void offlineClusterActionExecutor() throws PlatformException {
+	public void destroyClusterActionExecutor() throws PlatformException {
 		if (exec != null) {
 			exec.shutdown();
 			try {
@@ -105,4 +105,6 @@ public class ExecutorsImpl implements Executors {
 			}
 		}
 	}
+	
+	
 }

@@ -21,19 +21,25 @@ package org.apache.ode.runtime.exec.platform;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.Lob;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Program;
+import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.repo.Artifact;
 
 @Entity
@@ -41,7 +47,7 @@ import org.apache.ode.spi.repo.Artifact;
 public class ProgramImpl implements Program, Serializable {
 
 	@Id
-	@Column(name = "ID")
+	@Column(name = "PROGRAM_ID")
 	private String id;
 
 	@Column(name = "STATUS")
@@ -55,6 +61,11 @@ public class ProgramImpl implements Program, Serializable {
 	@Basic(fetch = FetchType.LAZY)
 	@Column(name = "CONFIGURATION")
 	private byte[] configuration;
+	
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinTable(name = "PROGRAM_TARGET", joinColumns = @JoinColumn(name = "PROGRAM_ID"), inverseJoinColumns = @JoinColumn(name = "TARGET_ID"))
+	Set<TargetImpl> targets;
+
 
 	public void setId(QName id) {
 		this.id = id.toString();
@@ -113,16 +124,13 @@ public class ProgramImpl implements Program, Serializable {
 	}
 		
 	
-	@Override
-	public List<String> nodes() {
-		// TODO Auto-generated method stub
-		return null;
+	public void setTargets(Set<TargetImpl> targets) {
+		this.targets = targets;
 	}
 
 	@Override
-	public Artifact[] executables() {
-		// TODO Auto-generated method stub
-		return null;
+	public Set<Target> targets() {
+		return (Set<Target>) (Object) targets;
 	}
 
 }

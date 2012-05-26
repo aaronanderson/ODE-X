@@ -26,6 +26,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -105,6 +106,7 @@ public class HealthCheck implements Runnable {
 	}
 
 	public void deleteStaleNodes() {
+
 		// Delete stale nodes
 		Calendar now = GregorianCalendar.getInstance();
 		Calendar lifeTime = (Calendar) now.clone();
@@ -120,6 +122,7 @@ public class HealthCheck implements Runnable {
 		} catch (PersistenceException pe) {
 			log.log(Level.SEVERE, "", pe);
 		}
+
 	}
 
 	public static class NodeStatusImpl extends org.apache.ode.runtime.exec.cluster.xml.NodeStatus implements NodeStatus {
@@ -166,6 +169,62 @@ public class HealthCheck implements Runnable {
 	public synchronized void run() {
 		try {// stop for nothing
 			Calendar now = GregorianCalendar.getInstance();
+
+			// Read in the existing node status
+			Calendar lifeTime = (Calendar) now.clone();
+			Duration expiration = config.getNodeCleanup().negate();
+			expiration.addTo(lifeTime);
+			Calendar active = (Calendar) now.clone();
+			active.add(Calendar.MILLISECOND, (int) -config.getInactiveTimeout());
+
+			HashSet<NodeStatusImpl> currentNodes = new HashSet<NodeStatusImpl>();
+			HashSet<String> currentOnlineClusterNodes = new HashSet<String>();
+
+			//do this only when online/offline actions are performed 
+			pmgr.getTransaction().begin();
+			try {
+				Node local = pmgr.find(Node.class, nodeId);
+				if (local != null) {
+					local.setState(localNodeState.get());
+					local.setHeartBeat(now);
+					pmgr.merge(local);
+					// TODO check version with previous to detect nodeId conflict 
+				} else {
+					local = new Node();
+					local.setClusterId(clusterId);
+					local.setNodeId(nodeId);
+					local.setState(localNodeState.get());
+					local.setHeartBeat(now);
+					pmgr.persist(local);
+				}
+				pmgr.getTransaction().commit();
+			} catch (PersistenceException pe) {
+				log.log(Level.SEVERE, "", pe);
+			}
+			pmgr.clear();
+
+			
+			/*
+			// cull out nodes that have not responded recently
+			List<Node> nodes = null;
+			try {
+				Query hcheckQ = pmgr.createNamedQuery("healthCheck");
+				hcheckQ.setParameter("lifetime", lifeTime);
+				nodes = (List<Node>) hcheckQ.getResultList();
+			} catch (PersistenceException pe) {
+				log.log(Level.SEVERE, "", pe);
+			}
+
+			for (Node n : nodes) {
+				NodeState nState = NodeState.ONLINE.equals(n.getState()) && n.getHeartBeat().compareTo(active) >= 0 ? NodeState.ONLINE : NodeState.OFFLINE;
+				NodeStatusImpl status = new NodeStatusImpl(n.getClusterId(), n.getNodeId(), nState);
+				currentNodes.add(status);
+				if (clusterId.equalsIgnoreCase(n.getClusterId()) && NodeState.ONLINE.equals(nState)) {
+					currentOnlineClusterNodes.add(n.getNodeId());
+				}
+			}
+			pmgr.clear();
+			*/
 			NodeStatusImpl status = new NodeStatusImpl(clusterId, nodeId, localNodeState.get());
 			BytesMessage message = nodeStatusSession.createBytesMessage();
 			Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
@@ -174,51 +233,7 @@ public class HealthCheck implements Runnable {
 			message.writeBytes(bos.toByteArray());
 			producer.send(message);
 
-			/*
-			 * do this only when online/offline actions are performed //
-			 * Update the node status pmgr.getTransaction().begin(); try {
-			 * Node local = pmgr.find(Node.class, nodeId); if (local !=
-			 * null) { local.setState(localNodeState.get());
-			 * local.setHeartBeat(now); pmgr.merge(local); // TODO check
-			 * version with previous to detect nodeId conflict } else {
-			 * local = new Node(); local.setClusterId(clusterId);
-			 * local.setNodeId(nodeId);
-			 * local.setState(localNodeState.get());
-			 * local.setHeartBeat(now); pmgr.persist(local); }
-			 * pmgr.getTransaction().commit(); } catch (PersistenceException
-			 * pe) { log.log(Level.SEVERE, "", pe); } pmgr.clear();
-			 */
-			// cull out nodes that have not responded recently
-
-			// Read in the existing node status
-			Calendar lifeTime = (Calendar) now.clone();
-			Duration expiration = config.getNodeCleanup().negate();
-			expiration.addTo(lifeTime);
-			Calendar active = (Calendar) now.clone();
-			active.add(Calendar.MILLISECOND, (int) -config.getInactiveTimeout());
-			/*
-			 * List<Node> nodes = null; try { Query hcheckQ =
-			 * pmgr.createNamedQuery("healthCheck");
-			 * hcheckQ.setParameter("lifetime", lifeTime); nodes =
-			 * (List<Node>) hcheckQ.getResultList(); } catch
-			 * (PersistenceException pe) { log.log(Level.SEVERE, "", pe); }
-			 */
-			HashSet<NodeStatusImpl> currentNodes = new HashSet<NodeStatusImpl>();
-			HashSet<String> currentOnlineClusterNodes = new HashSet<String>();
-			/*
-			 * for (Node n : nodes) { NodeState nState =
-			 * NodeState.ONLINE.equals(n.getState()) &&
-			 * n.getHeartBeat().compareTo(active) >= 0 ? NodeState.ONLINE :
-			 * NodeState.OFFLINE; NodeStatusImpl status = new
-			 * NodeStatusImpl(n.getClusterId(), n.getNodeId(), nState);
-			 * currentNodes.add(status); if
-			 * (clusterId.equalsIgnoreCase(n.getClusterId()) &&
-			 * NodeState.ONLINE.equals(nState)) {
-			 * currentOnlineClusterNodes.add(n.getNodeId()); } }
-			 * pmgr.clear();
-			 */
-			boolean finished = false;
-			while (!finished) {
+			while (true) {
 				try {
 					message = (BytesMessage) consumer.receive(0l);
 					if (message == null) {

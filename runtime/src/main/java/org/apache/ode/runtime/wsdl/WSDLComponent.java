@@ -24,8 +24,9 @@ import java.util.List;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.wsdl.xml.ObjectFactory;
-import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.Task.TaskActionDefinition;
+import org.apache.ode.spi.exec.Task.TaskDefinition;
 
 public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponent {
 
@@ -37,12 +38,17 @@ public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponen
 	@Override
 	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> iset = new ArrayList<InstructionSet>();
-		iset.add(new InstructionSet(WSDL_INSTRUCTION_SET, "org.apache.ode.runtime.exec.wsdl.xml",ObjectFactory.class));
+		iset.add(new InstructionSet(WSDL_INSTRUCTION_SET, "org.apache.ode.runtime.exec.wsdl.xml", ObjectFactory.class));
 		return iset;
 	}
 
 	@Override
-	public List<Action> actions() {
+	public List<TaskDefinition> tasks() {
+		return null;
+	}
+
+	@Override
+	public List<TaskActionDefinition> actions() {
 		return null;
 	}
 

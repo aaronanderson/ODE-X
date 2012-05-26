@@ -37,7 +37,7 @@ import org.apache.ode.spi.exec.PlatformException;
 public class ExecutionComponent implements Component {
 	public static final String TEST_NS = "http://ode.apache.org/server-executable-test";
 	public static final QName COMPONENT_NAME = new QName(TEST_NS, "TestComponent");
-	List<Action> supportedActions = new ArrayList<Action>();
+	List<TaskActionImpl> supportedActions = new ArrayList<TaskActionImpl>();
 
 	
 	@Inject
@@ -67,7 +67,7 @@ public class ExecutionComponent implements Component {
 	}
 
 	@Override
-	public List<Action> actions() {
+	public List<TaskActionImpl> actions() {
 		return supportedActions;
 	}
 

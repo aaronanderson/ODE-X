@@ -1,27 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-
-    Licensed to the Apache Software Foundation (ASF) under one
-    or more contributor license agreements.  See the NOTICE file
-    distributed with this work for additional information
-    regarding copyright ownership.  The ASF licenses this file
-    to you under the Apache License, Version 2.0 (the
-    "License"); you may not use this file except in compliance
-    with the License.  You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing,
-    software distributed under the License is distributed on an
-    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-    KIND, either express or implied.  See the License for the
-    specific language governing permissions and limitations
-    under the License.
-
--->
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor 
+	license agreements. See the NOTICE file distributed with this work for additional 
+	information regarding copyright ownership. The ASF licenses this file to 
+	you under the Apache License, Version 2.0 (the "License"); you may not use 
+	this file except in compliance with the License. You may obtain a copy of 
+	the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+	by applicable law or agreed to in writing, software distributed under the 
+	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+	OF ANY KIND, either express or implied. See the License for the specific 
+	language governing permissions and limitations under the License. -->
 <schema targetNamespace="http://ode.apache.org/cluster" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/cluster">
 
-	<simpleType name="NodeState">
+	<simpleType name="nodeState">
 		<restriction base="string">
 			<enumeration value="ONLINE" />
 			<enumeration value="OFFLINE" />
@@ -33,53 +23,215 @@
 		<complexType>
 			<attribute name="clusterId" type="string" />
 			<attribute name="nodeId" type="string" />
-			<attribute name="state" type="tns:NodeState" />
+			<attribute name="state" type="tns:nodeState" />
 			<attribute name="heartbeat" type="dateTime" use="required" />
 		</complexType>
 	</element>
 
-	<complexType name="actionRequestType" abstract="true" />
+	<simpleType name="logLevel">
+		<restriction base="string">
+			<enumeration value="DEBUG" />
+			<enumeration value="INFO" />
+			<enumeration value="WARNING" />
+			<enumeration value="ERROR" />
+		</restriction>
+	</simpleType>
 
-	<complexType name="actionResponseType" abstract="true" />
 
-	<element name="installActionRequest">
+
+	<complexType name="messageType">
+		<simpleContent>
+			<extension base="string">
+				<attribute name="timestamp" type="dateTime" use="required" />
+				<attribute name="type" type="tns:logLevel" default="WARNING" />
+				<attribute name="code" type="integer" use="optional" />
+			</extension>
+		</simpleContent>
+	</complexType>
+
+	<element name="task-message" type="tns:messageType" />
+
+	<element name="task-messages">
+		<complexType>
+			<sequence>
+				<element ref="tns:task-message" minOccurs="1" maxOccurs="unbounded" />
+			</sequence>
+		</complexType>
+	</element>
+
+	<element name="task-action-message" type="tns:messageType" />
+
+	<element name="task-action-messages">
+		<complexType>
+			<sequence>
+				<element ref="tns:task-action-message" minOccurs="1" maxOccurs="unbounded" />
+			</sequence>
+		</complexType>
+	</element>
+
+
+	<simpleType name="taskState">
+		<restriction base="string">
+			<enumeration value="SUBMIT" />
+			<enumeration value="START" />
+			<enumeration value="EXECUTE" />
+			<enumeration value="CANCEL" />
+			<enumeration value="FINISH" />
+			<enumeration value="COMPLETE" />
+			<enumeration value="FAIL" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="taskActionState">
+		<restriction base="string">
+			<enumeration value="SUBMIT" />
+			<enumeration value="START" />
+			<enumeration value="EXECUTE" />
+			<enumeration value="FINISH" />
+			<enumeration value="ROLLBACK" />
+			<enumeration value="COMMIT" />
+			<enumeration value="COMPLETE" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="inputType" abstract="true" />
+
+	<element name="input" type="tns:inputType" abstract="true" />
+
+	<complexType name="resultType" abstract="true" />
+
+	<element name="result" type="tns:resultType" abstract="true" />
+
+	<complexType name="targetType" abstract="true" />
+
+	<element name="target" type="tns:targetType" abstract="true" />
+
+	<element name="target-all" substitutionGroup="tns:target">
 		<complexType>
 			<complexContent>
-				<extension base="tns:actionRequestType">
-					<sequence>
-						<element name="program" minOccurs="0" maxOccurs="1">
-							<complexType>
-								<attribute name="name" />
-							</complexType>
-						</element>
-					</sequence>
-					<attribute name="id" type="string" />
+				<extension base="tns:targetType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="target-cluster" substitutionGroup="tns:target">
+		<complexType>
+			<complexContent>
+				<extension base="tns:targetType">
+					<attribute name="clusterId" type="string" />
 				</extension>
 			</complexContent>
 		</complexType>
 	</element>
 
-	<element name="installActionResponse">
+	<element name="target-node" substitutionGroup="tns:target">
 		<complexType>
 			<complexContent>
-				<extension base="tns:actionResponseType">
+				<extension base="tns:targetType">
+					<attribute name="nodeId" type="string" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	
+<!-- <complexType name="coordinationType" abstract="true" />
+
+	<element name="coordination" type="tns:coordinationType" abstract="true" /> -->
+
+	<complexType name="taskType" abstract="true">
+		<sequence>
+			<element name="name" type="QName" />
+			<element name="nodeId" type="string" />
+			<element name="component" type="QName" />
+			<element name="targets">
+				<complexType>
 					<sequence>
-						<element name="result" type="tns:healthCheckType" minOccurs="0" maxOccurs="1" />
+						<element ref="tns:target" minOccurs="1" maxOccurs="unbounded" />
 					</sequence>
-					<attribute name="id" type="string" />
+				</complexType>
+			</element>
+			<!-- <<element ref="tns:task-messages" /> -->
+			<element name="user" type="string" />
+			<element name="start" type="dateTime" />
+			<element name="finished" type="dateTime" />
+			<choice>
+				<element ref="tns:input" />
+				<element ref="tns:result" />
+				<!-- <element ref="tns:coordination" /> -->
+			</choice>
+		</sequence>
+		<attribute name="taskId" type="string" use="required" />
+		<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
+		<attribute name="state" type="tns:taskState" use="required" />
+		<attribute name="modified" type="dateTime" use="required" />
+	</complexType>
+
+	<complexType name="taskActionType" abstract="true">
+		<sequence>
+			<element name="name" type="QName" />
+			<element name="nodeId" type="string" />
+			<element name="component" type="QName" />
+			<element ref="tns:task-action-messages" />
+			<element name="user" type="string" />
+			<element name="start" type="dateTime" />
+			<element name="finished" type="dateTime" />
+			<choice>
+				<element ref="tns:input" />
+				<element ref="tns:result" />
+				<!-- <element ref="tns:coordination" /> -->
+			</choice>
+		</sequence>
+		<attribute name="taskId" type="string" use="required" />
+		<attribute name="actionId" type="string" use="required" />
+		<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
+		<attribute name="state" type="tns:taskActionState" use="required" />
+		<attribute name="modified" type="dateTime" use="required" />
+	</complexType>
+
+
+
+
+	<element name="masterProgramInput" substitutionGroup="tns:input">
+		<complexType>
+			<complexContent>
+				<extension base="tns:inputType">
+					<sequence>
+						<any namespace="##any" processContents="strict" minOccurs="1" maxOccurs="1" />
+					</sequence>
 				</extension>
 			</complexContent>
 		</complexType>
 	</element>
 
+
+	<element name="masterProgramResult" substitutionGroup="tns:result">
+		<complexType>
+			<complexContent>
+				<extension base="tns:resultType">
+					<attribute name="programId" type="string" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="installTask">
+		<complexType>
+			<complexContent>
+				<extension base="tns:taskType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	
 	<complexType name="clusterConfigType">
 		<sequence>
 			<element name="health-check" type="tns:healthCheckType" minOccurs="0" maxOccurs="1" />
-			<element name="action-check" type="tns:actionCheckType" minOccurs="0" maxOccurs="1" />
+			<element name="task-check" type="tns:taskCheckType" minOccurs="0" maxOccurs="1" />
+			<element name="message-check" type="tns:messageCheckType" minOccurs="0" maxOccurs="1" />
 			<element name="nodes" type="tns:nodesType" minOccurs="1" maxOccurs="1" />
 		</sequence>
 		<attribute name="name" type="string" use="required" />
-		<attribute name="persist" type="boolean" use="optional" default="false" />
 	</complexType>
 
 	<complexType name="healthCheckType">
@@ -88,11 +240,17 @@
 		<attribute name="node-cleanup" type="duration" default="P10D" />
 	</complexType>
 
-	<complexType name="actionCheckType">
+	<complexType name="taskCheckType">
 		<attribute name="frequency" type="long" default="750" />
 		<attribute name="action-timeout" type="long" default="30000" />
 	</complexType>
 
+	<complexType name="messageCheckType">
+		<attribute name="frequency" type="long" default="750" />
+		<attribute name="message-buffer-size" type="long" default="10" />
+		<attribute name="message-buffer-time" type="long" default="1000" />
+	</complexType>
+	
 	<complexType name="nodesType">
 		<sequence>
 			<element name="node" type="string" minOccurs="0" maxOccurs="unbounded" />
@@ -101,31 +259,8 @@
 	</complexType>
 
 
-	<complexType name="nodeMessagesType">
-		<sequence>
-			<element name="message" type="tns:nodeMessageType" minOccurs="1" maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
-
-	<simpleType name="logType">
-		<restriction base="string">
-			<enumeration value="INFO" />
-			<enumeration value="WARNING" />
-			<enumeration value="ERROR" />
-		</restriction>
-	</simpleType>
-
-	<complexType name="nodeMessageType">
-		<simpleContent>
-			<extension base="string">
-				<attribute name="timestamp" type="dateTime" use="required" />
-				<attribute name="type" type="tns:logType" default="ERROR" />
-			</extension>
-		</simpleContent>
-	</complexType>
 
 	<element name="cluster-config" type="tns:clusterConfigType" />
 
-	<element name="messages" type="tns:nodeMessagesType" />
 
 </schema>

@@ -18,27 +18,23 @@
  */
 package org.apache.ode.spi.exec;
 
-public class Target {
-	final private String name;
-	final private TargetType type;
-	public static final Target ALL = new Target(null, TargetType.ALL);
-	public static final Target LOCAL = new Target(null, TargetType.LOCAL);
+public interface Target {
 
-	public Target(String name, TargetType type) {
-		this.name = name;
-		this.type = type;
+	public interface TargetAll extends Target {
+
 	}
 
-	public TargetType getTargetType() {
-		return type;
+	public interface TargetCluster extends Target {
+		String clusterId();
+
 	}
 
-	public String getName() {
-		return name;
+	public interface TargetNode extends Target {
+		String nodeId();
 	}
 
-	public static enum TargetType {
-		ALL, CLUSTER, NODE, LOCAL;
+	public interface TargetLocal extends Target {
+
 	}
 
 }

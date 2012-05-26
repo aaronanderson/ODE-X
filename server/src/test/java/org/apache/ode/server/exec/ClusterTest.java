@@ -62,7 +62,7 @@ import org.apache.ode.spi.exec.Action;
 import org.apache.ode.spi.exec.Action.TaskType;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionMessage;
-import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogType;
+import org.apache.ode.spi.exec.ActionTask.ActionMessage.LogLevel;
 import org.apache.ode.spi.exec.ActionTask.ActionState;
 import org.apache.ode.spi.exec.ActionTask.ActionStatus;
 import org.apache.ode.spi.exec.NodeStatus;
@@ -215,7 +215,7 @@ public class ClusterTest {
 
 		cluster.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_LOCAL_ACTION, TaskType.ACTION, LocalTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_LOCAL_ACTION, TaskType.ACTION, LocalTestAction.getProvider()));
 		cluster.online();
 		ActionId id = cluster.execute(ClusterComponent.TEST_LOCAL_ACTION, ClusterComponent.testActionDoc("localTest"), Target.LOCAL);
 		assertNotNull(id);
@@ -262,7 +262,7 @@ public class ClusterTest {
 		cluster.offline();
 		assistant.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_REMOTE_ACTION, TaskType.ACTION, RemoteTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_REMOTE_ACTION, TaskType.ACTION, RemoteTestAction.getProvider()));
 		cluster.online();
 		assistant.online();
 		ActionId id = assistant.executeRemoteAction(ClusterComponent.testActionDoc("remoteTest"), nodeId);
@@ -296,8 +296,8 @@ public class ClusterTest {
 		cluster.offline();
 		assistant.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_MASTER_SLAVE_ACTION, TaskType.MASTER, MasterTestAction.getProvider()));
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_MASTER_SLAVE_ACTION, TaskType.SLAVE, SlaveTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_MASTER_SLAVE_ACTION, TaskType.MASTER, MasterTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_MASTER_SLAVE_ACTION, TaskType.SLAVE, SlaveTestAction.getProvider()));
 		cluster.online();
 		assistant.online();
 		ActionId id = cluster.execute(ClusterComponent.TEST_MASTER_SLAVE_ACTION, ClusterComponent.testActionDoc("MasterSlaveTest"), Target.LOCAL);
@@ -331,7 +331,7 @@ public class ClusterTest {
 
 		cluster.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_STATUS_ACTION, TaskType.ACTION, StatusTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_STATUS_ACTION, TaskType.ACTION, StatusTestAction.getProvider()));
 		cluster.online();
 		ActionId id = cluster.execute(ClusterComponent.TEST_STATUS_ACTION, null, Target.LOCAL);
 		assertNotNull(id);
@@ -358,7 +358,7 @@ public class ClusterTest {
 
 		cluster.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_LOG_ACTION, TaskType.ACTION, LogTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_LOG_ACTION, TaskType.ACTION, LogTestAction.getProvider()));
 		cluster.online();
 		ActionId id = cluster.execute(ClusterComponent.TEST_LOG_ACTION, null, Target.LOCAL);
 		assertNotNull(id);
@@ -380,13 +380,13 @@ public class ClusterTest {
 		assertTrue(passed);
 		assertNotNull(messages);
 		assertTrue(messages.size() == 4);
-		assertEquals(LogType.INFO, messages.get(0).getType());
+		assertEquals(LogLevel.INFO, messages.get(0).getType());
 		assertEquals("start", messages.get(0).getMessage());
-		assertEquals(LogType.WARNING, messages.get(1).getType());
+		assertEquals(LogLevel.WARNING, messages.get(1).getType());
 		assertEquals("run", messages.get(1).getMessage());
-		assertEquals(LogType.ERROR, messages.get(2).getType());
+		assertEquals(LogLevel.ERROR, messages.get(2).getType());
 		assertEquals("finish", messages.get(2).getMessage());
-		assertEquals(LogType.ERROR, messages.get(3).getType());
+		assertEquals(LogLevel.ERROR, messages.get(3).getType());
 		assertEquals("exception", messages.get(3).getMessage());
 	}
 
@@ -397,7 +397,7 @@ public class ClusterTest {
 
 		cluster.offline();
 		clusterComponent.actions().clear();
-		clusterComponent.actions().add(new Action(ClusterComponent.TEST_CANCEL_ACTION, TaskType.ACTION, CancelTestAction.getProvider()));
+		clusterComponent.actions().add(new TaskActionImpl(ClusterComponent.TEST_CANCEL_ACTION, TaskType.ACTION, CancelTestAction.getProvider()));
 		cluster.online();
 		ActionId id = cluster.execute(ClusterComponent.TEST_CANCEL_ACTION, ClusterComponent.testActionDoc("start"), Target.LOCAL);
 		assertNotNull(id);

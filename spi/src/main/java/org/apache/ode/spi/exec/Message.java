@@ -18,28 +18,49 @@
  */
 package org.apache.ode.spi.exec;
 
-import javax.xml.namespace.QName;
+import java.util.Date;
 
-import org.apache.ode.spi.exec.ActionTask.ActionContext;
-import org.apache.ode.spi.exec.ActionTask.ActionStatus;
-import org.apache.ode.spi.exec.SlaveActionTask.SlaveActionContext;
+public interface Message {
+	
+	public Date timestamp();
 
-/**
- * 
- * Intended to run once on multiple nodes
- * 
- */
-public interface SlaveActionTask extends ActionTask<SlaveActionContext> {
+	public LogLevel level();
 
-	public interface SlaveActionContext extends ActionContext {
+	public int code();
 
-		public ActionStatus masterStatus();
+	public String message();
+
+	public static enum LogLevel {
+		DEBUG, INFO, WARNING, ERROR
+	}
+
+	public static interface MessageEvent {
+		
+		public Message message();
+		
+		public String clusterId();
+
+		public String nodeId();
 
 	}
 
-	public interface SlaveActionStatus extends ActionStatus {
+	public static interface MessageListener {
 
-		public ActionStatus masterStatus();
+		public LogLevel levelFilter();
+
+		public void message(MessageEvent message);
+
+	}
+
+	public static interface ClusterMessageListener extends MessageListener {
+
+		public String clusterIdFilter();
+
+	}
+
+	public static interface NodeMessageListener extends MessageListener {
+
+		public String nodeIdFilter();
 
 	}
 
