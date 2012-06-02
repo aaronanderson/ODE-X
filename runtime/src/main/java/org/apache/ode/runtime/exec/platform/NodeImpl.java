@@ -22,9 +22,9 @@ import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,9 +50,11 @@ import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
 import org.apache.ode.runtime.exec.platform.task.TaskPoll;
 import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Executors;
-import org.apache.ode.spi.exec.NodeStatus;
-import org.apache.ode.spi.exec.NodeStatus.NodeState;
+import org.apache.ode.spi.exec.Node;
+import org.apache.ode.spi.exec.Platform.NodeStatus;
+import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.exec.Task;
@@ -62,21 +64,13 @@ import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
 import org.w3c.dom.Document;
 
-/**
- * A naive cluster implementation based on database polling. When the JSR 107
- * spec solidifies (http://github.com/jsr107) and a distributed implementation
- * is available this implementation should be migrated to it. A distributed
- * cache with update write throughs and cache listeners for acting on the
- * updates would be a more efficient implementation
- * 
- */
 @Singleton
-public class Cluster {
+public class NodeImpl implements Node {
 
-	public static final String CLUSTER_CONFIG_MIMETYPE = "application/ode-cluster-config";
-	public static final String CLUSTER_CONFIG_NAMESPACE = "http://ode.apache.org/cluster-config";
+	public static final String CLUSTER_MIMETYPE = "application/ode-cluster";
+	public static final String CLUSTER_NAMESPACE = "http://ode.apache.org/cluster";
 	public static JAXBContext CLUSTER_JAXB_CTX;
-	private static final Logger log = Logger.getLogger(Cluster.class.getName());
+	private static final Logger log = Logger.getLogger(NodeImpl.class.getName());
 
 	static {
 		try {
@@ -110,16 +104,18 @@ public class Cluster {
 	@Inject
 	TaskExecutor taskExec;
 
-	Set<Component> components = Collections.synchronizedSet(new HashSet<Component>());
+	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
+	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
 
-	AtomicReference<NodeState> localNodeState = new AtomicReference<NodeState>();
+	private AtomicReference<NodeState> localNodeState = new AtomicReference<NodeState>();
+	private QName architecture;
 
 	@Inject
 	Executors executors;
 
 	@PostConstruct
 	public void init() {
-		log.fine("Initializing Cluster");
+		log.fine("Initializing Node");
 
 		localNodeState.set(NodeState.OFFLINE);
 		//healthCheck.config(clusterId, nodeId, localNodeState, healthCheckConfig);
@@ -151,21 +147,41 @@ public class Cluster {
 
 	}
 
+	@Override
+	public QName architecture() {
+		return architecture;
+	}
+
+	public void setArchitecture(QName architecture) {
+		this.architecture = architecture;
+	}
+
+	@Override
+	public void registerComponent(Component component) {
+		components.put(component.name(), component);
+		for (InstructionSet is : component.instructionSets()) {
+			instructions.put(is.getName(), is);
+		}
+	}
+
+	@Override
+	public Map<QName, InstructionSet> getInstructionSets() {
+		return instructions;
+	}
+
+	@Override
 	public void online() throws PlatformException {
-		taskExec.setupTasks(components);
+		taskExec.setupTasks(components.values());
 		taskExec.online();
 		localNodeState.set(NodeState.ONLINE);
 		healthCheck.run();
 	}
 
+	@Override
 	public void offline() throws PlatformException {
 		taskExec.offline();
 		localNodeState.set(NodeState.OFFLINE);
 		healthCheck.run();
-	}
-
-	public void addComponent(Component component) {
-		this.components.add(component);
 	}
 
 	public TaskId execute(QName task, Document actionInput, Target... targets) throws PlatformException {
@@ -248,8 +264,6 @@ public class Cluster {
 		return null;
 	}
 
-	
-
 	public Set<NodeStatus> status() {
 		return healthCheck.availableNodes();
 	}
@@ -309,8 +323,8 @@ public class Cluster {
 		@PostConstruct
 		public void init() throws Exception {
 			log.fine("Initializing ClusterConfigProvider");
-			repo.registerNamespace(CLUSTER_CONFIG_NAMESPACE, CLUSTER_CONFIG_MIMETYPE);
-			repo.registerHandler(CLUSTER_CONFIG_MIMETYPE, new JAXBDataContentHandler(CLUSTER_JAXB_CTX) {
+			repo.registerNamespace(CLUSTER_NAMESPACE, CLUSTER_MIMETYPE);
+			repo.registerHandler(CLUSTER_MIMETYPE, new JAXBDataContentHandler(CLUSTER_JAXB_CTX) {
 				@Override
 				public QName getDefaultQName(DataSource dataSource) {
 					QName defaultName = null;
@@ -318,7 +332,7 @@ public class Cluster {
 						InputStream is = dataSource.getInputStream();
 						XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(is);
 						reader.nextTag();
-						String tns = CLUSTER_CONFIG_NAMESPACE;
+						String tns = CLUSTER_NAMESPACE;
 						String name = reader.getAttributeValue(null, "name");
 						reader.close();
 						if (name != null) {
@@ -332,9 +346,9 @@ public class Cluster {
 
 			});
 
-			QName configName = new QName(CLUSTER_CONFIG_NAMESPACE, clusterId);
+			QName configName = new QName(CLUSTER_NAMESPACE, clusterId);
 			try {
-				JAXBElement<ClusterConfig> config = repo.read(configName, CLUSTER_CONFIG_MIMETYPE, "1.0", JAXBElement.class);
+				JAXBElement<ClusterConfig> config = repo.read(configName, CLUSTER_MIMETYPE, "1.0", JAXBElement.class);
 				this.config = config.getValue();
 				return;
 			} catch (RepositoryException e) {
@@ -344,7 +358,7 @@ public class Cluster {
 			try {
 				Unmarshaller u = CLUSTER_JAXB_CTX.createUnmarshaller();
 				JAXBElement<ClusterConfig> config = (JAXBElement<ClusterConfig>) u.unmarshal(getClass().getResourceAsStream("/META-INF/default_cluster.xml"));
-				repo.create(configName, CLUSTER_CONFIG_MIMETYPE, "1.0", config);
+				repo.create(configName, CLUSTER_MIMETYPE, "1.0", config);
 				this.config = config.getValue();
 			} catch (Exception e) {
 				log.log(Level.SEVERE, "", e);

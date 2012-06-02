@@ -18,8 +18,8 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import org.apache.ode.runtime.exec.platform.Cluster.ClusterId;
-import org.apache.ode.runtime.exec.platform.Cluster.NodeId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 
 import com.google.inject.AbstractModule;
 

@@ -22,24 +22,13 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.jms.Session;
-import javax.jms.Topic;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PersistenceContext;
 
-import org.apache.ode.runtime.exec.platform.Cluster.ActionRequest;
-import org.apache.ode.runtime.exec.platform.Cluster.ActionResponse;
-import org.apache.ode.runtime.exec.platform.Cluster.NodeCheck;
-import org.apache.ode.runtime.exec.platform.JMSModule.JMSTypeListener;
-import org.apache.ode.runtime.exec.platform.JMSUtil.SessionImpl;
-import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
 import com.google.inject.MembersInjector;
-import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.spi.TypeEncounter;

@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
 import org.apache.ode.runtime.exec.platform.task.TaskPoll;
 import org.apache.ode.spi.exec.Executors;
+import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 
@@ -87,7 +88,7 @@ public class PlatformModule extends AbstractModule {
 			
 			
 		});
-		bind(Cluster.class);
+		bind(Node.class).to(NodeImpl.class);
 		bind(Platform.class).to(PlatformImpl.class);
 	}
 

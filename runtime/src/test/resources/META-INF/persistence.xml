@@ -9,27 +9,25 @@
 	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
 	OF ANY KIND, either express or implied. See the License for the specific 
 	language governing permissions and limitations under the License. -->
-<persistence version="2.0"
-	xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<persistence version="2.0" xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
 	<persistence-unit name="repo" transaction-type="RESOURCE_LOCAL">
 		<provider>org.apache.openjpa.persistence.PersistenceProviderImpl</provider>
 		<class>org.apache.ode.repo.ArtifactImpl</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
-			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;MVCC=TRUE" /> <!--;DB_CLOSE_DELAY=-1" /> -->
-			<!--<property name="javax.persistence.jdbc.url" value="jdbc:h2:target/ode;MVCC=TRUE;DB_CLOSE_DELAY=-1" 
-				/> -->
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;DB_CLOSE_DELAY=-1;MVCC=TRUE" />
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
 			<property name="openjpa.jdbc.DBDictionary" value="org.apache.openjpa.jdbc.sql.H2Dictionary" />
 			<property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)" />
+			<!-- <property name="openjpa.Log" value="DefaultLevel=WARN, Runtime=INFO, Tool=INFO, SQL=TRACE" />-->
 		</properties>
 	</persistence-unit>
 	<persistence-unit name="platform" transaction-type="RESOURCE_LOCAL">
 		<provider>org.apache.openjpa.persistence.PersistenceProviderImpl</provider>
-		<class>org.apache.ode.runtime.exec.platform.NodeImpl</class>
+		<class>org.apache.ode.runtime.exec.platform.NodeStatusImpl</class>
 		<class>org.apache.ode.runtime.exec.platform.TargetImpl</class>
 		<class>org.apache.ode.runtime.exec.platform.MessageImpl</class>
 		<class>org.apache.ode.runtime.exec.platform.ProgramImpl</class>
@@ -39,15 +37,13 @@
 		<class>org.apache.ode.runtime.exec.platform.task.TaskActionImpl</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
-			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;MVCC=TRUE" /><!--;DB_CLOSE_DELAY=-1" 
-				/> -->
-			<!--<property name="javax.persistence.jdbc.url" value="jdbc:h2:target/ode;MVCC=TRUE" 
-				/> -->
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:ode;DB_CLOSE_DELAY=-1;MVCC=TRUE" />
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
 			<property name="openjpa.jdbc.DBDictionary" value="org.apache.openjpa.jdbc.sql.H2Dictionary" />
 			<property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)" />
+			<!-- <property name="openjpa.Log" value="DefaultLevel=WARN, Runtime=INFO, Tool=INFO, SQL=TRACE" />-->
 		</properties>
 	</persistence-unit>
 </persistence>

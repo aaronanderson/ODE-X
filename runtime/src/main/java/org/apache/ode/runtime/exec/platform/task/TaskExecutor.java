@@ -18,7 +18,7 @@
  */
 package org.apache.ode.runtime.exec.platform.task;
 
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -100,7 +100,7 @@ public class TaskExecutor {
 
 	}
 	
-	public void setupTasks(Set<Component> components) throws PlatformException {
+	public void setupTasks(Collection<Component> components) throws PlatformException {
 		/*// add built in actions
 		ActionEntry installActionEntry = new ActionEntry(TaskType.MASTER, Platform.PLATFORM, installMasterActionProvider);
 		installActionEntry.slave.add(new ActionEntry(TaskType.SLAVE, Platform.PLATFORM, installSlaveActionProvider));

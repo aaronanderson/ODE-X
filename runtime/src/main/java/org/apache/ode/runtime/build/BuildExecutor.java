@@ -47,7 +47,6 @@ import org.apache.ode.runtime.build.xml.Xpath;
 import org.apache.ode.runtime.build.xml.Xpath.Annotation;
 import org.apache.ode.runtime.build.xml.Xslt;
 import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
-import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.spi.compiler.AbstractCompiler;
 import org.apache.ode.spi.compiler.AbstractCompilerContext;
 import org.apache.ode.spi.compiler.AbstractHandlerRegistry;
@@ -59,8 +58,8 @@ import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Source.SourceType;
-import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.xml.Block;
 import org.apache.ode.spi.exec.xml.BlockAddress;
 import org.apache.ode.spi.exec.xml.Executable;
@@ -71,7 +70,6 @@ import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 public class BuildExecutor implements CommandObject {
 
@@ -82,7 +80,7 @@ public class BuildExecutor implements CommandObject {
 	@Inject
 	CompilersImpl compilers;
 	@Inject
-	PlatformImpl platform;
+	Node node;
 
 	DataHandler handler;
 
@@ -186,7 +184,7 @@ public class BuildExecutor implements CommandObject {
 	}
 
 	void emitBase(List<AbstractCompilerContext<?>> contexts, CompilationImpl compilation) throws BuildException {
-		
+
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setNamespaceAware(true);
 		DocumentBuilder db;
@@ -208,7 +206,7 @@ public class BuildExecutor implements CommandObject {
 		org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
 		compilation.setExecBase(of.createExecutable(exec));
 
-		Binder<Node> binder;
+		Binder<org.w3c.dom.Node> binder;
 		Document execDoc;
 		try {
 			compilation.setJaxbContext(JAXBRuntimeUtil.executableJAXBContextByPath(compilation.getInstructionSets()));
@@ -231,7 +229,7 @@ public class BuildExecutor implements CommandObject {
 			int insId = 0;
 			for (Object o : b.getInstructions()) {
 				if (o instanceof Instruction) {
-					String iid=bid + "i" + insId++;
+					String iid = bid + "i" + insId++;
 					((Instruction) o).setIns(new InstructionAddress(iid));
 				}
 			}
@@ -242,9 +240,9 @@ public class BuildExecutor implements CommandObject {
 	AbstractCompilerContext<?> newCompilerContext(SourceImpl src, AbstractCompiler<?, ?> compiler, CompilationImpl state) {
 		AbstractCompilerContext<?> ctx = (AbstractCompilerContext<?>) compiler.newContext();
 		if (compiler instanceof AbstractXMLCompiler) {
-			AbstractXMLCompiler<?,?,?,?,?,?> xcompiler = (AbstractXMLCompiler<?,?,?,?,?,?>) compiler;
-			AbstractXMLCompilerContext<?,?,?,?,?> xctx = (AbstractXMLCompilerContext<?,?,?,?,?>)ctx;
-			xctx.init(src, state, (AbstractHandlerRegistry)xcompiler.handlerRegistry(null));
+			AbstractXMLCompiler<?, ?, ?, ?, ?, ?> xcompiler = (AbstractXMLCompiler<?, ?, ?, ?, ?, ?>) compiler;
+			AbstractXMLCompilerContext<?, ?, ?, ?, ?> xctx = (AbstractXMLCompilerContext<?, ?, ?, ?, ?>) ctx;
+			xctx.init(src, state, (AbstractHandlerRegistry) xcompiler.handlerRegistry(null));
 		} else {
 			ctx.init(src, state);
 		}
@@ -261,13 +259,11 @@ public class BuildExecutor implements CommandObject {
 			}
 			compilation.getCompilers().put(contentType, impl);
 			for (QName iset : impl.getInstructionSets()) {
-				Component c = platform.getComponent(iset);
-				if (c == null) {
+				InstructionSet is = node.getInstructionSets().get(iset);
+				if (is == null) {
 					throw new BuildException(String.format("Unsupported instructionset %s", iset));
 				}
-				for (InstructionSet is : c.instructionSets()) {
-					compilation.getInstructionSets().add(is);
-				}
+				compilation.getInstructionSets().add(is);
 
 			}
 

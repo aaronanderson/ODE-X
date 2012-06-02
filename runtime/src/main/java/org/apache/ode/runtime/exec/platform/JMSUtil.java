@@ -31,19 +31,14 @@ public class JMSUtil {
 
 	//A full blown JMS implementation would be overkill to support only a single node so we will provide
 	// a minimal implementation for a s
-	public static class TopicImpl implements Topic {
 
+	public static abstract class DestinationImpl implements Destination {
 		Set<MessageConsumerImpl> consumers = new CopyOnWriteArraySet<MessageConsumerImpl>();
 
-		private String name;
+		String name;
 
-		public TopicImpl(String name) {
+		public DestinationImpl(String name) {
 			this.name = name;
-		}
-
-		@Override
-		public String getTopicName() throws JMSException {
-			return name;
 		}
 
 		public void addConsumer(MessageConsumerImpl consumer) {
@@ -54,12 +49,57 @@ public class JMSUtil {
 			consumers.remove(consumer);
 		}
 
+		public abstract void publish(Message msg) throws JMSException;
+
+	}
+
+	public static class TopicImpl extends DestinationImpl implements Topic {
+
+		public TopicImpl(String name) {
+			super(name);
+		}
+
+		@Override
+		public String getTopicName() throws JMSException {
+			return name;
+		}
+
 		public void publish(Message msg) throws JMSException {
+
 			for (MessageConsumerImpl consumer : consumers) {
-				if (consumer.getMessageListener() != null) {
-					consumer.getMessageListener().onMessage(msg);
-				} else {
-					consumer.enqueue(msg);
+				if (consumer.filter(msg)) {
+					if (consumer.getMessageListener() != null) {
+						consumer.getMessageListener().onMessage(msg);
+					} else {
+						consumer.enqueue(msg);
+					}
+				}
+			}
+		}
+
+	}
+
+	public static class QueueImpl extends DestinationImpl implements Queue {
+
+		public QueueImpl(String name) {
+			super(name);
+		}
+
+		@Override
+		public String getQueueName() throws JMSException {
+			return name;
+		}
+
+		public void publish(Message msg) throws JMSException {
+
+			for (MessageConsumerImpl consumer : consumers) {
+				if (consumer.filter(msg)) {
+					if (consumer.getMessageListener() != null) {
+						consumer.getMessageListener().onMessage(msg);
+					} else {
+						consumer.enqueue(msg);
+					}
+					break;
 				}
 			}
 		}
@@ -69,19 +109,28 @@ public class JMSUtil {
 	public static class MessageConsumerImpl implements MessageConsumer {
 		BlockingDeque<Message> queue = new LinkedBlockingDeque<>();
 		MessageListener listener;
-		TopicImpl topic;
+		DestinationImpl dest;
+		String msgSelector;
+		boolean noLocal;
 
-		MessageConsumerImpl(TopicImpl topic) {
-			this.topic = topic;
+		MessageConsumerImpl(DestinationImpl dest, String msgSelector, boolean noLocal) {
+			this.dest = dest;
+			this.msgSelector = msgSelector;
+			this.noLocal = noLocal;
+			dest.addConsumer(this);
 		}
-		
-		public void enqueue(Message msg){
+
+		public boolean filter(Message msg) {
+			return true;
+		}
+
+		public void enqueue(Message msg) {
 			queue.add(msg);
 		}
 
 		@Override
 		public void close() throws JMSException {
-			topic.removeConsumer(this);
+			dest.removeConsumer(this);
 		}
 
 		@Override
@@ -129,10 +178,10 @@ public class JMSUtil {
 
 	public static class MessageProducerImpl implements MessageProducer {
 
-		TopicImpl topic;
+		DestinationImpl dest;
 
-		MessageProducerImpl(TopicImpl topic) {
-			this.topic = topic;
+		MessageProducerImpl(DestinationImpl dest) {
+			this.dest = dest;
 		}
 
 		@Override
@@ -178,22 +227,22 @@ public class JMSUtil {
 
 		@Override
 		public void send(Message msg) throws JMSException {
-			topic.publish(msg);
+			dest.publish(msg);
 		}
 
 		@Override
 		public void send(Destination dest, Message msg) throws JMSException {
-			((TopicImpl) dest).publish(msg);
+			((DestinationImpl) dest).publish(msg);
 		}
 
 		@Override
 		public void send(Message msg, int arg1, int arg2, long arg3) throws JMSException {
-			topic.publish(msg);
+			dest.publish(msg);
 		}
 
 		@Override
 		public void send(Destination dest, Message msg, int arg2, int arg3, long arg4) throws JMSException {
-			((TopicImpl) dest).publish(msg);
+			((DestinationImpl) dest).publish(msg);
 		}
 
 		@Override
@@ -254,27 +303,27 @@ public class JMSUtil {
 
 		@Override
 		public MessageConsumer createConsumer(Destination dest) throws JMSException {
-			return new MessageConsumerImpl((TopicImpl) dest);
+			return new MessageConsumerImpl((DestinationImpl) dest, null, false);
 		}
 
 		@Override
-		public MessageConsumer createConsumer(Destination dest, String arg1) throws JMSException {
-			return new MessageConsumerImpl((TopicImpl) dest);
+		public MessageConsumer createConsumer(Destination dest, String messageSelector) throws JMSException {
+			return new MessageConsumerImpl((DestinationImpl) dest, messageSelector, false);
 		}
 
 		@Override
-		public MessageConsumer createConsumer(Destination dest, String arg1, boolean arg2) throws JMSException {
-			return new MessageConsumerImpl((TopicImpl) dest);
+		public MessageConsumer createConsumer(Destination dest, String messageSelector, boolean noLocal) throws JMSException {
+			return new MessageConsumerImpl((DestinationImpl) dest, messageSelector, noLocal);
 		}
 
 		@Override
-		public TopicSubscriber createDurableSubscriber(Topic arg0, String arg1) throws JMSException {
+		public TopicSubscriber createDurableSubscriber(Topic dest, String messageSelector) throws JMSException {
 
 			return null;
 		}
 
 		@Override
-		public TopicSubscriber createDurableSubscriber(Topic arg0, String arg1, String arg2, boolean arg3) throws JMSException {
+		public TopicSubscriber createDurableSubscriber(Topic dest, String arg1, String messageSelector, boolean NoLocal) throws JMSException {
 
 			return null;
 		}
@@ -303,9 +352,8 @@ public class JMSUtil {
 		}
 
 		@Override
-		public MessageProducer createProducer(Destination arg0) throws JMSException {
-
-			return null;
+		public MessageProducer createProducer(Destination dest) throws JMSException {
+			return new MessageProducerImpl((DestinationImpl) dest);
 		}
 
 		@Override
@@ -648,7 +696,7 @@ public class JMSUtil {
 
 	public static class BytesMessageImpl extends MessageImpl implements BytesMessage {
 		byte[] bytes;
-		int index =-1;
+		int index = -1;
 
 		@Override
 		public long getBodyLength() throws JMSException {
@@ -674,7 +722,7 @@ public class JMSUtil {
 		public int readBytes(byte[] bytes) throws JMSException {
 			int len = this.bytes.length > bytes.length ? bytes.length : this.bytes.length;
 			System.arraycopy(this.bytes, 0, bytes, 0, len);
-			index =-1;
+			index = -1;
 			return len;
 		}
 
@@ -682,35 +730,39 @@ public class JMSUtil {
 		public int readBytes(byte[] bytes, int l) throws JMSException {
 			int len = l > this.bytes.length ? this.bytes.length : l;
 			System.arraycopy(this.bytes, 0, bytes, 0, len);
-			index +=len;
+			index += len;
 			return len;
 		}
 
 		@Override
 		public char readChar() throws JMSException {
-			return (char)bytes[index++];
+			return (char) bytes[index++];
 		}
 
 		@Override
 		public double readDouble() throws JMSException {
-			return (double)bytes[index++];
+			return (double) bytes[index++];
 		}
 
 		@Override
 		public float readFloat() throws JMSException {
-			return (float)bytes[index++];		}
+			return (float) bytes[index++];
+		}
 
 		@Override
 		public int readInt() throws JMSException {
-			return (int)bytes[index++];		}
+			return (int) bytes[index++];
+		}
 
 		@Override
 		public long readLong() throws JMSException {
-			return (long)bytes[index++];		}
+			return (long) bytes[index++];
+		}
 
 		@Override
 		public short readShort() throws JMSException {
-			return (short)bytes[index++];		}
+			return (short) bytes[index++];
+		}
 
 		@Override
 		public String readUTF() throws JMSException {
@@ -732,8 +784,8 @@ public class JMSUtil {
 
 		@Override
 		public void reset() throws JMSException {
-			bytes=null;
-			index=-1;
+			bytes = null;
+			index = -1;
 		}
 
 		@Override
@@ -748,8 +800,8 @@ public class JMSUtil {
 
 		@Override
 		public void writeBytes(byte[] bytes) throws JMSException {
-			this.bytes=bytes;
-			this.index=0;
+			this.bytes = bytes;
+			this.index = 0;
 		}
 
 		@Override

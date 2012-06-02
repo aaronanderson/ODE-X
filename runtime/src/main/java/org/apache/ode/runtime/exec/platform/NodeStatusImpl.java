@@ -31,14 +31,22 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Version;
 
-import org.apache.ode.spi.exec.NodeStatus.NodeState;
+import org.apache.ode.spi.exec.Platform.NodeStatus;
 
-@NamedQueries({ @NamedQuery(name = "healthCheck", query = "select node from Node node where node.heartBeat > :lifetime"),
-		@NamedQuery(name = "deleteDeadNodes", query = "delete from Node node where node.heartBeat < :lifetime") })
+@NamedQueries({ @NamedQuery(name = "healthCheck", query = "select node from NodeStatusImpl node where node.heartBeat > :lifetime"),
+		@NamedQuery(name = "deleteDeadNodes", query = "delete from NodeStatusImpl node where node.heartBeat < :lifetime") })
 @Entity
 @Table(name = "NODE")
-public class Node implements Serializable {
+public class NodeStatusImpl implements NodeStatus, Serializable {
 
+	public NodeStatusImpl(){}
+	
+	public NodeStatusImpl(String clusterId, String nodeId, NodeState state) {
+		this.clusterId = clusterId;
+		this.nodeId = nodeId;
+		this.state =state.toString();
+	}
+	
 	@Id
 	@Column(name = "NODE_ID")
 	private String nodeId;
@@ -66,7 +74,8 @@ public class Node implements Serializable {
 		this.nodeId = nodeId;
 	}
 
-	public String getNodeId() {
+	@Override
+	public String nodeId() {
 		return nodeId;
 	}
 
@@ -74,7 +83,8 @@ public class Node implements Serializable {
 		this.clusterId = clusterId;
 	}
 
-	public String getClusterId() {
+	@Override
+	public String clusterId() {
 		return clusterId;
 	}
 
@@ -90,7 +100,8 @@ public class Node implements Serializable {
 		this.state = state.name();
 	}
 
-	public NodeState getState() {
+	@Override
+	public NodeState state() {
 		if (state != null) {
 			return NodeState.valueOf(state);
 		}

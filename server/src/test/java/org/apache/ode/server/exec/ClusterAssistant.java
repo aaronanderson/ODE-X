@@ -33,7 +33,7 @@ import javax.persistence.PersistenceException;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.HealthCheck;
-import org.apache.ode.runtime.exec.platform.Node;
+import org.apache.ode.runtime.exec.platform.NodeStatusImpl;
 import org.apache.ode.runtime.exec.platform.task.ActionIdImpl;
 import org.apache.ode.spi.exec.ActionTask.ActionId;
 import org.apache.ode.spi.exec.ActionTask.ActionState;
@@ -103,7 +103,7 @@ public class ClusterAssistant {
 
 	public Calendar getHeartBeat(String nodeId) {
 		try {
-			Node local = pmgr.find(Node.class, nodeId);
+			NodeStatusImpl local = pmgr.find(NodeStatusImpl.class, nodeId);
 			return local.getHeartBeat();
 		} catch (PersistenceException pe) {
 			log.log(Level.SEVERE,"",pe);

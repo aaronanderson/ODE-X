@@ -46,7 +46,7 @@ import org.apache.ode.spi.compiler.wsdl.Service;
 import org.apache.ode.spi.compiler.wsdl.WSDLCompiler;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
-import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.Validate;
 import org.apache.ode.spi.repo.XMLValidate;
@@ -66,7 +66,7 @@ public class WSDL {
 	@Inject
 	Compilers compilers;
 	@Inject
-	Platform platform;
+	Node node;
 	@Inject
 	WSDLComponent wsdlComponent;
 	@Inject
@@ -95,7 +95,7 @@ public class WSDL {
 		});
 		repository.registerCommandInfo(WSDL_MIMETYPE, Validate.VALIDATE_CMD, true, xmlValidate.getProvider());
 		repository.registerHandler(WSDL_MIMETYPE, new WSDLDataContentHandler());
-		platform.registerComponent(wsdlComponent);
+		node.registerComponent(wsdlComponent);
 		WSDLCompiler wsdlCompiler = new WSDLCompiler();
 		wsdlCompiler.addInstructionSet(wsdlComponent.instructionSets().get(0).getName());
 		wsdlCompiler.addSubContext(XSDContext.ID, schemaProvider);

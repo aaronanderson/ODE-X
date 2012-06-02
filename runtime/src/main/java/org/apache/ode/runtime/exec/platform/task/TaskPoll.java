@@ -25,7 +25,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import org.apache.ode.runtime.exec.cluster.xml.TaskCheck;
-import org.apache.ode.spi.exec.NodeStatus.NodeState;
+import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 
 public class TaskPoll implements Runnable {
 

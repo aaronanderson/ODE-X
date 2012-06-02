@@ -23,11 +23,11 @@ import java.lang.reflect.Field;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import org.apache.ode.runtime.exec.platform.Cluster.ActionRequest;
-import org.apache.ode.runtime.exec.platform.Cluster.ActionResponse;
-import org.apache.ode.runtime.exec.platform.Cluster.NodeCheck;
 import org.apache.ode.runtime.exec.platform.JMSUtil.SessionImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ActionRequest;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ActionResponse;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;

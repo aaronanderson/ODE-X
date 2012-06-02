@@ -18,16 +18,22 @@
  */
 package org.apache.ode.spi.exec;
 
+import java.util.Map;
 
-public interface NodeStatus {
+import javax.xml.namespace.QName;
 
-	public String clusterId();
+import org.apache.ode.spi.exec.Component.InstructionSet;
 
-	public String nodeId();
+public interface Node {
 
-	public NodeState state();
+	
+	public QName architecture(); 
+	
+	public void registerComponent(Component component);
+	
+	public Map<QName,InstructionSet> getInstructionSets();
 
-	public static enum NodeState {
-		ONLINE, OFFLINE;
-	}
+	public void online() throws PlatformException;
+
+	public void offline() throws PlatformException;
 }

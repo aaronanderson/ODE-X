@@ -63,7 +63,7 @@ public interface Platform {
 	
 	//public QName architecture(); 
 	
-	public void registerComponent(Component component);
+	//public void registerComponent(Component component);
 
 	public Set<NodeStatus> status();
 
@@ -91,5 +91,19 @@ public interface Platform {
 	public void beginLogLevel(LogLevel level);
 	
 	public void endLogLevel();
+	
+	public static interface NodeStatus {
+
+		public String clusterId();
+
+		public String nodeId();
+
+		public NodeState state();
+
+		public static enum NodeState {
+			ONLINE, OFFLINE;
+		}
+	}
+
 	
 }

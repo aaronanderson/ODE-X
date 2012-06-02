@@ -44,7 +44,6 @@ import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageListener;
-import org.apache.ode.spi.exec.NodeStatus;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Program;
@@ -75,40 +74,18 @@ public class PlatformImpl implements Platform {
 	Provider<ArtifactDataSource> dsProvider;
 
 	@Inject
-	private Cluster cluster;
+	private NodeImpl node;
 
-	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
-	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
 	private QName architecture;
 	private LogLevel logLevel = LogLevel.WARNING;
 
-	@Override
-	public void registerComponent(Component component) {
-		components.put(component.name(), component);
-		for (InstructionSet is : component.instructionSets()) {
-			instructions.put(is.getName(), is);
-		}
-		cluster.addComponent(component);
-	}
+	
 	
 	public void setLogLevel(LogLevel logLevel){
 		this.logLevel=logLevel;
 	}
 
-	public Component getComponent(QName name) {
-		return components.get(name);
-	}
-
-	/*@Override
-	public QName architecture() {
-		return architecture;
-	}*/
-
-	public void setArchitecture(QName architecture) {
-		this.architecture = architecture;
-	}
-
-	@Override
+		@Override
 	public Document setup(Artifact... executables) throws PlatformException {
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -171,22 +148,22 @@ public class PlatformImpl implements Platform {
 
 	@Override
 	public TaskId execute(QName task, Document taskInput, Target... targets) throws PlatformException {
-		return cluster.execute(task, taskInput, targets);
+		return node.execute(task, taskInput, targets);
 	}
 
 	@Override
 	public Task status(TaskId taskId) throws PlatformException {
-		return cluster.status(taskId);
+		return node.status(taskId);
 	}
 
 	@Override
 	public void cancel(TaskId taskId) throws PlatformException {
-		cluster.cancel(taskId);
+		node.cancel(taskId);
 	}
 	
 	@Override
 	public Set<NodeStatus> status() {
-		return cluster.status();
+		return node.status();
 	}
 
 	@Override
@@ -218,7 +195,7 @@ public class PlatformImpl implements Platform {
 	public JAXBContext getJAXBContext(List<QName> isets) throws JAXBException {
 		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
 		for (QName iset : isets) {
-			InstructionSet is = instructions.get(iset);
+			InstructionSet is = node.getInstructionSets().get(iset);
 			if (is == null) {
 				throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
 			}
@@ -239,8 +216,8 @@ public class PlatformImpl implements Platform {
 					String[] text = reader.getElementText().split(":");
 					if (text.length == 2) {
 						QName iset = new QName(reader.getNamespaceContext().getNamespaceURI(text[0]), text[1]);
-						Component c = components.get(iset);
-						if (c == null) {
+						InstructionSet is = node.getInstructionSets().get(iset);
+						if (is == null) {
 							throw new PlatformException("Unknown instruction set " + iset.toString());
 						}
 						isets.add(iset);
@@ -262,7 +239,7 @@ public class PlatformImpl implements Platform {
 		InstructionSets isets = executable.getInstructionSets();
 		if (isets != null) {
 			for (QName iset : isets.getInstructionSet()) {
-				InstructionSet is = instructions.get(iset);
+				InstructionSet is = node.getInstructionSets().get(iset);
 				if (is == null) {
 					throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
 				}
@@ -277,8 +254,8 @@ public class PlatformImpl implements Platform {
 		InstructionSets eisets = executable.getInstructionSets();
 		if (eisets != null) {
 			for (QName iset : eisets.getInstructionSet()) {
-				Component c = components.get(iset);
-				if (c == null) {
+				InstructionSet is = node.getInstructionSets().get(iset);
+				if (is == null) {
 					throw new PlatformException("Unknown instruction set " + iset.toString());
 				}
 				isets.add(iset);
