@@ -33,13 +33,13 @@ public class ServerModule extends AbstractModule {
 	}
 	
 	protected void configure() {
-		bind(String.class).annotatedWith(NodeId.class).toInstance(nodeId);
-		bind(String.class).annotatedWith(ClusterId.class).toInstance(clusterId);
+		bindConstant().annotatedWith(NodeId.class).to(nodeId);
+		bindConstant().annotatedWith(ClusterId.class).to(clusterId);
 		install(new JPAModule());
 		install(new RepoModule());
 		install(new JMSModule());
 		install(new ScopeModule());
-		install(new PlatformModule());
+		install(new NodeModule());
 		install(new JMXModule());
 	}
 

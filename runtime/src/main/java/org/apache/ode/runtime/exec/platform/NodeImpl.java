@@ -67,8 +67,6 @@ import org.w3c.dom.Document;
 @Singleton
 public class NodeImpl implements Node {
 
-	public static final String CLUSTER_MIMETYPE = "application/ode-cluster";
-	public static final String CLUSTER_NAMESPACE = "http://ode.apache.org/cluster";
 	public static JAXBContext CLUSTER_JAXB_CTX;
 	private static final Logger log = Logger.getLogger(NodeImpl.class.getName());
 
@@ -96,7 +94,7 @@ public class NodeImpl implements Node {
 	HealthCheck healthCheck;
 
 	@Inject
-	TaskPoll actionPoll;
+	TaskPoll taskPoll;
 
 	@Inject
 	MessagePoll messagePoll;
@@ -118,9 +116,9 @@ public class NodeImpl implements Node {
 		log.fine("Initializing Node");
 
 		localNodeState.set(NodeState.OFFLINE);
-		//healthCheck.config(clusterId, nodeId, localNodeState, healthCheckConfig);
+		healthCheck.setLocalNodeState(localNodeState);
 		taskExec.init(nodeId);
-		//actionPoll.init(clusterId, nodeId, localNodeState, actionExec, actionCheckConfig);
+		taskPoll.setLocalNodeState(localNodeState);
 
 		// Prime the health check to make sure it runs at least once before
 		// continuing startup
@@ -129,7 +127,7 @@ public class NodeImpl implements Node {
 		try {
 			clusterScheduler = executors.initClusterTaskScheduler();
 			clusterScheduler.scheduleAtFixedRate(healthCheck, 0, config.getHealthCheck().getFrequency(), TimeUnit.MILLISECONDS);
-			clusterScheduler.scheduleAtFixedRate(actionPoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
+			clusterScheduler.scheduleAtFixedRate(taskPoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
 			clusterScheduler.scheduleAtFixedRate(messagePoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
 		} catch (PlatformException pe) {
 			log.log(Level.SEVERE, "", pe);
@@ -292,16 +290,10 @@ public class NodeImpl implements Node {
 	@Qualifier
 	@java.lang.annotation.Target({ ElementType.FIELD, ElementType.METHOD })
 	@Retention(RetentionPolicy.RUNTIME)
-	public @interface ActionRequest {
+	public @interface TaskCheck {
 
 	}
 
-	@Qualifier
-	@java.lang.annotation.Target({ ElementType.FIELD, ElementType.METHOD })
-	@Retention(RetentionPolicy.RUNTIME)
-	public @interface ActionResponse {
-
-	}
 
 	@Singleton
 	public static class ClusterConfigProvider implements Provider<ClusterConfig> {

@@ -21,24 +21,71 @@ package org.apache.ode.runtime.exec.platform.task;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Queue;
+import javax.jms.Session;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import org.apache.ode.runtime.exec.cluster.xml.TaskCheck;
+import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
+import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 
+@Singleton
 public class TaskPoll implements Runnable {
+	@Inject
+	ClusterConfig clusterConfig;
+
+	@ClusterId
+	String clusterId;
+
+	@NodeId
+	String nodeId;
 
 	@PersistenceContext(unitName = "platform")
 	private EntityManager pmgr;
 
+	@TaskCheck
+	private Session taskSession;
+
+	@TaskCheck
+	private Queue taskQueue;
+
+	private MessageProducer producer;
+	private MessageConsumer consumer;
+
+	@Inject
 	private TaskExecutor exec;
-	private String clusterId;
-	private String nodeId;
+
 	AtomicReference<NodeState> localNodeState;
-	TaskCheck config;
+	org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
 
 	private static final Logger log = Logger.getLogger(TaskPoll.class.getName());
+
+	public void setLocalNodeState(AtomicReference<NodeState> localNodeState) {
+		this.localNodeState = localNodeState;
+	}
+
+	@PostConstruct
+	public void init() throws Exception {
+		this.config = clusterConfig.getTaskCheck();
+		producer = taskSession.createProducer(taskQueue);
+		consumer = taskSession.createConsumer(taskQueue, String.format(Node.NODE_MQ_FILTER, clusterId, nodeId));
+	}
+
+	@PreDestroy
+	public void destroy() throws Exception {
+		producer.close();
+		consumer.close();
+	}
 
 	@Override
 	public synchronized void run() {
@@ -108,14 +155,6 @@ public class TaskPoll implements Runnable {
 		} catch (Throwable t) {
 			log.log(Level.SEVERE,"",t);
 		}*/
-	}
-
-	public void init(String clusterId, String nodeId, AtomicReference<NodeState> localNodeState, TaskExecutor exec, TaskCheck config) {
-		this.clusterId = clusterId;
-		this.nodeId = nodeId;
-		this.localNodeState = localNodeState;
-		this.exec = exec;
-		this.config = config;
 	}
 
 }

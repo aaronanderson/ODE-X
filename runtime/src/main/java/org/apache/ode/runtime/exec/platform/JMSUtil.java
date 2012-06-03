@@ -7,6 +7,8 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.jms.BytesMessage;
 import javax.jms.Destination;
@@ -26,6 +28,10 @@ import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
+
+import org.apache.ode.runtime.exec.platform.JMSUtil.DestinationImpl;
+import org.apache.ode.runtime.exec.platform.JMSUtil.MessageConsumerImpl;
+import org.apache.ode.spi.exec.Node;
 
 public class JMSUtil {
 
@@ -106,22 +112,60 @@ public class JMSUtil {
 
 	}
 
+	public static interface Selector {
+		boolean filter(Message msg);
+	}
+
+	public static class AllSelector implements Selector {
+		@Override
+		public boolean filter(Message msg) {
+			return true;
+		}
+
+	}
+
+	public static class NodeSelector implements Selector {
+		String clusterId;
+		String nodeId;
+
+		public NodeSelector(String clusterId, String nodeId) {
+			this.clusterId = clusterId;
+			this.nodeId = nodeId;
+		}
+
+		@Override
+		public boolean filter(Message msg) {
+			return true;
+		}
+
+	}
+
 	public static class MessageConsumerImpl implements MessageConsumer {
+		private static final Pattern CLUSTER = Pattern.compile("ODE_CLUSTER='(\\w*)' AND ODE_NODE='(\\w*)'");
 		BlockingDeque<Message> queue = new LinkedBlockingDeque<>();
 		MessageListener listener;
 		DestinationImpl dest;
 		String msgSelector;
+		Selector selector;
 		boolean noLocal;
 
 		MessageConsumerImpl(DestinationImpl dest, String msgSelector, boolean noLocal) {
 			this.dest = dest;
 			this.msgSelector = msgSelector;
+			if (msgSelector == null) {
+				this.selector = new AllSelector();
+			} else {
+				Matcher m = CLUSTER.matcher(msgSelector);
+				if (m.find()) {
+					selector = new NodeSelector(m.group(1), m.group(2));
+				}
+			}
 			this.noLocal = noLocal;
 			dest.addConsumer(this);
 		}
 
 		public boolean filter(Message msg) {
-			return true;
+			return selector.filter(msg);
 		}
 
 		public void enqueue(Message msg) {

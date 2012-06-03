@@ -152,7 +152,7 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
-	public Task status(TaskId taskId) throws PlatformException {
+	public Task taskStatus(TaskId taskId) throws PlatformException {
 		return node.status(taskId);
 	}
 

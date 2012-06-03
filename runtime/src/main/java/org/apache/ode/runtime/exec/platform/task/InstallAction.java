@@ -21,12 +21,13 @@ package org.apache.ode.runtime.exec.platform.task;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Task.TaskActionContext;
 import org.apache.ode.spi.exec.Task.TaskActionExec;
+import org.w3c.dom.Document;
 
 public class InstallAction implements TaskActionExec {
 
 
 	@Override
-	public void start(TaskActionContext ctx) throws PlatformException {
+	public void start(TaskActionContext ctx, Document input) throws PlatformException {
 		
 	}
 
@@ -36,7 +37,8 @@ public class InstallAction implements TaskActionExec {
 	}
 
 	@Override
-	public void finish(TaskActionContext ctx) throws PlatformException {
+	public Document finish(TaskActionContext ctx) throws PlatformException {
+		return null;
 		
 	}
 

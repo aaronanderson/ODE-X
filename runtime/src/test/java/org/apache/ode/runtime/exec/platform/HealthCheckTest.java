@@ -22,38 +22,58 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 
+import java.io.ByteArrayInputStream;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.Duration;
+import javax.jms.Queue;
+import javax.jms.Topic;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.namespace.QName;
 
+import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
+import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterConfigProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
+import org.apache.ode.runtime.exec.platform.NodeModule.NodeTypeListener;
+import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
+import org.apache.ode.spi.repo.DataContentHandler;
+import org.apache.ode.spi.repo.Repository;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
+import com.google.inject.matcher.Matchers;
 import com.mycila.inject.jsr250.Jsr250;
 import com.mycila.inject.jsr250.Jsr250Injector;
 
 public class HealthCheckTest {
 	private static final Logger log = Logger.getLogger(HealthCheckTest.class.getName());
-	private static Jsr250Injector injector;
+	private static Jsr250Injector injector1;
+	private static Jsr250Injector injector2;
+
+	private static Topic healthCheckTopic = new TopicImpl("ODE_HEALTHCHECK");
+	private static Queue taskQueue = new QueueImpl("ODE_TASK");
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		injector = Jsr250.createInjector(new JPAModule(), new RepoModule(), new JMSModule(), new HealthCheckTestModule("cluster1", "node1"));
+		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("hcluster", "node1"));
+		loadTestClusterConfig(injector1,"hcluster");
+		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("hcluster", "node2"));
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		injector.destroy();
+		injector1.destroy();
+		injector2.destroy();
 	}
 
-	public static class HealthCheckTestModule extends AbstractModule {
+	public static class HealthCheckTestModule extends JMSModule {
 		String clusterId;
 		String nodeId;
 
@@ -64,32 +84,50 @@ public class HealthCheckTest {
 
 		@Override
 		protected void configure() {
+			super.configure();
+			bindListener(Matchers.any(), new NodeTypeListener());
+			bind(ClusterConfig.class).toProvider(ClusterConfigProvider.class);
 			bind(HealthCheck.class);
-			bind(String.class).annotatedWith(NodeId.class).toInstance(nodeId);
-			bind(String.class).annotatedWith(ClusterId.class).toInstance(clusterId);
+			bindConstant().annotatedWith(NodeId.class).to(nodeId);
+			bindConstant().annotatedWith(ClusterId.class).to(clusterId);
+		}
+
+		public Topic getHealthCheckTopic() {
+			return healthCheckTopic;
+		}
+
+		public Queue getTaskQueue() {
+			return taskQueue;
+		}
+	}
+	
+	public static void loadTestClusterConfig(Jsr250Injector injector, String clusterId) {
+		Repository repo = injector.getInstance(Repository.class);
+		try {
+			byte[] content = DataContentHandler.readStream(TaskTest.class.getResourceAsStream("/META-INF/test_cluster.xml"));
+			Unmarshaller u = NodeImpl.CLUSTER_JAXB_CTX.createUnmarshaller();
+			JAXBElement<ClusterConfig> config = (JAXBElement<ClusterConfig>) u.unmarshal(new ByteArrayInputStream(content));
+			ClusterConfig clusterConfig = config.getValue();
+			repo.create(new QName(Node.CLUSTER_NAMESPACE, clusterId), Node.CLUSTER_MIMETYPE, "1.0", content);
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
 		}
 	}
 
 	@Test
-	public void programTest() throws Exception {
+	public void healthCheckTest() throws Exception {
 		AtomicReference<NodeState> localNodeState1 = new AtomicReference<NodeState>();
 		localNodeState1.set(NodeState.OFFLINE);
 		AtomicReference<NodeState> localNodeState2 = new AtomicReference<NodeState>();
 		localNodeState2.set(NodeState.OFFLINE);
 
-		org.apache.ode.runtime.exec.cluster.xml.HealthCheck config = new org.apache.ode.runtime.exec.cluster.xml.HealthCheck();
-		config.setFrequency(5000l);
-		config.setInactiveTimeout(10000l);
-		config.setNodeCleanup(DatatypeFactory.newInstance().newDuration("P10D"));
-
-		HealthCheck check1 = injector.getInstance(HealthCheck.class);
+		HealthCheck check1 = injector1.getInstance(HealthCheck.class);
 		assertNotNull(check1);
-		check1.config("cluster1", "node1", localNodeState1, config);
-		HealthCheck check2 = injector.getInstance(HealthCheck.class);
+		check1.setLocalNodeState(localNodeState1);
+		HealthCheck check2 = injector2.getInstance(HealthCheck.class);
 		assertNotSame(check1, check2);
-		check2.config("cluster1", "node2", localNodeState2, config);
-		
-		
+		check2.setLocalNodeState(localNodeState2);
+
 		check1.run();
 		assertEquals(1, check1.availableNodes().size());
 		assertEquals(0, check1.onlineClusterNodes().size());

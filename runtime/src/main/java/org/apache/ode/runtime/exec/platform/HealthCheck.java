@@ -34,6 +34,8 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -51,14 +53,24 @@ import javax.xml.datatype.Duration;
 import javax.xml.namespace.QName;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.spi.exec.Platform.NodeStatus;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 
+@Singleton
 public class HealthCheck implements Runnable {
 
-	private String clusterId;
-	private String nodeId;
+	@Inject
+	ClusterConfig clusterConfig;
+
+	@ClusterId
+	String clusterId;
+
+	@NodeId
+	String nodeId;
 
 	@PersistenceContext(unitName = "platform")
 	private EntityManager pmgr;
@@ -80,17 +92,15 @@ public class HealthCheck implements Runnable {
 
 	private static final Logger log = Logger.getLogger(HealthCheck.class.getName());
 
+	public void setLocalNodeState(AtomicReference<NodeState> localNodeState){
+		this.localNodeState=localNodeState;
+	}
+	
 	@PostConstruct
 	public void init() throws Exception {
 		producer = nodeStatusSession.createProducer(nodeStatusTopic);
 		consumer = nodeStatusSession.createConsumer(nodeStatusTopic);
-	}
-
-	public void config(String clusterId, String nodeId, AtomicReference<NodeState> localNodeState, org.apache.ode.runtime.exec.cluster.xml.HealthCheck config) {
-		this.clusterId = clusterId;
-		this.nodeId = nodeId;
-		this.localNodeState = localNodeState;
-		this.config = config;
+		this.config=clusterConfig.getHealthCheck();
 		deleteStaleNodes();
 	}
 

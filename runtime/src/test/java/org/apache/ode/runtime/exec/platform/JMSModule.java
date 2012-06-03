@@ -20,14 +20,15 @@ package org.apache.ode.runtime.exec.platform;
 
 import java.lang.reflect.Field;
 
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.SessionImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
-import org.apache.ode.runtime.exec.platform.NodeImpl.ActionRequest;
-import org.apache.ode.runtime.exec.platform.NodeImpl.ActionResponse;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
+import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -38,40 +39,56 @@ import com.google.inject.matcher.Matchers;
 import com.google.inject.spi.TypeEncounter;
 import com.google.inject.spi.TypeListener;
 
+//Good info https://community.jboss.org/wiki/ShouldICacheJMSConnectionsAndJMSSessions?_sscc=t
 public class JMSModule extends AbstractModule {
-	
+
 	protected void configure() {
 
 		bindListener(Matchers.any(), new JMSTypeListener());
 
-		SessionImpl hSession = new SessionImpl();
-		TopicImpl hTopic = new TopicImpl("ODE_HEALTHCHECK");
+		Session hSession = getHealthCheckSession();
+		Topic hTopic = getHealthCheckTopic();
 		bind(Session.class).annotatedWith(NodeCheck.class).toInstance(hSession);
 		bind(Topic.class).annotatedWith(NodeCheck.class).toInstance(hTopic);
 
-		SessionImpl arqSession = new SessionImpl();
-		TopicImpl arqTopic = new TopicImpl("ODE_ACTION_REQUEST");
-		bind(Session.class).annotatedWith(ActionRequest.class).toInstance(arqSession);
-		bind(Topic.class).annotatedWith(ActionRequest.class).toInstance(arqTopic);
+		Session taskSession = getTaskSession();
+		Queue taskQueue = getTaskQueue();
+		bind(Session.class).annotatedWith(TaskCheck.class).toInstance(taskSession);
+		bind(Queue.class).annotatedWith(TaskCheck.class).toInstance(taskQueue);
 
-		SessionImpl arsSession = new SessionImpl();
-		TopicImpl arsTopic = new TopicImpl("ODE_ACTION_RESPONSE");
-		bind(Session.class).annotatedWith(ActionResponse.class).toInstance(arsSession);
-		bind(Topic.class).annotatedWith(ActionResponse.class).toInstance(arsTopic);
+	}
+
+	protected Session getHealthCheckSession() {
+		return new SessionImpl();
+	}
+
+	protected Topic getHealthCheckTopic() {
+		return new TopicImpl("ODE_HEALTHCHECK");
+	}
+
+	protected Session getTaskSession() {
+		return new SessionImpl();
+	}
+
+	protected Queue getTaskQueue() {
+		return new QueueImpl("ODE_TASK");
 	}
 
 	public static class JMSTypeListener implements TypeListener {
 		public <T> void hear(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
 			for (Field field : typeLiteral.getRawType().getDeclaredFields()) {
-				if (field.getType() == Session.class || field.getType() == Topic.class) {
+				if (field.getType() == Session.class || field.getType() == Topic.class || field.getType() == Queue.class) {
 					if (field.isAnnotationPresent(NodeCheck.class)) {
-						typeEncounter.register(new JMSSessionMembersInjector(field,typeEncounter.getProvider(Key.get(field.getType(),NodeCheck.class))));
+						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), NodeCheck.class))));
+					} else if (field.isAnnotationPresent(TaskCheck.class)) {
+						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), TaskCheck.class))));
 					}
+
 				} /*else if (field.getType() == Topic.class) {
 					if (field.isAnnotationPresent(NodeCheck.class)) {
 						typeEncounter.register(typeEncounter.getMembersInjector(typeLiteral));
 					}
-				}*/
+					}*/
 
 			}
 		}

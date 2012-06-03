@@ -81,7 +81,7 @@ public interface Platform {
 
 	public TaskId execute(QName task, Document taskInput, Target... targets) throws PlatformException;
 
-	public Task status(TaskId taskId) throws PlatformException;
+	public Task taskStatus(TaskId taskId) throws PlatformException;
 	
 	public void registerListener(MessageListener listener);
 

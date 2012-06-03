@@ -21,7 +21,7 @@ package org.apache.ode.spi.exec;
 import java.util.Date;
 
 public interface Message {
-	
+
 	public Date timestamp();
 
 	public LogLevel level();
@@ -35,9 +35,9 @@ public interface Message {
 	}
 
 	public static interface MessageEvent {
-		
+
 		public Message message();
-		
+
 		public String clusterId();
 
 		public String nodeId();
@@ -49,6 +49,10 @@ public interface Message {
 		public LogLevel levelFilter();
 
 		public void message(MessageEvent message);
+
+	}
+
+	public static interface TaskListener extends MessageListener {
 
 	}
 

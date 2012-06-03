@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Provider;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Message.LogLevel;
@@ -37,11 +38,11 @@ public interface Task {
 	}
 
 	public static interface TaskId {
-		
+
 	}
 
 	public String nodeId();
-	
+
 	public void refresh();
 
 	public QName name();
@@ -53,9 +54,9 @@ public interface Task {
 	public TaskState state();
 
 	public Set<Target> targets();
-	
+
 	public List<Message> messages();
-	
+
 	public Set<TaskAction> actions();
 
 	public Document input();
@@ -79,23 +80,23 @@ public interface Task {
 	}
 
 	public static class TaskActionRequest {
-		final TaskActionDefinition definition;
+		final QName action;
 		final Document input;
 
-		public TaskActionRequest(TaskActionDefinition definition, Document input) {
-			this.definition = definition;
+		public TaskActionRequest(QName action, Document input) {
+			this.action = action;
 			this.input = input;
 		}
 
 	}
 
 	public static class TaskActionResponse {
-		final TaskActionDefinition definition;
+		final QName action;
 		final Document result;
 		final String nodeId;
 
-		public TaskActionResponse(TaskActionDefinition definition, String nodeId, Document result) {
-			this.definition = definition;
+		public TaskActionResponse(QName action, String nodeId, Document result) {
+			this.action = action;
 			this.result = result;
 			this.nodeId = nodeId;
 		}
@@ -115,9 +116,10 @@ public interface Task {
 		private final QName name;
 		private final Set<TaskActionCoordinator> coordinators;
 
-		public TaskDefinition(QName name) {
+		public TaskDefinition(QName name, TaskActionCoordinator coordinator) {
 			this.name = name;
 			this.coordinators = new HashSet<TaskActionCoordinator>();
+			coordinators.add(coordinator);
 		}
 
 		public QName getName() {
@@ -146,11 +148,13 @@ public interface Task {
 		final QName name;
 		final Set<QName> dependencies;
 		final TaskActionType type;
+		final Provider<? extends TaskActionExec> actionExec;
 
-		public TaskActionDefinition(QName name, TaskActionType type, Set<QName> dependencies) {
+		public TaskActionDefinition(QName name, TaskActionType type, Set<QName> dependencies, Provider<? extends TaskActionExec> actionExec) {
 			this.name = name;
 			this.type = type;
 			this.dependencies = dependencies;
+			this.actionExec = actionExec;
 		}
 
 		QName action() {
@@ -164,10 +168,14 @@ public interface Task {
 		public Set<QName> dependencies() {
 			return dependencies;
 		}
+
+		public Provider<? extends TaskActionExec> actionExec() {
+			return actionExec;
+		}
 	}
 
 	public static interface TaskActionId {
-		
+
 	}
 
 	public static interface TaskAction {
@@ -185,7 +193,7 @@ public interface Task {
 		public TaskActionState state();
 
 		public List<Message> messages();
-		
+
 		public Document input();
 
 		public Document result();
@@ -198,8 +206,6 @@ public interface Task {
 
 	}
 
-	
-		
 	public static interface TaskMessageEvent extends MessageEvent {
 
 		public String taskId();
@@ -215,27 +221,24 @@ public interface Task {
 		public QName action();
 
 	}
-	
+
 	public static interface TaskMessageListener extends MessageListener {
 
-		
-
 	}
-	
+
 	public interface TaskActionExec {
 
-		public void start(TaskActionContext ctx) throws PlatformException;
+		public void start(TaskActionContext ctx, Document input) throws PlatformException;
 
 		public void run(TaskActionContext ctx) throws PlatformException;
 
-		public void finish(TaskActionContext ctx) throws PlatformException;
+		public Document finish(TaskActionContext ctx) throws PlatformException;
 
 		@Override
 		public boolean equals(Object o);
 
-
 	}
-	
+
 	public static interface TaskActionContext {
 
 		public TaskActionId id();
@@ -244,15 +247,11 @@ public interface Task {
 
 		public void log(LogLevel level, int code, String message);
 
-		public Document input();
-
 		public TaskActionState getState();
 
 		public void updateState(TaskActionState state) throws PlatformException;
 
 		//public void coordinate(Document result) throws PlatformException;
-
-		public void updateResult(Document result) throws PlatformException;
 	}
 
 }

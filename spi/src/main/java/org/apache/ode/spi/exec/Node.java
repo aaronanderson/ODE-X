@@ -26,12 +26,15 @@ import org.apache.ode.spi.exec.Component.InstructionSet;
 
 public interface Node {
 
-	
-	public QName architecture(); 
-	
+	public static final String CLUSTER_MIMETYPE = "application/ode-cluster";
+	public static final String CLUSTER_NAMESPACE = "http://ode.apache.org/cluster";
+	public static final String NODE_MQ_FILTER = "ODE_CLUSTER='%s' AND ODE_NODE='%s'";
+
+	public QName architecture();
+
 	public void registerComponent(Component component);
-	
-	public Map<QName,InstructionSet> getInstructionSets();
+
+	public Map<QName, InstructionSet> getInstructionSets();
 
 	public void online() throws PlatformException;
 

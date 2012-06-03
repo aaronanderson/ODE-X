@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 
@@ -33,6 +34,7 @@ import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.PlatformException;
 
+@Singleton
 public class TaskExecutor {
 
 	@PersistenceUnit(unitName = "platform")
