@@ -71,7 +71,7 @@ public interface Task {
 
 	public static interface TaskActionCoordinator {
 		//all will be called on master
-		Set<TaskActionRequest> init(Document input);
+		Set<TaskActionRequest> init(Document input, Target... targets);
 
 		void update(TaskActionRequest request, Set<TaskActionResponse> dependencyResponses);
 
@@ -80,8 +80,8 @@ public interface Task {
 	}
 
 	public static class TaskActionRequest {
-		final QName action;
-		final Document input;
+		public final QName action;
+		public final Document input;
 
 		public TaskActionRequest(QName action, Document input) {
 			this.action = action;
@@ -91,9 +91,9 @@ public interface Task {
 	}
 
 	public static class TaskActionResponse {
-		final QName action;
-		final Document result;
-		final String nodeId;
+		public final QName action;
+		public final Document result;
+		public final String nodeId;
 
 		public TaskActionResponse(QName action, String nodeId, Document result) {
 			this.action = action;
@@ -122,7 +122,7 @@ public interface Task {
 			coordinators.add(coordinator);
 		}
 
-		public QName getName() {
+		public QName task() {
 			return name;
 		}
 
@@ -131,12 +131,16 @@ public interface Task {
 				coordinators.add(coordinator);
 			}
 		}
+		
+		public Set<TaskActionCoordinator> coordinators(){
+			return coordinators;
+		}
 
 		@Override
 		public boolean equals(Object o) {
 			if (o instanceof TaskDefinition) {
 				TaskDefinition a2 = (TaskDefinition) o;
-				if (name.equals(a2.getName())) {
+				if (name.equals(a2.task())) {
 					return true;
 				}
 			}
@@ -157,11 +161,11 @@ public interface Task {
 			this.actionExec = actionExec;
 		}
 
-		QName action() {
+		public QName action() {
 			return name;
 		}
 
-		TaskActionType type() {
+		public TaskActionType type() {
 			return type;
 		}
 
@@ -177,6 +181,8 @@ public interface Task {
 	public static interface TaskActionId {
 
 	}
+	
+	//TODO support external TaskActions, where action actually performed outside ODE framework but action updates and messages stil managed by ODE
 
 	public static interface TaskAction {
 

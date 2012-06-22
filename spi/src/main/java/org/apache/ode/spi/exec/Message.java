@@ -56,13 +56,13 @@ public interface Message {
 
 	}
 
-	public static interface ClusterMessageListener extends MessageListener {
+	public static interface ClusterListener extends MessageListener {
 
 		public String clusterIdFilter();
 
 	}
 
-	public static interface NodeMessageListener extends MessageListener {
+	public static interface NodeListener extends MessageListener {
 
 		public String nodeIdFilter();
 

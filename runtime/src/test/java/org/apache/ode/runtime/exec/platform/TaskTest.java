@@ -49,6 +49,7 @@ import org.apache.ode.spi.exec.Message.TaskListener;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.exec.Task.TaskActionContext;
 import org.apache.ode.spi.exec.Task.TaskActionCoordinator;
 import org.apache.ode.spi.exec.Task.TaskActionDefinition;
@@ -72,8 +73,8 @@ public class TaskTest {
 	private static Jsr250Injector injector1;
 	private static Jsr250Injector injector2;
 
-	private static Topic healthCheckTopic = new TopicImpl("ODE_HEALTHCHECK");
-	private static Queue taskQueue = new QueueImpl("ODE_TASK");
+	private static Topic healthCheckTopic = new TopicImpl(Node.NODE_MQ_NAME_HEALTHCHECK);
+	private static Queue taskQueue = new QueueImpl(Node.NODE_MQ_NAME_TASK);
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -115,12 +116,31 @@ public class TaskTest {
 			bind(MultiTaskActionExec.class);
 		}
 
-		public Topic getHealthCheckTopic() {
-			return healthCheckTopic;
-		}
 
-		public Queue getTaskQueue() {
-			return taskQueue;
+		@Override
+		protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
+			class HealthCheckTopic implements Provider<Topic> {
+				
+
+				@Override
+				public Topic get() {
+					return healthCheckTopic;
+				}
+
+			}
+			return HealthCheckTopic.class;
+		}
+		@Override
+		protected Class<? extends Provider<Queue>> getTaskQueue() {
+			class TaskQueue implements Provider<Queue> {
+			
+				@Override
+				public Queue get() {
+					return taskQueue;
+				}
+
+			}
+			return TaskQueue.class;
 		}
 	}
 
@@ -244,7 +264,7 @@ public class TaskTest {
 	public static class SingleTaskActionCoordinator implements TaskActionCoordinator {
 
 		@Override
-		public Set<TaskActionRequest> init(Document input) {
+		public Set<TaskActionRequest> init(Document input, Target... targets) {
 			HashSet<TaskActionRequest> actions = new HashSet<TaskActionRequest>();
 			TaskActionRequest req = new TaskActionRequest(TaskTestComponent.SINGLE_ACTION_NAME, testDoc("task-action-config", input.getDocumentElement()
 					.getTextContent()));
@@ -287,7 +307,7 @@ public class TaskTest {
 	public static class MultiTaskActionCoordinator implements TaskActionCoordinator {
 
 		@Override
-		public Set<TaskActionRequest> init(Document input) {
+		public Set<TaskActionRequest> init(Document input, Target... targets) {
 			HashSet<TaskActionRequest> actions = new HashSet<TaskActionRequest>();
 			TaskActionRequest req = new TaskActionRequest(TaskTestComponent.MULTI_ACTION1_NAME, testDoc("task-action-config", input.getDocumentElement()
 					.getTextContent()));

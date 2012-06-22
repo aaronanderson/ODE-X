@@ -22,9 +22,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -36,11 +36,11 @@ import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
-import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageListener;
@@ -50,6 +50,7 @@ import org.apache.ode.spi.exec.Program;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.exec.Task;
 import org.apache.ode.spi.exec.Task.TaskId;
+import org.apache.ode.spi.exec.Task.TaskState;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.exec.xml.InstructionSets;
 import org.apache.ode.spi.repo.Artifact;
@@ -79,20 +80,18 @@ public class PlatformImpl implements Platform {
 	private QName architecture;
 	private LogLevel logLevel = LogLevel.WARNING;
 
-	
-	
-	public void setLogLevel(LogLevel logLevel){
-		this.logLevel=logLevel;
+	public void setLogLevel(LogLevel logLevel) {
+		this.logLevel = logLevel;
 	}
 
-		@Override
+	@Override
 	public Document setup(Artifact... executables) throws PlatformException {
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			factory.setNamespaceAware(true);
 			DocumentBuilder db = factory.newDocumentBuilder();
 			Document programConfiguration = db.newDocument();
-			
+
 			for (Artifact ex : executables) {
 				ArtifactDataSource ds = dsProvider.get();
 				ds.configure(ex);
@@ -143,12 +142,25 @@ public class PlatformImpl implements Platform {
 
 	@Override
 	public void uninstall(QName id, Target... targets) throws PlatformException {
-
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		dbf.setNamespaceAware(true);
+		DocumentBuilder db = null;
+		try {
+			db = dbf.newDocumentBuilder();
+		} catch (ParserConfigurationException e) {
+			throw new PlatformException(e);
+		}
+		Document taskInput = db.newDocument();
+		Element root = taskInput.createElementNS(PlatformTask.UNINSTALL_TASK.qname().getNamespaceURI(), "taskId");
+		root.setTextContent(id.toString());
+		taskInput.appendChild(root);
+		node.executeSync(PlatformTask.UNINSTALL_TASK.qname(), taskInput, targets);
+		
 	}
 
 	@Override
 	public TaskId execute(QName task, Document taskInput, Target... targets) throws PlatformException {
-		return node.execute(task, taskInput, targets);
+		return node.executeAsync(task, taskInput, targets);
 	}
 
 	@Override
@@ -160,7 +172,7 @@ public class PlatformImpl implements Platform {
 	public void cancel(TaskId taskId) throws PlatformException {
 		node.cancel(taskId);
 	}
-	
+
 	@Override
 	public Set<NodeStatus> status() {
 		return node.status();
@@ -169,19 +181,25 @@ public class PlatformImpl implements Platform {
 	@Override
 	public void registerListener(MessageListener listener) {
 		// TODO Auto-generated method stub
-		
+
+	}
+
+	@Override
+	public void unregisterListener(MessageListener listener) {
+		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public void beginLogLevel(LogLevel level) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void endLogLevel() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public JAXBContext getJAXBContext(InputStream executable) throws JAXBException {
@@ -263,7 +281,5 @@ public class PlatformImpl implements Platform {
 		}
 		return isets;
 	}
-
-	
 
 }

@@ -20,20 +20,24 @@ package org.apache.ode.runtime.exec.platform;
 
 import java.lang.reflect.Field;
 
+import javax.inject.Provider;
 import javax.jms.Queue;
-import javax.jms.Session;
+import javax.jms.QueueConnectionFactory;
 import javax.jms.Topic;
+import javax.jms.TopicConnectionFactory;
 
+import org.apache.ode.runtime.exec.platform.JMSUtil.QueueConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
-import org.apache.ode.runtime.exec.platform.JMSUtil.SessionImpl;
+import org.apache.ode.runtime.exec.platform.JMSUtil.TopicConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
+import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
+import org.apache.ode.spi.exec.Node;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.MembersInjector;
-import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.spi.TypeEncounter;
@@ -46,42 +50,107 @@ public class JMSModule extends AbstractModule {
 
 		bindListener(Matchers.any(), new JMSTypeListener());
 
-		Session hSession = getHealthCheckSession();
-		Topic hTopic = getHealthCheckTopic();
-		bind(Session.class).annotatedWith(NodeCheck.class).toInstance(hSession);
-		bind(Topic.class).annotatedWith(NodeCheck.class).toInstance(hTopic);
+		bind(TopicConnectionFactory.class).annotatedWith(NodeCheck.class).toProvider(getHealthCheckFactory());
+		bind(Topic.class).annotatedWith(NodeCheck.class).toProvider(getHealthCheckTopic());
 
-		Session taskSession = getTaskSession();
-		Queue taskQueue = getTaskQueue();
-		bind(Session.class).annotatedWith(TaskCheck.class).toInstance(taskSession);
-		bind(Queue.class).annotatedWith(TaskCheck.class).toInstance(taskQueue);
+		bind(QueueConnectionFactory.class).annotatedWith(TaskCheck.class).toProvider(getTaskFactory());
+		bind(Queue.class).annotatedWith(TaskCheck.class).toProvider(getTaskQueue());
 
+		bind(QueueConnectionFactory.class).annotatedWith(MessageCheck.class).toProvider(getMessageFactory());
+		bind(Topic.class).annotatedWith(MessageCheck.class).toProvider(getMessageTopic());
 	}
 
-	protected Session getHealthCheckSession() {
-		return new SessionImpl();
+	protected Class<? extends Provider<TopicConnectionFactory>> getHealthCheckFactory() {
+		class HealthCheckTopicFactory implements Provider<TopicConnectionFactory> {
+			TopicConnectionFactory impl = new TopicConnectionFactoryImpl();
+
+			@Override
+			public TopicConnectionFactory get() {
+				return impl;
+			}
+
+		}
+		return HealthCheckTopicFactory.class;
 	}
 
-	protected Topic getHealthCheckTopic() {
-		return new TopicImpl("ODE_HEALTHCHECK");
+	protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
+		class HealthCheckTopic implements Provider<Topic> {
+			Topic impl = new TopicImpl(Node.NODE_MQ_NAME_HEALTHCHECK);
+
+			@Override
+			public Topic get() {
+				return impl;
+			}
+
+		}
+		return HealthCheckTopic.class;
 	}
 
-	protected Session getTaskSession() {
-		return new SessionImpl();
+	protected Class<? extends Provider<QueueConnectionFactory>> getTaskFactory() {
+		class TaskFactory implements Provider<QueueConnectionFactory> {
+			QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
+
+			@Override
+			public QueueConnectionFactory get() {
+				return impl;
+			}
+
+		}
+		return TaskFactory.class;
 	}
 
-	protected Queue getTaskQueue() {
-		return new QueueImpl("ODE_TASK");
+	protected Class<? extends Provider<Queue>> getTaskQueue() {
+		class TaskQueue implements Provider<Queue> {
+			Queue impl = new QueueImpl(Node.NODE_MQ_NAME_TASK);
+
+			@Override
+			public Queue get() {
+				return impl;
+			}
+
+		}
+		return TaskQueue.class;
+	}
+
+	protected Class<? extends Provider<QueueConnectionFactory>> getMessageFactory() {
+		class MessageFactory implements Provider<QueueConnectionFactory> {
+			QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
+
+			@Override
+			public QueueConnectionFactory get() {
+				return impl;
+			}
+
+		}
+		return MessageFactory.class;
+	}
+
+	protected Class<? extends Provider<Topic>> getMessageTopic() {
+
+		class MessageTopic implements Provider<Topic> {
+			Topic impl = new TopicImpl(Node.NODE_MQ_NAME_MESSAGE);
+
+			@Override
+			public Topic get() {
+				return impl;
+			}
+
+		}
+
+		return MessageTopic.class;
 	}
 
 	public static class JMSTypeListener implements TypeListener {
 		public <T> void hear(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
 			for (Field field : typeLiteral.getRawType().getDeclaredFields()) {
-				if (field.getType() == Session.class || field.getType() == Topic.class || field.getType() == Queue.class) {
+				if (field.getType() == TopicConnectionFactory.class || field.getType() == QueueConnectionFactory.class || field.getType() == Topic.class
+						|| field.getType() == Queue.class) {
 					if (field.isAnnotationPresent(NodeCheck.class)) {
 						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), NodeCheck.class))));
 					} else if (field.isAnnotationPresent(TaskCheck.class)) {
 						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), TaskCheck.class))));
+					} else if (field.isAnnotationPresent(MessageCheck.class)) {
+						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), MessageCheck.class))));
 					}
 
 				} /*else if (field.getType() == Topic.class) {

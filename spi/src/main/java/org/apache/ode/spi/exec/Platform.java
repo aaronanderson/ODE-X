@@ -45,12 +45,12 @@ public interface Platform {
 	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.xml",org.apache.ode.spi.exec.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
 
 
-	public enum PlatformAction {
+	public enum PlatformTask {
 
-		INSTALL_ACTION(new QName(PLATFORM_NAMESPACE, "install")),ONLINE_ACTION(new QName(PLATFORM_NAMESPACE, "online")), START_ACTION(new QName(PLATFORM_NAMESPACE, "start")), STOP_ACTION(new QName(
-				PLATFORM_NAMESPACE, "stop")),OFFLINE_ACTION(new QName(PLATFORM_NAMESPACE, "offline")), UNINSTALL_ACTION(new QName(PLATFORM_NAMESPACE, "uninstall"));
+		INSTALL_TASK(new QName(PLATFORM_NAMESPACE, "install")),ONLINE_TASK(new QName(PLATFORM_NAMESPACE, "online")), START_TASK(new QName(PLATFORM_NAMESPACE, "start")), STOP_TASK(new QName(
+				PLATFORM_NAMESPACE, "stop")),OFFLINE_TASK(new QName(PLATFORM_NAMESPACE, "offline")), UNINSTALL_TASK(new QName(PLATFORM_NAMESPACE, "uninstall"));
 
-		private PlatformAction(QName qname) {
+		private PlatformTask(QName qname) {
 			this.qname = qname;
 		}
 
@@ -83,14 +83,16 @@ public interface Platform {
 
 	public Task taskStatus(TaskId taskId) throws PlatformException;
 	
-	public void registerListener(MessageListener listener);
-
 	public void cancel(TaskId taskId) throws PlatformException;
 	
 	//Thread Locals
 	public void beginLogLevel(LogLevel level);
 	
 	public void endLogLevel();
+	
+	public void registerListener(MessageListener listener);
+	
+	public void unregisterListener(MessageListener listener);
 	
 	public static interface NodeStatus {
 

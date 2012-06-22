@@ -39,5 +39,9 @@ public interface Executors {
 	public ScheduledExecutorService initProcessingUnitScheduler() throws PlatformException;
 
 	public void destroyProcessingUnitScheduler() throws PlatformException;
+	
+	public ExecutorService initIOExecutor(RejectedExecutionHandler handler) throws PlatformException;
+
+	public void destroyIOExecutor() throws PlatformException;
 
 }

@@ -11,7 +11,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.ConnectionConsumer;
+import javax.jms.ConnectionFactory;
+import javax.jms.ConnectionMetaData;
 import javax.jms.Destination;
+import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
@@ -21,22 +26,158 @@ import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.QueueBrowser;
+import javax.jms.QueueConnection;
+import javax.jms.QueueConnectionFactory;
+import javax.jms.QueueReceiver;
+import javax.jms.QueueSender;
+import javax.jms.QueueSession;
+import javax.jms.ServerSessionPool;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
+import javax.jms.TopicConnectionFactory;
+import javax.jms.TopicPublisher;
+import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.apache.ode.runtime.exec.platform.JMSUtil.DestinationImpl;
-import org.apache.ode.runtime.exec.platform.JMSUtil.MessageConsumerImpl;
 import org.apache.ode.spi.exec.Node;
 
 public class JMSUtil {
 
 	//A full blown JMS implementation would be overkill to support only a single node so we will provide
 	// a minimal implementation for a s
+	public abstract static class ConnectionFactoryImpl implements ConnectionFactory {
+
+		@Override
+		public Connection createConnection() throws JMSException {
+			return null;
+		}
+
+		@Override
+		public Connection createConnection(String arg0, String arg1) throws JMSException {
+			return null;
+		}
+
+	}
+
+	public static class QueueConnectionFactoryImpl extends ConnectionFactoryImpl implements QueueConnectionFactory {
+
+		@Override
+		public QueueConnection createQueueConnection() throws JMSException {
+			return null;
+		}
+
+		@Override
+		public QueueConnection createQueueConnection(String arg0, String arg1) throws JMSException {
+			return null;
+		}
+
+	}
+
+	public static class TopicConnectionFactoryImpl extends ConnectionFactoryImpl implements TopicConnectionFactory {
+
+		@Override
+		public TopicConnection createTopicConnection() throws JMSException {
+			return null;
+		}
+
+		@Override
+		public TopicConnection createTopicConnection(String arg0, String arg1) throws JMSException {
+			return null;
+		}
+
+	}
+
+	public abstract static class ConnectionImpl implements Connection {
+
+		@Override
+		public void close() throws JMSException {
+
+		}
+
+		@Override
+		public ConnectionConsumer createConnectionConsumer(Destination arg0, String arg1, ServerSessionPool arg2, int arg3) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public ConnectionConsumer createDurableConnectionConsumer(Topic arg0, String arg1, String arg2, ServerSessionPool arg3, int arg4) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public Session createSession(boolean arg0, int arg1) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public String getClientID() throws JMSException {
+			return null;
+		}
+
+		@Override
+		public ExceptionListener getExceptionListener() throws JMSException {
+			return null;
+		}
+
+		@Override
+		public ConnectionMetaData getMetaData() throws JMSException {
+			return null;
+		}
+
+		@Override
+		public void setClientID(String arg0) throws JMSException {
+
+		}
+
+		@Override
+		public void setExceptionListener(ExceptionListener arg0) throws JMSException {
+
+		}
+
+		@Override
+		public void start() throws JMSException {
+
+		}
+
+		@Override
+		public void stop() throws JMSException {
+
+		}
+
+	}
+
+	public static class QueueConnectionImpl extends ConnectionImpl implements QueueConnection {
+
+		@Override
+		public ConnectionConsumer createConnectionConsumer(Queue arg0, String arg1, ServerSessionPool arg2, int arg3) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public QueueSession createQueueSession(boolean arg0, int arg1) throws JMSException {
+			return null;
+		}
+
+	}
+
+	public static class TopicConnectionImpl extends ConnectionImpl implements TopicConnection {
+
+		@Override
+		public ConnectionConsumer createConnectionConsumer(Topic arg0, String arg1, ServerSessionPool arg2, int arg3) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public TopicSession createTopicSession(boolean arg0, int arg1) throws JMSException {
+			return null;
+		}
+
+	}
 
 	public static abstract class DestinationImpl implements Destination {
 		Set<MessageConsumerImpl> consumers = new CopyOnWriteArraySet<MessageConsumerImpl>();
@@ -113,12 +254,12 @@ public class JMSUtil {
 	}
 
 	public static interface Selector {
-		boolean filter(Message msg);
+		boolean filter(Message msg) throws JMSException;
 	}
 
 	public static class AllSelector implements Selector {
 		@Override
-		public boolean filter(Message msg) {
+		public boolean filter(Message msg) throws JMSException {
 			return true;
 		}
 
@@ -134,8 +275,11 @@ public class JMSUtil {
 		}
 
 		@Override
-		public boolean filter(Message msg) {
-			return true;
+		public boolean filter(Message msg) throws JMSException {
+			if (nodeId.equals(msg.getStringProperty(Node.NODE_MQ_PROP_NODE))) {
+				return true;
+			}
+			return false;
 		}
 
 	}
@@ -164,7 +308,7 @@ public class JMSUtil {
 			dest.addConsumer(this);
 		}
 
-		public boolean filter(Message msg) {
+		public boolean filter(Message msg) throws JMSException {
 			return selector.filter(msg);
 		}
 
@@ -216,6 +360,37 @@ public class JMSUtil {
 		@Override
 		public void setMessageListener(MessageListener listener) throws JMSException {
 			this.listener = listener;
+		}
+
+	}
+
+	public static class QueueReceiverImpl extends MessageConsumerImpl implements QueueReceiver {
+
+		QueueReceiverImpl(DestinationImpl dest, String msgSelector, boolean noLocal) {
+			super(dest, msgSelector, noLocal);
+		}
+
+		@Override
+		public Queue getQueue() throws JMSException {
+			return null;
+		}
+
+	}
+
+	public static class TopicSubscriberImpl extends MessageConsumerImpl implements TopicSubscriber {
+		
+		TopicSubscriberImpl(DestinationImpl dest, String msgSelector, boolean noLocal) {
+			super(dest, msgSelector, noLocal);
+		}
+
+		@Override
+		public boolean getNoLocal() throws JMSException {
+			return false;
+		}
+
+		@Override
+		public Topic getTopic() throws JMSException {
+			return null;
 		}
 
 	}
@@ -316,7 +491,7 @@ public class JMSUtil {
 
 	}
 
-	public static class SessionImpl implements Session {
+	public abstract static class SessionImpl implements Session {
 
 		@Override
 		public void close() throws JMSException {
@@ -483,6 +658,44 @@ public class JMSUtil {
 		@Override
 		public void unsubscribe(String arg0) throws JMSException {
 
+		}
+
+	}
+
+	public static class QueueSessionImpl extends SessionImpl implements QueueSession {
+
+		@Override
+		public QueueReceiver createReceiver(Queue arg0) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public QueueReceiver createReceiver(Queue arg0, String arg1) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public QueueSender createSender(Queue arg0) throws JMSException {
+			return null;
+		}
+
+	}
+
+	public static class TopicSessionImpl extends SessionImpl implements TopicSession {
+
+		@Override
+		public TopicPublisher createPublisher(Topic arg0) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public TopicSubscriber createSubscriber(Topic arg0) throws JMSException {
+			return null;
+		}
+
+		@Override
+		public TopicSubscriber createSubscriber(Topic arg0, String arg1, boolean arg2) throws JMSException {
+			return null;
 		}
 
 	}

@@ -27,17 +27,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.inject.Provider;
 import javax.jms.Queue;
 import javax.jms.Topic;
+import javax.jms.TopicConnectionFactory;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
+import org.apache.ode.runtime.exec.platform.JMSUtil.TopicConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterConfigProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeStateProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeModule.NodeTypeListener;
 import org.apache.ode.spi.exec.Node;
@@ -48,6 +53,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.inject.Key;
 import com.google.inject.matcher.Matchers;
 import com.mycila.inject.jsr250.Jsr250;
 import com.mycila.inject.jsr250.Jsr250Injector;
@@ -57,13 +63,13 @@ public class HealthCheckTest {
 	private static Jsr250Injector injector1;
 	private static Jsr250Injector injector2;
 
-	private static Topic healthCheckTopic = new TopicImpl("ODE_HEALTHCHECK");
-	private static Queue taskQueue = new QueueImpl("ODE_TASK");
+	private static Topic healthCheckTopic = new TopicImpl(Node.NODE_MQ_NAME_HEALTHCHECK);
+	private static Queue taskQueue = new QueueImpl(Node.NODE_MQ_NAME_TASK);
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("hcluster", "node1"));
-		loadTestClusterConfig(injector1,"hcluster");
+		loadTestClusterConfig(injector1, "hcluster");
 		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("hcluster", "node2"));
 	}
 
@@ -86,21 +92,40 @@ public class HealthCheckTest {
 		protected void configure() {
 			super.configure();
 			bindListener(Matchers.any(), new NodeTypeListener());
+			bind(AtomicReference.class).annotatedWith(LocalNodeState.class).toProvider(LocalNodeStateProvider.class);
 			bind(ClusterConfig.class).toProvider(ClusterConfigProvider.class);
 			bind(HealthCheck.class);
 			bindConstant().annotatedWith(NodeId.class).to(nodeId);
 			bindConstant().annotatedWith(ClusterId.class).to(clusterId);
 		}
 
-		public Topic getHealthCheckTopic() {
-			return healthCheckTopic;
-		}
+		@Override
+		protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
+			class HealthCheckTopic implements Provider<Topic> {
+				
 
-		public Queue getTaskQueue() {
-			return taskQueue;
+				@Override
+				public Topic get() {
+					return healthCheckTopic;
+				}
+
+			}
+			return HealthCheckTopic.class;
+		}
+		@Override
+		protected Class<? extends Provider<Queue>> getTaskQueue() {
+			class TaskQueue implements Provider<Queue> {
+			
+				@Override
+				public Queue get() {
+					return taskQueue;
+				}
+
+			}
+			return TaskQueue.class;
 		}
 	}
-	
+
 	public static void loadTestClusterConfig(Jsr250Injector injector, String clusterId) {
 		Repository repo = injector.getInstance(Repository.class);
 		try {
@@ -116,17 +141,17 @@ public class HealthCheckTest {
 
 	@Test
 	public void healthCheckTest() throws Exception {
-		AtomicReference<NodeState> localNodeState1 = new AtomicReference<NodeState>();
+		AtomicReference<NodeState> localNodeState1 = injector1.getInstance(Key.get(AtomicReference.class,LocalNodeState.class));
+		assertNotNull(localNodeState1);
 		localNodeState1.set(NodeState.OFFLINE);
-		AtomicReference<NodeState> localNodeState2 = new AtomicReference<NodeState>();
+		AtomicReference<NodeState> localNodeState2 = injector2.getInstance(Key.get(AtomicReference.class,LocalNodeState.class));
+		assertNotNull(localNodeState2);
 		localNodeState2.set(NodeState.OFFLINE);
 
 		HealthCheck check1 = injector1.getInstance(HealthCheck.class);
 		assertNotNull(check1);
-		check1.setLocalNodeState(localNodeState1);
 		HealthCheck check2 = injector2.getInstance(HealthCheck.class);
 		assertNotSame(check1, check2);
-		check2.setLocalNodeState(localNodeState2);
 
 		check1.run();
 		assertEquals(1, check1.availableNodes().size());

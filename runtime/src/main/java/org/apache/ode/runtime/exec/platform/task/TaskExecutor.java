@@ -18,24 +18,59 @@
  */
 package org.apache.ode.runtime.exec.platform.task;
 
+import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+
+import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.jms.BytesMessage;
+import javax.jms.JMSException;
+import javax.jms.Queue;
+import javax.jms.QueueConnection;
+import javax.jms.QueueConnectionFactory;
+import javax.jms.QueueReceiver;
+import javax.jms.QueueSession;
+import javax.jms.Session;
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.namespace.QName;
+import javax.xml.transform.stream.StreamSource;
 
+import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
+import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
+import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Executors;
+import org.apache.ode.spi.exec.Node;
+import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.Target;
+import org.apache.ode.spi.exec.Task.TaskActionDefinition;
+import org.apache.ode.spi.exec.Task.TaskActionState;
+import org.apache.ode.spi.exec.Task.TaskDefinition;
+import org.apache.ode.spi.exec.Task.TaskState;
+import org.w3c.dom.Document;
 
 @Singleton
-public class TaskExecutor {
+public class TaskExecutor implements Runnable {
 
 	@PersistenceUnit(unitName = "platform")
 	EntityManagerFactory pmgrFactory;
@@ -43,20 +78,91 @@ public class TaskExecutor {
 	@Inject
 	Executors executors;
 
-	//Map<QName, ActionEntry> actions = new HashMap<QName, ActionEntry>();
-
-	//ConcurrentHashMap<Long, ActionRunnable> executingTasks = new ConcurrentHashMap<Long, ActionRunnable>();
-
-	private String nodeId;
 	private ExecutorService exec;
 
 	private static final Logger log = Logger.getLogger(TaskExecutor.class.getName());
 
+	@Inject
+	ClusterConfig clusterConfig;
+
+	@NodeId
+	String nodeId;
+
+	@TaskCheck
+	QueueConnectionFactory queueConFactory;
+
+	private QueueConnection pollQueueConnection;
+	private QueueSession pollTaskSession;
+
+	@TaskCheck
+	private Queue taskQueue;
+
+	private QueueReceiver taskQueueReceiver;
+
+	private Node node;
+
+	@LocalNodeState
+	AtomicReference<NodeState> localNodeState;
+
+	org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
+
 	@PostConstruct
-	public void init() {
+	public void init() throws Exception {
 		log.fine("Initializing ActionExecutor");
 		log.fine("ActionExecutor Initialized");
+		this.config = clusterConfig.getTaskCheck();
+		pollQueueConnection = queueConFactory.createQueueConnection();
+		pollTaskSession = pollQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+		taskQueueReceiver = pollTaskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK, nodeId, Node.NODE_MQ_PROP_VALUE_NEW));
+		pollQueueConnection.start();
+	}
 
+	@PreDestroy
+	public void destroy() throws Exception {
+		taskQueueReceiver.close();
+		pollTaskSession.close();
+		pollQueueConnection.close();
+	}
+
+	@Override
+	public synchronized void run() {
+
+		try {// stop for nothing
+			while (true) {
+				try {
+					BytesMessage message = (BytesMessage) taskQueueReceiver.receive(config.getFrequency());
+					if (message == null) {
+						continue;
+					}
+					Queue requestor = (Queue) message.getJMSReplyTo();
+					String correlationId = message.getJMSCorrelationID();
+					byte[] payload = new byte[(int) message.getBodyLength()];
+					message.readBytes(payload);
+					Unmarshaller umarshaller = CLUSTER_JAXB_CTX.createUnmarshaller();
+					if (message.getStringProperty(Node.NODE_MQ_PROP_TASKID) != null) {
+						//TODO tasks are typically submitted from platform, but in future would like to support task initiation externally from MQ and provide updates like actions
+						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.Task> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+								payload)), org.apache.ode.runtime.exec.cluster.xml.Task.class);
+						org.apache.ode.runtime.exec.cluster.xml.Task task = element.getValue();
+						//submitTask(task.getName(), task., targets);
+					} else if (message.getStringProperty(Node.NODE_MQ_PROP_TASKID) != null) {
+						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
+								new ByteArrayInputStream(payload)), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class);
+					}
+
+				} catch (JMSException e) {
+					log.log(Level.SEVERE, "", e);
+				}
+			}
+
+		} catch (Throwable t) {
+			log.log(Level.SEVERE, "", t);
+		}
+
+	}
+
+	public void configure(Node node) {
+		this.node = node;
 	}
 
 	public void online() throws PlatformException {
@@ -67,41 +173,97 @@ public class TaskExecutor {
 		executors.destroyClusterTaskExecutor();
 	}
 
-	public void init(String nodeId) {
-		this.nodeId = nodeId;
-	}
-
 	private class RejectedTaskExecution implements RejectedExecutionHandler {
 		@Override
 		public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
-			if (runnable instanceof TaskRunnable) {
+			if (runnable instanceof TaskCallable) {
 				//log.log(Level.SEVERE, "ActionTask Rejected {0}", ar.getAction().getActionId());	
-			} else if (runnable instanceof TaskActionRunnable) {
+			} else if (runnable instanceof TaskActionCallable) {
 				//log.log(Level.SEVERE, "ActionTask Rejected {0}", ar.getAction().getActionId());
 			}
 		}
 	}
 
-	public class TaskRunnable implements Runnable {
+	public class TaskInfo {
+		public TaskIdImpl id;
+		public Future<TaskState> state;
+	}
 
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-
+	public TaskInfo submitTask(String correlationId, Queue requestor, QName task, Document taskInput, Target... targets) throws PlatformException {
+		//TaskCoordinators run on node where task is submitted. Also all DB 
+		TaskDefinition def = node.getTaskDefinitions().get(task);
+		if (def == null) {
+			throw new PlatformException(String.format("Unsupported Task %s", task.toString()));
+		}
+		EntityManager pmgr = pmgrFactory.createEntityManager();
+		pmgr.getTransaction().begin();
+		try {
+			org.apache.ode.runtime.exec.platform.task.TaskImpl t = new org.apache.ode.runtime.exec.platform.task.TaskImpl();
+			t.setName(task);
+			/*defer
+			t.setInput(taskInput); 
+			Set<TargetImpl> targetEntities = new HashSet<TargetImpl>();
+			for (Target target : targets) {
+				targetEntities.add((TargetImpl) target);
+			}
+			t.setTargets(targetEntities);
+			//t.setComponent(ae.component);
+			*/t.setNodeId(nodeId);
+			t.setState(TaskState.SUBMIT);
+			pmgr.persist(t);
+			pmgr.getTransaction().commit();
+			TaskInfo info = new TaskInfo();
+			info.id = (TaskIdImpl) t.id();
+			info.state = exec.submit(new TaskCallable(node, requestor, correlationId, info.id, taskInput, targets));
+			return info;
+		} catch (PersistenceException pe) {
+			throw new PlatformException(pe);
+		} finally {
+			pmgr.close();
 		}
 
 	}
 
-	public class TaskActionRunnable implements Runnable {
+	public class TaskActionInfo {
+		public TaskActionIdImpl id;
+		public Future<TaskActionState> state;
+	}
 
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-
+	public TaskActionInfo submitTaskAction(QName action, Document taskInput, Target... targets) throws PlatformException {
+		//TaskCoordinators run on node where task is submitted. Also all DB 
+		TaskActionDefinition def = node.getTaskActionDefinitions().get(action);
+		if (def == null) {
+			throw new PlatformException(String.format("Unsupported TaskAction %s", action.toString()));
+		}
+		EntityManager pmgr = pmgrFactory.createEntityManager();
+		pmgr.getTransaction().begin();
+		try {
+			org.apache.ode.runtime.exec.platform.task.TaskActionImpl t = new org.apache.ode.runtime.exec.platform.task.TaskActionImpl();
+			t.setName(action);
+			/*defer
+			t.setInput(taskInput); 
+			Set<TargetImpl> targetEntities = new HashSet<TargetImpl>();
+			for (Target target : targets) {
+				targetEntities.add((TargetImpl) target);
+			}
+			t.setTargets(targetEntities);
+			//t.setComponent(ae.component);
+			*/t.setNodeId(nodeId);
+			t.setState(TaskActionState.SUBMIT);
+			pmgr.persist(t);
+			pmgr.getTransaction().commit();
+			TaskActionInfo info = new TaskActionInfo();
+			info.id = (TaskActionIdImpl) t.id();
+			info.state = exec.submit(new TaskActionCallable(info.id, taskInput));
+			return info;
+		} catch (PersistenceException pe) {
+			throw new PlatformException(pe);
+		} finally {
+			pmgr.close();
 		}
 
 	}
-	
+
 	public void setupTasks(Collection<Component> components) throws PlatformException {
 		/*// add built in actions
 		ActionEntry installActionEntry = new ActionEntry(TaskType.MASTER, Platform.PLATFORM, installMasterActionProvider);

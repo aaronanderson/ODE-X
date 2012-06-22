@@ -28,13 +28,13 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import javax.jms.Session;
-import javax.jms.Topic;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterConfigProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeStateProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
 import org.apache.ode.runtime.exec.platform.task.TaskPoll;
@@ -55,16 +55,17 @@ import com.google.inject.spi.TypeListener;
 public class NodeModule extends AbstractModule {
 	protected void configure() {
 		bindListener(Matchers.any(), new NodeTypeListener());
+		bind(AtomicReference.class).annotatedWith(LocalNodeState.class).toProvider(LocalNodeStateProvider.class);
 		bind(ClusterConfig.class).toProvider(ClusterConfigProvider.class);
 		bind(HealthCheck.class);
 		bind(TaskPoll.class);
 		bind(TaskExecutor.class);
-		bind(MessagePoll.class);
+		bind(MessageHandler.class);
 		bind(Executors.class).toInstance(getExecutors());
 		bind(Node.class).to(NodeImpl.class);
 		bind(Platform.class).to(PlatformImpl.class);
 	}
-	
+
 	public static class NodeTypeListener implements TypeListener {
 		public <T> void hear(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
 			for (Field field : typeLiteral.getRawType().getDeclaredFields()) {
@@ -75,11 +76,11 @@ public class NodeModule extends AbstractModule {
 						typeEncounter.register(new NodeMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), ClusterId.class))));
 					}
 
-				} /*else if (field.getType() == Topic.class) {
-					if (field.isAnnotationPresent(NodeCheck.class)) {
-						typeEncounter.register(typeEncounter.getMembersInjector(typeLiteral));
+				} else if (field.getType() == AtomicReference.class) {
+					if (field.isAnnotationPresent(LocalNodeState.class)) {
+						typeEncounter.register(new NodeMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), LocalNodeState.class))));
 					}
-					}*/
+				}
 
 			}
 		}
@@ -210,6 +211,18 @@ public class NodeModule extends AbstractModule {
 		public void destroyProcessingUnitScheduler() throws PlatformException {
 			// TODO Auto-generated method stub
 
+		}
+
+		@Override
+		public ExecutorService initIOExecutor(RejectedExecutionHandler handler) throws PlatformException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void destroyIOExecutor() throws PlatformException {
+			// TODO Auto-generated method stub
+			
 		}
 
 	}

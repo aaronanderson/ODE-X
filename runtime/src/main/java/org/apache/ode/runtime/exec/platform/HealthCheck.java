@@ -19,7 +19,7 @@
 package org.apache.ode.runtime.exec.platform;
 
 import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
-import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_NAMESPACE;
+import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,10 +38,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jms.BytesMessage;
 import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
+import javax.jms.TopicConnectionFactory;
+import javax.jms.TopicPublisher;
+import javax.jms.TopicSession;
+import javax.jms.TopicSubscriber;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceException;
@@ -55,6 +58,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.spi.exec.Platform.NodeStatus;
@@ -76,38 +80,44 @@ public class HealthCheck implements Runnable {
 	private EntityManager pmgr;
 
 	@NodeCheck
-	private Session nodeStatusSession;
+	TopicConnectionFactory topicConFactory;
+
+	private TopicConnection topicConnection;
+	private TopicSession nodeStatusSession;
 
 	@NodeCheck
 	private Topic nodeStatusTopic;
 
-	private MessageProducer producer;
-	private MessageConsumer consumer;
+	@LocalNodeState
+	AtomicReference<NodeState> localNodeState;
+
+	private TopicPublisher publisher;
+	private TopicSubscriber subscriber;
 
 	private AtomicReference<Set<NodeStatusImpl>> nodeStatus = new AtomicReference<Set<NodeStatusImpl>>();
 	private AtomicReference<Set<String>> onlineClusterNodes = new AtomicReference<Set<String>>();
 
 	private org.apache.ode.runtime.exec.cluster.xml.HealthCheck config;
-	AtomicReference<NodeState> localNodeState;
 
 	private static final Logger log = Logger.getLogger(HealthCheck.class.getName());
 
-	public void setLocalNodeState(AtomicReference<NodeState> localNodeState){
-		this.localNodeState=localNodeState;
-	}
-	
 	@PostConstruct
 	public void init() throws Exception {
-		producer = nodeStatusSession.createProducer(nodeStatusTopic);
-		consumer = nodeStatusSession.createConsumer(nodeStatusTopic);
-		this.config=clusterConfig.getHealthCheck();
+		topicConnection = topicConFactory.createTopicConnection();
+		nodeStatusSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+		publisher = nodeStatusSession.createPublisher(nodeStatusTopic);
+		subscriber = nodeStatusSession.createSubscriber(nodeStatusTopic);
+		topicConnection.start();
+		this.config = clusterConfig.getHealthCheck();
 		deleteStaleNodes();
 	}
 
 	@PreDestroy
 	public void destroy() throws Exception {
-		producer.close();
-		consumer.close();
+		publisher.close();
+		subscriber.close();
+		nodeStatusSession.close();
+		topicConnection.close();
 	}
 
 	public Set<NodeStatus> availableNodes() {
@@ -205,18 +215,19 @@ public class HealthCheck implements Runnable {
 			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "NodeStatus"), org.apache.ode.runtime.exec.cluster.xml.NodeStatus.class,
 					xmlNodeStatus), bos);
 			message.writeBytes(bos.toByteArray());
-			producer.send(message);
+			publisher.publish(message);
 
 			while (true) {
 				try {
-					message = (BytesMessage) consumer.receive(0l);
+					message = (BytesMessage) subscriber.receive(0l);
 					if (message == null) {
 						break;
 					}
 					byte[] payload = new byte[(int) message.getBodyLength()];
 					message.readBytes(payload);
 					Unmarshaller umarshaller = CLUSTER_JAXB_CTX.createUnmarshaller();
-					JAXBElement<org.apache.ode.runtime.exec.cluster.xml.NodeStatus> element =  umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(payload)),org.apache.ode.runtime.exec.cluster.xml.NodeStatus.class);
+					JAXBElement<org.apache.ode.runtime.exec.cluster.xml.NodeStatus> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+							payload)), org.apache.ode.runtime.exec.cluster.xml.NodeStatus.class);
 					xmlNodeStatus = element.getValue();
 					currentNodes.add(convert(xmlNodeStatus));
 				} catch (JMSException e) {

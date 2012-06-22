@@ -25,6 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,6 +40,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -48,6 +52,7 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
+import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskPoll;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
@@ -58,7 +63,10 @@ import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Target;
 import org.apache.ode.spi.exec.Task;
+import org.apache.ode.spi.exec.Task.TaskActionDefinition;
+import org.apache.ode.spi.exec.Task.TaskDefinition;
 import org.apache.ode.spi.exec.Task.TaskId;
+import org.apache.ode.spi.exec.Task.TaskState;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -78,6 +86,9 @@ public class NodeImpl implements Node {
 		}
 	}
 
+	@PersistenceUnit(unitName = "platform")
+	EntityManagerFactory pmgrFactory;
+
 	@Inject
 	ClusterConfig config;
 
@@ -94,31 +105,40 @@ public class NodeImpl implements Node {
 	HealthCheck healthCheck;
 
 	@Inject
-	TaskPoll taskPoll;
-
-	@Inject
-	MessagePoll messagePoll;
+	MessageHandler messageHandler;
 
 	@Inject
 	TaskExecutor taskExec;
 
+	@LocalNodeState
+	AtomicReference<NodeState> localNodeState;
+
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
 	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
+	private Map<QName, TaskDefinition> tasks = new ConcurrentHashMap<QName, TaskDefinition>();
+	private Map<QName, TaskActionDefinition> actions = new ConcurrentHashMap<QName, TaskActionDefinition>();
 
-	private AtomicReference<NodeState> localNodeState = new AtomicReference<NodeState>();
 	private QName architecture;
 
 	@Inject
 	Executors executors;
 
+	@Singleton
+	public static class LocalNodeStateProvider implements Provider<AtomicReference<NodeState>> {
+		AtomicReference<NodeState> localNodeState = new AtomicReference<NodeState>();
+
+		@Override
+		public AtomicReference<NodeState> get() {
+			return localNodeState;
+		}
+
+	}
+
 	@PostConstruct
 	public void init() {
 		log.fine("Initializing Node");
-
+		taskExec.configure(this);
 		localNodeState.set(NodeState.OFFLINE);
-		healthCheck.setLocalNodeState(localNodeState);
-		taskExec.init(nodeId);
-		taskPoll.setLocalNodeState(localNodeState);
 
 		// Prime the health check to make sure it runs at least once before
 		// continuing startup
@@ -127,8 +147,8 @@ public class NodeImpl implements Node {
 		try {
 			clusterScheduler = executors.initClusterTaskScheduler();
 			clusterScheduler.scheduleAtFixedRate(healthCheck, 0, config.getHealthCheck().getFrequency(), TimeUnit.MILLISECONDS);
-			clusterScheduler.scheduleAtFixedRate(taskPoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
-			clusterScheduler.scheduleAtFixedRate(messagePoll, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
+			clusterScheduler.scheduleAtFixedRate(taskExec, 0, config.getTaskCheck().getFrequency(), TimeUnit.MILLISECONDS);
+			clusterScheduler.scheduleAtFixedRate(messageHandler, 0, config.getMessageCheck().getFrequency(), TimeUnit.MILLISECONDS);
 		} catch (PlatformException pe) {
 			log.log(Level.SEVERE, "", pe);
 		}
@@ -160,11 +180,28 @@ public class NodeImpl implements Node {
 		for (InstructionSet is : component.instructionSets()) {
 			instructions.put(is.getName(), is);
 		}
+		for (TaskDefinition td : component.tasks()) {
+			tasks.put(td.task(), td);
+		}
+		for (TaskActionDefinition tad : component.actions()) {
+			actions.put(tad.action(), tad);
+		}
+
 	}
 
 	@Override
 	public Map<QName, InstructionSet> getInstructionSets() {
 		return instructions;
+	}
+
+	@Override
+	public Map<QName, TaskDefinition> getTaskDefinitions() {
+		return tasks;
+	}
+	
+	@Override
+	public Map<QName, TaskActionDefinition> getTaskActionDefinitions() {
+		return actions;
 	}
 
 	@Override
@@ -182,20 +219,17 @@ public class NodeImpl implements Node {
 		healthCheck.run();
 	}
 
-	public TaskId execute(QName task, Document actionInput, Target... targets) throws PlatformException {
-		/*TaskType type = actionExec.actionType(task);
+	public void executeSync(QName task, Document taskInput, Target... targets) throws PlatformException {
+		Future<TaskState> state = taskExec.submitTask(null, null, task, taskInput, targets).state;
+		try {
+			state.get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new PlatformException(e);
+		}
+	}
 
-		if (TaskType.ACTION.equals(type)) {
-			String target = getTarget(targets);
-			return actionExec.executeAction(action, actionInput, target);
-		} else if (TaskType.MASTER.equals(type)) {
-			Set<String> slaveTargets = getMasterTargets(targets);
-			return actionExec.executeMasterAction(action, actionInput, slaveTargets);
-		} else {
-			throw new PlatformException("Unsupported ActionTask type");
-		}*/
-		return null;
-
+	public TaskIdImpl executeAsync(QName task, Document taskInput, Target... targets) throws PlatformException {
+		return taskExec.submitTask(null, null, task, taskInput, targets).id;
 	}
 
 	public Task status(TaskId taskId) throws PlatformException {
@@ -283,6 +317,13 @@ public class NodeImpl implements Node {
 	@Qualifier
 	@java.lang.annotation.Target({ ElementType.FIELD, ElementType.METHOD })
 	@Retention(RetentionPolicy.RUNTIME)
+	public @interface LocalNodeState {
+
+	}
+
+	@Qualifier
+	@java.lang.annotation.Target({ ElementType.FIELD, ElementType.METHOD })
+	@Retention(RetentionPolicy.RUNTIME)
 	public @interface NodeCheck {
 
 	}
@@ -294,6 +335,12 @@ public class NodeImpl implements Node {
 
 	}
 
+	@Qualifier
+	@java.lang.annotation.Target({ ElementType.FIELD, ElementType.METHOD })
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface MessageCheck {
+
+	}
 
 	@Singleton
 	public static class ClusterConfigProvider implements Provider<ClusterConfig> {

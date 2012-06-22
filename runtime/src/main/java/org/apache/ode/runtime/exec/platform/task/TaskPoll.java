@@ -25,15 +25,19 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.jms.Queue;
+import javax.jms.QueueConnection;
+import javax.jms.QueueConnectionFactory;
+import javax.jms.QueueReceiver;
+import javax.jms.QueueSender;
+import javax.jms.QueueSession;
 import javax.jms.Session;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.spi.exec.Node;
@@ -54,37 +58,43 @@ public class TaskPoll implements Runnable {
 	private EntityManager pmgr;
 
 	@TaskCheck
-	private Session taskSession;
+	QueueConnectionFactory queueConFactory;
+
+	private QueueConnection queueConnection;
+	private QueueSession taskSession;
 
 	@TaskCheck
 	private Queue taskQueue;
 
-	private MessageProducer producer;
-	private MessageConsumer consumer;
+	private QueueSender sender;
+	private QueueReceiver receiver;
 
 	@Inject
 	private TaskExecutor exec;
 
+	@LocalNodeState
 	AtomicReference<NodeState> localNodeState;
+
 	org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
 
 	private static final Logger log = Logger.getLogger(TaskPoll.class.getName());
 
-	public void setLocalNodeState(AtomicReference<NodeState> localNodeState) {
-		this.localNodeState = localNodeState;
-	}
-
 	@PostConstruct
 	public void init() throws Exception {
 		this.config = clusterConfig.getTaskCheck();
-		producer = taskSession.createProducer(taskQueue);
-		consumer = taskSession.createConsumer(taskQueue, String.format(Node.NODE_MQ_FILTER, clusterId, nodeId));
+		queueConnection = queueConFactory.createQueueConnection();
+		taskSession = queueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+		sender = taskSession.createSender(taskQueue);
+		receiver = taskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_NODE, nodeId));
+		queueConnection.start();
 	}
 
 	@PreDestroy
 	public void destroy() throws Exception {
-		producer.close();
-		consumer.close();
+		sender.close();
+		receiver.close();
+		taskSession.close();
+		queueConnection.close();
 	}
 
 	@Override
