@@ -36,6 +36,9 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.AQJMSModule.AQBroker;
+import org.apache.ode.runtime.exec.platform.AQJMSModule.AQBrokerURL;
+import org.apache.ode.runtime.exec.platform.AQJMSModule.AQJMSTypeListener;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
@@ -68,9 +71,9 @@ public class HealthCheckTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("hcluster", "node1"));
+		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://node1", "hcluster", "node1"));
 		loadTestClusterConfig(injector1, "hcluster");
-		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("hcluster", "node2"));
+		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://node1?create=false", "hcluster", "node2"));
 	}
 
 	@AfterClass
@@ -79,18 +82,24 @@ public class HealthCheckTest {
 		injector2.destroy();
 	}
 
-	public static class HealthCheckTestModule extends JMSModule {
+	public static class HealthCheckTestModule extends AQJMSModule {
 		String clusterId;
 		String nodeId;
+		String aqBrokerURL;
 
-		public HealthCheckTestModule(String clusterId, String nodeId) {
+		public HealthCheckTestModule(String aqBrokerURL, String clusterId, String nodeId) {
 			this.clusterId = clusterId;
 			this.nodeId = nodeId;
+			this.aqBrokerURL=aqBrokerURL;
 		}
-
+		
 		@Override
 		protected void configure() {
 			super.configure();
+			bind(AQBroker.class).to(VMAQBroker.class);
+			bindListener(Matchers.any(), new AQJMSTypeListener());
+			bindConstant().annotatedWith(AQBrokerURL.class).to(aqBrokerURL);
+			
 			bindListener(Matchers.any(), new NodeTypeListener());
 			bind(AtomicReference.class).annotatedWith(LocalNodeState.class).toProvider(LocalNodeStateProvider.class);
 			bind(ClusterConfig.class).toProvider(ClusterConfigProvider.class);
@@ -99,31 +108,33 @@ public class HealthCheckTest {
 			bindConstant().annotatedWith(ClusterId.class).to(clusterId);
 		}
 
-		@Override
-		protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
-			class HealthCheckTopic implements Provider<Topic> {
-				
-
+		/*
 				@Override
-				public Topic get() {
-					return healthCheckTopic;
-				}
+				protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
+					class HealthCheckTopic implements Provider<Topic> {
+						
 
-			}
-			return HealthCheckTopic.class;
-		}
-		@Override
-		protected Class<? extends Provider<Queue>> getTaskQueue() {
-			class TaskQueue implements Provider<Queue> {
-			
+						@Override
+						public Topic get() {
+							return healthCheckTopic;
+						}
+
+					}
+					return HealthCheckTopic.class;
+				}
 				@Override
-				public Queue get() {
-					return taskQueue;
-				}
+				protected Class<? extends Provider<Queue>> getTaskQueue() {
+					class TaskQueue implements Provider<Queue> {
+					
+						@Override
+						public Queue get() {
+							return taskQueue;
+						}
 
-			}
-			return TaskQueue.class;
-		}
+					}
+					return TaskQueue.class;
+				}
+				*/
 	}
 
 	public static void loadTestClusterConfig(Jsr250Injector injector, String clusterId) {
@@ -141,10 +152,10 @@ public class HealthCheckTest {
 
 	@Test
 	public void healthCheckTest() throws Exception {
-		AtomicReference<NodeState> localNodeState1 = injector1.getInstance(Key.get(AtomicReference.class,LocalNodeState.class));
+		AtomicReference<NodeState> localNodeState1 = injector1.getInstance(Key.get(AtomicReference.class, LocalNodeState.class));
 		assertNotNull(localNodeState1);
 		localNodeState1.set(NodeState.OFFLINE);
-		AtomicReference<NodeState> localNodeState2 = injector2.getInstance(Key.get(AtomicReference.class,LocalNodeState.class));
+		AtomicReference<NodeState> localNodeState2 = injector2.getInstance(Key.get(AtomicReference.class, LocalNodeState.class));
 		assertNotNull(localNodeState2);
 		localNodeState2.set(NodeState.OFFLINE);
 

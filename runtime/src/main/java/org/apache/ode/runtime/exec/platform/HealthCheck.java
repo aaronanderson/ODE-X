@@ -102,22 +102,30 @@ public class HealthCheck implements Runnable {
 	private static final Logger log = Logger.getLogger(HealthCheck.class.getName());
 
 	@PostConstruct
-	public void init() throws Exception {
-		topicConnection = topicConFactory.createTopicConnection();
-		nodeStatusSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-		publisher = nodeStatusSession.createPublisher(nodeStatusTopic);
-		subscriber = nodeStatusSession.createSubscriber(nodeStatusTopic);
-		topicConnection.start();
-		this.config = clusterConfig.getHealthCheck();
-		deleteStaleNodes();
+	public void init() {
+		try {
+			topicConnection = topicConFactory.createTopicConnection();
+			nodeStatusSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+			publisher = nodeStatusSession.createPublisher(nodeStatusTopic);
+			subscriber = nodeStatusSession.createSubscriber(nodeStatusTopic);
+			topicConnection.start();
+			this.config = clusterConfig.getHealthCheck();
+			deleteStaleNodes();
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
+		}
 	}
 
 	@PreDestroy
-	public void destroy() throws Exception {
-		publisher.close();
-		subscriber.close();
-		nodeStatusSession.close();
-		topicConnection.close();
+	public void destroy() {
+		try {
+			publisher.close();
+			subscriber.close();
+			nodeStatusSession.close();
+			topicConnection.close();
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
+		}
 	}
 
 	public Set<NodeStatus> availableNodes() {
@@ -219,7 +227,7 @@ public class HealthCheck implements Runnable {
 
 			while (true) {
 				try {
-					message = (BytesMessage) subscriber.receive(0l);
+					message = (BytesMessage) subscriber.receive(1000l);
 					if (message == null) {
 						break;
 					}

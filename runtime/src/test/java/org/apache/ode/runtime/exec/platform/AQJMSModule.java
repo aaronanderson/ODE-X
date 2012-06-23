@@ -18,10 +18,18 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Field;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import javax.jms.Queue;
 import javax.jms.QueueConnectionFactory;
@@ -33,16 +41,22 @@ import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
+import org.apache.ode.runtime.exec.platform.JMSModule.JMSSessionMembersInjector;
+import org.apache.ode.runtime.exec.platform.JMSModule.JMSTypeListener;
+import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
+import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.spi.exec.Node;
 
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.google.inject.matcher.Matchers;
+import com.google.inject.spi.TypeEncounter;
+import com.google.inject.spi.TypeListener;
 
-//Good info https://community.jboss.org/wiki/ShouldICacheJMSConnectionsAndJMSSessions?_sscc=t
-public class AQJMSModule extends JMSModule {
+public abstract class AQJMSModule extends JMSModule {
 
-	protected void configure() {
-		super.configure();
-		bind(AQBroker.class);
-	}
+	private static final Logger log = Logger.getLogger(AQJMSModule.class.getName());
 
 	@Override
 	protected Class<? extends Provider<TopicConnectionFactory>> getHealthCheckFactory() {
@@ -50,18 +64,20 @@ public class AQJMSModule extends JMSModule {
 		return TopicConnectionFactoryProvider.class;
 	}
 
+	static class HealthCheckTopic implements Provider<Topic> {
+		@Inject
+		AQBroker broker;
+
+		@Override
+		public Topic get() {
+			return broker.healthCheckTopic();
+		}
+
+	}
+
 	@Override
 	protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
-		class HealthCheckTopic implements Provider<Topic> {
-			@Inject
-			AQBroker broker;
 
-			@Override
-			public Topic get() {
-				return broker.hcTopic;
-			}
-
-		}
 		return HealthCheckTopic.class;
 	}
 
@@ -71,19 +87,20 @@ public class AQJMSModule extends JMSModule {
 		return QueueConnectionFactoryProvider.class;
 	}
 
+	static class TaskQueue implements Provider<Queue> {
+		@Inject
+		AQBroker broker;
+
+		@Override
+		public Queue get() {
+			return broker.taskQueue();
+		}
+
+	}
+
 	@Override
 	protected Class<? extends Provider<Queue>> getTaskQueue() {
 
-		class TaskQueue implements Provider<Queue> {
-			@Inject
-			AQBroker broker;
-
-			@Override
-			public Queue get() {
-				return broker.taskQueue;
-			}
-
-		}
 		return TaskQueue.class;
 	}
 
@@ -93,19 +110,19 @@ public class AQJMSModule extends JMSModule {
 		return QueueConnectionFactoryProvider.class;
 	}
 
+	static class MessageTopic implements Provider<Topic> {
+		@Inject
+		AQBroker broker;
+
+		@Override
+		public Topic get() {
+			return broker.messageTopic();
+		}
+
+	}
+
 	@Override
 	protected Class<? extends Provider<Topic>> getMessageTopic() {
-
-		class MessageTopic implements Provider<Topic> {
-			@Inject
-			AQBroker broker;
-
-			@Override
-			public Topic get() {
-				return broker.msgTopic;
-			}
-
-		}
 
 		return MessageTopic.class;
 	}
@@ -136,47 +153,94 @@ public class AQJMSModule extends JMSModule {
 
 	}
 
+	@Qualifier
+	@java.lang.annotation.Target({ ElementType.FIELD, ElementType.METHOD })
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface AQBrokerURL {
+
+	}
+
+	
+	public static interface AQBroker {
+		ActiveMQTopic healthCheckTopic();
+
+		ActiveMQQueue taskQueue();
+
+		ActiveMQTopic messageTopic();
+
+		ActiveMQConnectionFactory newFactory();
+	}
+
+	public static class AQJMSTypeListener implements TypeListener {
+		public <T> void hear(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
+			for (Field field : typeLiteral.getRawType().getDeclaredFields()) {
+				if (field.getType() == String.class && field.isAnnotationPresent(AQBrokerURL.class)) {
+					typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), AQBrokerURL.class))));
+				}
+
+			}
+		}
+	}
+
 	@Singleton
-	public static class AQBroker {
-		public static final String BROKER_URL = "vm://localhost";
+	public static class VMAQBroker implements AQBroker {
+		//public static final String BROKER_URL = "vm://localhost";
 		ActiveMQTopic hcTopic;
 		ActiveMQQueue taskQueue;
 		ActiveMQTopic msgTopic;
 
 		BrokerService broker;
 
+		@AQBrokerURL
+		String aqBroker;
+
 		@PostConstruct
 		public void init() {
 			try {
-				broker = new BrokerService();
+	/*			broker = new BrokerService();
 				broker.setPersistent(false);
 				broker.setUseJmx(false);
-				broker.addConnector(BROKER_URL);
+				broker.addConnector(aqBroker);*/
 				hcTopic = new ActiveMQTopic(Node.NODE_MQ_NAME_HEALTHCHECK);
 				taskQueue = new ActiveMQQueue(Node.NODE_MQ_NAME_TASK);
 				msgTopic = new ActiveMQTopic(Node.NODE_MQ_NAME_MESSAGE);
-				broker.setDestinations(new ActiveMQDestination[] { hcTopic, taskQueue, msgTopic });
-				broker.start();
+				//broker.setDestinations(new ActiveMQDestination[] { hcTopic, taskQueue, msgTopic });
+				//broker.start();
 
 			} catch (Exception e) {
-
+				log.log(Level.SEVERE, "", e);
 			}
 
 		}
-
+/*
 		@PreDestroy
 		public void destroy() {
 			try {
 				broker.stop();
 			} catch (Exception e) {
-
+				log.log(Level.SEVERE, "", e);
 			}
 
+		}*/
+
+		@Override
+		public ActiveMQTopic healthCheckTopic() {
+			return hcTopic;
 		}
 
-		ActiveMQConnectionFactory newFactory() {
-			ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(BROKER_URL);
-			factory = new ActiveMQConnectionFactory(BROKER_URL);
+		@Override
+		public ActiveMQQueue taskQueue() {
+			return taskQueue;
+		}
+
+		@Override
+		public ActiveMQTopic messageTopic() {
+			return msgTopic;
+		}
+
+		@Override
+		public ActiveMQConnectionFactory newFactory() {
+			ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(aqBroker);
 			factory.setObjectMessageSerializationDefered(true);
 			factory.setCopyMessageOnSend(false);
 			return factory;

@@ -60,82 +60,88 @@ public class JMSModule extends AbstractModule {
 		bind(Topic.class).annotatedWith(MessageCheck.class).toProvider(getMessageTopic());
 	}
 
-	protected Class<? extends Provider<TopicConnectionFactory>> getHealthCheckFactory() {
-		class HealthCheckTopicFactory implements Provider<TopicConnectionFactory> {
-			TopicConnectionFactory impl = new TopicConnectionFactoryImpl();
+	static class HealthCheckTopicFactory implements Provider<TopicConnectionFactory> {
+		TopicConnectionFactory impl = new TopicConnectionFactoryImpl();
 
-			@Override
-			public TopicConnectionFactory get() {
-				return impl;
-			}
-
+		@Override
+		public TopicConnectionFactory get() {
+			return impl;
 		}
+
+	}
+
+	protected Class<? extends Provider<TopicConnectionFactory>> getHealthCheckFactory() {
 		return HealthCheckTopicFactory.class;
 	}
 
-	protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
-		class HealthCheckTopic implements Provider<Topic> {
-			Topic impl = new TopicImpl(Node.NODE_MQ_NAME_HEALTHCHECK);
+	static class HealthCheckTopic implements Provider<Topic> {
+		Topic impl = new TopicImpl(Node.NODE_MQ_NAME_HEALTHCHECK);
 
-			@Override
-			public Topic get() {
-				return impl;
-			}
-
+		@Override
+		public Topic get() {
+			return impl;
 		}
+
+	}
+
+	protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
 		return HealthCheckTopic.class;
 	}
 
-	protected Class<? extends Provider<QueueConnectionFactory>> getTaskFactory() {
-		class TaskFactory implements Provider<QueueConnectionFactory> {
-			QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
+	static class TaskFactory implements Provider<QueueConnectionFactory> {
+		QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
 
-			@Override
-			public QueueConnectionFactory get() {
-				return impl;
-			}
-
+		@Override
+		public QueueConnectionFactory get() {
+			return impl;
 		}
+
+	}
+
+	protected Class<? extends Provider<QueueConnectionFactory>> getTaskFactory() {
 		return TaskFactory.class;
 	}
 
-	protected Class<? extends Provider<Queue>> getTaskQueue() {
-		class TaskQueue implements Provider<Queue> {
-			Queue impl = new QueueImpl(Node.NODE_MQ_NAME_TASK);
+	static class TaskQueue implements Provider<Queue> {
+		Queue impl = new QueueImpl(Node.NODE_MQ_NAME_TASK);
 
-			@Override
-			public Queue get() {
-				return impl;
-			}
-
+		@Override
+		public Queue get() {
+			return impl;
 		}
+
+	}
+
+	protected Class<? extends Provider<Queue>> getTaskQueue() {
 		return TaskQueue.class;
 	}
 
-	protected Class<? extends Provider<QueueConnectionFactory>> getMessageFactory() {
-		class MessageFactory implements Provider<QueueConnectionFactory> {
-			QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
+	static class MessageFactory implements Provider<QueueConnectionFactory> {
+		QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
 
-			@Override
-			public QueueConnectionFactory get() {
-				return impl;
-			}
-
+		@Override
+		public QueueConnectionFactory get() {
+			return impl;
 		}
+
+	}
+
+	protected Class<? extends Provider<QueueConnectionFactory>> getMessageFactory() {
+
 		return MessageFactory.class;
 	}
 
-	protected Class<? extends Provider<Topic>> getMessageTopic() {
+	static class MessageTopic implements Provider<Topic> {
+		Topic impl = new TopicImpl(Node.NODE_MQ_NAME_MESSAGE);
 
-		class MessageTopic implements Provider<Topic> {
-			Topic impl = new TopicImpl(Node.NODE_MQ_NAME_MESSAGE);
-
-			@Override
-			public Topic get() {
-				return impl;
-			}
-
+		@Override
+		public Topic get() {
+			return impl;
 		}
+
+	}
+
+	protected Class<? extends Provider<Topic>> getMessageTopic() {
 
 		return MessageTopic.class;
 	}
@@ -151,7 +157,7 @@ public class JMSModule extends AbstractModule {
 						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), TaskCheck.class))));
 					} else if (field.isAnnotationPresent(MessageCheck.class)) {
 						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), MessageCheck.class))));
-					}
+					} 
 
 				} /*else if (field.getType() == Topic.class) {
 					if (field.isAnnotationPresent(NodeCheck.class)) {
