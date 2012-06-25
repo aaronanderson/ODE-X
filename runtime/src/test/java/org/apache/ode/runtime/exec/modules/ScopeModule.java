@@ -16,18 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.ode.runtime.exec.modules.ScopeContextImpl.GuiceScopeImpl;
+import org.apache.ode.runtime.exec.modules.ScopeContextImpl.ThreadLocalState;
+import org.apache.ode.runtime.exec.platform.ScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.InstructionScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ProcessScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ProgramScopeContext;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ThreadScopeContext;
-import org.apache.ode.runtime.exec.platform.ScopeContextImpl.GuiceScopeImpl;
-import org.apache.ode.runtime.exec.platform.ScopeContextImpl.ThreadLocalState;
 import org.apache.ode.spi.exec.ExecutableScope;
 import org.apache.ode.spi.exec.InstructionScope;
 import org.apache.ode.spi.exec.ProcessScope;

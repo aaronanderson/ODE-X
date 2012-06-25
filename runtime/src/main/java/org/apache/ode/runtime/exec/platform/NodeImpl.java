@@ -53,7 +53,6 @@ import javax.xml.stream.XMLStreamReader;
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
-import org.apache.ode.runtime.exec.platform.task.TaskPoll;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Executors;

@@ -35,11 +35,13 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.jms.BytesMessage;
-import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
+import javax.jms.TopicConnectionFactory;
+import javax.jms.TopicSession;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.bind.JAXBElement;
@@ -81,11 +83,13 @@ public class MessageHandler implements Runnable {
 	private EntityManager pmgr;
 
 	@MessageCheck
-	private Session msgSession;
+	private TopicConnectionFactory msgConnectionFactory;
 
 	@MessageCheck
 	private Topic msgTopic;
 
+	private TopicConnection pollMsgTopicConnection;
+	private TopicSession pollMsgSession;
 	private MessageProducer producer;
 	private MessageConsumer consumer;
 
@@ -97,26 +101,34 @@ public class MessageHandler implements Runnable {
 
 	@PostConstruct
 	public void init() throws Exception {
+		pollMsgTopicConnection = msgConnectionFactory.createTopicConnection();
+		pollMsgSession = pollMsgTopicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+		producer = pollMsgSession.createProducer(msgTopic);
+		consumer = pollMsgSession.createConsumer(msgTopic);
 		this.config = clusterConfig.getMessageCheck();
-		producer = msgSession.createProducer(msgTopic);
-		consumer = msgSession.createConsumer(msgTopic);
 	}
 
 	@PreDestroy
 	public void destroy() throws Exception {
-		producer.close();
-		consumer.close();
+		try {
+			producer.close();
+			consumer.close();
+			pollMsgSession.close();
+			pollMsgTopicConnection.close();
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
+		}
 	}
 
 	public void log(LogLevel level, int code, String messageText, String targetNodeId, String targetClusterId, String taskId) {
 		try {
 			org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = new org.apache.ode.runtime.exec.cluster.xml.Message();
-			xmlMessage.setType(org.apache.ode.runtime.exec.cluster.xml.LogLevel.valueOf(level.toString()));
+			xmlMessage.setLevel(org.apache.ode.runtime.exec.cluster.xml.LogLevel.valueOf(level.toString()));
 			xmlMessage.setCode(BigInteger.valueOf(code));
 			xmlMessage.setValue(messageText);
 			xmlMessage.setTimestamp(Calendar.getInstance());
-			
-			BytesMessage message = msgSession.createBytesMessage();
+
+			BytesMessage message = pollMsgSession.createBytesMessage();
 			message.setStringProperty(Node.NODE_MQ_PROP_NODE, targetNodeId);
 			message.setStringProperty(Node.NODE_MQ_PROP_CLUSTER, targetClusterId);
 			message.setStringProperty(MSG_MQ_ORIG_NODE, nodeId);
@@ -125,8 +137,8 @@ public class MessageHandler implements Runnable {
 
 			Marshaller marshaller = NodeImpl.CLUSTER_JAXB_CTX.createMarshaller();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class,
-					xmlMessage), bos);
+			marshaller
+					.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class, xmlMessage), bos);
 			message.writeBytes(bos.toByteArray());
 			producer.send(message);
 		} catch (Exception je) {
@@ -137,9 +149,9 @@ public class MessageHandler implements Runnable {
 
 	@Override
 	public synchronized void run() {
-		while (true) {// stop for nothing
+		while (true) {
 			try {
-				BytesMessage message = (BytesMessage) consumer.receive(0l);
+				BytesMessage message = (BytesMessage) consumer.receive(config.getFrequency());
 				if (message == null) {
 					break;
 				}
@@ -180,7 +192,11 @@ public class MessageHandler implements Runnable {
 
 				}
 			} catch (Throwable e) {
-				log.log(Level.SEVERE, "", e);
+				if (e.getCause() instanceof InterruptedException) {
+					break;
+				} else {
+					log.log(Level.SEVERE, "", e);
+				}
 			}
 		}
 
@@ -188,7 +204,7 @@ public class MessageHandler implements Runnable {
 
 	public static MessageEventImpl convert(org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage, String origNodeId, String origClusterId) {
 		MessageImpl message = new MessageImpl();
-		message.setLevel(xmlMessage.getType().toString());
+		message.setLevel(xmlMessage.getLevel().toString());
 		message.setCode(xmlMessage.getCode().intValue());
 		message.setMessage(xmlMessage.getValue());
 		message.setTimestamp(xmlMessage.getTimestamp().getTime());

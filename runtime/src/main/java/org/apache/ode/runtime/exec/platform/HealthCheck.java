@@ -227,7 +227,7 @@ public class HealthCheck implements Runnable {
 
 			while (true) {
 				try {
-					message = (BytesMessage) subscriber.receive(1000l);
+					message = (BytesMessage) subscriber.receive(config.getFrequency());
 					if (message == null) {
 						break;
 					}
@@ -239,7 +239,11 @@ public class HealthCheck implements Runnable {
 					xmlNodeStatus = element.getValue();
 					currentNodes.add(convert(xmlNodeStatus));
 				} catch (JMSException e) {
-					log.log(Level.SEVERE, "", e);
+					if (e.getCause() instanceof InterruptedException) {
+						break;
+					} else {
+						log.log(Level.SEVERE, "", e);
+					}
 				}
 			}
 

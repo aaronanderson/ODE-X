@@ -59,6 +59,7 @@ public class TaskCallable implements Callable<TaskState> {
 	private QueueSender taskActionSender;
 	private QueueConnection taskUpdateQueueConnection;
 	private QueueSession taskUpdateSession;
+
 	private Queue taskRequestor;
 	private QueueSender taskRequestorSender;
 	private String taskCorrelationId;
@@ -111,7 +112,9 @@ public class TaskCallable implements Callable<TaskState> {
 				taskUpdateQueueConnection = queueConFactory.createQueueConnection();
 				taskUpdateSession = taskUpdateQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 				taskActionSender = taskUpdateSession.createSender(taskQueue);
-				taskRequestorSender = taskUpdateSession.createSender(taskRequestor);
+				if (taskRequestor != null) {
+					taskRequestorSender = taskUpdateSession.createSender(taskRequestor);
+				}
 			} catch (JMSException je) {
 				log.log(Level.SEVERE, "", je);
 				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
@@ -227,7 +230,9 @@ public class TaskCallable implements Callable<TaskState> {
 	public void taskLogIt(LogLevel level, int code, String msg, boolean error) throws PlatformException {
 		pmgr.getTransaction().begin();
 		try {
-			task.setState(TaskState.FAIL);
+			if (error) {
+				task.setState(TaskState.FAIL);
+			}
 			MessageImpl m = new MessageImpl();
 			m.setLevel(level.toString());
 			m.setCode(code);

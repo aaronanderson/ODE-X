@@ -43,7 +43,7 @@
 		<simpleContent>
 			<extension base="string">
 				<attribute name="timestamp" type="dateTime" use="required" />
-				<attribute name="type" type="tns:logLevel" default="WARNING" />
+				<attribute name="level" type="tns:logLevel" default="WARNING" />
 				<attribute name="code" type="integer" use="optional" />
 			</extension>
 		</simpleContent>
@@ -102,6 +102,10 @@
 
 	<element name="result" type="tns:resultType" abstract="true" />
 
+	<complexType name="coordinationType" abstract="true" />
+
+	<element name="coordination" type="tns:coordinationType" abstract="true" />
+
 	<complexType name="targetType" abstract="true" />
 
 	<element name="target" type="tns:targetType" abstract="true" />
@@ -133,62 +137,63 @@
 			</complexContent>
 		</complexType>
 	</element>
-	
-	
-<!-- <complexType name="coordinationType" abstract="true" />
 
-	<element name="coordination" type="tns:coordinationType" abstract="true" /> -->
 
-	<complexType name="taskType" abstract="true">
-		<sequence>
-			<element name="name" type="QName" />
-			<element name="nodeId" type="string" />
-			<element name="component" type="QName" />
-			<element name="targets">
-				<complexType>
-					<sequence>
-						<element ref="tns:target" minOccurs="1" maxOccurs="unbounded" />
-					</sequence>
-				</complexType>
-			</element>
+
+
+	<element name="Task">
+		<complexType>
+			<sequence>
+				<element name="name" type="QName" />
+				<element name="nodeId" type="string" />
+				<element name="component" type="QName" />
+				<element name="targets">
+					<complexType>
+						<sequence>
+							<element ref="tns:target" minOccurs="1" maxOccurs="unbounded" />
+						</sequence>
+					</complexType>
+				</element>
 			<!-- <<element ref="tns:task-messages" /> -->
-			<element name="user" type="string" />
-			<element name="start" type="dateTime" />
-			<element name="finished" type="dateTime" />
-			<choice>
-				<element ref="tns:input" />
-				<element ref="tns:result" />
+				<element name="user" type="string" />
+				<element name="start" type="dateTime" />
+				<element name="finished" type="dateTime" />
+				<choice>
+					<element ref="tns:input" />
+					<element ref="tns:result" />
 				<!-- <element ref="tns:coordination" /> -->
-			</choice>
-		</sequence>
-		<attribute name="taskId" type="string" use="required" />
-		<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
-		<attribute name="state" type="tns:taskState" use="required" />
-		<attribute name="modified" type="dateTime" use="required" />
-	</complexType>
+				</choice>
+			</sequence>
+			<attribute name="taskId" type="string" use="required" />
+			<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
+			<attribute name="state" type="tns:taskState" use="required" />
+			<attribute name="modified" type="dateTime" use="required" />
+		</complexType>
+	</element>
 
-	<complexType name="taskActionType" abstract="true">
-		<sequence>
-			<element name="name" type="QName" />
-			<element name="nodeId" type="string" />
-			<element name="component" type="QName" />
-			<element ref="tns:task-action-messages" />
-			<element name="user" type="string" />
-			<element name="start" type="dateTime" />
-			<element name="finished" type="dateTime" />
-			<choice>
-				<element ref="tns:input" />
-				<element ref="tns:result" />
-				<!-- <element ref="tns:coordination" /> -->
-			</choice>
-		</sequence>
-		<attribute name="taskId" type="string" use="required" />
-		<attribute name="actionId" type="string" use="required" />
-		<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
-		<attribute name="state" type="tns:taskActionState" use="required" />
-		<attribute name="modified" type="dateTime" use="required" />
-	</complexType>
-
+	<element name="TaskAction">
+		<complexType>
+			<sequence>
+				<element name="name" type="QName" />
+				<element name="nodeId" type="string" />
+				<element name="component" type="QName" />
+				<element ref="tns:task-action-messages" />
+				<element name="user" type="string" />
+				<element name="start" type="dateTime" />
+				<element name="finished" type="dateTime" />
+				<choice>
+					<element ref="tns:input" />
+					<element ref="tns:result" />
+					<element ref="tns:coordination" />
+				</choice>
+			</sequence>
+			<attribute name="taskId" type="string" />
+			<attribute name="actionId" type="string" use="required" />
+			<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
+			<attribute name="state" type="tns:taskActionState" use="required" />
+			<attribute name="modified" type="dateTime" />
+		</complexType>
+	</element>
 
 
 
@@ -215,15 +220,7 @@
 		</complexType>
 	</element>
 
-	<element name="installTask">
-		<complexType>
-			<complexContent>
-				<extension base="tns:taskType" />
-			</complexContent>
-		</complexType>
-	</element>
 
-	
 	<complexType name="clusterConfigType">
 		<sequence>
 			<element name="health-check" type="tns:healthCheckType" minOccurs="0" maxOccurs="1" />
@@ -250,7 +247,7 @@
 		<attribute name="message-buffer-size" type="long" default="10" />
 		<attribute name="message-buffer-time" type="long" default="1000" />
 	</complexType>
-	
+
 	<complexType name="nodesType">
 		<sequence>
 			<element name="node" type="string" minOccurs="0" maxOccurs="unbounded" />

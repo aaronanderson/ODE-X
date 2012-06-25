@@ -16,24 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
-import org.apache.ode.repo.ArtifactDataSourceImpl;
-import org.apache.ode.repo.RepoCommandMap;
-import org.apache.ode.repo.RepoFileTypeMap;
-import org.apache.ode.repo.RepositoryImpl;
-import org.apache.ode.spi.repo.ArtifactDataSource;
-import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.api.Platform;
 
 import com.google.inject.AbstractModule;
 
-public class RepoModule extends AbstractModule {
+public class JMXModule extends AbstractModule {
 	protected void configure() {
-		bind(HealthCheck.class);
-		bind(RepoFileTypeMap.class);
-		bind(RepoCommandMap.class);
-		bind(ArtifactDataSource.class).to(ArtifactDataSourceImpl.class);
-		bind(Repository.class).to(RepositoryImpl.class);
+		bind(org.apache.ode.api.Repository.class).to(org.apache.ode.runtime.jmx.RepositoryImpl.class);
+		bind(Platform.class).to(org.apache.ode.runtime.jmx.PlatformImpl.class);
 	}
 
 }

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
 import java.lang.reflect.Field;
 
@@ -26,6 +26,8 @@ import javax.jms.QueueConnectionFactory;
 import javax.jms.Topic;
 import javax.jms.TopicConnectionFactory;
 
+import org.apache.ode.runtime.exec.platform.JMSUtil;
+import org.apache.ode.runtime.exec.platform.NodeImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicConnectionFactoryImpl;
@@ -56,7 +58,7 @@ public class JMSModule extends AbstractModule {
 		bind(QueueConnectionFactory.class).annotatedWith(TaskCheck.class).toProvider(getTaskFactory());
 		bind(Queue.class).annotatedWith(TaskCheck.class).toProvider(getTaskQueue());
 
-		bind(QueueConnectionFactory.class).annotatedWith(MessageCheck.class).toProvider(getMessageFactory());
+		bind(TopicConnectionFactory.class).annotatedWith(MessageCheck.class).toProvider(getMessageFactory());
 		bind(Topic.class).annotatedWith(MessageCheck.class).toProvider(getMessageTopic());
 	}
 
@@ -116,17 +118,17 @@ public class JMSModule extends AbstractModule {
 		return TaskQueue.class;
 	}
 
-	static class MessageFactory implements Provider<QueueConnectionFactory> {
-		QueueConnectionFactory impl = new QueueConnectionFactoryImpl();
+	static class MessageFactory implements Provider<TopicConnectionFactory> {
+		TopicConnectionFactory impl = new TopicConnectionFactoryImpl();
 
 		@Override
-		public QueueConnectionFactory get() {
+		public TopicConnectionFactory get() {
 			return impl;
 		}
 
 	}
 
-	protected Class<? extends Provider<QueueConnectionFactory>> getMessageFactory() {
+	protected Class<? extends Provider<TopicConnectionFactory>> getMessageFactory() {
 
 		return MessageFactory.class;
 	}
@@ -157,7 +159,7 @@ public class JMSModule extends AbstractModule {
 						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), TaskCheck.class))));
 					} else if (field.isAnnotationPresent(MessageCheck.class)) {
 						typeEncounter.register(new JMSSessionMembersInjector(field, typeEncounter.getProvider(Key.get(field.getType(), MessageCheck.class))));
-					} 
+					}
 
 				} /*else if (field.getType() == Topic.class) {
 					if (field.isAnnotationPresent(NodeCheck.class)) {

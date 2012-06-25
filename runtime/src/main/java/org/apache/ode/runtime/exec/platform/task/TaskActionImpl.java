@@ -50,6 +50,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
@@ -110,6 +111,9 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	@Basic(fetch = FetchType.LAZY)
 	private byte[] input;
 
+	@Transient
+	private byte[] coordination;
+
 	@Column(name = "RESULT")
 	@Lob
 	@Basic(fetch = FetchType.LAZY)
@@ -162,7 +166,7 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	public String nodeId() {
 		return nodeId;
 	}
-	
+
 	@Override
 	public QName component() {
 		return QName.valueOf(component);
@@ -171,7 +175,7 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	public void setComponent(QName component) {
 		this.component = component.toString();
 	}
-	
+
 	@Override
 	public TaskActionState state() {
 		if (state != null) {
@@ -193,12 +197,11 @@ public class TaskActionImpl implements TaskAction, Serializable {
 		return (List<Message>) (Object) messages;
 	}
 
-
 	@Override
 	public Document input() {
 		return getInput();
 	}
-	
+
 	public Document getInput() {
 		if (input != null) {
 			DocumentBuilder db;
@@ -262,11 +265,37 @@ public class TaskActionImpl implements TaskAction, Serializable {
 		}
 	}*/
 
+	public Document getCoordination() {
+		if (coordination != null) {
+			DocumentBuilder db;
+			try {
+				db = domFactory.newDocumentBuilder();
+				return db.parse(new ByteArrayInputStream(coordination));
+			} catch (Exception pe) {
+				log.log(Level.SEVERE, "", pe);
+			}
+		}
+		return null;
+
+	}
+
+	public void setCoordination(Document doc) throws PlatformException {
+		try {
+			Transformer tform = transformFactory.newTransformer();
+			tform.setOutputProperty(OutputKeys.INDENT, "yes");
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			tform.transform(new DOMSource(doc), new StreamResult(bos));
+			coordination = bos.toByteArray();
+		} catch (Exception e) {
+			throw new PlatformException(e);
+		}
+	}
+
 	@Override
 	public Document result() {
 		return getResult();
 	}
-	
+
 	public Document getResult() {
 		if (result != null) {
 			DocumentBuilder db;
@@ -315,6 +344,7 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	public Date modified() {
 		return lastModified;
 	}
+
 	/*
 	public static List<Message> convertActionMessages(List<ActionMessage> messages) {
 		List<Message> newMessages = new ArrayList<Message>();

@@ -37,10 +37,16 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.ode.runtime.exec.modules.JPAModule;
+import org.apache.ode.runtime.exec.modules.NodeModule;
+import org.apache.ode.runtime.exec.modules.RepoModule;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQBroker;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQBrokerURL;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQJMSTypeListener;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.VMAQBroker;
+import org.apache.ode.runtime.exec.platform.HealthCheckTest.HealthCheckTestModule;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
-import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
-import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.TargetImpl.TargetAllImpl;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Message.LogLevel;
@@ -65,6 +71,7 @@ import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import com.google.inject.matcher.Matchers;
 import com.mycila.inject.jsr250.Jsr250;
 import com.mycila.inject.jsr250.Jsr250Injector;
 
@@ -78,9 +85,11 @@ public class TaskTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new NodeModule(), new TaskTestModule("tcluster", "node1"));
+		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new NodeModule(), new TaskTestModule(
+				"vm://task?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "tcluster", "node1"));
 		HealthCheckTest.loadTestClusterConfig(injector1, "tcluster");
-		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new NodeModule(), new TaskTestModule("tcluster", "node2"));
+		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new NodeModule(), new TaskTestModule(
+				"vm://task?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "tcluster", "node2"));
 
 		Node node1 = injector1.getInstance(Node.class);
 		assertNotNull(node1);
@@ -97,55 +106,39 @@ public class TaskTest {
 		injector2.destroy();
 	}
 
-	public static class TaskTestModule extends JMSModule {
+	public static class TaskTestModule extends HealthCheckTestModule {
 		String clusterId;
 		String nodeId;
+		String aqBrokerURL;
 
-		public TaskTestModule(String clusterId, String nodeId) {
-			this.clusterId = clusterId;
-			this.nodeId = nodeId;
+		public TaskTestModule(String aqBrokerURL, String clusterId, String nodeId) {
+			super(aqBrokerURL, clusterId, nodeId);
 		}
 
 		@Override
 		protected void configure() {
 			super.configure();
-			bindConstant().annotatedWith(NodeId.class).to(nodeId);
-			bindConstant().annotatedWith(ClusterId.class).to(clusterId);
+
 			bind(TaskTestComponent.class);
 			bind(SingleTaskActionExec.class);
 			bind(MultiTaskActionExec.class);
 		}
 
-
-		@Override
-		protected Class<? extends Provider<Topic>> getHealthCheckTopic() {
-			class HealthCheckTopic implements Provider<Topic> {
-				
-
-				@Override
-				public Topic get() {
-					return healthCheckTopic;
-				}
-
-			}
-			return HealthCheckTopic.class;
-		}
-		@Override
-		protected Class<? extends Provider<Queue>> getTaskQueue() {
-			class TaskQueue implements Provider<Queue> {
-			
-				@Override
-				public Queue get() {
-					return taskQueue;
-				}
-
-			}
-			return TaskQueue.class;
-		}
 	}
 
 	@Test
-	public void taskTest() throws Exception {
+	public void nonInteractiveTaskActionTest() throws Exception {
+
+	}
+	
+	@Test
+	public void interactiveTaskActionTest() throws Exception {
+
+	}
+
+	/*
+	@Test
+	public void singleTaskTest() throws Exception {
 
 		Platform platform1 = injector1.getInstance(Platform.class);
 		assertNotNull(platform1);
@@ -170,7 +163,7 @@ public class TaskTest {
 		assertNotNull(id);
 		//platform.status(id);
 
-	}
+	}*/
 
 	public static class TaskTestComponent implements Component {
 
@@ -222,11 +215,11 @@ public class TaskTest {
 		@Override
 		public List<TaskActionDefinition> actions() {
 			ArrayList<TaskActionDefinition> defs = new ArrayList<TaskActionDefinition>();
-			defs.add(new TaskActionDefinition(SINGLE_ACTION_NAME, TaskActionType.SINGLE, (Set<QName>) Collections.EMPTY_SET, singleAction));
-			defs.add(new TaskActionDefinition(MULTI_ACTION1_NAME, TaskActionType.SINGLE, (Set<QName>) Collections.EMPTY_SET, multiAction));
+			defs.add(new TaskActionDefinition(SINGLE_ACTION_NAME, TaskActionType.SINGLE, (Set<QName>) Collections.EMPTY_SET, singleAction, false));
+			defs.add(new TaskActionDefinition(MULTI_ACTION1_NAME, TaskActionType.SINGLE, (Set<QName>) Collections.EMPTY_SET, multiAction, false));
 			Set<QName> deps = new HashSet<QName>();
 			deps.add(MULTI_ACTION1_NAME);
-			defs.add(new TaskActionDefinition(MULTI_ACTION2_NAME, TaskActionType.MULTIPLE, deps, multiAction));
+			defs.add(new TaskActionDefinition(MULTI_ACTION2_NAME, TaskActionType.MULTIPLE, deps, multiAction, false));
 			return defs;
 		}
 
@@ -292,8 +285,9 @@ public class TaskTest {
 		}
 
 		@Override
-		public void run(TaskActionContext ctx) throws PlatformException {
+		public Document execute(TaskActionContext ctx, Document coordination) throws PlatformException {
 			ctx.log(LogLevel.INFO, 1, "run");
+			return null;
 		}
 
 		@Override
@@ -339,8 +333,9 @@ public class TaskTest {
 		}
 
 		@Override
-		public void run(TaskActionContext ctx) throws PlatformException {
+		public Document execute(TaskActionContext ctx, Document coordination) throws PlatformException {
 			ctx.log(LogLevel.INFO, 1, "run");
+			return null;
 		}
 
 		@Override

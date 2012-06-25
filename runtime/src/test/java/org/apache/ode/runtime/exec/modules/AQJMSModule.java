@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -41,8 +41,8 @@ import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
-import org.apache.ode.runtime.exec.platform.JMSModule.JMSSessionMembersInjector;
-import org.apache.ode.runtime.exec.platform.JMSModule.JMSTypeListener;
+import org.apache.ode.runtime.exec.modules.JMSModule.JMSSessionMembersInjector;
+import org.apache.ode.runtime.exec.modules.JMSModule.JMSTypeListener;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
@@ -105,9 +105,9 @@ public abstract class AQJMSModule extends JMSModule {
 	}
 
 	@Override
-	protected Class<? extends Provider<QueueConnectionFactory>> getMessageFactory() {
+	protected Class<? extends Provider<TopicConnectionFactory>> getMessageFactory() {
 
-		return QueueConnectionFactoryProvider.class;
+		return TopicConnectionFactoryProvider.class;
 	}
 
 	static class MessageTopic implements Provider<Topic> {
@@ -160,7 +160,6 @@ public abstract class AQJMSModule extends JMSModule {
 
 	}
 
-	
 	public static interface AQBroker {
 		ActiveMQTopic healthCheckTopic();
 
@@ -197,10 +196,10 @@ public abstract class AQJMSModule extends JMSModule {
 		@PostConstruct
 		public void init() {
 			try {
-	/*			broker = new BrokerService();
-				broker.setPersistent(false);
-				broker.setUseJmx(false);
-				broker.addConnector(aqBroker);*/
+				/*			broker = new BrokerService();
+							broker.setPersistent(false);
+							broker.setUseJmx(false);
+							broker.addConnector(aqBroker);*/
 				hcTopic = new ActiveMQTopic(Node.NODE_MQ_NAME_HEALTHCHECK);
 				taskQueue = new ActiveMQQueue(Node.NODE_MQ_NAME_TASK);
 				msgTopic = new ActiveMQTopic(Node.NODE_MQ_NAME_MESSAGE);
@@ -212,16 +211,17 @@ public abstract class AQJMSModule extends JMSModule {
 			}
 
 		}
-/*
-		@PreDestroy
-		public void destroy() {
-			try {
-				broker.stop();
-			} catch (Exception e) {
-				log.log(Level.SEVERE, "", e);
-			}
 
-		}*/
+		/*
+				@PreDestroy
+				public void destroy() {
+					try {
+						broker.stop();
+					} catch (Exception e) {
+						log.log(Level.SEVERE, "", e);
+					}
+
+				}*/
 
 		@Override
 		public ActiveMQTopic healthCheckTopic() {

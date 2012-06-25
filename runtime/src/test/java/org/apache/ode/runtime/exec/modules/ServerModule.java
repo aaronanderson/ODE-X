@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
+import org.apache.ode.runtime.exec.platform.NodeImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 

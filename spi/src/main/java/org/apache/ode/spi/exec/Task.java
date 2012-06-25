@@ -131,8 +131,8 @@ public interface Task {
 				coordinators.add(coordinator);
 			}
 		}
-		
-		public Set<TaskActionCoordinator> coordinators(){
+
+		public Set<TaskActionCoordinator> coordinators() {
 			return coordinators;
 		}
 
@@ -153,16 +153,22 @@ public interface Task {
 		final Set<QName> dependencies;
 		final TaskActionType type;
 		final Provider<? extends TaskActionExec> actionExec;
+		final boolean interactive;
 
-		public TaskActionDefinition(QName name, TaskActionType type, Set<QName> dependencies, Provider<? extends TaskActionExec> actionExec) {
+		public TaskActionDefinition(QName name, TaskActionType type, Set<QName> dependencies, Provider<? extends TaskActionExec> actionExec, boolean interactive) {
 			this.name = name;
 			this.type = type;
 			this.dependencies = dependencies;
 			this.actionExec = actionExec;
+			this.interactive = interactive;
 		}
 
 		public QName action() {
 			return name;
+		}
+
+		public boolean interactive() {
+			return interactive;
 		}
 
 		public TaskActionType type() {
@@ -181,7 +187,7 @@ public interface Task {
 	public static interface TaskActionId {
 
 	}
-	
+
 	//TODO support external TaskActions, where action actually performed outside ODE framework but action updates and messages stil managed by ODE
 
 	public static interface TaskAction {
@@ -236,7 +242,7 @@ public interface Task {
 
 		public void start(TaskActionContext ctx, Document input) throws PlatformException;
 
-		public void run(TaskActionContext ctx) throws PlatformException;
+		public Document execute(TaskActionContext ctx, Document coordination) throws PlatformException;
 
 		public Document finish(TaskActionContext ctx) throws PlatformException;
 
@@ -256,6 +262,8 @@ public interface Task {
 		public TaskActionState getState();
 
 		public void updateState(TaskActionState state) throws PlatformException;
+		
+		public boolean interactive();
 
 		//public void coordinate(Document result) throws PlatformException;
 	}

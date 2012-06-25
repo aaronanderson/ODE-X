@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -31,13 +31,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.platform.HealthCheck;
+import org.apache.ode.runtime.exec.platform.MessageHandler;
+import org.apache.ode.runtime.exec.platform.NodeImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterConfigProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeStateProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
+import org.apache.ode.runtime.exec.platform.PlatformImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
-import org.apache.ode.runtime.exec.platform.task.TaskPoll;
 import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform;
@@ -58,7 +61,6 @@ public class NodeModule extends AbstractModule {
 		bind(AtomicReference.class).annotatedWith(LocalNodeState.class).toProvider(LocalNodeStateProvider.class);
 		bind(ClusterConfig.class).toProvider(ClusterConfigProvider.class);
 		bind(HealthCheck.class);
-		bind(TaskPoll.class);
 		bind(TaskExecutor.class);
 		bind(MessageHandler.class);
 		bind(Executors.class).toInstance(getExecutors());

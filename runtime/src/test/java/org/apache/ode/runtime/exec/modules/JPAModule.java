@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.platform;
+package org.apache.ode.runtime.exec.modules;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -41,8 +41,10 @@ public class JPAModule extends AbstractModule {
 	}
 
 	public static class JPATypeListener implements TypeListener {
-		public <T> void hear(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
-			Map<String, EntityManagerFactory> pus = new HashMap<String, EntityManagerFactory>();
+		
+		Map<String, EntityManagerFactory> pus = new HashMap<String, EntityManagerFactory>();
+		
+		public <T> void hear(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {	
 			for (Field field : typeLiteral.getRawType().getDeclaredFields()) {
 				if (field.getType() == EntityManager.class) {
 					if (field.isAnnotationPresent(PersistenceContext.class)) {

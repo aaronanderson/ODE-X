@@ -36,9 +36,13 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.platform.AQJMSModule.AQBroker;
-import org.apache.ode.runtime.exec.platform.AQJMSModule.AQBrokerURL;
-import org.apache.ode.runtime.exec.platform.AQJMSModule.AQJMSTypeListener;
+import org.apache.ode.runtime.exec.modules.AQJMSModule;
+import org.apache.ode.runtime.exec.modules.JPAModule;
+import org.apache.ode.runtime.exec.modules.RepoModule;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQBroker;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQBrokerURL;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQJMSTypeListener;
+import org.apache.ode.runtime.exec.modules.NodeModule.NodeTypeListener;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
@@ -47,7 +51,6 @@ import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeStateProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
-import org.apache.ode.runtime.exec.platform.NodeModule.NodeTypeListener;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.repo.DataContentHandler;
@@ -71,9 +74,9 @@ public class HealthCheckTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://node1", "hcluster", "node1"));
+		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://healthcheck?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "hcluster", "node1"));
 		loadTestClusterConfig(injector1, "hcluster");
-		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://node1?create=false", "hcluster", "node2"));
+		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://healthcheck?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "hcluster", "node2"));
 	}
 
 	@AfterClass

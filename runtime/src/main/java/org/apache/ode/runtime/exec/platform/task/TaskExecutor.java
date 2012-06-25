@@ -60,6 +60,7 @@ import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.Node;
+import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Target;
@@ -127,12 +128,12 @@ public class TaskExecutor implements Runnable {
 	@Override
 	public synchronized void run() {
 
-		try {// stop for nothing
+		try {
 			while (true) {
 				try {
 					BytesMessage message = (BytesMessage) taskQueueReceiver.receive(config.getFrequency());
 					if (message == null) {
-						continue;
+						break;
 					}
 					Queue requestor = (Queue) message.getJMSReplyTo();
 					String correlationId = message.getJMSCorrelationID();
@@ -151,7 +152,11 @@ public class TaskExecutor implements Runnable {
 					}
 
 				} catch (JMSException e) {
-					log.log(Level.SEVERE, "", e);
+					if (e.getCause() instanceof InterruptedException) {
+						break;
+					} else {
+						log.log(Level.SEVERE, "", e);
+					}
 				}
 			}
 
@@ -229,7 +234,8 @@ public class TaskExecutor implements Runnable {
 		public Future<TaskActionState> state;
 	}
 
-	public TaskActionInfo submitTaskAction(QName action, Document taskInput, Target... targets) throws PlatformException {
+	public TaskActionInfo submitTaskAction(LogLevel logLevel, String correlationId, Queue requestor, String taskId, QName action, Document taskInput)
+			throws PlatformException {
 		//TaskCoordinators run on node where task is submitted. Also all DB 
 		TaskActionDefinition def = node.getTaskActionDefinitions().get(action);
 		if (def == null) {
@@ -254,12 +260,10 @@ public class TaskExecutor implements Runnable {
 			pmgr.getTransaction().commit();
 			TaskActionInfo info = new TaskActionInfo();
 			info.id = (TaskActionIdImpl) t.id();
-			info.state = exec.submit(new TaskActionCallable(info.id, taskInput));
+			info.state = exec.submit(new TaskActionCallable(node, logLevel, correlationId, requestor, taskId, info.id, taskInput));
 			return info;
 		} catch (PersistenceException pe) {
 			throw new PlatformException(pe);
-		} finally {
-			pmgr.close();
 		}
 
 	}

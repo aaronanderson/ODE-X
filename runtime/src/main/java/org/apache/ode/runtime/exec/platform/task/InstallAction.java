@@ -25,21 +25,21 @@ import org.w3c.dom.Document;
 
 public class InstallAction implements TaskActionExec {
 
-
 	@Override
 	public void start(TaskActionContext ctx, Document input) throws PlatformException {
-		
+
 	}
 
 	@Override
-	public void run(TaskActionContext ctx) {
-		
+	public Document execute(TaskActionContext ctx, Document coordination) throws PlatformException {
+
+		return null;
 	}
 
 	@Override
 	public Document finish(TaskActionContext ctx) throws PlatformException {
+
 		return null;
-		
 	}
 
 }
