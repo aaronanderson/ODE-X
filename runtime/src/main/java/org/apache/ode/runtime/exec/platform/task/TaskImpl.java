@@ -53,11 +53,12 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.ode.runtime.exec.platform.MessageImpl;
-import org.apache.ode.runtime.exec.platform.TargetImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetImpl;
 import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Target;
-import org.apache.ode.spi.exec.Task;
+import org.apache.ode.spi.exec.target.Target;
+import org.apache.ode.spi.exec.task.Task;
+import org.apache.ode.spi.exec.task.TaskAction;
 import org.w3c.dom.Document;
 
 //@NamedQueries({ @NamedQuery(name = "localTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'  or ( action.state = 'CANCELED' and action.finish is null )") })
@@ -111,10 +112,10 @@ public class TaskImpl implements Task, Serializable {
 	@Basic(fetch = FetchType.LAZY)
 	private byte[] input;
 
-	@Column(name = "RESULT")
+	@Column(name = "OUTPUT")
 	@Lob
 	@Basic(fetch = FetchType.LAZY)
-	private byte[] result;
+	private byte[] output;
 
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "START")
@@ -281,16 +282,16 @@ public class TaskImpl implements Task, Serializable {
 	}*/
 
 	@Override
-	public Document result() {
-		return getResult();
+	public Document output() {
+		return getOutput();
 	}
 
-	public Document getResult() {
-		if (result != null) {
+	public Document getOutput() {
+		if (output != null) {
 			DocumentBuilder db;
 			try {
 				db = domFactory.newDocumentBuilder();
-				return db.parse(new ByteArrayInputStream(result));
+				return db.parse(new ByteArrayInputStream(output));
 			} catch (Exception pe) {
 				log.log(Level.SEVERE, "", pe);
 			}
@@ -299,13 +300,13 @@ public class TaskImpl implements Task, Serializable {
 
 	}
 
-	public void setResult(Document doc) throws PlatformException {
+	public void setOutput(Document doc) throws PlatformException {
 		try {
 			Transformer tform = transformFactory.newTransformer();
 			tform.setOutputProperty(OutputKeys.INDENT, "yes");
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			result = bos.toByteArray();
+			output = bos.toByteArray();
 		} catch (Exception e) {
 			throw new PlatformException(e);
 		}

@@ -25,8 +25,8 @@ import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.wsdl.xml.ObjectFactory;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Task.TaskActionDefinition;
-import org.apache.ode.spi.exec.Task.TaskDefinition;
+import org.apache.ode.spi.exec.task.TaskActionDefinition;
+import org.apache.ode.spi.exec.task.TaskDefinition;
 
 public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponent {
 

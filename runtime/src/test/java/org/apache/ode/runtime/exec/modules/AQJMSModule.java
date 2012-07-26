@@ -22,6 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,10 +42,18 @@ import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
+import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.modules.JMSModule.JMSSessionMembersInjector;
 import org.apache.ode.runtime.exec.modules.JMSModule.JMSTypeListener;
+import org.apache.ode.runtime.exec.modules.NodeModule.NodeTypeListener;
+import org.apache.ode.runtime.exec.platform.HealthCheck;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterConfigProvider;
+import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
+import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeStateProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
+import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.spi.exec.Node;
 
@@ -246,6 +255,23 @@ public abstract class AQJMSModule extends JMSModule {
 			return factory;
 		}
 
+	}
+
+	public static class AQVMJMSModule extends AQJMSModule {
+		String aqBrokerURL;
+
+		public AQVMJMSModule(String aqBrokerURL) {
+			this.aqBrokerURL = aqBrokerURL;
+		}
+
+		@Override
+		protected void configure() {
+			super.configure();
+			bind(AQBroker.class).to(VMAQBroker.class);
+			bindListener(Matchers.any(), new AQJMSTypeListener());
+			bindConstant().annotatedWith(AQBrokerURL.class).to(aqBrokerURL);
+
+		}
 	}
 
 }

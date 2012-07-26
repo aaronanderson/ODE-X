@@ -37,7 +37,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.apache.ode.api.Repository.ArtifactId;
 import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.exec.Platform;
-import org.apache.ode.spi.exec.Target;
+import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.w3c.dom.Document;

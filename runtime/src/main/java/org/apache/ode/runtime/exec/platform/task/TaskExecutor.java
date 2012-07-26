@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.jms.BytesMessage;
 import javax.jms.JMSException;
@@ -56,18 +57,21 @@ import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
+import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Executors;
-import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Message.LogLevel;
+import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Target;
-import org.apache.ode.spi.exec.Task.TaskActionDefinition;
-import org.apache.ode.spi.exec.Task.TaskActionState;
-import org.apache.ode.spi.exec.Task.TaskDefinition;
-import org.apache.ode.spi.exec.Task.TaskState;
+import org.apache.ode.spi.exec.target.Target;
+import org.apache.ode.spi.exec.task.Task.TaskState;
+import org.apache.ode.spi.exec.task.TaskAction;
+import org.apache.ode.spi.exec.task.TaskActionDefinition;
+import org.apache.ode.spi.exec.task.TaskCallback;
+import org.apache.ode.spi.exec.task.TaskDefinition;
+import org.apache.ode.spi.exec.task.TaskException;
 import org.w3c.dom.Document;
 
 @Singleton
@@ -78,6 +82,12 @@ public class TaskExecutor implements Runnable {
 
 	@Inject
 	Executors executors;
+	
+	@Inject
+	Provider<TaskCallable> taskProvider;
+	
+	@Inject
+	Provider<TaskActionCallable> actionProvider;
 
 	private ExecutorService exec;
 
@@ -116,6 +126,7 @@ public class TaskExecutor implements Runnable {
 		pollTaskSession = pollQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 		taskQueueReceiver = pollTaskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK, nodeId, Node.NODE_MQ_PROP_VALUE_NEW));
 		pollQueueConnection.start();
+
 	}
 
 	@PreDestroy
@@ -145,10 +156,18 @@ public class TaskExecutor implements Runnable {
 						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.Task> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
 								payload)), org.apache.ode.runtime.exec.cluster.xml.Task.class);
 						org.apache.ode.runtime.exec.cluster.xml.Task task = element.getValue();
+						if (org.apache.ode.runtime.exec.cluster.xml.TaskState.SUBMIT == task.getState()) {
+
+						}
 						//submitTask(task.getName(), task., targets);
-					} else if (message.getStringProperty(Node.NODE_MQ_PROP_TASKID) != null) {
+					} else if (message.getStringProperty(Node.NODE_MQ_PROP_ACTIONID) != null) {
 						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
 								new ByteArrayInputStream(payload)), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class);
+						org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = element.getValue();
+						if (org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT == taskAction.getState()) {
+							submitTaskAction(LogLevel.valueOf(taskAction.getLogLevel().value()), message.getJMSCorrelationID(),
+									(Queue) message.getJMSReplyTo(), taskAction.getTaskId(), taskAction.getName(), taskAction.getInput());
+						}
 					}
 
 				} catch (JMSException e) {
@@ -191,14 +210,15 @@ public class TaskExecutor implements Runnable {
 
 	public class TaskInfo {
 		public TaskIdImpl id;
-		public Future<TaskState> state;
+		public Future<TaskResult> result;
 	}
 
-	public TaskInfo submitTask(String correlationId, Queue requestor, QName task, Document taskInput, Target... targets) throws PlatformException {
+	public TaskInfo submitTask(String correlationId, Queue requestor, QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback,
+			Target... targets) throws TaskException {
 		//TaskCoordinators run on node where task is submitted. Also all DB 
 		TaskDefinition def = node.getTaskDefinitions().get(task);
 		if (def == null) {
-			throw new PlatformException(String.format("Unsupported Task %s", task.toString()));
+			throw new TaskException(String.format("Unsupported Task %s", task.toString()));
 		}
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 		pmgr.getTransaction().begin();
@@ -219,10 +239,12 @@ public class TaskExecutor implements Runnable {
 			pmgr.getTransaction().commit();
 			TaskInfo info = new TaskInfo();
 			info.id = (TaskIdImpl) t.id();
-			info.state = exec.submit(new TaskCallable(node, requestor, correlationId, info.id, taskInput, targets));
+			TaskCallable c = taskProvider.get();
+			c.config(node, config, logLevel, requestor, correlationId, info.id, taskInput, callback, targets);
+			info.result = exec.submit(c);
 			return info;
 		} catch (PersistenceException pe) {
-			throw new PlatformException(pe);
+			throw new TaskException(pe);
 		} finally {
 			pmgr.close();
 		}
@@ -231,15 +253,15 @@ public class TaskExecutor implements Runnable {
 
 	public class TaskActionInfo {
 		public TaskActionIdImpl id;
-		public Future<TaskActionState> state;
+		public Future<TaskAction.TaskActionState> state;
 	}
 
 	public TaskActionInfo submitTaskAction(LogLevel logLevel, String correlationId, Queue requestor, String taskId, QName action, Document taskInput)
-			throws PlatformException {
+			throws TaskException {
 		//TaskCoordinators run on node where task is submitted. Also all DB 
 		TaskActionDefinition def = node.getTaskActionDefinitions().get(action);
 		if (def == null) {
-			throw new PlatformException(String.format("Unsupported TaskAction %s", action.toString()));
+			throw new TaskException(String.format("Unsupported TaskAction %s", action.toString()));
 		}
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 		pmgr.getTransaction().begin();
@@ -255,15 +277,17 @@ public class TaskExecutor implements Runnable {
 			t.setTargets(targetEntities);
 			//t.setComponent(ae.component);
 			*/t.setNodeId(nodeId);
-			t.setState(TaskActionState.SUBMIT);
+			t.setState(TaskAction.TaskActionState.SUBMIT);
 			pmgr.persist(t);
 			pmgr.getTransaction().commit();
 			TaskActionInfo info = new TaskActionInfo();
 			info.id = (TaskActionIdImpl) t.id();
-			info.state = exec.submit(new TaskActionCallable(node, logLevel, correlationId, requestor, taskId, info.id, taskInput));
+			TaskActionCallable c = actionProvider.get();
+			c.config(node, config, logLevel, correlationId, requestor, taskId, info.id, taskInput);
+			info.state = exec.submit(c);
 			return info;
 		} catch (PersistenceException pe) {
-			throw new PlatformException(pe);
+			throw new TaskException(pe);
 		}
 
 	}

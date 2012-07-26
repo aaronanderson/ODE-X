@@ -1,14 +1,37 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.runtime.exec.platform.task.TaskCallable.convertToDocument;
+import static org.apache.ode.runtime.exec.platform.task.TaskCallable.convertToObject;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,17 +63,20 @@ import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
+import org.apache.ode.runtime.exec.platform.task.TaskCallable.ConvertTarget;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Task.TaskActionContext;
-import org.apache.ode.spi.exec.Task.TaskActionDefinition;
-import org.apache.ode.spi.exec.Task.TaskActionExec;
-import org.apache.ode.spi.exec.Task.TaskActionId;
-import org.apache.ode.spi.exec.Task.TaskActionState;
+import org.apache.ode.spi.exec.task.CoordinatedTaskActionExec;
+import org.apache.ode.spi.exec.task.TaskAction;
+import org.apache.ode.spi.exec.task.TaskActionActivity;
+import org.apache.ode.spi.exec.task.TaskActionContext;
+import org.apache.ode.spi.exec.task.TaskActionDefinition;
+import org.apache.ode.spi.exec.task.TaskActionExec;
+import org.apache.ode.spi.exec.task.TaskActionTransaction;
 import org.w3c.dom.Document;
 
-public class TaskActionCallable implements Callable<TaskActionState> {
+public class TaskActionCallable implements Callable<TaskAction.TaskActionState> {
 
 	@PersistenceUnit(unitName = "platform")
 	EntityManagerFactory pmgrFactory;
@@ -77,24 +103,26 @@ public class TaskActionCallable implements Callable<TaskActionState> {
 	private TaskActionIdImpl id;
 	private Document actionInput;
 
+	private org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
 	private LogLevel logLevel = LogLevel.WARNING;
 	private String taskId;
 	private LinkedList<org.apache.ode.runtime.exec.cluster.xml.Message> msgQueue = new LinkedList<org.apache.ode.runtime.exec.cluster.xml.Message>();
 	private final Lock actionUpdateLock = new ReentrantLock();
 	private final Condition actionUpdateSignal = actionUpdateLock.newCondition();
-	private boolean interactive;
 
 	EntityManager pmgr;
 	TaskActionImpl taskAction;
-	TaskActionExec exec;
+	TaskActionActivity exec;
 	TaskActionContextImpl taskActionCtx;
 
-	Map<QName, TaskActionDefinition> actions;
+	Map<QName, TaskActionDefinition<?, ?>> actions;
 
 	private static final Logger log = Logger.getLogger(TaskActionCallable.class.getName());
 
-	public TaskActionCallable(Node node, LogLevel level, String correlationId, Queue actionRequestor, String taskId, TaskActionIdImpl id, Document actionInput) {
+	public void config(Node node, org.apache.ode.runtime.exec.cluster.xml.TaskCheck config, LogLevel level, String correlationId, Queue actionRequestor,
+			String taskId, TaskActionIdImpl id, Document actionInput) {
 		this.actions = node.getTaskActionDefinitions();
+		this.config = config;
 		this.logLevel = level;
 		this.correlationId = correlationId;
 		this.actionRequestor = actionRequestor;
@@ -103,26 +131,8 @@ public class TaskActionCallable implements Callable<TaskActionState> {
 		this.actionInput = actionInput;
 	}
 
-	public void cancel() {
-		try {
-			actionUpdateLock.lock();
-			actionUpdateSignal.signal();
-		} finally {
-			actionUpdateLock.unlock();
-		}
-	}
-
-	public void executeUpdate() {
-		try {
-			actionUpdateLock.lock();
-			actionUpdateSignal.signal();
-		} finally {
-			actionUpdateLock.unlock();
-		}
-	}
-
 	@Override
-	public TaskActionState call() throws PlatformException {
+	public TaskAction.TaskActionState call() throws PlatformException {
 		pmgr = pmgrFactory.createEntityManager();
 		try {
 			taskAction = pmgr.find(TaskActionImpl.class, id.id());
@@ -138,70 +148,82 @@ public class TaskActionCallable implements Callable<TaskActionState> {
 				msgUpdatePublisher = msgUpdateSession.createPublisher(msgUpdateTopic);
 			} catch (JMSException je) {
 				log.log(Level.SEVERE, "", je);
-				rollback(je.getMessage());
+				fail(je.getMessage(), false);
 			}
 			TaskActionDefinition def = actions.get(taskAction.name());
 			if (def == null) {
-				rollback(String.format("Unsupported TaskAction %s", taskAction.name().toString()));
+				fail(String.format("Unsupported TaskAction %s", taskAction.name().toString()), false);
 			}
 			taskActionCtx = new TaskActionContextImpl();
-			exec = def.actionExec().get();
-			interactive = def.interactive();
-			if (interactive) {
-				try {
-					taskAction.setState(TaskActionState.START);
+			exec = (TaskActionActivity) def.actionExec().get();
+
+			try {
+				taskAction.setState(TaskAction.TaskActionState.START);
+				updateAction();
+				exec.start(taskActionCtx,
+						TaskCallable.convertToObject(actionInput, locateTarget(exec.getClass(), TaskCallable.ConvertTarget.OUTPUT), def.jaxbContext()));
+				if (taskActionCtx.failed) {
+					fail(null, true);
+				}
+				taskAction.setState(TaskAction.TaskActionState.EXECUTE);
+				updateAction();
+				if (exec instanceof TaskActionExec) {
+					((TaskActionExec) exec).execute();
 					updateAction();
-					exec.start(taskActionCtx, actionInput);
-					taskAction.setState(TaskActionState.EXECUTE);
-					updateAction();
-					while (taskAction.state() == TaskActionState.EXECUTE) {
+				} else if (exec instanceof CoordinatedTaskActionExec) {
+					CoordinatedTaskActionExec cexec = (CoordinatedTaskActionExec) exec;
+					while (!taskActionCtx.failed && TaskAction.TaskActionState.EXECUTE == taskAction.state()) {
 						try {
 							actionUpdateLock.lock();
-							actionUpdateSignal.await();
-							Document coordination = exec.execute(taskActionCtx, taskAction.getCoordination());
-							taskAction.setCoordination(coordination);
+							if (!actionUpdateSignal.await(config.getActionCoordinationTimeout(), TimeUnit.MILLISECONDS)) {
+								fail("Coordination timed out", true);
+							}
+							Object cresult = cexec.execute(convertToObject(taskAction.getCoordinationInput(),
+									locateTarget(exec.getClass(), ConvertTarget.COORDINATE_INPUT), def.jaxbContext()));
+							taskAction.setCoordinationOutput(convertToDocument(cresult, locateTarget(exec.getClass(), ConvertTarget.COORDINATE_OUTPUT),
+									def.jaxbContext()));
 							updateAction();
 						} catch (InterruptedException e) {
-							// ignore
+							fail(String.format("Coordination interupted", e.getMessage()), true);
 						} finally {
 							actionUpdateLock.unlock();
 						}
 					}
-
-					taskAction.setState(TaskActionState.FINISH);
+				}
+				if (taskActionCtx.failed) {
+					fail(null, true);
+				}
+				taskAction.setState(TaskAction.TaskActionState.FINISH);
+				updateAction();
+				Object result = exec.finish();
+				if (taskActionCtx.failed) {
+					fail(null, true);
+				}
+				taskAction.setOutput(convertToDocument(result, locateTarget(exec.getClass(), ConvertTarget.OUTPUT), def.jaxbContext()));
+				if (exec instanceof TaskActionTransaction) {
+					taskAction.setState(TaskAction.TaskActionState.PENDING);
 					updateAction();
 					try {
 						actionUpdateLock.lock();
-						actionUpdateSignal.await();
-						Document result = exec.finish(taskActionCtx);
-						taskAction.setResult(result);
+						if (!actionUpdateSignal.await(config.getActionTransactionTimeout(), TimeUnit.MILLISECONDS)) {
+							fail(String.format("Transaction timed out"), true);
+						}
+						((TaskActionTransaction) exec).complete();
+						if (taskAction.state() == TaskAction.TaskActionState.COMMIT) {
+							taskAction.setState(TaskAction.TaskActionState.COMPLETE);
+						}
 						updateAction();
 					} catch (InterruptedException e) {
-						// ignore
+						fail(String.format("Transaction interupted", e.getMessage()), true);
 					} finally {
 						actionUpdateLock.unlock();
 					}
-
-				} catch (PlatformException pe) {
-					throw pe;
+				} else {
+					taskAction.setState(TaskAction.TaskActionState.COMPLETE);
+					updateAction();
 				}
-			} else {
-				try {
-					taskAction.setState(TaskActionState.START);
-					updateAction();
-					exec.start(taskActionCtx, actionInput);
-					taskAction.setState(TaskActionState.EXECUTE);
-					updateAction();
-					exec.execute(taskActionCtx, null);
-					taskAction.setState(TaskActionState.FINISH);
-					updateAction();
-					Document result = exec.finish(taskActionCtx);
-					taskAction.setState(TaskActionState.COMPLETE);
-					taskAction.setResult(result);
-					updateAction();
-				} catch (PlatformException pe) {
-					throw pe;
-				}
+			} catch (PlatformException pe) {
+				throw pe;
 			}
 
 		} finally {
@@ -215,6 +237,18 @@ public class TaskActionCallable implements Callable<TaskActionState> {
 		}
 		return taskAction.state();
 
+	}
+
+	public void externalUpdate(org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlAction) {
+		try {
+			actionUpdateLock.lock();
+			taskAction.setState(TaskAction.TaskActionState.valueOf(xmlAction.getState().value()));
+			taskAction.setCoordinationInput(xmlAction.getCoordinationInput());
+			taskAction.setCoordinationOutput(null);
+			actionUpdateSignal.signal();
+		} finally {
+			actionUpdateLock.unlock();
+		}
 	}
 
 	public void updateAction() {
@@ -259,56 +293,62 @@ public class TaskActionCallable implements Callable<TaskActionState> {
 			org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = convert(m);
 			if (logLevel.ordinal() >= xmlMessage.getLevel().ordinal()) {
 				msgQueue.add(xmlMessage);
+
+				BytesMessage jmsMessage = msgUpdateSession.createBytesMessage();
+				Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class, xmlMessage),
+						bos);
+				jmsMessage.writeBytes(bos.toByteArray());
+				jmsMessage.setJMSCorrelationID(correlationId);
+				msgUpdatePublisher.publish(jmsMessage);
 			}
-			BytesMessage jmsMessage = msgUpdateSession.createBytesMessage();
-			Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller
-					.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class, xmlMessage), bos);
-			jmsMessage.writeBytes(bos.toByteArray());
-			jmsMessage.setJMSCorrelationID(correlationId);
-			msgUpdatePublisher.publish(jmsMessage);
 		} catch (Exception je) {
 			log.log(Level.SEVERE, "", je);
 		}
 	}
 
 	public class TaskActionContextImpl implements TaskActionContext {
+		boolean failed = false;;
 
-		public TaskActionId id() {
+		@Override
+		public TaskAction.TaskActionId id() {
 			return taskAction.id();
 		}
 
+		@Override
 		public QName name() {
 			return taskAction.name();
 		}
 
+		@Override
 		public void log(LogLevel level, int code, String message) {
 			updateLog(level, code, message);
 		}
 
-		public TaskActionState getState() {
+		@Override
+		public TaskAction.TaskActionState getState() {
 			return taskAction.state();
 		}
 
-		public void updateState(TaskActionState state) throws PlatformException {
-			taskAction.setState(state);
-			updateAction();
-		}
-
 		@Override
-		public boolean interactive() {
-			return interactive;
+		public void setFailed() {
+			failed = true;
 		}
 
 	}
 
-	public void rollback(String msg) throws PlatformException {
-		taskAction.setState(TaskActionState.ROLLBACK);
-		if (exec != null) {
-			exec.finish(taskActionCtx);
+	public void fail(String msg, boolean rollback) throws PlatformException {
+		if (msg != null) {
+			updateLog(LogLevel.ERROR, 0, msg);
 		}
-		updateLog(LogLevel.ERROR, 0, msg);
+		if (rollback && exec instanceof TaskActionTransaction) {
+			taskAction.setState(TaskAction.TaskActionState.ROLLBACK);
+			((TaskActionTransaction) exec).complete();
+		}
+		taskAction.setState(TaskAction.TaskActionState.FAILED);
+		updateAction();
+
 		throw new PlatformException(msg);
 
 	}
@@ -336,19 +376,57 @@ public class TaskActionCallable implements Callable<TaskActionState> {
 		switch (action.state()) {
 		case SUBMIT:
 		case START:
-		case EXECUTE:
-		case FINISH:
-		case ROLLBACK:
-		case COMMIT:
-		case COMPLETE:
 			Calendar start = Calendar.getInstance();
 			start.setTime(action.start());
 			xmlAction.setStart(start);
+			break;
+		case EXECUTE:
+			Document out = action.getCoordinationOutput();
+			if (out != null) {
+				xmlAction.setCoordinationOutput(out);
+			}
+			break;
+		case FINISH:
+			xmlAction.setOutput(action.getOutput());
+			break;
+		case ROLLBACK:
+		case COMMIT:
+		case COMPLETE:
+		case FAILED:
 			Calendar fin = Calendar.getInstance();
 			fin.setTime(action.finish());
 			xmlAction.setFinished(fin);
+			break;
 
 		}
 		return xmlAction;
+	}
+
+	public static Class<?> locateTarget(Class<?> clazz, ConvertTarget target) throws PlatformException {
+
+		Class<?> targetClass = null;
+		for (Type t : clazz.getClass().getGenericInterfaces()) {
+			if (t instanceof TaskActionActivity) {
+				if (target == ConvertTarget.INPUT) {
+					targetClass = (Class<?>) ((ParameterizedType) t).getActualTypeArguments()[0];
+					break;
+				} else if (target == ConvertTarget.OUTPUT) {
+					targetClass = (Class<?>) ((ParameterizedType) t).getActualTypeArguments()[1];
+					break;
+				}
+			} else if (t instanceof CoordinatedTaskActionExec) {
+				if (target == ConvertTarget.COORDINATE_INPUT) {
+					targetClass = (Class<?>) ((ParameterizedType) t).getActualTypeArguments()[0];
+					break;
+				} else if (target == ConvertTarget.COORDINATE_OUTPUT) {
+					targetClass = (Class<?>) ((ParameterizedType) t).getActualTypeArguments()[1];
+					break;
+				}
+			}
+		}
+		if (targetClass == null) {
+			throw new PlatformException(String.format("Unable to convert target %s on class %s", target.name(), clazz.getName()));
+		}
+		return targetClass;
 	}
 }

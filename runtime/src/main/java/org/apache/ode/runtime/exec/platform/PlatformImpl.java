@@ -18,41 +18,40 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
 
-import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.runtime.exec.cluster.xml.TargetAll;
+import org.apache.ode.runtime.exec.platform.target.TargetAllImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetClusterImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetImpl.TargetPK;
+import org.apache.ode.runtime.exec.platform.target.TargetNodeImpl;
+import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageListener;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Program;
-import org.apache.ode.spi.exec.Target;
-import org.apache.ode.spi.exec.Task;
-import org.apache.ode.spi.exec.Task.TaskId;
-import org.apache.ode.spi.exec.Task.TaskState;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.InstructionSets;
+import org.apache.ode.spi.exec.target.Target;
+import org.apache.ode.spi.exec.target.TargetCluster;
+import org.apache.ode.spi.exec.target.TargetNode;
+import org.apache.ode.spi.exec.task.Task;
+import org.apache.ode.spi.exec.task.Task.TaskId;
+import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.DataHandler;
@@ -63,26 +62,56 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-@Singleton
 public class PlatformImpl implements Platform {
 
-	@PersistenceContext(unitName = "platform")
+	//@PersistenceContext(unitName = "platform")
 	private EntityManager pmgr;
 
-	@Inject
+	//@Inject
 	Repository repo;
-	@Inject
+	//@Inject
 	Provider<ArtifactDataSource> dsProvider;
 
-	@Inject
+	//@Inject
 	private NodeImpl node;
 
-	private QName architecture;
-	private LogLevel logLevel = LogLevel.WARNING;
+	LogLevel logLevel = LogLevel.WARNING;
+	CopyOnWriteArraySet<MessageListener> taskListeners = new CopyOnWriteArraySet<MessageListener>();
 
-	public void setLogLevel(LogLevel logLevel) {
+	public class PlatformListener {
+
+	}
+
+	private PlatformImpl(NodeImpl node, Repository repo, Provider<ArtifactDataSource> dsProvider, EntityManager pmgr) {
+		this.node = node;
+		this.repo = repo;
+		this.dsProvider = dsProvider;
+		this.pmgr = pmgr;
+	}
+
+	//State Methods
+
+	public void login(AuthContext authContext) throws PlatformException {
+
+	}
+
+	public void logout() throws PlatformException {
+
+	}
+
+	public void registerListener(MessageListener listener) {
+		node.addListener(listener);
+	}
+
+	public void unregisterListener(MessageListener listener) {
+		node.removeListener(listener);
+	}
+
+	public void setLogLevel(LogLevel level) {
 		this.logLevel = logLevel;
 	}
+
+	//Platform Methods
 
 	@Override
 	public Document setup(Artifact... executables) throws PlatformException {
@@ -121,6 +150,27 @@ public class PlatformImpl implements Platform {
 	}
 
 	@Override
+	public <T extends Target> T createTarget(String id, Class<T> type) throws PlatformException {
+		if (type == null) {
+			throw new PlatformException("Target type is null");
+		}
+		T target = null;
+		if (TargetAll.class.equals(type)) {
+			target = (T) pmgr.find(TargetAllImpl.class, new TargetPK(null, TargetAllImpl.TYPE));
+		} else if (TargetNode.class.equals(type)) {
+			target = (T) pmgr.find(TargetNodeImpl.class, new TargetPK(id, TargetNodeImpl.TYPE));
+		} else if (TargetCluster.class.equals(type)) {
+			target = (T) pmgr.find(TargetClusterImpl.class, new TargetPK(id, TargetClusterImpl.TYPE));
+		} else {
+			throw new PlatformException(String.format("Invalid target type %s", type.getName()));
+		}
+		if (target == null) {
+			throw new PlatformException(String.format("Invalid target %s:%s", id, type.getName()));
+		}
+		return target;
+	}
+
+	@Override
 	public void install(QName id, Document programConfiguration, Target... targets) throws PlatformException {
 		// cluster.execute(action, installData,targets);
 	}
@@ -154,13 +204,46 @@ public class PlatformImpl implements Platform {
 		Element root = taskInput.createElementNS(PlatformTask.UNINSTALL_TASK.qname().getNamespaceURI(), "taskId");
 		root.setTextContent(id.toString());
 		taskInput.appendChild(root);
-		node.executeSync(PlatformTask.UNINSTALL_TASK.qname(), taskInput, targets);
-		
+		node.executeSync(PlatformTask.UNINSTALL_TASK.qname(), logLevel, taskInput, null, targets);
+
 	}
 
 	@Override
-	public TaskId execute(QName task, Document taskInput, Target... targets) throws PlatformException {
-		return node.executeAsync(task, taskInput, targets);
+	public TaskId executeAsync(QName task, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws PlatformException {
+		return node.executeAsyncId(task, logLevel, taskInput, callback, targets);
+	}
+
+	@Override
+	public Future<Document> execute(QName task, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws PlatformException {
+		final Future<TaskResult> taskResult = node.executeAsyncFuture(task, logLevel, taskInput, callback, targets);
+		return new Future<Document>() {
+
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				return taskResult.cancel(mayInterruptIfRunning);
+			}
+
+			@Override
+			public boolean isCancelled() {
+				return taskResult.isCancelled();
+			}
+
+			@Override
+			public boolean isDone() {
+				return taskResult.isDone();
+			}
+
+			@Override
+			public Document get() throws InterruptedException, ExecutionException {
+				return taskResult.get().output;
+			}
+
+			@Override
+			public Document get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+				return taskResult.get(timeout, unit).output;
+			}
+
+		};
 	}
 
 	@Override
@@ -178,108 +261,26 @@ public class PlatformImpl implements Platform {
 		return node.status();
 	}
 
-	@Override
-	public void registerListener(MessageListener listener) {
-		// TODO Auto-generated method stub
+	@Singleton
+	public static class PlatformProvider implements Provider<Platform> {
 
-	}
+		@PersistenceContext(unitName = "platform")
+		private EntityManager pmgr;
 
-	@Override
-	public void unregisterListener(MessageListener listener) {
-		// TODO Auto-generated method stub
+		@Inject
+		Repository repo;
 
-	}
+		@Inject
+		Provider<ArtifactDataSource> dsProvider;
 
-	@Override
-	public void beginLogLevel(LogLevel level) {
-		// TODO Auto-generated method stub
+		@Inject
+		private NodeImpl node;
 
-	}
-
-	@Override
-	public void endLogLevel() {
-		// TODO Auto-generated method stub
-
-	}
-
-	public JAXBContext getJAXBContext(InputStream executable) throws JAXBException {
-		try {
-			return getJAXBContext(getInstructionSets(executable));
-		} catch (PlatformException pe) {
-			throw new JAXBException(pe);
+		@Override
+		public Platform get() {
+			return new PlatformImpl(node, repo, dsProvider, pmgr);
 		}
-	}
 
-	public JAXBContext getJAXBContext(List<QName> isets) throws JAXBException {
-		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
-		for (QName iset : isets) {
-			InstructionSet is = node.getInstructionSets().get(iset);
-			if (is == null) {
-				throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
-			}
-			isetSet.add(is);
-		}
-		return JAXBRuntimeUtil.executableJAXBContextByPath(isetSet);
-	}
-
-	public List<QName> getInstructionSets(InputStream executable) throws PlatformException {
-		List<QName> isets = new ArrayList<QName>();
-		try {
-			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(executable);
-			reader.nextTag();// root
-			reader.nextTag();// Instruction set, if present
-			if ("instruction-sets".equals(reader.getLocalName())) {
-				reader.nextTag();// first instruction set
-				while ("instruction-set".equals(reader.getLocalName())) {
-					String[] text = reader.getElementText().split(":");
-					if (text.length == 2) {
-						QName iset = new QName(reader.getNamespaceContext().getNamespaceURI(text[0]), text[1]);
-						InstructionSet is = node.getInstructionSets().get(iset);
-						if (is == null) {
-							throw new PlatformException("Unknown instruction set " + iset.toString());
-						}
-						isets.add(iset);
-					} else {
-						throw new PlatformException("Unknown instruction set " + reader.getElementText());
-					}
-					reader.nextTag();
-				}
-			}
-			executable.close();
-			return isets;
-		} catch (Exception e) {
-			throw new PlatformException(e);
-		}
-	}
-
-	public JAXBContext getJAXBContext(Executable executable) throws JAXBException {
-		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
-		InstructionSets isets = executable.getInstructionSets();
-		if (isets != null) {
-			for (QName iset : isets.getInstructionSet()) {
-				InstructionSet is = node.getInstructionSets().get(iset);
-				if (is == null) {
-					throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
-				}
-				isetSet.add(is);
-			}
-		}
-		return JAXBRuntimeUtil.executableJAXBContextByPath(isetSet);
-	}
-
-	public List<QName> getInstructionSets(Executable executable) throws PlatformException {
-		List<QName> isets = new ArrayList<QName>();
-		InstructionSets eisets = executable.getInstructionSets();
-		if (eisets != null) {
-			for (QName iset : eisets.getInstructionSet()) {
-				InstructionSet is = node.getInstructionSets().get(iset);
-				if (is == null) {
-					throw new PlatformException("Unknown instruction set " + iset.toString());
-				}
-				isets.add(iset);
-			}
-		}
-		return isets;
 	}
 
 }

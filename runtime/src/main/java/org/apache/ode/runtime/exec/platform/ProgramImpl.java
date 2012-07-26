@@ -38,8 +38,9 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.runtime.exec.platform.target.TargetImpl;
 import org.apache.ode.spi.exec.Program;
-import org.apache.ode.spi.exec.Target;
+import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.repo.Artifact;
 
 @Entity

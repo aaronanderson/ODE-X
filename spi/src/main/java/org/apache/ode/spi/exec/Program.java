@@ -24,6 +24,7 @@ import java.util.Set;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.repo.Artifact;
 
 public interface Program {

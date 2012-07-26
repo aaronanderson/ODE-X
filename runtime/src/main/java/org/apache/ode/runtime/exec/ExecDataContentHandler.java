@@ -34,23 +34,23 @@ import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.ode.runtime.exec.platform.PlatformImpl;
+import org.apache.ode.runtime.exec.platform.NodeImpl;
 import org.apache.ode.spi.exec.xml.Executable;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 
 public class ExecDataContentHandler extends XMLDataContentHandler {
 
-	protected PlatformImpl platform;
+	protected NodeImpl node;
 
-	public ExecDataContentHandler(PlatformImpl platform) {
-		this.platform = platform;
+	public ExecDataContentHandler(NodeImpl node) {
+		this.node = node;
 	}
 
 	@Override
 	public Object getContent(DataSource dataSource) throws IOException {
 		try {
-			JAXBContext ctx = platform.getJAXBContext(dataSource.getInputStream());
+			JAXBContext ctx = node.getJAXBContext(dataSource.getInputStream());
 			Unmarshaller u = ctx.createUnmarshaller();
 			return (JAXBElement) u.unmarshal(dataSource.getInputStream());
 		} catch (JAXBException je) {
@@ -62,7 +62,7 @@ public class ExecDataContentHandler extends XMLDataContentHandler {
 	public Object getTransferData(DataFlavor flavor, DataSource dataSource) throws UnsupportedFlavorException, IOException {
 		if (JAXBElement.class.equals(flavor.getRepresentationClass())) {
 			try {
-				JAXBContext ctx = platform.getJAXBContext(dataSource.getInputStream());
+				JAXBContext ctx = node.getJAXBContext(dataSource.getInputStream());
 				Unmarshaller u = ctx.createUnmarshaller();
 				return (JAXBElement) u.unmarshal(dataSource.getInputStream());
 			} catch (JAXBException je) {
@@ -84,7 +84,7 @@ public class ExecDataContentHandler extends XMLDataContentHandler {
 		if (content instanceof JAXBElement) {
 			JAXBElement<Executable> exec = (JAXBElement<Executable>) content;
 			try {
-				JAXBContext ctx = platform.getJAXBContext(exec.getValue());
+				JAXBContext ctx = node.getJAXBContext(exec.getValue());
 
 				Marshaller u = ctx.createMarshaller();
 				u.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);

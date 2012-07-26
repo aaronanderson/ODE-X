@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.jms.BytesMessage;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -64,11 +65,13 @@ import org.apache.ode.spi.exec.Message.NodeListener;
 import org.apache.ode.spi.exec.Message.TaskListener;
 import org.apache.ode.spi.exec.Node;
 
+@Singleton
 public class MessageHandler implements Runnable {
 
 	public static final String MSG_MQ_ORIG_CLUSTER = "ODE_ORIG_CLUSTER";
 	public static final String MSG_MQ_ORIG_NODE = "ODE_ORIG_NODE";
 	public static final String MSG_MQ_TASK = "ODE_TASK";
+	public static final String MSG_MQ_LEVEL = "ODE_MSG_LEVEL";
 
 	@Inject
 	ClusterConfig clusterConfig;
@@ -120,6 +123,14 @@ public class MessageHandler implements Runnable {
 		}
 	}
 
+	public void addListener(MessageListener listener) {
+		listeners.add(listener);
+	}
+
+	public void removeListener(MessageListener listener) {
+		listeners.remove(listener);
+	}
+
 	public void log(LogLevel level, int code, String messageText, String targetNodeId, String targetClusterId, String taskId) {
 		try {
 			org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = new org.apache.ode.runtime.exec.cluster.xml.Message();
@@ -160,6 +171,7 @@ public class MessageHandler implements Runnable {
 				String origNodeId = message.getStringProperty(MSG_MQ_ORIG_NODE);
 				String origClusterId = message.getStringProperty(MSG_MQ_ORIG_CLUSTER);
 				String taskId = message.getStringProperty(MSG_MQ_TASK);
+				int logLevel = Integer.parseInt(message.getStringProperty(MSG_MQ_LEVEL));
 
 				Set<MessageListener> interested = new HashSet<MessageListener>();
 				for (MessageListener l : listeners) {
@@ -169,9 +181,15 @@ public class MessageHandler implements Runnable {
 
 					} else if (l instanceof ClusterListener) {
 						ClusterListener l2 = (ClusterListener) l;
+						if (targetClusterId.equals(l2.clusterIdFilter()) && ll.ordinal() <= logLevel) {
+							interested.add(l);
+						}
 
 					} else if (l instanceof NodeListener) {
 						NodeListener l2 = (NodeListener) l;
+						if (targetNodeId.equals(l2.nodeIdFilter()) && ll.ordinal() <= logLevel) {
+							interested.add(l);
+						}
 					}
 				}
 				if (interested.size() > 0) {

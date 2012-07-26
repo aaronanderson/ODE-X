@@ -18,28 +18,33 @@
  */
 package org.apache.ode.runtime.exec.platform.task;
 
-import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Task.TaskActionContext;
-import org.apache.ode.spi.exec.Task.TaskActionExec;
-import org.w3c.dom.Document;
+import org.apache.ode.runtime.exec.cluster.xml.InstallProgramInput;
+import org.apache.ode.runtime.exec.cluster.xml.InstallProgramOutput;
+import org.apache.ode.spi.exec.task.TaskActionTransaction;
+import org.apache.ode.spi.exec.task.TaskActionContext;
+import org.apache.ode.spi.exec.task.TaskActionExec;
 
-public class InstallAction implements TaskActionExec {
+public class InstallAction implements TaskActionExec<InstallProgramInput, InstallProgramOutput>, TaskActionTransaction {
 
 	@Override
-	public void start(TaskActionContext ctx, Document input) throws PlatformException {
+	public void start(TaskActionContext ctx, InstallProgramInput input) {
 
 	}
 
 	@Override
-	public Document execute(TaskActionContext ctx, Document coordination) throws PlatformException {
+	public void execute() {
+
+	}
+
+	@Override
+	public InstallProgramOutput finish() {
 
 		return null;
 	}
 
 	@Override
-	public Document finish(TaskActionContext ctx) throws PlatformException {
+	public void complete() {
 
-		return null;
 	}
 
 }

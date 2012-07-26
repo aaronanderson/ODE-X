@@ -37,13 +37,40 @@
 		<jxb:bindings node="//xs:complexType[@name='messageType']">
 			<jxb:class name="Message" />
 		</jxb:bindings>
+
+
 		<jxb:bindings node="//xs:complexType[@name='inputType']">
 			<jxb:class name="Input" />
 		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='resultType']">
-			<jxb:class name="Result" />
+		<jxb:bindings node="//xs:complexType[@name='outputType']">
+			<jxb:class name="Output" />
 		</jxb:bindings>
-		
+		<jxb:bindings node="//xs:complexType[@name='coordinationInputType']">
+			<jxb:class name="CoordinationInput" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='coordinationOutputType']">
+			<jxb:class name="CoordinationOutput" />
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:input']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:output']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:coordinationInput']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:coordinationOutput']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='clusterConfigType']">
 			<jxb:class name="ClusterConfig" />

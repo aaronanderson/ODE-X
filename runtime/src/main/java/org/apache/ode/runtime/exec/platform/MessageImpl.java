@@ -37,9 +37,6 @@ import javax.persistence.TemporalType;
 
 import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.Message.LogLevel;
-import org.apache.ode.spi.exec.Target.TargetAll;
-import org.apache.ode.spi.exec.Target.TargetCluster;
-import org.apache.ode.spi.exec.Target.TargetNode;
 
 //@NamedQueries({ @NamedQuery(name = "localTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'  or ( action.state = 'CANCELED' and action.finish is null )") })
 @Entity

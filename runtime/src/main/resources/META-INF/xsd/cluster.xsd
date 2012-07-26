@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor 
-	license agreements. See the NOTICE file distributed with this work for additional 
-	information regarding copyright ownership. The ASF licenses this file to 
-	you under the Apache License, Version 2.0 (the "License"); you may not use 
-	this file except in compliance with the License. You may obtain a copy of 
-	the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required 
-	by applicable law or agreed to in writing, software distributed under the 
-	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
-	OF ANY KIND, either express or implied. See the License for the specific 
-	language governing permissions and limitations under the License. -->
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
 <schema targetNamespace="http://ode.apache.org/cluster" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/cluster">
 
 	<simpleType name="nodeState">
@@ -98,13 +108,17 @@
 
 	<element name="input" type="tns:inputType" abstract="true" />
 
-	<complexType name="resultType" abstract="true" />
+	<complexType name="outputType" abstract="true" />
 
-	<element name="result" type="tns:resultType" abstract="true" />
+	<element name="output" type="tns:outputType" abstract="true" />
 
-	<complexType name="coordinationType" abstract="true" />
+	<complexType name="coordinationInputType" abstract="true" />
 
-	<element name="coordination" type="tns:coordinationType" abstract="true" />
+	<element name="coordinationInput" type="tns:coordinationInputType" abstract="true" />
+
+	<complexType name="coordinationOutputType" abstract="true" />
+
+	<element name="coordinationOutput" type="tns:coordinationOutputType" abstract="true" />
 
 	<complexType name="targetType" abstract="true" />
 
@@ -160,8 +174,9 @@
 				<element name="finished" type="dateTime" />
 				<choice>
 					<element ref="tns:input" />
-					<element ref="tns:result" />
-				<!-- <element ref="tns:coordination" /> -->
+					<element ref="tns:output" />
+					<element ref="tns:coordinationInput" />
+					<element ref="tns:coordinationOutput" />
 				</choice>
 			</sequence>
 			<attribute name="taskId" type="string" use="required" />
@@ -183,8 +198,9 @@
 				<element name="finished" type="dateTime" />
 				<choice>
 					<element ref="tns:input" />
-					<element ref="tns:result" />
-					<element ref="tns:coordination" />
+					<element ref="tns:output" />
+					<element ref="tns:coordinationInput" />
+					<element ref="tns:coordinationOutput" />
 				</choice>
 			</sequence>
 			<attribute name="taskId" type="string" />
@@ -197,7 +213,7 @@
 
 
 
-	<element name="masterProgramInput" substitutionGroup="tns:input">
+	<element name="installProgramInput" substitutionGroup="tns:input">
 		<complexType>
 			<complexContent>
 				<extension base="tns:inputType">
@@ -210,10 +226,10 @@
 	</element>
 
 
-	<element name="masterProgramResult" substitutionGroup="tns:result">
+	<element name="installProgramOutput" substitutionGroup="tns:output">
 		<complexType>
 			<complexContent>
-				<extension base="tns:resultType">
+				<extension base="tns:outputType">
 					<attribute name="programId" type="string" />
 				</extension>
 			</complexContent>
@@ -240,6 +256,8 @@
 	<complexType name="taskCheckType">
 		<attribute name="frequency" type="long" default="750" />
 		<attribute name="action-timeout" type="long" default="30000" />
+		<attribute name="action-transaction-timeout" type="long" default="30000" />
+		<attribute name="action-coordination-timeout" type="long" default="30000" />
 	</complexType>
 
 	<complexType name="messageCheckType">

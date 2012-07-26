@@ -27,24 +27,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.inject.Provider;
 import javax.jms.Queue;
 import javax.jms.Topic;
-import javax.jms.TopicConnectionFactory;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.modules.AQJMSModule;
+import org.apache.ode.runtime.exec.modules.AQJMSModule.AQVMJMSModule;
 import org.apache.ode.runtime.exec.modules.JPAModule;
-import org.apache.ode.runtime.exec.modules.RepoModule;
-import org.apache.ode.runtime.exec.modules.AQJMSModule.AQBroker;
-import org.apache.ode.runtime.exec.modules.AQJMSModule.AQBrokerURL;
-import org.apache.ode.runtime.exec.modules.AQJMSModule.AQJMSTypeListener;
 import org.apache.ode.runtime.exec.modules.NodeModule.NodeTypeListener;
+import org.apache.ode.runtime.exec.modules.RepoModule;
 import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
-import org.apache.ode.runtime.exec.platform.JMSUtil.TopicConnectionFactoryImpl;
 import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterConfigProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
@@ -74,9 +68,11 @@ public class HealthCheckTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://healthcheck?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "hcluster", "node1"));
+		injector1 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule(
+				"vm://healthcheck?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "hcluster", "node1"));
 		loadTestClusterConfig(injector1, "hcluster");
-		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule("vm://healthcheck?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "hcluster", "node2"));
+		injector2 = Jsr250.createInjector(new JPAModule(), new RepoModule(), new HealthCheckTestModule(
+				"vm://healthcheck?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data", "hcluster", "node2"));
 	}
 
 	@AfterClass
@@ -85,24 +81,20 @@ public class HealthCheckTest {
 		injector2.destroy();
 	}
 
-	public static class HealthCheckTestModule extends AQJMSModule {
+	public static class HealthCheckTestModule extends AQVMJMSModule {
 		String clusterId;
 		String nodeId;
-		String aqBrokerURL;
 
 		public HealthCheckTestModule(String aqBrokerURL, String clusterId, String nodeId) {
+			super(aqBrokerURL);
 			this.clusterId = clusterId;
 			this.nodeId = nodeId;
-			this.aqBrokerURL=aqBrokerURL;
+
 		}
-		
+
 		@Override
 		protected void configure() {
 			super.configure();
-			bind(AQBroker.class).to(VMAQBroker.class);
-			bindListener(Matchers.any(), new AQJMSTypeListener());
-			bindConstant().annotatedWith(AQBrokerURL.class).to(aqBrokerURL);
-			
 			bindListener(Matchers.any(), new NodeTypeListener());
 			bind(AtomicReference.class).annotatedWith(LocalNodeState.class).toProvider(LocalNodeStateProvider.class);
 			bind(ClusterConfig.class).toProvider(ClusterConfigProvider.class);

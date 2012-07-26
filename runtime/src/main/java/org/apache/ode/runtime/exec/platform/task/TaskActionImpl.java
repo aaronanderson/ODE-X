@@ -62,11 +62,12 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.ode.runtime.exec.platform.MessageImpl;
+import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.Task.TaskAction;
-import org.apache.ode.spi.exec.Task.TaskActionId;
-import org.apache.ode.spi.exec.Task.TaskActionState;
+import org.apache.ode.spi.exec.task.TaskAction;
+import org.apache.ode.spi.exec.task.TaskAction.TaskActionId;
+import org.apache.ode.spi.exec.task.TaskAction.TaskActionState;
 import org.w3c.dom.Document;
 
 @NamedQueries({ @NamedQuery(name = "localTasks", query = "select action from Action action where action.nodeId = :nodeId and action.state = 'SUBMIT'  or ( action.state = 'CANCELED' and action.finish is null )") })
@@ -112,12 +113,15 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	private byte[] input;
 
 	@Transient
-	private byte[] coordination;
+	private Document coordinationInput;
 
-	@Column(name = "RESULT")
+	@Transient
+	private Document coordinationOutput;
+
+	@Column(name = "OUTPUT")
 	@Lob
 	@Basic(fetch = FetchType.LAZY)
-	private byte[] result;
+	private byte[] output;
 
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinTable(name = "TASK_ACTION_MESSAGE", joinColumns = @JoinColumn(name = "ACTION_ID"), inverseJoinColumns = @JoinColumn(name = "MESSAGE_ID"))
@@ -150,7 +154,7 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	}
 
 	@Override
-	public TaskActionId id() {
+	public TaskAction.TaskActionId id() {
 		return new TaskActionIdImpl(actionId);
 	}
 
@@ -177,14 +181,14 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	}
 
 	@Override
-	public TaskActionState state() {
+	public TaskAction.TaskActionState state() {
 		if (state != null) {
-			return TaskActionState.valueOf(state);
+			return TaskAction.TaskActionState.valueOf(state);
 		}
 		return null;
 	}
 
-	public void setState(TaskActionState state) {
+	public void setState(TaskAction.TaskActionState state) {
 		this.state = state.name();
 	}
 
@@ -203,29 +207,12 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	}
 
 	public Document getInput() {
-		if (input != null) {
-			DocumentBuilder db;
-			try {
-				db = domFactory.newDocumentBuilder();
-				return db.parse(new ByteArrayInputStream(input));
-			} catch (Exception pe) {
-				log.log(Level.SEVERE, "", pe);
-			}
-		}
-		return null;
+		return contentToDom(input);
 
 	}
 
 	public void setInput(Document doc) throws PlatformException {
-		try {
-			Transformer tform = transformFactory.newTransformer();
-			tform.setOutputProperty(OutputKeys.INDENT, "yes");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			input = bos.toByteArray();
-		} catch (Exception e) {
-			throw new PlatformException(e);
-		}
+		input = domToContent(doc);
 	}
 
 	/*
@@ -265,61 +252,34 @@ public class TaskActionImpl implements TaskAction, Serializable {
 		}
 	}*/
 
-	public Document getCoordination() {
-		if (coordination != null) {
-			DocumentBuilder db;
-			try {
-				db = domFactory.newDocumentBuilder();
-				return db.parse(new ByteArrayInputStream(coordination));
-			} catch (Exception pe) {
-				log.log(Level.SEVERE, "", pe);
-			}
-		}
-		return null;
-
+	public Document getCoordinationInput() {
+		return coordinationInput;
 	}
 
-	public void setCoordination(Document doc) throws PlatformException {
-		try {
-			Transformer tform = transformFactory.newTransformer();
-			tform.setOutputProperty(OutputKeys.INDENT, "yes");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			coordination = bos.toByteArray();
-		} catch (Exception e) {
-			throw new PlatformException(e);
-		}
+	public void setCoordinationInput(Document doc) {
+		coordinationInput = doc;
+	}
+
+	public Document getCoordinationOutput() {
+		return coordinationOutput;
+	}
+
+	public void setCoordinationOutput(Document doc) {
+		coordinationOutput = doc;
 	}
 
 	@Override
-	public Document result() {
-		return getResult();
+	public Document output() {
+		return getOutput();
 	}
 
-	public Document getResult() {
-		if (result != null) {
-			DocumentBuilder db;
-			try {
-				db = domFactory.newDocumentBuilder();
-				return db.parse(new ByteArrayInputStream(result));
-			} catch (Exception pe) {
-				log.log(Level.SEVERE, "", pe);
-			}
-		}
-		return null;
+	public Document getOutput() {
+		return contentToDom(output);
 
 	}
 
-	public void setResult(Document doc) throws PlatformException {
-		try {
-			Transformer tform = transformFactory.newTransformer();
-			tform.setOutputProperty(OutputKeys.INDENT, "yes");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			result = bos.toByteArray();
-		} catch (Exception e) {
-			throw new PlatformException(e);
-		}
+	public void setOutput(Document doc) throws PlatformException {
+		output = domToContent(doc);
 	}
 
 	@Override
@@ -343,6 +303,31 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	@Override
 	public Date modified() {
 		return lastModified;
+	}
+
+	public static byte[] domToContent(Document doc) throws PlatformException {
+		try {
+			Transformer tform = transformFactory.newTransformer();
+			tform.setOutputProperty(OutputKeys.INDENT, "yes");
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			tform.transform(new DOMSource(doc), new StreamResult(bos));
+			return bos.toByteArray();
+		} catch (Exception e) {
+			throw new PlatformException(e);
+		}
+	}
+
+	public static Document contentToDom(byte[] content) {
+		if (content != null) {
+			DocumentBuilder db;
+			try {
+				db = domFactory.newDocumentBuilder();
+				return db.parse(new ByteArrayInputStream(content));
+			} catch (Exception pe) {
+				log.log(Level.SEVERE, "", pe);
+			}
+		}
+		return null;
 	}
 
 	/*
@@ -392,7 +377,7 @@ public class TaskActionImpl implements TaskAction, Serializable {
 		}
 	*/
 
-	public static class TaskActionIdImpl implements TaskActionId {
+	public static class TaskActionIdImpl implements TaskAction.TaskActionId {
 
 		final long taskActionId;
 

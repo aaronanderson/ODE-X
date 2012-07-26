@@ -61,6 +61,10 @@ import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
+import org.apache.ode.runtime.exec.platform.target.TargetAllImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetClusterImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetImpl.TargetPK;
+import org.apache.ode.runtime.exec.platform.target.TargetNodeImpl;
 import org.apache.ode.spi.exec.Platform.NodeStatus;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 
@@ -114,6 +118,88 @@ public class HealthCheck implements Runnable {
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "", e);
 		}
+
+		//create the NodeStatus entry if it does not exist
+		pmgr.getTransaction().begin();
+		try {
+			NodeStatusImpl local = pmgr.find(NodeStatusImpl.class, nodeId);
+			if (local == null) {
+				local = new NodeStatusImpl();
+				local.setClusterId(clusterId);
+				local.setNodeId(nodeId);
+				local.setState(localNodeState.get());
+				local.setHeartBeat(Calendar.getInstance());
+				pmgr.persist(local);
+				log.fine(String.format("Created NodeStatus entry %s", nodeId));
+			}
+		//	pmgr.getTransaction().commit();
+		//	pmgr.getTransaction().begin();
+			TargetAllImpl allTarget = pmgr.find(TargetAllImpl.class, TargetAllImpl.getKey());
+			if (allTarget != null) {
+				if (!allTarget.getNodes().contains(local)) {
+					allTarget.getNodes().add(local);
+					pmgr.merge(allTarget);
+					log.fine(String.format("Updated TargetAll"));
+				}
+			} else {
+				allTarget = new TargetAllImpl();
+				allTarget.setNodes(new HashSet<NodeStatusImpl>());
+				allTarget.getNodes().add(local);
+				pmgr.persist(allTarget);
+				log.fine(String.format("Created TargetAll"));
+			}
+	//		pmgr.getTransaction().commit();
+//			pmgr.getTransaction().begin();
+			TargetNodeImpl nodeTarget = pmgr.find(TargetNodeImpl.class, TargetNodeImpl.getKey(nodeId));
+			if (nodeTarget != null) {
+				if (!nodeTarget.getNodes().contains(local)) {
+					nodeTarget.getNodes().add(local);
+					pmgr.merge(nodeTarget);
+					log.fine(String.format("Updated TargetNode %s", nodeId));
+				}
+			} else {
+				nodeTarget = new TargetNodeImpl();
+				nodeTarget.setId(nodeId);
+				nodeTarget.setNodes(new HashSet<NodeStatusImpl>());
+				nodeTarget.getNodes().add(local);
+				pmgr.persist(nodeTarget);
+				log.fine(String.format("Created TargetNode %s", nodeId));
+			}
+	//		pmgr.getTransaction().commit();
+	//		pmgr.getTransaction().begin();
+			TargetClusterImpl clusterTarget = pmgr.find(TargetClusterImpl.class, TargetClusterImpl.getKey(clusterId));
+			if (clusterTarget != null) {
+				if (!clusterTarget.getNodes().contains(local)) {
+					clusterTarget.getNodes().add(local);
+					pmgr.merge(clusterTarget);
+					log.fine(String.format("Updated TargetCluster %s", clusterId));
+				}
+			} else {
+				clusterTarget = new TargetClusterImpl();
+				clusterTarget.setId(clusterId);
+				clusterTarget.setNodes(new HashSet<NodeStatusImpl>());
+				clusterTarget.getNodes().add(local);
+				pmgr.persist(clusterTarget);
+				log.fine(String.format("Created TargetCluster %s", clusterId));
+			}
+			pmgr.getTransaction().commit();
+
+		} catch (PersistenceException pe) {
+			log.log(Level.SEVERE, "", pe);
+		}
+		pmgr.clear();
+
+		//create targets if they don't already exist
+		pmgr.getTransaction().begin();
+		try {
+			NodeStatusImpl node = pmgr.find(NodeStatusImpl.class, nodeId);
+
+			pmgr.getTransaction().commit();
+		} catch (PersistenceException pe) {
+			log.log(Level.SEVERE, "", pe);
+		}
+		pmgr.clear();
+
 	}
 
 	@PreDestroy
@@ -182,12 +268,8 @@ public class HealthCheck implements Runnable {
 					pmgr.merge(local);
 					// TODO check version with previous to detect nodeId conflict 
 				} else {
-					local = new NodeStatusImpl();
-					local.setClusterId(clusterId);
-					local.setNodeId(nodeId);
-					local.setState(localNodeState.get());
-					local.setHeartBeat(now);
-					pmgr.persist(local);
+
+					log.severe(String.format("NodeStatus %s does not exist", nodeId));
 				}
 				pmgr.getTransaction().commit();
 			} catch (PersistenceException pe) {

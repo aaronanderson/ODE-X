@@ -23,7 +23,7 @@
 
 	<health-check frequency="1000" inactive-timeout="2000"
 	node-cleanup="P10D" />
-	<task-check frequency="500" action-timeout="2000" />
+	<task-check frequency="500" action-timeout="2000"  />
 	<message-check frequency="500" action-timeout="2000" />
 	<nodes auto-discovery="true" />
 </cluster-config>

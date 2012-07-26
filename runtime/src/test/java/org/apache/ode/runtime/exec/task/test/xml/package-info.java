@@ -16,25 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = "http://ode.apache.org/task-test", xmlns = { @XmlNs(namespaceURI = "http://ode.apache.org/task-test", prefix = "task") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.runtime.exec.task.test.xml;
 
-public interface Target {
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 
-	public interface TargetAll extends Target {
-
-	}
-
-	public interface TargetCluster extends Target {
-		String clusterId();
-
-	}
-
-	public interface TargetNode extends Target {
-		String nodeId();
-	}
-
-	public interface TargetLocal extends Target {
-
-	}
-
-}

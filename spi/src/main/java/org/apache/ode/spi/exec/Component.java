@@ -22,8 +22,8 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Task.TaskActionDefinition;
-import org.apache.ode.spi.exec.Task.TaskDefinition;
+import org.apache.ode.spi.exec.task.TaskActionDefinition;
+import org.apache.ode.spi.exec.task.TaskDefinition;
 
 public interface Component {
 

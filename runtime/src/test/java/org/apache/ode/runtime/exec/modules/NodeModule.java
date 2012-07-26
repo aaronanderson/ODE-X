@@ -39,7 +39,7 @@ import org.apache.ode.runtime.exec.platform.NodeImpl.ClusterId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeStateProvider;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
-import org.apache.ode.runtime.exec.platform.PlatformImpl;
+import org.apache.ode.runtime.exec.platform.PlatformImpl.PlatformProvider;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
 import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.Node;
@@ -65,7 +65,7 @@ public class NodeModule extends AbstractModule {
 		bind(MessageHandler.class);
 		bind(Executors.class).toInstance(getExecutors());
 		bind(Node.class).to(NodeImpl.class);
-		bind(Platform.class).to(PlatformImpl.class);
+		bind(Platform.class).toProvider(PlatformProvider.class);
 	}
 
 	public static class NodeTypeListener implements TypeListener {

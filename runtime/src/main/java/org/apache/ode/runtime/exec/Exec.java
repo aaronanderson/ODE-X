@@ -24,8 +24,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.ode.runtime.exec.platform.PlatformImpl;
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.runtime.exec.platform.NodeImpl;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.repo.Repository;
 
@@ -35,7 +34,7 @@ public class Exec {
 	@Inject
 	Repository repository;
 	@Inject
-	PlatformImpl platform;
+	NodeImpl node;
 	
 	private static final Logger log = Logger.getLogger(Exec.class.getName());
 
@@ -44,7 +43,7 @@ public class Exec {
 		log.fine("Initializing Execution Runtime");
 		repository.registerFileExtension("exec", Platform.EXEC_MIMETYPE);
 		repository.registerNamespace(Platform.EXEC_NAMESPACE, Platform.EXEC_MIMETYPE);
-		repository.registerHandler(Platform.EXEC_MIMETYPE, new ExecDataContentHandler(platform));
+		repository.registerHandler(Platform.EXEC_MIMETYPE, new ExecDataContentHandler(node));
 
 		log.fine("Execution Runtime Initialized");
 
