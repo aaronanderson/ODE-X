@@ -51,6 +51,9 @@
 		<jxb:bindings node="//xs:complexType[@name='coordinationOutputType']">
 			<jxb:class name="CoordinationOutput" />
 		</jxb:bindings>
+		<jxb:bindings node="//xs:complexType[@name='targetType']">
+			<jxb:class name="Target" />
+		</jxb:bindings>
 		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:input']">
 			<jxb:property>
 				<jxb:baseType name="org.w3c.dom.Document" />
@@ -67,6 +70,26 @@
 			</jxb:property>
 		</jxb:bindings>
 		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:coordinationOutput']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:input']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:output']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:coordinationInput']">
+			<jxb:property>
+				<jxb:baseType name="org.w3c.dom.Document" />
+			</jxb:property>
+		</jxb:bindings>
+		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:coordinationOutput']">
 			<jxb:property>
 				<jxb:baseType name="org.w3c.dom.Document" />
 			</jxb:property>

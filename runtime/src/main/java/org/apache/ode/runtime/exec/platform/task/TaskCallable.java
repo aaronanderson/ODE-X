@@ -18,8 +18,9 @@
  */
 package org.apache.ode.runtime.exec.platform.task;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.locateTarget;
+
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,25 +42,19 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.target.TargetImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor.ConvertTarget;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
-import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator;
 import org.apache.ode.spi.exec.task.Task.TaskId;
 import org.apache.ode.spi.exec.task.Task.TaskState;
 import org.apache.ode.spi.exec.task.TaskActionCoordinator;
@@ -150,40 +145,49 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	@Override
 	public TaskResult call() throws PlatformException {
-		pmgr = pmgrFactory.createEntityManager();
 		try {
+			pmgr = pmgrFactory.createEntityManager();
 			task = pmgr.find(TaskImpl.class, id.id());
+
 			try {
 				taskUpdateQueueConnection = queueConFactory.createQueueConnection();
+				//try {
 				taskUpdateSession = taskUpdateQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 				taskActionSender = taskUpdateSession.createSender(taskQueue);
 				if (taskRequestor != null) {
 					taskRequestorSender = taskUpdateSession.createSender(taskRequestor);
 				}
+
+				Set<TaskCoordinatorState> coordinators = new HashSet<TaskCoordinatorState>();
+				Map<QName, TaskActionExecution> actionExecutions = new HashMap<QName, TaskActionExecution>();
+				try {
+					init(coordinators, actionExecutions);
+
+					while (true) {
+						//listen for action updates (filter on task ID), storing them in DB
+						//listen for message updates (filter on task ID), logging them in DB
+						//(optional) send external Task updates to queue 
+						//iterate through actions, submitting actions to queue
+						break;
+
+					}
+				} finally {
+					destroy(coordinators, actionExecutions);
+				}
+
 			} catch (JMSException je) {
 				log.log(Level.SEVERE, "", je);
 				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
 
-			}
-
-			Set<TaskCoordinatorState> coordinators = new HashSet<TaskCoordinatorState>();
-			Map<QName, TaskActionExecution> actionExecutions = new HashMap<QName, TaskActionExecution>();
-			init(coordinators, actionExecutions);
-
-			while (true) {
-				//listen for action updates (filter on task ID), storing them in DB
-				//listen for message updates (filter on task ID), logging them in DB
-				//(optional) send external Task updates to queue 
-				//iterate through actions, submitting actions to queue
-				break;
+			} finally {
+				try {
+					taskUpdateQueueConnection.close();
+				} catch (JMSException je) {
+					log.log(Level.SEVERE, "", je);
+					taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				}
 
 			}
-			taskUpdateQueueConnection.close();
-
-		} catch (JMSException je) {
-			log.log(Level.SEVERE, "", je);
-			taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
-
 		} finally {
 			pmgr.close();
 
@@ -278,33 +282,35 @@ public class TaskCallable implements Callable<TaskResult> {
 		}
 
 		//now Task has been vetted, perform IO intensive operations
-		pmgr.getTransaction().begin();
-		try {
-			for (TaskActionExecution actionExec : actionExecutions.values()) {
-				//actionExec.receiver = taskUpdateSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK, nodeId, id.id()));
-				//actionExec.sender = taskUpdateSession.createSender(taskQueue);
-
-			}
-		} catch (Exception e) {
-			log.log(Level.SEVERE, "", e);
-			taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true);
-
-		}
 
 		pmgr.getTransaction().begin();
 		try {
 			task.setInput(taskInput);
 			Set<TargetImpl> targetEntities = new HashSet<TargetImpl>();
 			for (Target target : targets) {
-				targetEntities.add((TargetImpl) target);
+				TargetImpl targetImpl = (TargetImpl) target;
+				pmgr.merge(targetImpl);
+				targetEntities.add(targetImpl);
 			}
 			task.setTargets(targetEntities);
 			//t.setComponent(ae.component);
 			pmgr.merge(task);
 			pmgr.getTransaction().commit();
 		} catch (PersistenceException pe) {
-			pmgr.getTransaction().rollback();
+			//pmgr.getTransaction().rollback();
 			throw new PlatformException(pe);
+		}
+	}
+
+	public void destroy(Set<TaskCoordinatorState> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
+		for (TaskActionExecution tae : actionExecutions.values()) {
+			try {
+				if (tae.actionRequestorReceiver != null) {
+					tae.actionRequestorReceiver.close();
+				}
+			} catch (JMSException e) {
+				taskLogIt(LogLevel.ERROR, 0, e.getMessage(), false);
+			}
 		}
 	}
 
@@ -323,78 +329,11 @@ public class TaskCallable implements Callable<TaskResult> {
 			pmgr.merge(task);
 			pmgr.getTransaction().commit();
 		} catch (PersistenceException pe) {
+			//pmgr.getTransaction().rollback();
 			throw new PlatformException(pe);
-		} finally {
-			pmgr.close();
 		}
 		if (error) {
 			throw new PlatformException(msg);
-		}
-	}
-
-	public static enum ConvertTarget {
-		INPUT, OUTPUT, COORDINATE_INPUT, COORDINATE_OUTPUT;
-	}
-
-	public static Class<?> locateTarget(Class<?> clazz, ConvertTarget target) throws PlatformException {
-
-		Class<?> targetClass = null;
-		for (Type t : clazz.getGenericInterfaces()) {
-			if (t instanceof ParameterizedType) {
-				ParameterizedType pt = (ParameterizedType) t;
-				if (TaskActionCoordinator.class.equals(pt.getRawType())) {
-					if (target == ConvertTarget.INPUT) {
-						targetClass = (Class<?>) pt.getActualTypeArguments()[0];
-						break;
-					} else if (target == ConvertTarget.OUTPUT) {
-						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
-						break;
-					}
-				} else if (CoordinatedTaskActionCoordinator.class.equals(pt.getRawType())) {
-					if (target == ConvertTarget.COORDINATE_INPUT) {
-						targetClass = (Class<?>) pt.getActualTypeArguments()[0];
-						break;
-					} else if (target == ConvertTarget.COORDINATE_OUTPUT) {
-						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
-						break;
-					}
-				}
-			}
-		}
-		if (targetClass == null) {
-			throw new PlatformException(String.format("Unable to convert target %s on class %s", target.name(), clazz.getName()));
-		}
-		return targetClass;
-	}
-
-	public static Object convertToObject(Document doc, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
-
-		if (targetClazz.isAssignableFrom(Document.class)) {
-			return doc;
-		}
-		try {
-			Unmarshaller u = jaxbContext.createUnmarshaller();
-			JAXBElement e = u.unmarshal(doc, targetClazz);
-			return e.getValue();
-		} catch (JAXBException je) {
-			throw new PlatformException(je);
-		}
-
-	}
-
-	public static Document convertToDocument(Object val, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
-		if (val instanceof Document) {
-			return (Document) val;
-		}
-		try {
-			Marshaller m = jaxbContext.createMarshaller();
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			dbf.setNamespaceAware(true);
-			Document doc = dbf.newDocumentBuilder().newDocument();
-			m.marshal(val, doc);
-			return doc;
-		} catch (Exception je) {
-			throw new PlatformException(je);
 		}
 	}
 

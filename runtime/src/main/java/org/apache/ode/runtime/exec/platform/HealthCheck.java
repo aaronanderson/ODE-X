@@ -119,6 +119,7 @@ public class HealthCheck implements Runnable {
 			log.log(Level.SEVERE, "", e);
 		}
 
+		log.fine("Initializing Targets");
 		//create the NodeStatus entry if it does not exist
 		pmgr.getTransaction().begin();
 		try {
@@ -132,8 +133,8 @@ public class HealthCheck implements Runnable {
 				pmgr.persist(local);
 				log.fine(String.format("Created NodeStatus entry %s", nodeId));
 			}
-		//	pmgr.getTransaction().commit();
-		//	pmgr.getTransaction().begin();
+			//	pmgr.getTransaction().commit();
+			//	pmgr.getTransaction().begin();
 			TargetAllImpl allTarget = pmgr.find(TargetAllImpl.class, TargetAllImpl.getKey());
 			if (allTarget != null) {
 				if (!allTarget.getNodes().contains(local)) {
@@ -148,8 +149,8 @@ public class HealthCheck implements Runnable {
 				pmgr.persist(allTarget);
 				log.fine(String.format("Created TargetAll"));
 			}
-	//		pmgr.getTransaction().commit();
-//			pmgr.getTransaction().begin();
+			//		pmgr.getTransaction().commit();
+			//			pmgr.getTransaction().begin();
 			TargetNodeImpl nodeTarget = pmgr.find(TargetNodeImpl.class, TargetNodeImpl.getKey(nodeId));
 			if (nodeTarget != null) {
 				if (!nodeTarget.getNodes().contains(local)) {
@@ -165,8 +166,8 @@ public class HealthCheck implements Runnable {
 				pmgr.persist(nodeTarget);
 				log.fine(String.format("Created TargetNode %s", nodeId));
 			}
-	//		pmgr.getTransaction().commit();
-	//		pmgr.getTransaction().begin();
+			//		pmgr.getTransaction().commit();
+			//		pmgr.getTransaction().begin();
 			TargetClusterImpl clusterTarget = pmgr.find(TargetClusterImpl.class, TargetClusterImpl.getKey(clusterId));
 			if (clusterTarget != null) {
 				if (!clusterTarget.getNodes().contains(local)) {

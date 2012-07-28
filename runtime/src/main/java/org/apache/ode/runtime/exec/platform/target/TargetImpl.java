@@ -28,6 +28,7 @@ import javax.persistence.Column;
 import javax.persistence.DiscriminatorColumn;
 import javax.persistence.DiscriminatorType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Inheritance;
@@ -61,7 +62,7 @@ public abstract class TargetImpl implements Target, Serializable {
 	@Column(name = "TYPE")
 	protected String type;
 
-	@OneToMany
+	@OneToMany(fetch=FetchType.EAGER)
 	@JoinTable(name = "ODE_TARGET_NODES", joinColumns = { @JoinColumn(name = "TARGET_ID", referencedColumnName = "ID"),
 			@JoinColumn(name = "TARGET_TYPE", referencedColumnName = "TYPE") }, inverseJoinColumns = { @JoinColumn(name = "NODE_ID", referencedColumnName = "NODE_ID") })
 	protected Set<NodeStatusImpl> nodes;
@@ -103,10 +104,12 @@ public abstract class TargetImpl implements Target, Serializable {
 	@Override
 	public String[] nodeIds() {
 		List<String> ids = new ArrayList<String>();
-		for (NodeStatusImpl impl : nodes) {
-			//if (NodeState.ONLINE == impl.state()) {
-			ids.add(impl.nodeId());
-			//}
+		if (nodes != null) {
+			for (NodeStatusImpl impl : nodes) {
+				//if (NodeState.ONLINE == impl.state()) {
+				ids.add(impl.nodeId());
+				//}
+			}
 		}
 		return ids.toArray(new String[ids.size()]);
 	}

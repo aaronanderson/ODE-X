@@ -93,7 +93,8 @@ public class TaskImpl implements Task, Serializable {
 	private String state;
 
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	@JoinTable(name = "TASK_TARGET", joinColumns = @JoinColumn(name = "TASK_ID"), inverseJoinColumns = @JoinColumn(name = "TARGET_ID"))
+	@JoinTable(name = "TASK_TARGET", joinColumns = @JoinColumn(name = "TASK_ID"), inverseJoinColumns = {
+			@JoinColumn(name = "TARGET_ID", referencedColumnName = "ID"), @JoinColumn(name = "TARGET_TYPE", referencedColumnName = "TYPE") })
 	Set<TargetImpl> targets;
 
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)

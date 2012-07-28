@@ -19,8 +19,8 @@
 package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
-import static org.apache.ode.runtime.exec.platform.task.TaskCallable.convertToDocument;
-import static org.apache.ode.runtime.exec.platform.task.TaskCallable.convertToObject;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToDocument;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 
 import java.io.ByteArrayOutputStream;
@@ -63,7 +63,7 @@ import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
-import org.apache.ode.runtime.exec.platform.task.TaskCallable.ConvertTarget;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor.ConvertTarget;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.PlatformException;
@@ -133,35 +133,33 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 
 	@Override
 	public TaskAction.TaskActionState call() throws PlatformException {
-		pmgr = pmgrFactory.createEntityManager();
+
 		try {
+			pmgr = pmgrFactory.createEntityManager();
 			taskAction = pmgr.find(TaskActionImpl.class, id.id());
+
 			try {
 				actionUpdateQueueConnection = taskQueueConFactory.createQueueConnection();
+				msgUpdateTopicConnection = msgTopicConFactory.createTopicConnection();
+
 				actionUpdateSession = actionUpdateQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 				if (actionRequestor != null) {
 					actionRequestorSender = actionUpdateSession.createSender(actionRequestor);
 				}
-
-				msgUpdateTopicConnection = msgTopicConFactory.createTopicConnection();
 				msgUpdateSession = msgUpdateTopicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
 				msgUpdatePublisher = msgUpdateSession.createPublisher(msgUpdateTopic);
-			} catch (JMSException je) {
-				log.log(Level.SEVERE, "", je);
-				fail(je.getMessage(), false);
-			}
-			TaskActionDefinition def = actions.get(taskAction.name());
-			if (def == null) {
-				fail(String.format("Unsupported TaskAction %s", taskAction.name().toString()), false);
-			}
-			taskActionCtx = new TaskActionContextImpl();
-			exec = (TaskActionActivity) def.actionExec().get();
 
-			try {
+				TaskActionDefinition def = actions.get(taskAction.name());
+				if (def == null) {
+					fail(String.format("Unsupported TaskAction %s", taskAction.name().toString()), false);
+				}
+				taskActionCtx = new TaskActionContextImpl();
+				exec = (TaskActionActivity) def.actionExec().get();
+
 				taskAction.setState(TaskAction.TaskActionState.START);
 				updateAction();
 				exec.start(taskActionCtx,
-						TaskCallable.convertToObject(actionInput, locateTarget(exec.getClass(), TaskCallable.ConvertTarget.OUTPUT), def.jaxbContext()));
+						convertToObject(actionInput, locateTarget(exec.getClass(), ConvertTarget.OUTPUT), def.jaxbContext()));
 				if (taskActionCtx.failed) {
 					fail(null, true);
 				}
@@ -222,18 +220,25 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 					taskAction.setState(TaskAction.TaskActionState.COMPLETE);
 					updateAction();
 				}
+
+			} catch (JMSException je) {
+				log.log(Level.SEVERE, "", je);
+				fail(je.getMessage(), false);
 			} catch (PlatformException pe) {
 				throw pe;
+
+			} finally {
+				try {
+					actionUpdateQueueConnection.close();
+					msgUpdateTopicConnection.close();
+				} catch (JMSException je) {
+					log.log(Level.SEVERE, "", je);
+				}
 			}
 
 		} finally {
 			pmgr.close();
-			try {
-				actionUpdateQueueConnection.close();
-				msgUpdateTopicConnection.close();
-			} catch (JMSException je) {
-				log.log(Level.SEVERE, "", je);
-			}
+
 		}
 		return taskAction.state();
 

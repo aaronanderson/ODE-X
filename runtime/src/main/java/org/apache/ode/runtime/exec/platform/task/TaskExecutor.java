@@ -21,7 +21,12 @@ package org.apache.ode.runtime.exec.platform.task;
 import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
 
 import java.io.ByteArrayInputStream;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -47,15 +52,24 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
+import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
+import org.apache.ode.runtime.exec.cluster.xml.TargetAll;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
+import org.apache.ode.runtime.exec.platform.target.TargetAllImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetClusterImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetNodeImpl;
+import org.apache.ode.runtime.exec.platform.target.TargetImpl.TargetPK;
 import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
@@ -66,8 +80,12 @@ import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
+import org.apache.ode.spi.exec.target.TargetCluster;
+import org.apache.ode.spi.exec.target.TargetNode;
+import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator;
 import org.apache.ode.spi.exec.task.Task.TaskState;
 import org.apache.ode.spi.exec.task.TaskAction;
+import org.apache.ode.spi.exec.task.TaskActionCoordinator;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskDefinition;
@@ -82,10 +100,10 @@ public class TaskExecutor implements Runnable {
 
 	@Inject
 	Executors executors;
-	
+
 	@Inject
 	Provider<TaskCallable> taskProvider;
-	
+
 	@Inject
 	Provider<TaskActionCallable> actionProvider;
 
@@ -138,7 +156,7 @@ public class TaskExecutor implements Runnable {
 
 	@Override
 	public synchronized void run() {
-
+		//TODO send requestor failure message if task is not even started below
 		try {
 			while (true) {
 				try {
@@ -155,19 +173,28 @@ public class TaskExecutor implements Runnable {
 						//TODO tasks are typically submitted from platform, but in future would like to support task initiation externally from MQ and provide updates like actions
 						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.Task> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
 								payload)), org.apache.ode.runtime.exec.cluster.xml.Task.class);
-						org.apache.ode.runtime.exec.cluster.xml.Task task = element.getValue();
-						if (org.apache.ode.runtime.exec.cluster.xml.TaskState.SUBMIT == task.getState()) {
-
+						org.apache.ode.runtime.exec.cluster.xml.Task xmlTask = element.getValue();
+						if (org.apache.ode.runtime.exec.cluster.xml.TaskState.SUBMIT == xmlTask.getState()) {
+							submitTask(LogLevel.valueOf(xmlTask.getLogLevel().value()), correlationId, requestor, xmlTask.getName(), xmlTask.getInput(), null,
+									convertTargets(xmlTask));
+						} else {
+							log.log(Level.WARNING, String.format("Unsupported Task state %s", xmlTask.getState()));
 						}
-						//submitTask(task.getName(), task., targets);
 					} else if (message.getStringProperty(Node.NODE_MQ_PROP_ACTIONID) != null) {
 						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
 								new ByteArrayInputStream(payload)), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class);
 						org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = element.getValue();
 						if (org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT == taskAction.getState()) {
-							submitTaskAction(LogLevel.valueOf(taskAction.getLogLevel().value()), message.getJMSCorrelationID(),
-									(Queue) message.getJMSReplyTo(), taskAction.getTaskId(), taskAction.getName(), taskAction.getInput());
+							submitTaskAction(LogLevel.valueOf(taskAction.getLogLevel().value()), correlationId, requestor, taskAction.getTaskId(),
+									taskAction.getName(), taskAction.getInput());
+						} else {
+							log.log(Level.WARNING, String.format("Unsupported TaskAction state %s", taskAction.getState()));
 						}
+					} else {
+						StringBuilder sb = new StringBuilder();
+						for (Enumeration e = message.getPropertyNames(); e.hasMoreElements(); sb.append(e.nextElement()).append(", "))
+							;
+						log.log(Level.WARNING, String.format("Received request does not contain necessary type headers %s", sb));
 					}
 
 				} catch (JMSException e) {
@@ -213,7 +240,7 @@ public class TaskExecutor implements Runnable {
 		public Future<TaskResult> result;
 	}
 
-	public TaskInfo submitTask(String correlationId, Queue requestor, QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback,
+	public TaskInfo submitTask(LogLevel logLevel, String correlationId, Queue requestor, QName task, Document taskInput, TaskCallback<?, ?> callback,
 			Target... targets) throws TaskException {
 		//TaskCoordinators run on node where task is submitted. Also all DB 
 		TaskDefinition def = node.getTaskDefinitions().get(task);
@@ -290,6 +317,96 @@ public class TaskExecutor implements Runnable {
 			throw new TaskException(pe);
 		}
 
+	}
+
+	public Target[] convertTargets(org.apache.ode.runtime.exec.cluster.xml.Task xmlTask) {
+		List<Target> targets = new ArrayList<Target>();
+		EntityManager pmgr = pmgrFactory.createEntityManager();
+		try {
+			for (JAXBElement<? extends org.apache.ode.runtime.exec.cluster.xml.Target> xmlTargetElement : xmlTask.getTargets().getTarget()) {
+				org.apache.ode.runtime.exec.cluster.xml.Target xmlTarget = xmlTargetElement.getValue();
+				if (xmlTarget instanceof org.apache.ode.runtime.exec.cluster.xml.TargetAll) {
+					targets.add(pmgr.find(TargetAllImpl.class, new TargetPK(null, TargetAllImpl.TYPE)));
+				} else if (xmlTarget instanceof org.apache.ode.runtime.exec.cluster.xml.TargetNode) {
+					targets.add(pmgr.find(TargetNodeImpl.class, new TargetPK(((org.apache.ode.runtime.exec.cluster.xml.TargetNode) xmlTarget).getNodeId(),
+							TargetNodeImpl.TYPE)));
+				} else if (xmlTarget instanceof org.apache.ode.runtime.exec.cluster.xml.TargetCluster) {
+					targets.add(pmgr.find(TargetClusterImpl.class,
+							new TargetPK(((org.apache.ode.runtime.exec.cluster.xml.TargetCluster) xmlTarget).getClusterId(), TargetClusterImpl.TYPE)));
+				} else {
+					//throw new PlatformException(String.format("Invalid target type %s", xmlTarget.getClass().getName()));//TODO return error
+				}
+			}
+		} finally {
+			pmgr.close();//since the EntityManager is closed we don't need to detach the targets added above
+		}
+		return targets.toArray(new Target[targets.size()]);
+	}
+
+	public static enum ConvertTarget {
+		INPUT, OUTPUT, COORDINATE_INPUT, COORDINATE_OUTPUT;
+	}
+
+	public static Class<?> locateTarget(Class<?> clazz, ConvertTarget target) throws PlatformException {
+
+		Class<?> targetClass = null;
+		for (Type t : clazz.getGenericInterfaces()) {
+			if (t instanceof ParameterizedType) {
+				ParameterizedType pt = (ParameterizedType) t;
+				if (TaskActionCoordinator.class.equals(pt.getRawType())) {
+					if (target == ConvertTarget.INPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[0];
+						break;
+					} else if (target == ConvertTarget.OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
+						break;
+					}
+				} else if (CoordinatedTaskActionCoordinator.class.equals(pt.getRawType())) {
+					if (target == ConvertTarget.COORDINATE_INPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[0];
+						break;
+					} else if (target == ConvertTarget.COORDINATE_OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
+						break;
+					}
+				}
+			}
+		}
+		if (targetClass == null) {
+			throw new PlatformException(String.format("Unable to convert target %s on class %s", target.name(), clazz.getName()));
+		}
+		return targetClass;
+	}
+
+	public static Object convertToObject(Document doc, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
+
+		if (targetClazz.isAssignableFrom(Document.class)) {
+			return doc;
+		}
+		try {
+			Unmarshaller u = jaxbContext.createUnmarshaller();
+			JAXBElement e = u.unmarshal(doc, targetClazz);
+			return e.getValue();
+		} catch (JAXBException je) {
+			throw new PlatformException(je);
+		}
+
+	}
+
+	public static Document convertToDocument(Object val, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
+		if (val instanceof Document) {
+			return (Document) val;
+		}
+		try {
+			Marshaller m = jaxbContext.createMarshaller();
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			dbf.setNamespaceAware(true);
+			Document doc = dbf.newDocumentBuilder().newDocument();
+			m.marshal(val, doc);
+			return doc;
+		} catch (Exception je) {
+			throw new PlatformException(je);
+		}
 	}
 
 	public void setupTasks(Collection<Component> components) throws PlatformException {

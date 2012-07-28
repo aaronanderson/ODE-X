@@ -167,6 +167,7 @@ public class PlatformImpl implements Platform {
 		if (target == null) {
 			throw new PlatformException(String.format("Invalid target %s:%s", id, type.getName()));
 		}
+		pmgr.detach(target);
 		return target;
 	}
 
