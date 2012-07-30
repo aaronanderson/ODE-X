@@ -280,7 +280,8 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	public void executeSync(QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws TaskException {
-		Future<TaskResult> result = taskExec.submitTask(logLevel, null, null, task, taskInput, callback, targets).result;
+		Future<TaskResult> result = taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback,
+				targets).result;
 		try {
 			result.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -289,12 +290,12 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	public TaskIdImpl executeAsyncId(QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws TaskException {
-		return taskExec.submitTask(logLevel, null, null, task, taskInput, callback, targets).id;
+		return taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback, targets).id;
 	}
 
 	public Future<TaskResult> executeAsyncFuture(QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback, Target... targets)
 			throws TaskException {
-		return taskExec.submitTask(logLevel, null, null, task, taskInput, callback, targets).result;
+		return taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback, targets).result;
 
 	}
 

@@ -104,6 +104,15 @@
 		</restriction>
 	</simpleType>
 
+	<simpleType name="exchangeType">
+		<restriction base="string">
+			<enumeration value="INPUT" />
+			<enumeration value="OUTPUT" />
+			<enumeration value="COORDINATE_INPUT" />
+			<enumeration value="COORDINATE_OUTPUT" />
+		</restriction>
+	</simpleType>
+
 	<complexType name="inputType" abstract="true" />
 
 	<element name="input" type="tns:inputType" abstract="true" />
@@ -168,16 +177,19 @@
 						</sequence>
 					</complexType>
 				</element>
-			<!-- <<element ref="tns:task-messages" /> -->
+				<element ref="tns:task-messages" />
 				<element name="user" type="string" />
 				<element name="start" type="dateTime" />
 				<element name="finished" type="dateTime" />
-				<choice>
-					<element ref="tns:input" />
-					<element ref="tns:output" />
-					<element ref="tns:coordinationInput" />
-					<element ref="tns:coordinationOutput" />
-				</choice>
+				<element name="exchange">
+					<complexType>
+						<choice>
+							<element ref="tns:input" />
+							<element ref="tns:output" />
+						</choice>
+						<attribute name="type" type="tns:exchangeType" use="required" />
+					</complexType>
+				</element>
 			</sequence>
 			<attribute name="taskId" type="string" use="required" />
 			<attribute name="logLevel" type="tns:logLevel" default="WARNING" />
@@ -196,12 +208,17 @@
 				<element name="user" type="string" />
 				<element name="start" type="dateTime" />
 				<element name="finished" type="dateTime" />
-				<choice>
-					<element ref="tns:input" />
-					<element ref="tns:output" />
-					<element ref="tns:coordinationInput" />
-					<element ref="tns:coordinationOutput" />
-				</choice>
+				<element name="exchange">
+					<complexType>
+						<choice>
+							<element ref="tns:input" />
+							<element ref="tns:output" />
+							<element ref="tns:coordinationInput" />
+							<element ref="tns:coordinationOutput" />
+						</choice>
+						<attribute name="type" type="tns:exchangeType" use="required" />
+					</complexType>
+				</element>
 			</sequence>
 			<attribute name="taskId" type="string" />
 			<attribute name="actionId" type="string" use="required" />

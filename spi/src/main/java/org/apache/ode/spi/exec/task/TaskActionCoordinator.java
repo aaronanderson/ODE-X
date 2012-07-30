@@ -29,11 +29,11 @@ public interface TaskActionCoordinator<TI, I, O, TO> {
 
 	Set<TaskActionRequest<I>> init(TaskContext ctx, TI input, String localNodeId, TaskCallback<?, ?> callback, Target... targets);
 
-	void refresh(TaskActionResponse<O> action);
+	//void refresh(TaskActionResponse<O> action);
 
 	void update(TaskActionRequest<I> request, Set<TaskActionResponse<O>> dependencyResponses);
 
-	TO finish(Set<TaskActionResponse<O>> actions);
+	TO finish(Set<TaskActionResponse<O>> actions, TO output);
 
 	public static class TaskActionRequest<I> {
 		public final QName action;

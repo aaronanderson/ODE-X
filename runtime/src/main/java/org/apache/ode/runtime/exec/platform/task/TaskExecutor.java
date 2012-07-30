@@ -19,14 +19,16 @@
 package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.spi.exec.Node.NODE_MQ_CORRELATIONID_ACTION;
 
 import java.io.ByteArrayInputStream;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -54,22 +56,22 @@ import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.cluster.xml.TargetAll;
+import org.apache.ode.runtime.exec.cluster.xml.ExchangeType;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.target.TargetAllImpl;
 import org.apache.ode.runtime.exec.platform.target.TargetClusterImpl;
-import org.apache.ode.runtime.exec.platform.target.TargetNodeImpl;
 import org.apache.ode.runtime.exec.platform.target.TargetImpl.TargetPK;
+import org.apache.ode.runtime.exec.platform.target.TargetNodeImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
@@ -80,8 +82,6 @@ import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
-import org.apache.ode.spi.exec.target.TargetCluster;
-import org.apache.ode.spi.exec.target.TargetNode;
 import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator;
 import org.apache.ode.spi.exec.task.Task.TaskState;
 import org.apache.ode.spi.exec.task.TaskAction;
@@ -91,6 +91,7 @@ import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskDefinition;
 import org.apache.ode.spi.exec.task.TaskException;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 @Singleton
 public class TaskExecutor implements Runnable {
@@ -135,6 +136,8 @@ public class TaskExecutor implements Runnable {
 
 	org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
 
+	ConcurrentHashMap<String, TaskActionCallable> executingActions = new ConcurrentHashMap<String, TaskActionCallable>();
+
 	@PostConstruct
 	public void init() throws Exception {
 		log.fine("Initializing ActionExecutor");
@@ -142,9 +145,8 @@ public class TaskExecutor implements Runnable {
 		this.config = clusterConfig.getTaskCheck();
 		pollQueueConnection = queueConFactory.createQueueConnection();
 		pollTaskSession = pollQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-		taskQueueReceiver = pollTaskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK, nodeId, Node.NODE_MQ_PROP_VALUE_NEW));
+		taskQueueReceiver = pollTaskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK_AND_TASK_ACTION, nodeId));
 		pollQueueConnection.start();
-
 	}
 
 	@PreDestroy
@@ -175,8 +177,9 @@ public class TaskExecutor implements Runnable {
 								payload)), org.apache.ode.runtime.exec.cluster.xml.Task.class);
 						org.apache.ode.runtime.exec.cluster.xml.Task xmlTask = element.getValue();
 						if (org.apache.ode.runtime.exec.cluster.xml.TaskState.SUBMIT == xmlTask.getState()) {
-							submitTask(LogLevel.valueOf(xmlTask.getLogLevel().value()), correlationId, requestor, xmlTask.getName(), xmlTask.getInput(), null,
-									convertTargets(xmlTask));
+
+							submitTask(LogLevel.valueOf(xmlTask.getLogLevel().value()), correlationId, requestor, xmlTask.getName(),
+									xmlTask.getExchange() != null ? xmlTask.getExchange().getPayload() : null, null, ExchangeTypes(xmlTask));
 						} else {
 							log.log(Level.WARNING, String.format("Unsupported Task state %s", xmlTask.getState()));
 						}
@@ -185,17 +188,31 @@ public class TaskExecutor implements Runnable {
 								new ByteArrayInputStream(payload)), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class);
 						org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = element.getValue();
 						if (org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT == taskAction.getState()) {
+							if (correlationId == null) {
+								String.format(NODE_MQ_CORRELATIONID_ACTION, System.currentTimeMillis());
+							}
 							submitTaskAction(LogLevel.valueOf(taskAction.getLogLevel().value()), correlationId, requestor, taskAction.getTaskId(),
-									taskAction.getName(), taskAction.getInput());
+									taskAction.getName(), taskAction.getExchange() != null ? taskAction.getExchange().getPayload() : null);
+						} else if (org.apache.ode.runtime.exec.cluster.xml.TaskActionState.EXECUTE == taskAction.getState()
+								|| org.apache.ode.runtime.exec.cluster.xml.TaskActionState.COMMIT == taskAction.getState()
+								|| org.apache.ode.runtime.exec.cluster.xml.TaskActionState.ROLLBACK == taskAction.getState()) {
+							TaskActionCallable callable = executingActions.get(correlationId);
+							if (callable != null) {
+								callable.externalUpdate(taskAction);
+							} else {
+								log.log(Level.WARNING,
+										String.format("TaskAction %s correlationId %s not found in running state", taskAction.getActionId(), correlationId));
+							}
+
 						} else {
 							log.log(Level.WARNING, String.format("Unsupported TaskAction state %s", taskAction.getState()));
 						}
-					} else {
+					}/* else {
 						StringBuilder sb = new StringBuilder();
 						for (Enumeration e = message.getPropertyNames(); e.hasMoreElements(); sb.append(e.nextElement()).append(", "))
 							;
 						log.log(Level.WARNING, String.format("Received request does not contain necessary type headers %s", sb));
-					}
+						}*/
 
 				} catch (JMSException e) {
 					if (e.getCause() instanceof InterruptedException) {
@@ -240,7 +257,7 @@ public class TaskExecutor implements Runnable {
 		public Future<TaskResult> result;
 	}
 
-	public TaskInfo submitTask(LogLevel logLevel, String correlationId, Queue requestor, QName task, Document taskInput, TaskCallback<?, ?> callback,
+	public TaskInfo submitTask(LogLevel logLevel, String correlationId, Queue requestor, QName task, Element taskInput, TaskCallback<?, ?> callback,
 			Target... targets) throws TaskException {
 		//TaskCoordinators run on node where task is submitted. Also all DB 
 		TaskDefinition def = node.getTaskDefinitions().get(task);
@@ -267,7 +284,7 @@ public class TaskExecutor implements Runnable {
 			TaskInfo info = new TaskInfo();
 			info.id = (TaskIdImpl) t.id();
 			TaskCallable c = taskProvider.get();
-			c.config(node, config, logLevel, requestor, correlationId, info.id, taskInput, callback, targets);
+			c.config(node, config, logLevel, correlationId, requestor, info.id, taskInput, callback, targets);
 			info.result = exec.submit(c);
 			return info;
 		} catch (PersistenceException pe) {
@@ -283,7 +300,7 @@ public class TaskExecutor implements Runnable {
 		public Future<TaskAction.TaskActionState> state;
 	}
 
-	public TaskActionInfo submitTaskAction(LogLevel logLevel, String correlationId, Queue requestor, String taskId, QName action, Document taskInput)
+	public TaskActionInfo submitTaskAction(LogLevel logLevel, String correlationId, Queue requestor, String taskId, QName action, Element taskInput)
 			throws TaskException {
 		//TaskCoordinators run on node where task is submitted. Also all DB 
 		TaskActionDefinition def = node.getTaskActionDefinitions().get(action);
@@ -310,7 +327,8 @@ public class TaskExecutor implements Runnable {
 			TaskActionInfo info = new TaskActionInfo();
 			info.id = (TaskActionIdImpl) t.id();
 			TaskActionCallable c = actionProvider.get();
-			c.config(node, config, logLevel, correlationId, requestor, taskId, info.id, taskInput);
+			c.config(node, config, logLevel, correlationId, requestor, taskId, info.id, taskInput, executingActions);
+			executingActions.put(correlationId, c);
 			info.state = exec.submit(c);
 			return info;
 		} catch (PersistenceException pe) {
@@ -319,7 +337,7 @@ public class TaskExecutor implements Runnable {
 
 	}
 
-	public Target[] convertTargets(org.apache.ode.runtime.exec.cluster.xml.Task xmlTask) {
+	public Target[] ExchangeTypes(org.apache.ode.runtime.exec.cluster.xml.Task xmlTask) {
 		List<Target> targets = new ArrayList<Target>();
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 		try {
@@ -343,57 +361,131 @@ public class TaskExecutor implements Runnable {
 		return targets.toArray(new Target[targets.size()]);
 	}
 
-	public static enum ConvertTarget {
-		INPUT, OUTPUT, COORDINATE_INPUT, COORDINATE_OUTPUT;
-	}
-
-	public static Class<?> locateTarget(Class<?> clazz, ConvertTarget target) throws PlatformException {
+	public static Class<?> locateTaskTarget(Class<?> clazz, ExchangeType target) throws PlatformException {
 
 		Class<?> targetClass = null;
 		for (Type t : clazz.getGenericInterfaces()) {
 			if (t instanceof ParameterizedType) {
 				ParameterizedType pt = (ParameterizedType) t;
 				if (TaskActionCoordinator.class.equals(pt.getRawType())) {
-					if (target == ConvertTarget.INPUT) {
+					if (target == ExchangeType.INPUT) {
 						targetClass = (Class<?>) pt.getActualTypeArguments()[0];
 						break;
-					} else if (target == ConvertTarget.OUTPUT) {
-						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
+					} else if (target == ExchangeType.OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[3];
 						break;
 					}
 				} else if (CoordinatedTaskActionCoordinator.class.equals(pt.getRawType())) {
-					if (target == ConvertTarget.COORDINATE_INPUT) {
+					if (target == ExchangeType.INPUT) {
 						targetClass = (Class<?>) pt.getActualTypeArguments()[0];
 						break;
-					} else if (target == ConvertTarget.COORDINATE_OUTPUT) {
-						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
+					} else if (target == ExchangeType.OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[5];
 						break;
 					}
 				}
 			}
 		}
 		if (targetClass == null) {
+			log.severe(String.format("Unable to convert target %s on task class %s", target.name(), clazz.getName()));
 			throw new PlatformException(String.format("Unable to convert target %s on class %s", target.name(), clazz.getName()));
 		}
 		return targetClass;
 	}
 
-	public static Object convertToObject(Document doc, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
+	public static Class<?> locateActionTarget(Class<?> clazz, ExchangeType target) throws PlatformException {
+
+		Class<?> targetClass = null;
+		for (Type t : clazz.getGenericInterfaces()) {
+			if (t instanceof ParameterizedType) {
+				ParameterizedType pt = (ParameterizedType) t;
+				if (TaskActionCoordinator.class.equals(pt.getRawType())) {
+					if (target == ExchangeType.INPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
+						break;
+					} else if (target == ExchangeType.OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[2];
+						break;
+					}
+				} else if (CoordinatedTaskActionCoordinator.class.equals(pt.getRawType())) {
+					if (target == ExchangeType.INPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[1];
+						break;
+					} else if (target == ExchangeType.OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[4];
+						break;
+					} else if (target == ExchangeType.COORDINATE_INPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[2];
+						break;
+					} else if (target == ExchangeType.COORDINATE_OUTPUT) {
+						targetClass = (Class<?>) pt.getActualTypeArguments()[3];
+						break;
+					}
+				}
+			}
+		}
+		if (targetClass == null) {
+			log.severe(String.format("Unable to convert target %s on action class %s", target.name(), clazz.getName()));
+			throw new PlatformException(String.format("Unable to convert target %s on class %s", target.name(), clazz.getName()));
+		}
+		return targetClass;
+	}
+
+	public static Object convertToObject(org.w3c.dom.Node node, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
+		if (node == null) {
+			return null;
+		}
 
 		if (targetClazz.isAssignableFrom(Document.class)) {
-			return doc;
+			return node;
 		}
+
 		try {
 			Unmarshaller u = jaxbContext.createUnmarshaller();
-			JAXBElement e = u.unmarshal(doc, targetClazz);
-			return e.getValue();
-		} catch (JAXBException je) {
-			throw new PlatformException(je);
+			if (targetClazz.isAssignableFrom(JAXBElement.class)) {
+				return u.unmarshal(node);
+			} else {
+				JAXBElement e = u.unmarshal(node, targetClazz);
+				return e.getValue();
+			}
+
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "", e);
+			throw new PlatformException(e);
 		}
 
 	}
 
-	public static Document convertToDocument(Object val, Class<?> targetClazz, JAXBContext jaxbContext) throws PlatformException {
+	public static Document convertToDocument(Element element) {
+		if (element != null) {
+			try {
+				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+				dbf.setNamespaceAware(true);
+				Document doc = dbf.newDocumentBuilder().newDocument();
+				Element el = (Element) doc.adoptNode(element);
+				doc.appendChild(el);
+				return doc;
+			} catch (Exception je) {
+				log.log(Level.SEVERE, "", je);
+			}
+		}
+		return null;
+
+	}
+
+	public static Element convertToElement(Object val, JAXBContext jaxbContext) throws PlatformException {
+		Document doc = convertToDocument(val, jaxbContext);
+		if (doc != null) {
+			return doc.getDocumentElement();
+		}
+		return null;
+	}
+
+	public static Document convertToDocument(Object val, JAXBContext jaxbContext) throws PlatformException {
+		if (val == null) {
+			return null;
+		}
+
 		if (val instanceof Document) {
 			return (Document) val;
 		}
@@ -402,9 +494,22 @@ public class TaskExecutor implements Runnable {
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			dbf.setNamespaceAware(true);
 			Document doc = dbf.newDocumentBuilder().newDocument();
-			m.marshal(val, doc);
+			if (val.getClass().getAnnotation(XmlRootElement.class) != null) {
+				m.marshal(val, doc);
+			} else {
+				Class ofclass = val.getClass().getClassLoader().loadClass(String.format("%s.ObjectFactory", val.getClass().getPackage().getName()));
+				Method meth = ofclass.getMethod(String.format("create%s", val.getClass().getSimpleName()), val.getClass());
+				if (meth != null) {
+					Object of = ofclass.newInstance();
+					JAXBElement eval = (JAXBElement) meth.invoke(of, val);
+					m.marshal(eval, doc);
+				} else {
+					throw new Exception(String.format("Can't find JAXB ObjectFactory method for %s", val.getClass().getName()));
+				}
+			}
 			return doc;
 		} catch (Exception je) {
+			log.log(Level.SEVERE, "", je);
 			throw new PlatformException(je);
 		}
 	}

@@ -19,20 +19,17 @@
     under the License.
 
 -->
-<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
-	xmlns:xs="http://www.w3.org/2001/XMLSchema"
-	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
-	version="2.1">
-	
+<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" version="2.1">
+
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/test-context.xsd">
-	
+
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.runtime.ectx.test.xml" />
 		</jxb:schemaBindings>
 
 		<jxb:bindings node="//xs:element[@name='TestVariables']//xs:element[@name='TestVariable']">
-			<jxb:property name="variables" collectionType="org.apache.ode.runtime.exec.test.TestMap"/>
-    	</jxb:bindings>
+			<jxb:property name="variables" collectionType="org.apache.ode.runtime.exec.test.TestMap" />
+		</jxb:bindings>
 	
 		<!--
 		<jxb:bindings node="//xs:element[@name='testInstruction']/xs:complexType">

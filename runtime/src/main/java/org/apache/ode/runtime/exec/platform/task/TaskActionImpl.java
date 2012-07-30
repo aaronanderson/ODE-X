@@ -203,16 +203,23 @@ public class TaskActionImpl implements TaskAction, Serializable {
 
 	@Override
 	public Document input() {
-		return getInput();
+		return getDOMInput();
 	}
 
-	public Document getInput() {
-		return contentToDom(input);
-
+	public Document getDOMInput() {
+		return contentToDom(getInput());
 	}
 
-	public void setInput(Document doc) throws PlatformException {
+	public void setDOMInput(Document doc) throws PlatformException {
 		input = domToContent(doc);
+	}
+
+	public byte[] getInput() {//need to use getter methods for JPA lazy loading
+		return input;
+	}
+
+	public void InOutput(byte[] input) {//need to use getter methods for JPA lazy loading
+		this.input = input;
 	}
 
 	/*
@@ -270,16 +277,23 @@ public class TaskActionImpl implements TaskAction, Serializable {
 
 	@Override
 	public Document output() {
-		return getOutput();
+		return getDOMOutput();
 	}
 
-	public Document getOutput() {
-		return contentToDom(output);
-
+	public Document getDOMOutput() {
+		return contentToDom(getOutput());
 	}
 
-	public void setOutput(Document doc) throws PlatformException {
+	public void setDOMOutput(Document doc) throws PlatformException {
 		output = domToContent(doc);
+	}
+
+	public byte[] getOutput() {//need to use getter methods for JPA lazy loading
+		return output;
+	}
+
+	public void setOutput(byte[] output) {//need to use getter methods for JPA lazy loading
+		this.output = output;
 	}
 
 	@Override

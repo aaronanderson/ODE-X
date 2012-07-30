@@ -216,33 +216,23 @@ public class TaskImpl implements Task, Serializable {
 
 	@Override
 	public Document input() {
-		return getInput();
+		return getDOMInput();
 	}
 
-	public Document getInput() {
-		if (input != null) {
-			DocumentBuilder db;
-			try {
-				db = domFactory.newDocumentBuilder();
-				return db.parse(new ByteArrayInputStream(input));
-			} catch (Exception pe) {
-				log.log(Level.SEVERE, "", pe);
-			}
-		}
-		return null;
-
+	public Document getDOMInput() {
+		return contentToDom(getInput());
 	}
 
-	public void setInput(Document doc) throws PlatformException {
-		try {
-			Transformer tform = transformFactory.newTransformer();
-			tform.setOutputProperty(OutputKeys.INDENT, "yes");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			input = bos.toByteArray();
-		} catch (Exception e) {
-			throw new PlatformException(e);
-		}
+	public void setDOMInput(Document doc) throws PlatformException {
+		input = domToContent(doc);
+	}
+
+	public byte[] getInput() {//need to use getter methods for JPA lazy loading
+		return input;
+	}
+
+	public void setInput(byte[] input) {//need to use getter methods for JPA lazy loading
+		this.input = input;
 	}
 
 	/*
@@ -284,33 +274,48 @@ public class TaskImpl implements Task, Serializable {
 
 	@Override
 	public Document output() {
-		return getOutput();
+		return getDOMOutput();
 	}
 
-	public Document getOutput() {
-		if (output != null) {
-			DocumentBuilder db;
-			try {
-				db = domFactory.newDocumentBuilder();
-				return db.parse(new ByteArrayInputStream(output));
-			} catch (Exception pe) {
-				log.log(Level.SEVERE, "", pe);
-			}
-		}
-		return null;
-
+	public Document getDOMOutput() {
+		return contentToDom(getOutput());
 	}
 
-	public void setOutput(Document doc) throws PlatformException {
+	public void setDOMOutput(Document doc) throws PlatformException {
+		output = domToContent(doc);
+	}
+
+	public byte[] getOutput() {//need to use getter methods for JPA lazy loading
+		return output;
+	}
+
+	public void setOutput(byte[] output) {//need to use getter methods for JPA lazy loading
+		this.output = output;
+	}
+
+	public static byte[] domToContent(Document doc) throws PlatformException {
 		try {
 			Transformer tform = transformFactory.newTransformer();
 			tform.setOutputProperty(OutputKeys.INDENT, "yes");
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			output = bos.toByteArray();
+			return bos.toByteArray();
 		} catch (Exception e) {
 			throw new PlatformException(e);
 		}
+	}
+
+	public static Document contentToDom(byte[] content) {
+		if (content != null) {
+			DocumentBuilder db;
+			try {
+				db = domFactory.newDocumentBuilder();
+				return db.parse(new ByteArrayInputStream(content));
+			} catch (Exception pe) {
+				log.log(Level.SEVERE, "", pe);
+			}
+		}
+		return null;
 	}
 
 	@Override

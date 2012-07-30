@@ -156,8 +156,10 @@ public class TaskTest {
 		Document res = result.get();//result.get(5, TimeUnit.SECONDS);
 		assertNotNull(res);
 		Unmarshaller u = taskJAXBContext.createUnmarshaller();
-		SingleTaskOutput out = (SingleTaskOutput) u.unmarshal(res);
-		assertEquals("SingleTaskOuput", out.getValue());
+		JAXBElement<SingleTaskOutput> xout = (JAXBElement<SingleTaskOutput>) u.unmarshal(res);
+		SingleTaskOutput out = xout.getValue();
+		assertNotNull(out);
+		assertEquals("SingleTaskOutput", out.getValue());
 
 	}
 
@@ -416,25 +418,28 @@ public class TaskTest {
 			return actions;
 		}
 
-		@Override
-		public void refresh(TaskActionResponse<SingleTaskOutput> action) {
-			assertEquals(TaskTestComponent.SINGLE_ACTION_NAME, action.action);
-		}
-
+		/*
+				@Override
+				public void refresh(TaskActionResponse<SingleTaskOutput> action) {
+					assertEquals(TaskTestComponent.SINGLE_ACTION_NAME, action.action);
+				}
+		*/
 		@Override
 		public void update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
 			fail();//should not be called
 		}
 
 		@Override
-		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions) {
+		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
 			assertEquals(1, actions.size());
 			TaskActionResponse<SingleTaskOutput> response = actions.iterator().next();
 			assertEquals(TaskTestComponent.SINGLE_ACTION_NAME, response.action);
+			assertTrue(response.success);
+			assertNotNull(response.output);
 			assertEquals("SingleActionOutput", response.output.getValue());
-			SingleTaskOutput out = new SingleTaskOutput();
-			out.setValue("SingleTaskOutput");
-			return out;
+			output = new SingleTaskOutput();
+			output.setValue("SingleTaskOutput");
+			return output;
 		}
 
 	}
@@ -455,11 +460,12 @@ public class TaskTest {
 			return actions;
 		}
 
+		/*
 		@Override
 		public void refresh(TaskActionResponse<SingleTaskOutput> action) {
 
 		}
-
+		*/
 		@Override
 		public void update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
 			assertEquals(TaskTestComponent.SINGLE_ACTION_DEP_NAME, request.action);
@@ -470,7 +476,7 @@ public class TaskTest {
 		}
 
 		@Override
-		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions) {
+		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
 			assertEquals(2, actions.size());
 			for (TaskActionResponse<SingleTaskOutput> response : actions) {
 				if (TaskTestComponent.SINGLE_ACTION_NAME.equals(response.action)) {
@@ -479,9 +485,9 @@ public class TaskTest {
 					assertEquals("SingleActionDepOutput", response.output.getValue());
 				}
 			}
-			SingleTaskOutput out = new SingleTaskOutput();
-			out.setValue("SingleTaskOutput");
-			return out;
+			output = new SingleTaskOutput();
+			output.setValue("SingleTaskOutput");
+			return output;
 		}
 
 	}
@@ -535,11 +541,13 @@ public class TaskTest {
 			return actions;
 		}
 
+		/*
 		@Override
 		public void refresh(TaskActionResponse<MultiTaskOutput> action) {
 			// TODO Auto-generated method stub
 
 		}
+		*/
 
 		@Override
 		public void update(TaskActionRequest<MultiTaskInput> request, Set<TaskActionResponse<MultiTaskOutput>> dependencyResponses) {
@@ -548,8 +556,7 @@ public class TaskTest {
 		}
 
 		@Override
-		public MultiTaskOutput finish(Set<TaskActionResponse<MultiTaskOutput>> actions) {
-			// TODO Auto-generated method stub
+		public MultiTaskOutput finish(Set<TaskActionResponse<MultiTaskOutput>> actions, MultiTaskOutput output) {
 			return null;
 		}
 

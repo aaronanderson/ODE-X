@@ -37,12 +37,16 @@ public interface Node {
 	public static final String NODE_MQ_PROP_TASKID = "ODE_TASKID";
 	public static final String NODE_MQ_PROP_ACTIONID = "ODE_ACTIONID";
 
+	public static final String NODE_MQ_CORRELATIONID_TASK = "ODE_TASK_%s";
+	public static final String NODE_MQ_CORRELATIONID_ACTION = "ODE_ACTION_%s";
+
 	public static final String NODE_MQ_PROP_VALUE_NEW = "NEW";
 
 	public static final String NODE_MQ_FILTER_NODE = "ODE_NODE='%s'";
 	public static final String NODE_MQ_FILTER_CLUSTER = "ODE_CLUSTER='%s'";
-	public static final String NODE_MQ_FILTER_TASK = "ODE_NODE='%s' AND ODE_TASKID='%s'";
-	public static final String NODE_MQ_FILTER_ACTION = "ODE_NODE='%s' AND ODE_ACTIONID='%s'";
+	public static final String NODE_MQ_FILTER_TASK = "ODE_NODE='%s' AND ODE_TASKID IS NOT NULL";
+	public static final String NODE_MQ_FILTER_TASK_ACTION = "ODE_NODE='%s' AND ODE_ACTIONID IS NOT NULL";
+	public static final String NODE_MQ_FILTER_TASK_AND_TASK_ACTION = "ODE_NODE='%s' AND (ODE_ACTIONID IS NOT NULL OR ODE_ACTIONID IS NOT NULL)";
 
 	public static final String NODE_MQ_NAME_HEALTHCHECK = "ODE_HEALTHCHECK";
 	public static final String NODE_MQ_NAME_TASK = "ODE_TASK";
@@ -51,9 +55,9 @@ public interface Node {
 	public QName architecture();
 
 	public Set<QName> getComponents();
-	
+
 	public void registerComponent(Component component);
-	
+
 	public void unregisterComponent(Component component);
 
 	public Map<QName, InstructionSet> getInstructionSets();

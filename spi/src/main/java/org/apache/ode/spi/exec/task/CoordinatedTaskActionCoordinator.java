@@ -22,7 +22,7 @@ import javax.xml.namespace.QName;
 
 public interface CoordinatedTaskActionCoordinator<TI, I, CI, CO, O, TO> extends TaskActionCoordinator<TI, I, O, TO> {
 
-	boolean coordinate(TaskActionCoordinationRequest<CI> request, TaskActionCoordinationResponse<CO> response);
+	TaskActionCoordinationRequest<CI> coordinate(TaskActionCoordinationResponse<CO> response);
 
 	public static class TaskActionCoordinationRequest<CI> extends TaskActionRequest<CI> {
 

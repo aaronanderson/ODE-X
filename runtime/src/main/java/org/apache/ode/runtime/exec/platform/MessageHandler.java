@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -42,6 +43,7 @@ import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicConnectionFactory;
+import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -156,6 +158,36 @@ public class MessageHandler implements Runnable {
 			log.log(Level.SEVERE, "", je);
 		}
 
+	}
+
+	public static void log(MessageImpl m, LogLevel logLevel, java.util.Queue<org.apache.ode.runtime.exec.cluster.xml.Message> msgQueue,
+			TopicSession msgUpdateSession, String correlationId, TopicPublisher msgUpdatePublisher) {
+		try {
+			org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = convert(m);
+			if (logLevel.ordinal() >= xmlMessage.getLevel().ordinal()) {
+				msgQueue.add(xmlMessage);
+
+				BytesMessage jmsMessage = msgUpdateSession.createBytesMessage();
+				Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class, xmlMessage),
+						bos);
+				jmsMessage.writeBytes(bos.toByteArray());
+				jmsMessage.setJMSCorrelationID(correlationId);
+				msgUpdatePublisher.publish(jmsMessage);
+			}
+		} catch (Exception je) {
+			log.log(Level.SEVERE, "", je);
+		}
+	}
+
+	public static org.apache.ode.runtime.exec.cluster.xml.Message convert(MessageImpl message) {
+		org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = new org.apache.ode.runtime.exec.cluster.xml.Message();
+		xmlMessage.setLevel(org.apache.ode.runtime.exec.cluster.xml.LogLevel.fromValue(message.level().toString()));
+		xmlMessage.setCode(BigInteger.valueOf(message.code()));
+		xmlMessage.setTimestamp(Calendar.getInstance());
+		xmlMessage.setValue(message.message());
+		return xmlMessage;
 	}
 
 	@Override
