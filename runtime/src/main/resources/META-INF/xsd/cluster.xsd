@@ -260,6 +260,7 @@
 			<element name="task-check" type="tns:taskCheckType" minOccurs="0" maxOccurs="1" />
 			<element name="message-check" type="tns:messageCheckType" minOccurs="0" maxOccurs="1" />
 			<element name="nodes" type="tns:nodesType" minOccurs="1" maxOccurs="1" />
+			<element name="security" type="tns:securityType" minOccurs="1" maxOccurs="1" />
 		</sequence>
 		<attribute name="name" type="string" use="required" />
 	</complexType>
@@ -290,6 +291,15 @@
 		<attribute name="auto-discovery" type="boolean" default="true" />
 	</complexType>
 
+	<complexType name="securityType">
+		<sequence>
+			<element name="encKey" type="string" minOccurs="1" maxOccurs="1" />
+			<element name="keyAlias" type="string" minOccurs="1" maxOccurs="1" />
+			<element name="encKeyStorePass" type="string" minOccurs="1" maxOccurs="1" />
+			<element name="encKeyPass" type="string" minOccurs="1" maxOccurs="1" />
+			<element name="encKeyStore" type="base64Binary" minOccurs="1" maxOccurs="1" />
+		</sequence>
+	</complexType>
 
 
 	<element name="cluster-config" type="tns:clusterConfigType" />

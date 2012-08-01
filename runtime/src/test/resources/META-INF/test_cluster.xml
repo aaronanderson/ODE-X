@@ -21,9 +21,15 @@
 -->
 <cluster-config xmlns="http://ode.apache.org/cluster" name="test-cluster">
 
-	<health-check frequency="1000" inactive-timeout="2000"
-	node-cleanup="P10D" />
-	<task-check frequency="500" action-timeout="2000"  />
+	<health-check frequency="1000" inactive-timeout="2000" node-cleanup="P10D" />
+	<task-check frequency="500" action-timeout="2000" />
 	<message-check frequency="500" action-timeout="2000" />
 	<nodes auto-discovery="true" />
+	<security>
+		<encKey>daN4eSIZ7G0YqUPs8taHzQ==</encKey>
+		<keyAlias>ode-x</keyAlias>
+		<encKeyStorePass>L7KyanFJVWknGyvAEB7+jw==</encKeyStorePass>
+		<encKeyPass>L7KyanFJVWknGyvAEB7+jw==</encKeyPass>
+		<encKeyStore>MIIEvgIBAzCCBHgGCSqGSIb3DQEHAaCCBGkEggRlMIIEYTCCAf4GCSqGSIb3DQEHAaCCAe8EggHrMIIB5zCCAeMGCyqGSIb3DQEMCgECoIIBkjCCAY4wKAYKKoZIhvcNAQwBAzAaBBQ/IeIhDAb6C9bxEzc4rAwEbqWJAgICBAAEggFgHCsugPBVczH8wp5ByDGdgfa+8St7+0geep+nbwXogXCXijp0S1RVm9LC0LPmqQ5YzYBerrWKnvDfwAsv6itMcX6H7Jp7q6OXxYXBNFc3p6jJH6hFgQWLOspoKOFWNN+dEn/MxfZ5zc5eXohnC8+ZQM4ayXg4+GH7Oe0uupzMbdcbaJELizqkfz4mevMgWpMfOvSpPNjl+4n+jExKGwK8PH5Njg0KAlhyrHOruDpGqHgx53tWQ6kaT1S+vNZtOcLp9gZ6ariOD6SbKz58w3vrxx9qKR1d7dXjbM0qhUf81DOpBgwFl3ZEAC7et8kTLNm86/wPhPuMWkxgqTen6x1tRvdQxLuK2pp0TJZrAj5uxtnBi+XdJcFS33Uh5drctgHu71osps6A+Dt94sMhY8VN+bJBdVqIz94YeSZZBcjXmW8RomsQvPlc8m8Bb/4+/xVV6I0RONPac6nHOLkLfeyZ4DE+MBkGCSqGSIb3DQEJFDEMHgoAbwBkAGUALQB4MCEGCSqGSIb3DQEJFTEUBBJUaW1lIDEzNDM4MDMwMjUzMTkwggJbBgkqhkiG9w0BBwagggJMMIICSAIBADCCAkEGCSqGSIb3DQEHATAoBgoqhkiG9w0BDAEGMBoEFN4LZGXFl7/N3kEWsoZTSHHSYNveAgIEAICCAgjR9UH+MJqJVaLxMRoGu4rflhBcOrX0W3kFu4kErBtetTD2KqMh+JyZUt9sbtyU9ySeDH+BSMu6m5a6qUwgdD2Lk1NWf1VnVwhK19qAxmtnoXaboyJUNwOiEHTvjkxwDHJZK5qjHNe3SQDtsdReJY6JGKdjbm0ME5kto5ArI7b+3Thm6ZjrTviVowAgXBtirJQV02/10TDQDDlzcGPLJRef6UJMrvjyFeX3ApIYx69/RfFE2B08SUMGqtCG/iHcFxUr45QP7aMggwNss6RJPHLRHy0zxTe2ajBAHy7AQkuSgnuFyeZjmIThg4wS+mGfkDeFGsOhLT1RiFhoaJtYo7rIbVAWR2wru1++CiV8EOkRhFSV9+yPfcWECw6WjfKTyl5nHy5XMhZ7Y520JHGWnisNa0+gLUD3C1FPY1F2c0db4GikT2yJzlexpyROCoo25Df8f7pbGZ9MqogAS0sfz6qrY1KyeTmY5+bzHxC86ldp8h+nm0nspyAuDXELI3XTbB9aY1+LyEkOutAgBvrpetVs97ZC8hWgInjaZ0Q6Q+rY1Csahm5iLUFQMnhbTNIzT4OZ6PXswRNenDcDjG8jqtJqzEnisz21In7JW+80F7YPwSqH1+ZuqwuTSr0pZSwdYZPqi1PlZLRAFcGVm5Qh5rppGaOObUNQnY/B4DdUgDEiL5pAwGs6gzS3MD0wITAJBgUrDgMCGgUABBSZEWtDE10w267Zht/BAMG7HaRyGwQUj4Ba/yF4sQAcyn720rKW22fijjMCAgQA</encKeyStore>
+	</security>
 </cluster-config>

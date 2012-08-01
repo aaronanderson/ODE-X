@@ -18,10 +18,24 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Key;
+import java.security.KeyException;
+import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -40,19 +54,49 @@ import java.util.logging.Logger;
 import javax.activation.DataSource;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
+import javax.xml.bind.DatatypeConverter;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.crypto.AlgorithmMethod;
+import javax.xml.crypto.KeySelector;
+import javax.xml.crypto.KeySelectorException;
+import javax.xml.crypto.KeySelectorResult;
+import javax.xml.crypto.XMLCryptoContext;
+import javax.xml.crypto.XMLStructure;
+import javax.xml.crypto.dsig.CanonicalizationMethod;
+import javax.xml.crypto.dsig.DigestMethod;
+import javax.xml.crypto.dsig.SignatureMethod;
+import javax.xml.crypto.dsig.SignedInfo;
+import javax.xml.crypto.dsig.Transform;
+import javax.xml.crypto.dsig.XMLSignature;
+import javax.xml.crypto.dsig.XMLSignatureFactory;
+import javax.xml.crypto.dsig.dom.DOMSignContext;
+import javax.xml.crypto.dsig.dom.DOMValidateContext;
+import javax.xml.crypto.dsig.keyinfo.KeyInfo;
+import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
+import javax.xml.crypto.dsig.keyinfo.KeyValue;
+import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
+import javax.xml.crypto.dsig.spec.TransformParameterSpec;
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
@@ -82,6 +126,8 @@ import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 @Singleton
 public class NodeImpl implements Node, MessageListener {
@@ -492,6 +538,280 @@ public class NodeImpl implements Node, MessageListener {
 				config.setMessageCheck(new org.apache.ode.runtime.exec.cluster.xml.MessageCheck());
 			}
 
+		}
+	}
+
+	@Singleton
+	public static class ClusterXMLDSig {
+
+		@Inject
+		ClusterConfig clusterConfig;
+
+		static XMLSignatureFactory xmlFactory = XMLSignatureFactory.getInstance("DOM");
+
+		String encKey;
+		KeyPair clusterKey;
+
+		@PostConstruct
+		public void init() {
+			try {
+				encKey = clusterConfig.getSecurity().getEncKey();
+
+				KeyStore ks = KeyStore.getInstance("PKCS12");
+				ks.load(new ByteArrayInputStream(clusterConfig.getSecurity().getEncKeyStore()), clusterConfig.getSecurity().getEncKeyStorePass().toCharArray());
+				PrivateKey privateKey = (PrivateKey) ks.getKey(clusterConfig.getSecurity().getKeyAlias(), clusterConfig.getSecurity().getEncKeyPass()
+						.toCharArray());
+				if (privateKey == null) {
+					throw new Exception(String.format("Can't find private key alias %s in cluster config keystore", clusterConfig.getSecurity().getKeyAlias()));
+				}
+				java.security.cert.Certificate cert = ks.getCertificate(clusterConfig.getSecurity().getKeyAlias());
+				if (cert == null) {
+					throw new Exception(String.format("Can't find public key alias %s in cluster config keystore", clusterConfig.getSecurity().getKeyAlias()));
+				}
+				PublicKey publicKey = cert.getPublicKey();
+				clusterKey = new KeyPair(publicKey, privateKey);
+
+			} catch (Exception e) {
+				log.log(Level.SEVERE, "", e);
+			}
+
+		}
+
+		public String encrypt(String cleartext) throws Exception {
+			return encrypt(encKey, cleartext);
+		}
+
+		public String decrypt(String enctext) throws Exception {
+			return decrypt(encKey, enctext);
+		}
+
+		public Document signXml(Document doc) throws Exception {
+			return sign(doc, clusterKey, false);
+		}
+
+		public boolean validateXml(Document doc) throws Exception {
+			return validate(doc, null);
+		}
+
+		public static Document sign(Document doc, KeyPair keyPair, boolean includeKeyInfo) throws Exception {
+
+			DOMSignContext context = new DOMSignContext(keyPair.getPrivate(), doc.getDocumentElement());
+			//Element dsig = doc.createElementNS(CLUSTER_NAMESPACE, "xmldsig");
+			//doc.getDocumentElement().insertBefore(dsig, doc.getDocumentElement().getFirstChild());
+			//context.setParent(dsig);
+			context.setNextSibling(doc.getDocumentElement().getFirstChild());
+
+			javax.xml.crypto.dsig.Reference ref = xmlFactory.newReference("", xmlFactory.newDigestMethod(DigestMethod.SHA1, null),
+					Collections.singletonList(xmlFactory.newTransform(Transform.ENVELOPED, (TransformParameterSpec) null)), null, null);
+
+			SignedInfo si = xmlFactory.newSignedInfo(xmlFactory.newCanonicalizationMethod(CanonicalizationMethod.INCLUSIVE, (C14NMethodParameterSpec) null),
+					xmlFactory.newSignatureMethod(SignatureMethod.RSA_SHA1, null), Collections.singletonList(ref));
+			KeyInfo ki = null;
+			if (includeKeyInfo) {
+				KeyInfoFactory kif = xmlFactory.getKeyInfoFactory();
+				KeyValue kv = kif.newKeyValue(keyPair.getPublic());
+				ki = kif.newKeyInfo(Collections.singletonList(kv));
+			}
+			XMLSignature signature = xmlFactory.newXMLSignature(si, ki);
+
+			signature.sign(context);
+			return doc;
+
+		}
+
+		public static boolean validate(Document doc, PublicKey key) throws Exception {
+			//NodeList nl = doc.getElementsByTagNameNS(CLUSTER_NAMESPACE, "xmldsig");
+			NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+			if (nl.getLength() == 0) {
+				throw new Exception("Cannot find Signature element");
+			}
+
+			XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
+			DOMValidateContext valContext = null;
+			if (key != null) {
+				valContext = new DOMValidateContext(key, nl.item(0));
+			} else {
+				valContext = new DOMValidateContext(new KeySelector() {
+					public KeySelectorResult select(KeyInfo keyInfo, KeySelector.Purpose purpose, AlgorithmMethod method, XMLCryptoContext context)
+							throws KeySelectorException {
+						if (keyInfo == null) {
+							throw new KeySelectorException("KeyInfo is null");
+						}
+						for (XMLStructure struct : (List<XMLStructure>) keyInfo.getContent()) {
+							if (struct instanceof KeyValue) {
+								try {
+									final PublicKey primaryKey = ((KeyValue) struct).getPublicKey();
+									return new KeySelectorResult() {
+
+										@Override
+										public Key getKey() {
+											return primaryKey;
+										}
+									};
+								} catch (KeyException ke) {
+									throw new KeySelectorException(ke);
+								}
+							}
+						}
+						throw new KeySelectorException("KeyValue not found");
+					}
+				}, nl.item(0));
+			}
+			XMLSignature signature = fac.unmarshalXMLSignature(valContext);
+
+			if (signature.validate(valContext)) {
+				return true;
+			}
+			return false;
+
+		}
+
+		public static String encrypt(String b64EncKey, String cleartext) throws Exception {
+			byte[] encKey = DatatypeConverter.parseBase64Binary(b64EncKey);
+			SecretKeySpec key = new SecretKeySpec(encKey, "AES");
+			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+			cipher.init(Cipher.ENCRYPT_MODE, key);
+			return DatatypeConverter.printBase64Binary(cipher.doFinal(cleartext.getBytes("UTF-8")));
+
+		}
+
+		public static String decrypt(String b64EncKey, String enctext) throws Exception {
+			byte[] encKey = DatatypeConverter.parseBase64Binary(b64EncKey);
+			SecretKeySpec key = new SecretKeySpec(encKey, "AES");
+			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+			cipher.init(Cipher.DECRYPT_MODE, key);
+			return DatatypeConverter.printBase64Binary(cipher.doFinal(enctext.getBytes("UTF-8")));
+
+		}
+
+		public static void main(String... args) {
+			//generate the default keystore
+			//keytool -genkeypair -keyalg RSA -keysize 512 -alias ode-x -dname "cn=ode-x,dc=apache,dc=org" -validity 999 -keypass apacheodex -keystore /tmp/ode-x.p12 -storepass apacheodex -storetype pkcs12
+			//java -cp spi/target/ode-spi-0.1-SNAPSHOT.jar:runtime/target/classes org.apache.ode.runtime.exec.platform.NodeImpl\$ClusterXMLDSig -genEncKey
+			//java -cp spi/target/ode-spi-0.1-SNAPSHOT.jar:runtime/target/classes org.apache.ode.runtime.exec.platform.NodeImpl\$ClusterXMLDSig -keystoreToXml /tmp/ode-x.p12
+			//java -cp spi/target/ode-spi-0.1-SNAPSHOT.jar:runtime/target/classes org.apache.ode.runtime.exec.platform.NodeImpl\$ClusterXMLDSig -encrypt daN4eSIZ7G0YqUPs8taHzQ== apacheodex
+			//java -cp spi/target/ode-spi-0.1-SNAPSHOT.jar:runtime/target/classes org.apache.ode.runtime.exec.platform.NodeImpl\$ClusterXMLDSig -sign /tmp/ode-x.p12 apacheodex apacheodex ode-x true /tmp/test.xml /tmp/test-sign.xml
+			//java -cp spi/target/ode-spi-0.1-SNAPSHOT.jar:runtime/target/classes org.apache.ode.runtime.exec.platform.NodeImpl\$ClusterXMLDSig -verify false /tmp/ode-x.p12 apacheodex ode-x /tmp/test-sign.xml
+			//java -cp spi/target/ode-spi-0.1-SNAPSHOT.jar:runtime/target/classes org.apache.ode.runtime.exec.platform.NodeImpl\$ClusterXMLDSig -verify true
+			boolean showUsage = false;
+			if (args.length > 0) {
+				switch (args[0]) {
+				case "-genEncKey":
+					if (args.length != 1) {
+						showUsage = true;
+						break;
+					}
+					try {
+						KeyGenerator kgen = KeyGenerator.getInstance("AES");
+						kgen.init(128); // 192 and 256 require JCE export
+						SecretKey skey = kgen.generateKey();
+						System.out.format("New Encryption Key: %s\n", DatatypeConverter.printBase64Binary(skey.getEncoded()));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					break;
+				case "-keystoreToXml":
+					if (args.length != 2) {
+						showUsage = true;
+						break;
+					}
+					try {
+						FileInputStream fis = new FileInputStream(args[1]);
+						FileChannel channel = fis.getChannel();
+						ByteBuffer bb = ByteBuffer.allocate((int) channel.size());
+						channel.read(bb);
+						byte[] contents = bb.array();
+						channel.close();
+						System.out.format("Base64 value of keystore file %s: %s\n", args[1], DatatypeConverter.printBase64Binary(contents));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					break;
+				case "-encrypt":
+					if (args.length != 3) {
+						showUsage = true;
+						break;
+					}
+					try {
+						System.out.format("Clear text %s encrypted with %s encrypted value: %s\n", args[1], args[2], encrypt(args[1], args[2]));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					break;
+				case "-decrypt":
+					if (args.length != 3) {
+						showUsage = true;
+						break;
+					}
+					try {
+						System.out.format("Encrypted text %s encrypted with %s clear text value: %s\n", args[1], args[2], decrypt(args[1], args[2]));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					break;
+				case "-sign":
+					if (args.length != 8) {
+						showUsage = true;
+						break;
+					}
+					try {
+						DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+						dbf.setNamespaceAware(true);
+						Document doc = dbf.newDocumentBuilder().parse(new FileInputStream(args[6]));
+						KeyStore ks = KeyStore.getInstance("PKCS12");
+						ks.load(new FileInputStream(args[1]), args[2].toCharArray());
+						PrivateKey privateKey = (PrivateKey) ks.getKey(args[4], args[3].toCharArray());
+						PublicKey publicKey = ks.getCertificate(args[4]).getPublicKey();
+						KeyPair keyPair = new KeyPair(publicKey, privateKey);
+						Document out = sign(doc, keyPair, Boolean.valueOf(args[5]));
+						TransformerFactory transformFactory = TransformerFactory.newInstance();
+						Transformer tform = transformFactory.newTransformer();
+						ByteArrayOutputStream bos = new ByteArrayOutputStream();
+						tform.transform(new DOMSource(out), new StreamResult(bos));
+						Files.write(Paths.get(args[7]), bos.toByteArray());
+						System.out.format("Signature of %s with key %s saved to %s\n", args[6], args[4], args[7]);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					break;
+				case "-verify":
+					if ((args.length != 3 && !Boolean.valueOf(args[1])) && args.length != 6) {
+						showUsage = true;
+						break;
+					}
+					try {
+						DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+						dbf.setNamespaceAware(true);
+						if (args.length == 3) {
+							Document doc = dbf.newDocumentBuilder().parse(new FileInputStream(args[2]));
+							System.out.format("Document %s is valid: %s\n", args[2], validate(doc, null));
+						} else {
+							Document doc = dbf.newDocumentBuilder().parse(new FileInputStream(args[5]));
+							KeyStore ks = KeyStore.getInstance("PKCS12");
+							ks.load(new FileInputStream(args[2]), args[3].toCharArray());
+							PublicKey publicKey = ks.getCertificate(args[4]).getPublicKey();
+							System.out.format("Document %s is valid: %s\n", args[5], validate(doc, publicKey));
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					break;
+				}
+			} else {
+				showUsage = true;
+			}
+			if (showUsage) {
+				System.out.println("Usage: ");
+				System.out.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -genEncKey");
+				System.out.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -keystoreToXml <keystore file>");
+				System.out.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -encrypt <encKey> <cleartext>");
+				System.out.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -decrypt <encKey> <cleartext>");
+				System.out
+						.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -sign <keystore> <keystorePass> <keyPass> <alias> <include keyInfo> <inXmlFile> <outXmlFile>");
+				System.out
+						.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -verify <useKeyInfo> <keystore> <keystorePass> <alias> <inXmlFile>");
+			}
 		}
 	}
 
