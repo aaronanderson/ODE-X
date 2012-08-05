@@ -136,7 +136,7 @@ public class TaskTest {
 
 	}
 
-	public void testSingleTaskAction(String nodeId) throws Exception {
+	public void testSingleTaskAction(QName taskName, String nodeId) throws Exception {
 		assertTrue(node1.getComponents().contains(TaskTestComponent.COMPONENT_NAME));
 		//Execute operations on platform
 
@@ -151,7 +151,7 @@ public class TaskTest {
 
 		platform1.setLogLevel(LogLevel.DEBUG);
 		TargetNode target = platform1.createTarget(nodeId, TargetNode.class);
-		Future<Document> result = platform1.execute(TaskTestComponent.SINGLE_TASK_NAME, doc, null, target);
+		Future<Document> result = platform1.execute(taskName, doc, null, target);
 		assertNotNull(result);
 		Document res = result.get();//result.get(5, TimeUnit.SECONDS);
 		assertNotNull(res);
@@ -164,12 +164,12 @@ public class TaskTest {
 
 	@Test
 	public void localTaskActionTest() throws Exception {
-		testSingleTaskAction("node1");
+		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_NAME, "node1");
 	}
 
 	@Test
 	public void remoteTaskActionTest() throws Exception {
-		testSingleTaskAction("node2");
+		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_NAME, "node2");
 	}
 
 	@Test
@@ -215,9 +215,72 @@ public class TaskTest {
 
 	}
 
-	/*
 	@Test
-	public void remoteTaskActionTest() throws Exception {
+	public void dependencyTaskActionTest() throws Exception {
+		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_DEP_NAME, "node1");
+	}
+
+	//@Test
+	public void multipleTaskActionTest() throws Exception {
+
+	}
+
+	//@Test
+	public void commitTaskActionTest() throws Exception {
+
+	}
+
+	//@Test
+	public void rollbackTaskActionTest() throws Exception {
+
+	}
+
+	//@Test
+	public void failTaskActionTest() throws Exception {
+
+	}
+
+	//@Test
+	public void cancelTaskTest() throws Exception {
+
+	}
+
+	//@Test
+	public void timeoutTaskTest() throws Exception {
+
+	}
+
+	/*
+	 @Test
+	public void taskListenerTest() throws Exception {
+	final Set<Integer> codes = new HashSet<Integer>();
+
+	TaskListener listener = new TaskListener() {
+
+		@Override
+		public LogLevel levelFilter() {
+			return LogLevel.DEBUG;
+		}
+
+		@Override
+		public void message(MessageEvent message) {
+			log.info(message.toString());
+			codes.add(message.message().code());
+		}
+
+	};
+	
+	platform1.registerListener(listener);
+	try {
+	
+	} finally {
+		platform1.unregisterListener(listener);
+	}
+	}
+	
+	 
+	@Test
+	public void mqTaskActionTest() throws Exception {
 	QueueConnectionFactory taskFactory = injector1.getInstance(Key.get(QueueConnectionFactory.class, TaskCheck.class));
 	Queue taskQueue = injector1.getInstance(Key.get(Queue.class, TaskCheck.class));
 	QueueConnection taskQueueConnection = taskFactory.createQueueConnection();
@@ -247,101 +310,7 @@ public class TaskTest {
 		taskQueueConnection.close();
 	}
 	}
-
-	@Test
-	public void dependencyTaskActionTest() throws Exception {
-
-	}
-
-	@Test
-	public void multipleTaskActionTest() throws Exception {
-
-	}
-
-	@Test
-	public void commitTaskActionTest() throws Exception {
-
-	}
-
-	@Test
-	public void rollbackTaskActionTest() throws Exception {
-
-	}
-	
-	
-	@Test
-	public void failTaskActionTest() throws Exception {
-
-	}
-	
-	
-	@Test
-	public void taskListenerTest() throws Exception {
-	final Set<Integer> codes = new HashSet<Integer>();
-
-	TaskListener listener = new TaskListener() {
-
-		@Override
-		public LogLevel levelFilter() {
-			return LogLevel.DEBUG;
-		}
-
-		@Override
-		public void message(MessageEvent message) {
-			log.info(message.toString());
-			codes.add(message.message().code());
-		}
-
-	};
-	
-	platform1.registerListener(listener);
-	try {
-	
-	} finally {
-		platform1.unregisterListener(listener);
-	}
-	}
-	
-	@Test
-	public void cancelTaskTest() throws Exception {
-
-	}
-	
-	@Test
-	public void timeoutTaskTest() throws Exception {
-
-	}
-
 	*/
-
-	/*
-	@Test
-	public void singleTaskTest() throws Exception {
-
-		Platform platform1 = injector1.getInstance(Platform.class);
-		assertNotNull(platform1);
-
-		final Set<Integer> codes = new HashSet<Integer>();
-
-		platform1.registerListener(new TaskListener() {
-
-			@Override
-			public LogLevel levelFilter() {
-				return LogLevel.DEBUG;
-			}
-
-			@Override
-			public void message(MessageEvent message) {
-				log.info(message.toString());
-				codes.add(message.message().code());
-			}
-
-		});
-		TaskId id = platform1.execute(TaskTestComponent.SINGLE_TASK_NAME, testDoc("task-config", "TestTaskInput"), new TargetAllImpl());
-		assertNotNull(id);
-		//platform.status(id);
-
-	}*/
 
 	public static class TaskTestComponent implements Component {
 
@@ -350,6 +319,8 @@ public class TaskTest {
 
 		public static final QName SINGLE_TASK_NAME = new QName(TEST_NS, "SingleTask");
 		public static final QName SINGLE_TASK_COORD_NAME = new QName(TEST_NS, "SingleTaskCoordinator");
+		public static final QName SINGLE_TASK_DEP_NAME = new QName(TEST_NS, "SingleDependencyTask");
+		public static final QName SINGLE_TASK_DEP_COORD_NAME = new QName(TEST_NS, "SingleDependencyTaskCoordinator");
 		public static final QName MULTI_TASK_NAME = new QName(TEST_NS, "MultiTask");
 		public static final QName MULTI_TASK_COORD_NAME = new QName(TEST_NS, "MultiTaskTaskCoordinator");
 
@@ -389,6 +360,7 @@ public class TaskTest {
 		public List<TaskDefinition> tasks() {
 			ArrayList<TaskDefinition> defs = new ArrayList<TaskDefinition>();
 			defs.add(new TaskDefinition(SINGLE_TASK_NAME, new SingleTaskActionCoordinator(), taskJAXBContext));
+			defs.add(new TaskDefinition(SINGLE_TASK_DEP_NAME, new SingleDependencyTaskActionCoordinator(), taskJAXBContext));
 			defs.add(new TaskDefinition(MULTI_TASK_NAME, new MultiTaskActionCoordinator(), taskJAXBContext));
 			return defs;
 		}
@@ -488,7 +460,8 @@ public class TaskTest {
 
 	}
 
-	public static class DependencyTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
+	public static class SingleDependencyTaskActionCoordinator implements
+			TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
 
 		@Override
 		public Set<TaskActionRequest<SingleTaskInput>> init(TaskContext ctx, SingleTaskInput input, String localNodeId, TaskCallback<?, ?> callback,
@@ -515,6 +488,8 @@ public class TaskTest {
 			assertEquals(TaskTestComponent.SINGLE_ACTION_DEP_NAME, request.action);
 			assertEquals(1, dependencyResponses.size());
 			TaskActionResponse<SingleTaskOutput> response = dependencyResponses.iterator().next();
+			assertTrue(response.success);
+			assertNotNull(response.output);
 			assertEquals("SingleActionOutput", response.output.getValue());
 			request.input.setValue("SingleActionDepInput");
 		}
@@ -523,6 +498,7 @@ public class TaskTest {
 		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
 			assertEquals(2, actions.size());
 			for (TaskActionResponse<SingleTaskOutput> response : actions) {
+				assertNotNull(response.output);
 				if (TaskTestComponent.SINGLE_ACTION_NAME.equals(response.action)) {
 					assertEquals("SingleActionOutput", response.output.getValue());
 				} else if (TaskTestComponent.SINGLE_ACTION_DEP_NAME.equals(response.action)) {
@@ -536,7 +512,7 @@ public class TaskTest {
 
 		@Override
 		public QName name() {
-			return TaskTestComponent.SINGLE_TASK_COORD_NAME;
+			return TaskTestComponent.SINGLE_TASK_DEP_COORD_NAME;
 		}
 
 		@Override
@@ -556,7 +532,7 @@ public class TaskTest {
 			ctx.log(LogLevel.INFO, 1, "start");
 			if (TaskTestComponent.SINGLE_ACTION_NAME.equals(ctx.name())) {
 				assertEquals("SingleActionInput", input.getValue());
-			} else if (TaskTestComponent.SINGLE_ACTION_NAME.equals(ctx.name())) {
+			} else if (TaskTestComponent.SINGLE_ACTION_DEP_NAME.equals(ctx.name())) {
 				assertEquals("SingleActionDepInput", input.getValue());
 
 			}
@@ -567,7 +543,7 @@ public class TaskTest {
 			ctx.log(LogLevel.INFO, 2, "execute");
 			if (TaskTestComponent.SINGLE_ACTION_NAME.equals(ctx.name())) {
 				out.setValue("SingleActionOutput");
-			} else if (TaskTestComponent.SINGLE_ACTION_NAME.equals(ctx.name())) {
+			} else if (TaskTestComponent.SINGLE_ACTION_DEP_NAME.equals(ctx.name())) {
 				out.setValue("SingleActionDepOutput");
 
 			}

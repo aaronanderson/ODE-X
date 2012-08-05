@@ -312,9 +312,9 @@ public class TaskCallable implements Callable<TaskResult> {
 			taskCordExec.finialized = false;
 			coordinators.put(coordinator.name(), taskCordExec);
 		}
-		if (coordinators.size() == 0) {
+		/*if (coordinators.size() == 0) {
 			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskCoordinators registered for task %s", task.name()), true);
-		}
+		} can't happen*/
 		for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
 			for (QName dep : (Set<QName>) coordExec.coordinator.dependencies()) {
 				if (!coordinators.containsKey(dep)) {
@@ -384,16 +384,18 @@ public class TaskCallable implements Callable<TaskResult> {
 					if (resolved.get(actionExec.request.action)) {
 						continue;
 					}
+					boolean dependenciesResolved = true;
 					for (QName dep : actions.get(actionExec.request.action).dependencies()) {
 						if (resolved.get(dep)) {
 							continue;
 						} else {
 							remaining.add(dep);
+							dependenciesResolved = false;
 							finished = false;
 							break;
 						}
 					}
-					if (finished) {
+					if (dependenciesResolved) {
 						resolved.put(actionExec.request.action, true);
 						modified = true;
 					}
@@ -452,12 +454,19 @@ public class TaskCallable implements Callable<TaskResult> {
 			case SUBMIT:
 				boolean ready = true;
 				for (TaskActionExecution dep : tae.prevDependencies) {
-					if (!isExecuting(dep)) {
+					if (isExecuting(dep)) {
 						ready = false;
 						break;
 					}
 				}
 				if (ready && tae.previousState != TaskActionState.SUBMIT) {
+					Set<TaskActionResponse> dependencies = new HashSet<TaskActionResponse>();
+					for (TaskActionExecution dep : tae.prevDependencies) {
+						dependencies.add(dep.response);
+					}
+					if (dependencies.size() > 0) {
+						tae.owner.coordinator.update(tae.request, dependencies);
+					}
 					xmlTaskAction.setState(org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT);
 					if (tae.request.input != null) {
 						xmlTaskAction.setExchange(new Exchange());
