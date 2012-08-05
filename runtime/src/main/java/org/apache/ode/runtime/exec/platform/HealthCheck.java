@@ -206,12 +206,8 @@ public class HealthCheck implements Runnable {
 	@PreDestroy
 	public void destroy() {
 		try {
-			publisher.close();
-			subscriber.close();
-			nodeStatusSession.close();
 			topicConnection.close();
-		} catch (Exception e) {
-			log.log(Level.SEVERE, "", e);
+		} catch (JMSException e) { //don't care about JMS errors on closure
 		}
 	}
 

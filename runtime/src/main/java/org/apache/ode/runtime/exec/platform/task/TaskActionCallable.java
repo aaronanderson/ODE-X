@@ -179,9 +179,11 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 			} finally {
 				try {
 					actionUpdateQueueConnection.close();
+				} catch (JMSException e) { //don't care about JMS errors on closure
+				}
+				try {
 					msgUpdateTopicConnection.close();
-				} catch (JMSException je) {
-					log.log(Level.SEVERE, "", je);
+				} catch (JMSException e) { //don't care about JMS errors on closure
 				}
 			}
 

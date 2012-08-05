@@ -22,7 +22,7 @@
 <cluster-config xmlns="http://ode.apache.org/cluster" name="test-cluster">
 
 	<health-check frequency="1000" inactive-timeout="2000" node-cleanup="P10D" />
-	<task-check frequency="500" action-timeout="2000" />
+	<task-check frequency="500" action-timeout="300000" /><!--  high action time for for debugging -->
 	<message-check frequency="500" action-timeout="2000" />
 	<nodes auto-discovery="true" />
 	<security>

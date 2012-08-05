@@ -28,15 +28,15 @@ import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.target.Target;
 
-public class TaskDefinition<TI, I, O, TO> {
+public class TaskDefinition<TI, TO> {
 
 	private final QName name;
-	private final Set<TaskActionCoordinator<TI, I, O, TO>> coordinators;
+	private final Set<TaskActionCoordinator<TI, ?, ?, TO>> coordinators;
 	final JAXBContext jaxbContext;
 
-	public TaskDefinition(QName name, TaskActionCoordinator<TI, I, O, TO> coordinator, JAXBContext jaxbContext) {
+	public TaskDefinition(QName name, TaskActionCoordinator<TI, ?, ?, TO> coordinator, JAXBContext jaxbContext) {
 		this.name = name;
-		this.coordinators = new HashSet<TaskActionCoordinator<TI, I, O, TO>>();
+		this.coordinators = new HashSet<TaskActionCoordinator<TI, ?, ?, TO>>();
 		coordinators.add(coordinator);
 		this.jaxbContext = jaxbContext;
 	}
@@ -49,13 +49,13 @@ public class TaskDefinition<TI, I, O, TO> {
 		return jaxbContext;
 	}
 
-	public void addTaskActionCoordinator(TaskActionCoordinator<TI, I, O, TO> coordinator) {
+	public void addTaskActionCoordinator(TaskActionCoordinator<TI, ?, ?, TO> coordinator) {
 		synchronized (coordinators) {
 			coordinators.add(coordinator);
 		}
 	}
 
-	public Set<TaskActionCoordinator<TI, I, O, TO>> coordinators() {
+	public Set<TaskActionCoordinator<TI, ?, ?, TO>> coordinators() {
 		return coordinators;
 	}
 

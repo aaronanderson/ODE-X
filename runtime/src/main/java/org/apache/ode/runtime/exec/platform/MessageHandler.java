@@ -37,6 +37,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jms.BytesMessage;
+import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
@@ -105,23 +106,23 @@ public class MessageHandler implements Runnable {
 	private static final Logger log = Logger.getLogger(MessageHandler.class.getName());
 
 	@PostConstruct
-	public void init() throws Exception {
-		pollMsgTopicConnection = msgConnectionFactory.createTopicConnection();
-		pollMsgSession = pollMsgTopicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-		producer = pollMsgSession.createProducer(msgTopic);
-		consumer = pollMsgSession.createConsumer(msgTopic);
+	public void init() {
 		this.config = clusterConfig.getMessageCheck();
+		try {
+			pollMsgTopicConnection = msgConnectionFactory.createTopicConnection();
+			pollMsgSession = pollMsgTopicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+			producer = pollMsgSession.createProducer(msgTopic);
+			consumer = pollMsgSession.createConsumer(msgTopic);
+		} catch (JMSException e) {
+			log.log(Level.SEVERE, "", e);
+		}
 	}
 
 	@PreDestroy
-	public void destroy() throws Exception {
+	public void destroy() {
 		try {
-			producer.close();
-			consumer.close();
-			pollMsgSession.close();
 			pollMsgTopicConnection.close();
-		} catch (Exception e) {
-			log.log(Level.SEVERE, "", e);
+		} catch (JMSException e) { //don't care about JMS errors on closure
 		}
 	}
 

@@ -23,19 +23,21 @@ import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToDocument;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToElement;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.locateTaskTarget;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.locateActionTarget;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.locateTaskTarget;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 import static org.apache.ode.spi.exec.Node.NODE_MQ_CORRELATIONID_ACTION;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -64,6 +66,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlAccessOrder;
 import javax.xml.namespace.QName;
 import javax.xml.transform.stream.StreamSource;
 
@@ -130,7 +133,7 @@ public class TaskCallable implements Callable<TaskResult> {
 	private QueueSender taskRequestorSender;
 	private String taskCorrelationId;
 
-	Map<QName, TaskDefinition<?, ?, ?, ?>> tasks;
+	Map<QName, TaskDefinition<?, ?>> tasks;
 	Map<QName, TaskActionDefinition<?, ?>> actions;
 
 	private org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
@@ -172,10 +175,11 @@ public class TaskCallable implements Callable<TaskResult> {
 		Element actionCoordinationOutput;
 		Element actionOutput;
 		JAXBContext actionJaxbContext;
+		boolean addedTaskAction = false;
 		TaskActionResponse response;
 		TaskActionRequest request;
 		Set<TaskActionExecution> prevDependencies = new HashSet<TaskActionExecution>();
-		Set<TaskActionExecution> nextDependencies = new HashSet<TaskActionExecution>();
+		//Set<TaskActionExecution> nextDependencies = new HashSet<TaskActionExecution>();
 		private Queue actionRequestor;
 		private String actionCorrelationId;
 		private QueueReceiver actionRequestorReceiver;
@@ -187,6 +191,7 @@ public class TaskCallable implements Callable<TaskResult> {
 		Set<TaskActionExecution> requests = new HashSet<TaskActionExecution>();
 		JAXBContext taskJaxbContext;
 		boolean initialized = false;
+		boolean finialized = false;
 	}
 
 	public static class TaskResult {
@@ -218,7 +223,7 @@ public class TaskCallable implements Callable<TaskResult> {
 				taskUpdateQueueConnection.start();
 				msgUpdateTopicConnection.start();
 
-				Set<TaskCoordinatorExecution> coordinators = new HashSet<TaskCoordinatorExecution>();
+				Map<QName, TaskCoordinatorExecution> coordinators = new HashMap<QName, TaskCoordinatorExecution>();
 				Map<QName, TaskActionExecution> actionExecutions = new HashMap<QName, TaskActionExecution>();
 				try {
 					init(coordinators, actionExecutions);
@@ -239,12 +244,12 @@ public class TaskCallable implements Callable<TaskResult> {
 			} finally {
 				try {
 					taskUpdateQueueConnection.close();
-					msgUpdateTopicConnection.close();
-				} catch (JMSException je) {
-					log.log(Level.SEVERE, "", je);
-					taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				} catch (JMSException e) { //don't care about JMS errors on closure
 				}
-
+				try {
+					msgUpdateTopicConnection.close();
+				} catch (JMSException e) { //don't care about JMS errors on closure
+				}
 			}
 		} finally {
 			pmgr.close();
@@ -288,69 +293,136 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	}
 
-	public void init(Set<TaskCoordinatorExecution> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
+	public void init(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
 
-		TaskDefinition<?, ?, ?, ?> def = tasks.get(task.name());
+		TaskDefinition<?, ?> def = tasks.get(task.name());
+		if (def == null) {
+			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskDefinition defined for task %s", task.name()), true);
+		}
 
 		task.setState(TaskState.START);
 		task.setStart(new Date());
 		updateTask();
 
 		for (TaskActionCoordinator coordinator : def.coordinators()) {
-			TaskCoordinatorExecution taskCordState = new TaskCoordinatorExecution();
-			taskCordState.taskJaxbContext = def.jaxbContext();
-			taskCordState.coordinator = coordinator;
-			Set<TaskActionRequest<?>> requests = coordinator.init(taskContext,
-					convertToObject(taskInput, locateTaskTarget(coordinator.getClass(), ExchangeType.INPUT), def.jaxbContext()), nodeId, callback, targets);
-			taskCordState.initialized = true;
-			for (TaskActionRequest<?> canidate : requests) {
-				if (!actions.containsKey(canidate.action)) {
-					taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.action.toString()), true);
-				}
-				if (actionExecutions.containsKey(canidate.action)) {
-					taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.action.toString()), true);
-				}
-				TaskActionExecution tae = new TaskActionExecution();
-				tae.owner = taskCordState;
-				tae.request = canidate;
-				tae.actionJaxbContext = actions.get(canidate.action).jaxbContext();
-				try {
-					tae.actionRequestor = taskUpdateSession.createTemporaryQueue();
-					tae.actionRequestorReceiver = taskUpdateSession.createReceiver(tae.actionRequestor);
-					tae.actionCorrelationId = String.format(NODE_MQ_CORRELATIONID_ACTION, System.currentTimeMillis());
-				} catch (JMSException e) {
-					taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true);
-				}
-				taskCordState.requests.add(tae);
-				actionExecutions.put(canidate.action, tae);
-
-			}
-			coordinators.add(taskCordState);
+			TaskCoordinatorExecution taskCordExec = new TaskCoordinatorExecution();
+			taskCordExec.taskJaxbContext = def.jaxbContext();
+			taskCordExec.coordinator = coordinator;
+			taskCordExec.initialized = false;
+			taskCordExec.finialized = false;
+			coordinators.put(coordinator.name(), taskCordExec);
 		}
-
-		//calculate run order
-
-		for (TaskCoordinatorExecution coordState : coordinators) {
-			for (TaskActionExecution actionExec : coordState.requests) {
-				for (QName dep : actions.get(actionExec.request.action).dependencies()) {
-					TaskActionExecution depActionExec = actionExecutions.get(dep);
-					if (depActionExec == null) {
-						taskLogIt(LogLevel.ERROR, 0,
-								String.format("TaskAction %s dependency %s not submitted for execution by a task coordinator", actionExec.request.action, dep),
-								true);
+		if (coordinators.size() == 0) {
+			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskCoordinators registered for task %s", task.name()), true);
+		}
+		for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
+			for (QName dep : (Set<QName>) coordExec.coordinator.dependencies()) {
+				if (!coordinators.containsKey(dep)) {
+					taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator %s dependency %s not registered", coordExec.coordinator.name(), dep), true);
+				}
+			}
+		}
+		boolean finished = false;
+		while (!finished) {
+			finished = true;
+			boolean modified = false;
+			Set<QName> remaining = new HashSet<QName>();
+			for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
+				boolean dependenciesCompleted = true;
+				for (QName depExecName : (Set<QName>) coordExec.coordinator.dependencies()) {
+					if (!coordinators.get(depExecName).initialized) {
+						dependenciesCompleted = false;
+						remaining.add(depExecName);
+						break;
 					}
-					//TODO detect loops
-					actionExec.prevDependencies.add(depActionExec);
-					depActionExec.nextDependencies.add(actionExec);
+				}
+				if (dependenciesCompleted) {
+					Set<TaskActionRequest<?>> requests = coordExec.coordinator.init(taskContext,
+							convertToObject(taskInput, locateTaskTarget(coordExec.coordinator.getClass(), ExchangeType.INPUT), coordExec.taskJaxbContext),
+							nodeId, callback, targets);
+
+					for (TaskActionRequest<?> canidate : requests) {
+						if (!actions.containsKey(canidate.action)) {
+							taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.action.toString()), true);
+						}
+						if (actionExecutions.containsKey(canidate.action)) {
+							taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.action.toString()), true);
+						}
+						TaskActionExecution tae = new TaskActionExecution();
+						tae.owner = coordExec;
+						tae.request = canidate;
+						tae.actionJaxbContext = actions.get(canidate.action).jaxbContext();
+						try {
+							tae.actionRequestor = taskUpdateSession.createTemporaryQueue();
+							tae.actionRequestorReceiver = taskUpdateSession.createReceiver(tae.actionRequestor);
+							tae.actionCorrelationId = String.format(NODE_MQ_CORRELATIONID_ACTION, System.currentTimeMillis());
+						} catch (JMSException e) {
+							taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true);
+						}
+						coordExec.requests.add(tae);
+						actionExecutions.put(canidate.action, tae);
+					}
+					modified = true;
+				} else {
+					finished = false;
+				}
+			}
+			if (!modified) {
+				taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator circular dependency detected: %s", remaining), true);
+			}
+
+		}
+
+		Map<QName, Boolean> resolved = new HashMap<QName, Boolean>();
+		finished = false;
+		while (!finished) {
+			finished = true;
+			boolean modified = false;
+			Set<QName> remaining = new HashSet<QName>();
+			for (TaskActionExecution actionExec : actionExecutions.values()) {
+				if (resolved.get(actionExec.request.action) != null) {
+					if (resolved.get(actionExec.request.action)) {
+						continue;
+					}
+					for (QName dep : actions.get(actionExec.request.action).dependencies()) {
+						if (resolved.get(dep)) {
+							continue;
+						} else {
+							remaining.add(dep);
+							finished = false;
+							break;
+						}
+					}
+					if (finished) {
+						resolved.put(actionExec.request.action, true);
+						modified = true;
+					}
+				} else {
+					resolved.put(actionExec.request.action, false);
+					finished = false;
+					modified = true;
+					for (QName dep : actions.get(actionExec.request.action).dependencies()) {
+						TaskActionExecution depActionExec = actionExecutions.get(dep);
+						if (depActionExec == null) {
+							taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction %s dependency %s not submitted for execution by a task coordinator",
+									actionExec.request.action, dep), true);
+						}
+						actionExec.prevDependencies.add(depActionExec);
+						//depActionExec.nextDependencies.add(actionExec);
+					}
 				}
 
 			}
-		}
+			if (!modified) {
+				taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction circular dependency detected: %s", remaining), true);
 
+			}
+		}
 		//now Task has been vetted, perform IO intensive operations
 
 		pmgr.getTransaction().begin();
 		try {
+			task.setState(TaskState.EXECUTE);
 			task.setDOMInput(convertToDocument(taskInput));
 			Set<TargetImpl> targetEntities = new HashSet<TargetImpl>();
 			for (Target target : targets) {
@@ -370,8 +442,8 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	public void executeAction(TaskActionExecution tae) throws PlatformException {
 		if (System.currentTimeMillis() - tae.lastUpdate > config.getActionTimeout()) {
-			//taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.action, tae.request.nodeId), false);
-			//tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false);
+			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.action, tae.request.nodeId), false);
+			tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false);
 		}
 		org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = convert(tae);
 
@@ -397,6 +469,22 @@ public class TaskCallable implements Callable<TaskResult> {
 				}
 				break;
 			case START:
+				if (!tae.addedTaskAction) {
+					pmgr.getTransaction().begin();
+					try {
+						TaskActionImpl taskAction = pmgr.find(TaskActionImpl.class, Long.valueOf(xmlTaskAction.getActionId()));
+						if (taskAction != null) {
+							task.getActions().add(taskAction);
+							pmgr.getTransaction().commit();
+						} else {
+							log.warning(String.format("Unable to find TaskAction %s for Task %s", xmlTaskAction.getActionId(), taskId));
+							pmgr.getTransaction().rollback();
+						}
+						tae.addedTaskAction = true;
+					} catch (PersistenceException pe) {
+						log.log(Level.SEVERE, "", pe);
+					}
+				}
 				break;
 			case EXECUTE:
 				if (tae.owner instanceof CoordinatedTaskActionCoordinator
@@ -460,22 +548,41 @@ public class TaskCallable implements Callable<TaskResult> {
 		return finished;
 	}
 
-	public Document destroy(Set<TaskCoordinatorExecution> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
+	public Document destroy(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
 
 		Document doc = null;
-		for (TaskCoordinatorExecution coordState : coordinators) {
-			if (coordState.initialized) {
-				Object output = convertToObject(doc, locateTaskTarget(coordState.coordinator.getClass(), ExchangeType.OUTPUT), coordState.taskJaxbContext);
-				Set<TaskActionResponse> responses = new HashSet<TaskActionResponse>();
-				for (TaskActionExecution tae : coordState.requests) {
-					if (tae.response != null) {
-						responses.add(tae.response);
-					} else {
-						responses.add(new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false));
+
+		task.setState(TaskState.FINISH);
+		updateTask();
+
+		boolean finished = false;
+		while (!finished) {//dependency loops should have already been resolved
+			finished = true;
+			Set<QName> remaining = new HashSet<QName>();
+			for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
+				boolean dependenciesCompleted = true;
+				for (QName depExecName : (Set<QName>) coordExec.coordinator.dependencies()) {
+					if (coordinators.get(depExecName).initialized && !coordinators.get(depExecName).finialized) {
+						dependenciesCompleted = false;
+						remaining.add(depExecName);
+						break;
 					}
 				}
-				output = coordState.coordinator.finish(responses, output);
-				doc = convertToDocument(output, coordState.taskJaxbContext);
+				if (dependenciesCompleted) {
+					Object output = convertToObject(doc, locateTaskTarget(coordExec.coordinator.getClass(), ExchangeType.OUTPUT), coordExec.taskJaxbContext);
+					Set<TaskActionResponse> responses = new HashSet<TaskActionResponse>();
+					for (TaskActionExecution tae : coordExec.requests) {
+						if (tae.response != null) {
+							responses.add(tae.response);
+						} else {
+							responses.add(new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false));
+						}
+					}
+					output = coordExec.coordinator.finish(responses, output);
+					doc = convertToDocument(output, coordExec.taskJaxbContext);
+				} else {
+					finished = false;
+				}
 			}
 		}
 
@@ -493,9 +600,8 @@ public class TaskCallable implements Callable<TaskResult> {
 		for (TaskActionExecution tae : pending) {
 			refreshAction(tae, true);
 			if (tae.state == TaskActionState.PENDING) {
-
+				//this should not happen
 			}
-
 		}
 
 		for (TaskActionExecution tae : actionExecutions.values()) {
@@ -503,10 +609,15 @@ public class TaskCallable implements Callable<TaskResult> {
 				if (tae.actionRequestorReceiver != null) {
 					tae.actionRequestorReceiver.close();
 				}
-			} catch (JMSException e) {
-				taskLogIt(LogLevel.ERROR, 0, e.getMessage(), false);
+			} catch (JMSException e) {//don't care on close
 			}
 		}
+
+		task.setState(TaskState.COMPLETE);
+		task.setFinish(new Date());
+		task.setDOMOutput(doc);
+		updateTask();
+
 		return doc;
 	}
 

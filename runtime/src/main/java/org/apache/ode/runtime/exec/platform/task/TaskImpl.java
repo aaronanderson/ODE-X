@@ -32,6 +32,7 @@ import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -42,6 +43,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
@@ -75,6 +77,9 @@ public class TaskImpl implements Task, Serializable {
 		transformFactory = TransformerFactory.newInstance();
 	}
 
+	@Transient
+	EntityManagerFactory pmgrFactory;
+
 	@Id
 	@GeneratedValue
 	@Column(name = "TASK_ID")
@@ -102,7 +107,7 @@ public class TaskImpl implements Task, Serializable {
 	private List<MessageImpl> messages;
 
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	@JoinTable(name = "TASK_ACTION", joinColumns = @JoinColumn(name = "TASK_ID"), inverseJoinColumns = @JoinColumn(name = "ACTION_ID"))
+	@JoinTable(name = "TASK_ACTIONS", joinColumns = @JoinColumn(name = "TASK_ID"), inverseJoinColumns = @JoinColumn(name = "ACTION_ID"))
 	Set<TaskActionImpl> actions;
 
 	@Column(name = "USER")
@@ -191,27 +196,43 @@ public class TaskImpl implements Task, Serializable {
 		this.targets = targets;
 	}
 
+	public Set<TargetImpl> getTargets() {
+		return targets;
+	}
+
 	@Override
 	public Set<Target> targets() {
-		return (Set<Target>) (Object) targets;
+		return (Set<Target>) (Object) getTargets();
 	}
 
 	public void setMessages(List<MessageImpl> messages) {
 		this.messages = messages;
 	}
 
+	public List<MessageImpl> getMessages() {
+		return messages;
+	}
+
 	@Override
 	public List<Message> messages() {
-		return (List<Message>) (Object) messages;
+		return (List<Message>) (Object) getMessages();
 	}
 
 	public void setTaskAction(Set<TaskActionImpl> actions) {
 		this.actions = actions;
 	}
 
+	public Set<TaskActionImpl> getActions() {
+		return actions;
+	}
+
+	public void setActions(Set<TaskActionImpl> actions) {
+		this.actions = actions;
+	}
+
 	@Override
 	public Set<TaskAction> actions() {
-		return (Set<TaskAction>) (Object) actions;
+		return (Set<TaskAction>) (Object) getActions();
 	}
 
 	@Override
@@ -224,7 +245,7 @@ public class TaskImpl implements Task, Serializable {
 	}
 
 	public void setDOMInput(Document doc) throws PlatformException {
-		input = domToContent(doc);
+		setInput(domToContent(doc));
 	}
 
 	public byte[] getInput() {//need to use getter methods for JPA lazy loading
@@ -282,7 +303,7 @@ public class TaskImpl implements Task, Serializable {
 	}
 
 	public void setDOMOutput(Document doc) throws PlatformException {
-		output = domToContent(doc);
+		setOutput(domToContent(doc));
 	}
 
 	public byte[] getOutput() {//need to use getter methods for JPA lazy loading

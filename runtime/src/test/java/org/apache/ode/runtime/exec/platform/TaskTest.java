@@ -29,15 +29,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.jms.Queue;
-import javax.jms.Topic;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
@@ -47,8 +44,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.ode.runtime.exec.modules.ServerModule.VMServerModule;
-import org.apache.ode.runtime.exec.platform.JMSUtil.QueueImpl;
-import org.apache.ode.runtime.exec.platform.JMSUtil.TopicImpl;
 import org.apache.ode.runtime.exec.task.test.xml.MultiTaskInput;
 import org.apache.ode.runtime.exec.task.test.xml.MultiTaskOutput;
 import org.apache.ode.runtime.exec.task.test.xml.SingleTaskInput;
@@ -60,6 +55,10 @@ import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.exec.target.TargetNode;
+import org.apache.ode.spi.exec.task.Task;
+import org.apache.ode.spi.exec.task.Task.TaskId;
+import org.apache.ode.spi.exec.task.Task.TaskState;
+import org.apache.ode.spi.exec.task.TaskAction;
 import org.apache.ode.spi.exec.task.TaskActionContext;
 import org.apache.ode.spi.exec.task.TaskActionCoordinator;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
@@ -83,32 +82,45 @@ public class TaskTest {
 	private static Jsr250Injector injector2;
 	private static JAXBContext taskJAXBContext;
 
-	private static Topic healthCheckTopic = new TopicImpl(Node.NODE_MQ_NAME_HEALTHCHECK);
-	private static Queue taskQueue = new QueueImpl(Node.NODE_MQ_NAME_TASK);
+	private static Node node1;
+	private static Node node2;
+	private static Platform platform1;
+	private static Platform platform2;
 
 	private static final org.apache.ode.runtime.exec.task.test.xml.ObjectFactory taskObjectFactory = new org.apache.ode.runtime.exec.task.test.xml.ObjectFactory();
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
+		taskJAXBContext = JAXBContext.newInstance("org.apache.ode.runtime.exec.cluster.xml:org.apache.ode.runtime.exec.task.test.xml");
+
 		injector1 = Jsr250.createInjector(new VMServerModule("vm://task?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data",
 				"tcluster", "node1"), new TaskTestModule());
 		HealthCheckTest.loadTestClusterConfig(injector1, "tcluster");
 		injector2 = Jsr250.createInjector(new VMServerModule("vm://task?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data",
 				"tcluster", "node2"), new TaskTestModule());
 
-		Node node1 = injector1.getInstance(Node.class);
+		node1 = injector1.getInstance(Node.class);
 		assertNotNull(node1);
 		node1.online();
+		TaskTestComponent component1 = injector1.getInstance(TaskTestComponent.class);
+		assertNotNull(component1);
+		platform1 = injector1.getInstance(Platform.class);
+		assertNotNull(platform1);
 
-		Node node2 = injector2.getInstance(Node.class);
+		node2 = injector2.getInstance(Node.class);
 		assertNotNull(node2);
 		node2.online();
+		TaskTestComponent component2 = injector2.getInstance(TaskTestComponent.class);
+		assertNotNull(component2);
+		platform2 = injector1.getInstance(Platform.class);
+		assertNotNull(platform1);
 
-		taskJAXBContext = JAXBContext.newInstance("org.apache.ode.runtime.exec.cluster.xml:org.apache.ode.runtime.exec.task.test.xml");
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
+		node1.offline();
+		node2.offline();
 		injector1.destroy();
 		injector2.destroy();
 	}
@@ -124,21 +136,44 @@ public class TaskTest {
 
 	}
 
-	@Test
-	public void localTaskActionTest() throws Exception {
-		//Online the local node
-		Node node1 = injector1.getInstance(Node.class);
-		assertNotNull(node1);
-		node1.online();
-
-		//initialize component extensions
-		TaskTestComponent component1 = injector1.getInstance(TaskTestComponent.class);
-		assertNotNull(component1);
-
+	public void testSingleTaskAction(String nodeId) throws Exception {
 		assertTrue(node1.getComponents().contains(TaskTestComponent.COMPONENT_NAME));
 		//Execute operations on platform
-		Platform platform1 = injector1.getInstance(Platform.class);
-		assertNotNull(platform1);
+
+		Marshaller m = taskJAXBContext.createMarshaller();
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		dbf.setNamespaceAware(true);
+		Document doc = dbf.newDocumentBuilder().newDocument();
+		SingleTaskInput in = new SingleTaskInput();
+		in.setValue("SingleTaskInput");
+		JAXBElement<SingleTaskInput> element = taskObjectFactory.createSingleTaskInput(in);
+		m.marshal(element, doc);
+
+		platform1.setLogLevel(LogLevel.DEBUG);
+		TargetNode target = platform1.createTarget(nodeId, TargetNode.class);
+		Future<Document> result = platform1.execute(TaskTestComponent.SINGLE_TASK_NAME, doc, null, target);
+		assertNotNull(result);
+		Document res = result.get();//result.get(5, TimeUnit.SECONDS);
+		assertNotNull(res);
+		Unmarshaller u = taskJAXBContext.createUnmarshaller();
+		JAXBElement<SingleTaskOutput> xout = (JAXBElement<SingleTaskOutput>) u.unmarshal(res);
+		SingleTaskOutput out = xout.getValue();
+		assertNotNull(out);
+		assertEquals("SingleTaskOutput", out.getValue());
+	}
+
+	@Test
+	public void localTaskActionTest() throws Exception {
+		testSingleTaskAction("node1");
+	}
+
+	@Test
+	public void remoteTaskActionTest() throws Exception {
+		testSingleTaskAction("node2");
+	}
+
+	@Test
+	public void localTaskActionAsyncTest() throws Exception {
 
 		Marshaller m = taskJAXBContext.createMarshaller();
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -151,69 +186,66 @@ public class TaskTest {
 
 		platform1.setLogLevel(LogLevel.DEBUG);
 		TargetNode target = platform1.createTarget("node1", TargetNode.class);
-		Future<Document> result = platform1.execute(TaskTestComponent.SINGLE_TASK_NAME, doc, null, target);
-		assertNotNull(result);
-		Document res = result.get();//result.get(5, TimeUnit.SECONDS);
+		TaskId id = platform1.executeAsync(TaskTestComponent.SINGLE_TASK_NAME, doc, null, target);
+		assertNotNull(id);
+		Task status = platform1.taskStatus(id);
+		assertNotNull(status);
+		long start = System.currentTimeMillis();
+		while (true) {
+			//System.out.format("task state %s\n", status.state());
+			status.refresh();
+			if (TaskState.COMPLETE == status.state()) {
+				break;
+			} else if (System.currentTimeMillis() - start > 10000l) {
+				fail(String.format("Task timed out: %s", status.state()));
+			}
+		}
+
+		Document res = status.output();
 		assertNotNull(res);
 		Unmarshaller u = taskJAXBContext.createUnmarshaller();
 		JAXBElement<SingleTaskOutput> xout = (JAXBElement<SingleTaskOutput>) u.unmarshal(res);
 		SingleTaskOutput out = xout.getValue();
 		assertNotNull(out);
 		assertEquals("SingleTaskOutput", out.getValue());
+		Set<TaskAction> actions = status.actions();
+		assertNotNull(actions);
+		assertEquals(1, actions.size());
+		//TODO examine more of the entity to make sure all targets and messages are present
 
 	}
 
 	/*
-	 @Test
-	public void localTaskActionAsyncTest() throws Exception {
-
-		Platform platform1 = injector1.getInstance(Platform.class);
-		assertNotNull(platform1);
-
-		Marshaller m = taskJAXBContext.createMarshaller();
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		dbf.setNamespaceAware(true);
-		Document doc = dbf.newDocumentBuilder().newDocument();
-		SingleTaskInput in = new SingleTaskInput();
-		in.setValue("SingleTaskInput");
-		m.marshal(in, doc);
-
-		platform1.setLogLevel(LogLevel.DEBUG);
-		TargetNode target = platform1.createTarget("node1", TargetNode.class);
-		TaskId id = platform1.executeAsync(TaskTestComponent.SINGLE_TASK_NAME, doc, null, target);
-		assertNotNull(id);
-
-	} 
 	@Test
 	public void remoteTaskActionTest() throws Exception {
-		QueueConnectionFactory taskFactory = injector1.getInstance(Key.get(QueueConnectionFactory.class, TaskCheck.class));
-		Queue taskQueue = injector1.getInstance(Key.get(Queue.class, TaskCheck.class));
-		QueueConnection taskQueueConnection = taskFactory.createQueueConnection();
-		try {
-			QueueSession session = taskQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-			QueueSender sender = session.createSender(taskQueue);
-			Queue responseQueue = session.createTemporaryQueue();
-			QueueReceiver receiver = session.createReceiver(responseQueue);
+	QueueConnectionFactory taskFactory = injector1.getInstance(Key.get(QueueConnectionFactory.class, TaskCheck.class));
+	Queue taskQueue = injector1.getInstance(Key.get(Queue.class, TaskCheck.class));
+	QueueConnection taskQueueConnection = taskFactory.createQueueConnection();
+	try {
+		QueueSession session = taskQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+		QueueSender sender = session.createSender(taskQueue);
+		Queue responseQueue = session.createTemporaryQueue();
+		QueueReceiver receiver = session.createReceiver(responseQueue);
 
-			Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
-			org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = new org.apache.ode.runtime.exec.cluster.xml.TaskAction();
-			taskAction.setActionId(Node.NODE_MQ_PROP_VALUE_NEW);
-			taskAction.setState(TaskActionState.SUBMIT);
-			ByteArrayOutputStream payload = new ByteArrayOutputStream();
-			marshaller.marshal(taskAction, payload);
-			BytesMessage message = session.createBytesMessage();
-			message.setStringProperty(Node.NODE_MQ_PROP_NODE, "node1");
-			message.setStringProperty(Node.NODE_MQ_PROP_ACTIONID, Node.NODE_MQ_PROP_VALUE_NEW);
-			message.writeBytes(payload.toByteArray());
-			message.setJMSCorrelationID(message.getJMSMessageID());
-			message.setJMSReplyTo(responseQueue);
-			sender.send(message);
-			BytesMessage responseMessage = (BytesMessage) receiver.receive(5000l);
-			assertNotNull(responseMessage);
+		Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+		org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = new org.apache.ode.runtime.exec.cluster.xml.TaskAction();
+		taskAction.setActionId(Node.NODE_MQ_PROP_VALUE_NEW);
+		taskAction.setState(TaskActionState.SUBMIT);
+		ByteArrayOutputStream payload = new ByteArrayOutputStream();
+		marshaller.marshal(taskAction, payload);
+		BytesMessage message = session.createBytesMessage();
+		message.setStringProperty(Node.NODE_MQ_PROP_NODE, "node1");
+		message.setStringProperty(Node.NODE_MQ_PROP_ACTIONID, Node.NODE_MQ_PROP_VALUE_NEW);
+		message.writeBytes(payload.toByteArray());
+		message.setJMSCorrelationID(message.getJMSMessageID());
+		message.setJMSReplyTo(responseQueue);
+		sender.send(message);
+		BytesMessage responseMessage = (BytesMessage) receiver.receive(5000l);
+		assertNotNull(responseMessage);
 
-		} finally {
-			taskQueueConnection.close();
-		}
+	} finally {
+		taskQueueConnection.close();
+	}
 	}
 
 	@Test
@@ -247,27 +279,27 @@ public class TaskTest {
 	public void taskListenerTest() throws Exception {
 	final Set<Integer> codes = new HashSet<Integer>();
 
-		TaskListener listener = new TaskListener() {
+	TaskListener listener = new TaskListener() {
 
-			@Override
-			public LogLevel levelFilter() {
-				return LogLevel.DEBUG;
-			}
-
-			@Override
-			public void message(MessageEvent message) {
-				log.info(message.toString());
-				codes.add(message.message().code());
-			}
-
-		};
-		
-		platform1.registerListener(listener);
-		try {
-		
-		} finally {
-			platform1.unregisterListener(listener);
+		@Override
+		public LogLevel levelFilter() {
+			return LogLevel.DEBUG;
 		}
+
+		@Override
+		public void message(MessageEvent message) {
+			log.info(message.toString());
+			codes.add(message.message().code());
+		}
+
+	};
+	
+	platform1.registerListener(listener);
+	try {
+	
+	} finally {
+		platform1.unregisterListener(listener);
+	}
 	}
 	
 	@Test
@@ -317,7 +349,9 @@ public class TaskTest {
 		public static final QName COMPONENT_NAME = new QName(TEST_NS, "TaskComponent");
 
 		public static final QName SINGLE_TASK_NAME = new QName(TEST_NS, "SingleTask");
+		public static final QName SINGLE_TASK_COORD_NAME = new QName(TEST_NS, "SingleTaskCoordinator");
 		public static final QName MULTI_TASK_NAME = new QName(TEST_NS, "MultiTask");
+		public static final QName MULTI_TASK_COORD_NAME = new QName(TEST_NS, "MultiTaskTaskCoordinator");
 
 		public static final QName SINGLE_ACTION_NAME = new QName(TEST_NS, "SingleTaskAction");
 		public static final QName SINGLE_ACTION_DEP_NAME = new QName(TEST_NS, "SingleTaskActionDependency");
@@ -442,6 +476,16 @@ public class TaskTest {
 			return output;
 		}
 
+		@Override
+		public QName name() {
+			return TaskTestComponent.SINGLE_TASK_COORD_NAME;
+		}
+
+		@Override
+		public Set<QName> dependencies() {
+			return Collections.EMPTY_SET;
+		}
+
 	}
 
 	public static class DependencyTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
@@ -488,6 +532,16 @@ public class TaskTest {
 			output = new SingleTaskOutput();
 			output.setValue("SingleTaskOutput");
 			return output;
+		}
+
+		@Override
+		public QName name() {
+			return TaskTestComponent.SINGLE_TASK_COORD_NAME;
+		}
+
+		@Override
+		public Set<QName> dependencies() {
+			return Collections.EMPTY_SET;
 		}
 
 	}
@@ -558,6 +612,18 @@ public class TaskTest {
 		@Override
 		public MultiTaskOutput finish(Set<TaskActionResponse<MultiTaskOutput>> actions, MultiTaskOutput output) {
 			return null;
+		}
+
+		@Override
+		public QName name() {
+			return TaskTestComponent.MULTI_TASK_COORD_NAME;
+		}
+
+		@Override
+		public Set<QName> dependencies() {
+			HashSet<QName> deps = new HashSet<QName>();
+			deps.add(TaskTestComponent.SINGLE_TASK_COORD_NAME);
+			return deps;
 		}
 
 	}

@@ -211,14 +211,14 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	}
 
 	public void setDOMInput(Document doc) throws PlatformException {
-		input = domToContent(doc);
+		setInput(domToContent(doc));
 	}
 
 	public byte[] getInput() {//need to use getter methods for JPA lazy loading
 		return input;
 	}
 
-	public void InOutput(byte[] input) {//need to use getter methods for JPA lazy loading
+	public void setInput(byte[] input) {//need to use getter methods for JPA lazy loading
 		this.input = input;
 	}
 
@@ -285,7 +285,7 @@ public class TaskActionImpl implements TaskAction, Serializable {
 	}
 
 	public void setDOMOutput(Document doc) throws PlatformException {
-		output = domToContent(doc);
+		setOutput(domToContent(doc));
 	}
 
 	public byte[] getOutput() {//need to use getter methods for JPA lazy loading

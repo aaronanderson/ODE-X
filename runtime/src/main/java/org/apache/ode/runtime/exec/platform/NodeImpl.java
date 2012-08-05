@@ -28,7 +28,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Key;
 import java.security.KeyException;
@@ -38,6 +37,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +62,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 import javax.xml.bind.DatatypeConverter;
@@ -102,10 +103,12 @@ import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
 import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
 import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
+import org.apache.ode.runtime.exec.platform.task.TaskImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Executors;
+import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageEvent;
 import org.apache.ode.spi.exec.Message.MessageListener;
@@ -116,6 +119,7 @@ import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.exec.task.Task;
 import org.apache.ode.spi.exec.task.Task.TaskId;
+import org.apache.ode.spi.exec.task.TaskAction;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskDefinition;
@@ -126,7 +130,6 @@ import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 @Singleton
@@ -174,7 +177,7 @@ public class NodeImpl implements Node, MessageListener {
 
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
 	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
-	private Map<QName, TaskDefinition<?, ?, ?, ?>> tasks = new ConcurrentHashMap<QName, TaskDefinition<?, ?, ?, ?>>();
+	private Map<QName, TaskDefinition<?, ?>> tasks = new ConcurrentHashMap<QName, TaskDefinition<?, ?>>();
 	private Map<QName, TaskActionDefinition<?, ?>> actions = new ConcurrentHashMap<QName, TaskActionDefinition<?, ?>>();
 
 	private QName architecture;
@@ -281,7 +284,7 @@ public class NodeImpl implements Node, MessageListener {
 		for (InstructionSet is : component.instructionSets()) {
 			instructions.put(is.getName(), is);
 		}
-		for (TaskDefinition<?, ?, ?, ?> td : component.tasks()) {
+		for (TaskDefinition<?, ?> td : component.tasks()) {
 			tasks.put(td.task(), td);
 		}
 		for (TaskActionDefinition<?, ?> tad : component.actions()) {
@@ -301,7 +304,7 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	@Override
-	public Map<QName, TaskDefinition<?, ?, ?, ?>> getTaskDefinitions() {
+	public Map<QName, TaskDefinition<?, ?>> getTaskDefinitions() {
 		return tasks;
 	}
 
@@ -346,8 +349,156 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	public Task status(TaskId taskId) throws PlatformException {
-		//return actionExec.status((ActionIdImpl) actionId);
-		return null;
+		if (taskId == null) {
+			throw new PlatformException("null taskId");
+		}
+		TaskFascade task = new TaskFascade(((TaskIdImpl) taskId).id(), pmgrFactory);
+		task.refresh();
+		return task;
+
+	}
+
+	public static class TaskFascade implements Task {
+		final EntityManagerFactory pmgrFactory;
+		final long id;
+		TaskImpl impl;
+
+		public TaskFascade(long id, EntityManagerFactory pmgrFactory) {
+			this.id = id;
+			this.pmgrFactory = pmgrFactory;
+		}
+
+		@Override
+		public String nodeId() {
+			return impl.nodeId();
+		}
+
+		@Override
+		public void refresh() {
+			//for lazy load fields we will need to return the value while the entity is still attached
+			EntityManager pmgr = pmgrFactory.createEntityManager();
+			try {
+				TaskImpl impl = pmgr.find(TaskImpl.class, id);
+				pmgr.detach(impl);
+				this.impl = impl;
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "", t);
+			} finally {
+				pmgr.close();
+			}
+		}
+
+		@Override
+		public QName name() {
+			return impl.name();
+		}
+
+		@Override
+		public TaskId id() {
+			return impl.id();
+		}
+
+		@Override
+		public QName component() {
+			return impl.component();
+		}
+
+		@Override
+		public TaskState state() {
+			return impl.state();
+		}
+
+		@Override
+		public Set<Target> targets() {
+			EntityManager pmgr = pmgrFactory.createEntityManager();
+			try {
+				TaskImpl impl = pmgr.find(TaskImpl.class, id);
+				this.impl = impl;
+				return impl.targets();
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "", t);
+				return null;
+			} finally {
+				pmgr.close();
+			}
+
+		}
+
+		@Override
+		public List<Message> messages() {
+			EntityManager pmgr = pmgrFactory.createEntityManager();
+			try {
+				TaskImpl impl = pmgr.find(TaskImpl.class, id);
+				this.impl = impl;
+				return impl.messages();
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "", t);
+				return null;
+			} finally {
+				pmgr.close();
+			}
+		}
+
+		@Override
+		public Set<TaskAction> actions() {
+			EntityManager pmgr = pmgrFactory.createEntityManager();
+			try {
+				TaskImpl impl = pmgr.find(TaskImpl.class, id);
+				this.impl = impl;
+				return impl.actions();
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "", t);
+				return null;
+			} finally {
+				pmgr.close();
+			}
+		}
+
+		@Override
+		public Document input() {
+			EntityManager pmgr = pmgrFactory.createEntityManager();
+			try {
+				TaskImpl impl = pmgr.find(TaskImpl.class, id);
+				this.impl = impl;
+				return impl.input();
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "", t);
+				return null;
+			} finally {
+				pmgr.close();
+			}
+		}
+
+		@Override
+		public Document output() {
+			EntityManager pmgr = pmgrFactory.createEntityManager();
+			try {
+				TaskImpl impl = pmgr.find(TaskImpl.class, id);
+				this.impl = impl;
+				return impl.output();
+			} catch (Throwable t) {
+				log.log(Level.SEVERE, "", t);
+				return null;
+			} finally {
+				pmgr.close();
+			}
+		}
+
+		@Override
+		public Date start() {
+			return impl.start();
+		}
+
+		@Override
+		public Date finish() {
+			return impl.finish();
+		}
+
+		@Override
+		public Date modified() {
+			return impl.modified();
+		}
+
 	}
 
 	public void cancel(TaskId taskId) throws PlatformException {

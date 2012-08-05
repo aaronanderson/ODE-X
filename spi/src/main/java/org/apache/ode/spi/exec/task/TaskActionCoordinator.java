@@ -27,6 +27,10 @@ import org.apache.ode.spi.exec.target.Target;
 public interface TaskActionCoordinator<TI, I, O, TO> {
 	//all will be called on master
 
+	QName name();
+
+	Set<QName> dependencies();
+
 	Set<TaskActionRequest<I>> init(TaskContext ctx, TI input, String localNodeId, TaskCallback<?, ?> callback, Target... targets);
 
 	//void refresh(TaskActionResponse<O> action);

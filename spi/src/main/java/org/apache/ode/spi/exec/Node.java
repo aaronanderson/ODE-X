@@ -62,7 +62,7 @@ public interface Node {
 
 	public Map<QName, InstructionSet> getInstructionSets();
 
-	public Map<QName, TaskDefinition<?, ?, ?, ?>> getTaskDefinitions();
+	public Map<QName, TaskDefinition<?, ?>> getTaskDefinitions();
 
 	public Map<QName, TaskActionDefinition<?, ?>> getTaskActionDefinitions();
 

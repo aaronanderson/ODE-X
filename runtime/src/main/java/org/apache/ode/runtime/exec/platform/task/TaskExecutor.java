@@ -139,21 +139,26 @@ public class TaskExecutor implements Runnable {
 	ConcurrentHashMap<String, TaskActionCallable> executingActions = new ConcurrentHashMap<String, TaskActionCallable>();
 
 	@PostConstruct
-	public void init() throws Exception {
+	public void init() {
 		log.fine("Initializing ActionExecutor");
 		log.fine("ActionExecutor Initialized");
 		this.config = clusterConfig.getTaskCheck();
-		pollQueueConnection = queueConFactory.createQueueConnection();
-		pollTaskSession = pollQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-		taskQueueReceiver = pollTaskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK_AND_TASK_ACTION, nodeId));
-		pollQueueConnection.start();
+		try {
+			pollQueueConnection = queueConFactory.createQueueConnection();
+			pollTaskSession = pollQueueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+			taskQueueReceiver = pollTaskSession.createReceiver(taskQueue, String.format(Node.NODE_MQ_FILTER_TASK_AND_TASK_ACTION, nodeId));
+			pollQueueConnection.start();
+		} catch (JMSException e) {
+			log.log(Level.SEVERE, "", e);
+		}
 	}
 
 	@PreDestroy
-	public void destroy() throws Exception {
-		taskQueueReceiver.close();
-		pollTaskSession.close();
-		pollQueueConnection.close();
+	public void destroy() {
+		try {
+			pollQueueConnection.close();
+		} catch (JMSException e) { //don't care about JMS errors on closure
+		}
 	}
 
 	@Override

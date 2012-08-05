@@ -21,9 +21,9 @@ package org.apache.ode.spi.exec.task;
 import javax.xml.bind.JAXBContext;
 import javax.xml.namespace.QName;
 
-public class CoordinatedTaskDefinition<TI, I, CI, CO, O, TO> extends TaskDefinition<TI, I, O, TO> {
+public class CoordinatedTaskDefinition<TI, TO> extends TaskDefinition<TI, TO> {
 
-	public CoordinatedTaskDefinition(QName name, CoordinatedTaskActionCoordinator<TI, I, CI, CO, O, TO> coordinator, JAXBContext jaxbContext) {
+	public CoordinatedTaskDefinition(QName name, CoordinatedTaskActionCoordinator<TI, ?, ?, ?, ?, TO> coordinator, JAXBContext jaxbContext) {
 		super(name, coordinator, jaxbContext);
 	}
 
