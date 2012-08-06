@@ -219,6 +219,7 @@
 								<schemaInclude>test/resources/META-INF/xsd/test.xsd</schemaInclude>
 								<schemaInclude>test/resources/META-INF/xsd/test-context.xsd</schemaInclude>
 								<schemaInclude>test/resources/META-INF/xsd/test-task.xsd</schemaInclude>
+								<schemaInclude>test/resources/META-INF/xsd/test-program.xsd</schemaInclude>
 							</schemaIncludes>
 							<bindingDirectory>src</bindingDirectory>
 							<bindingIncludes>
@@ -226,6 +227,7 @@
 								<bindingInclude>test/bindings/test.xjb</bindingInclude>
 								<bindingInclude>test/bindings/test-context.xjb</bindingInclude>
 								<bindingInclude>test/bindings/test-task.xjb</bindingInclude>
+								<bindingInclude>test/bindings/test-program.xjb</bindingInclude>
 							</bindingIncludes>
 							<catalog>src/test/bindings/catalog.xml</catalog>
 							<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>

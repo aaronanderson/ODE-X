@@ -35,7 +35,7 @@ public interface TaskAction {
 	}
 
 	public static enum TaskActionState {
-		SUBMIT, START, EXECUTE, FINISH, PENDING, ROLLBACK, COMMIT, COMPLETE, FAILED
+		SUBMIT, START, EXECUTE, FINISH, PENDING, ROLLBACK, COMMIT, COMPLETE, SKIPPED, FAILED
 	}
 
 	public void refresh();

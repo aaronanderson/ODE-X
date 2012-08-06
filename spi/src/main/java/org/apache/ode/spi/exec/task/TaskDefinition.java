@@ -34,10 +34,16 @@ public class TaskDefinition<TI, TO> {
 	private final Set<TaskActionCoordinator<TI, ?, ?, TO>> coordinators;
 	final JAXBContext jaxbContext;
 
+	public TaskDefinition(QName name, JAXBContext jaxbContext) {
+		this(name, null, jaxbContext);
+	}
+
 	public TaskDefinition(QName name, TaskActionCoordinator<TI, ?, ?, TO> coordinator, JAXBContext jaxbContext) {
 		this.name = name;
 		this.coordinators = new HashSet<TaskActionCoordinator<TI, ?, ?, TO>>();
-		coordinators.add(coordinator);
+		if (coordinator != null) {
+			coordinators.add(coordinator);
+		}
 		this.jaxbContext = jaxbContext;
 	}
 

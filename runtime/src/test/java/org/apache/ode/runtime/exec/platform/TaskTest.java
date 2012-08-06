@@ -54,6 +54,7 @@ import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
+import org.apache.ode.spi.exec.target.TargetAll;
 import org.apache.ode.spi.exec.target.TargetNode;
 import org.apache.ode.spi.exec.task.Task;
 import org.apache.ode.spi.exec.task.Task.TaskId;
@@ -220,9 +221,28 @@ public class TaskTest {
 		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_DEP_NAME, "node1");
 	}
 
-	//@Test
+	@Test
 	public void multipleTaskActionTest() throws Exception {
+		Marshaller m = taskJAXBContext.createMarshaller();
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		dbf.setNamespaceAware(true);
+		Document doc = dbf.newDocumentBuilder().newDocument();
+		SingleTaskInput in = new SingleTaskInput();
+		in.setValue("MultiTaskInput");
+		JAXBElement<SingleTaskInput> element = taskObjectFactory.createSingleTaskInput(in);
+		m.marshal(element, doc);
 
+		platform1.setLogLevel(LogLevel.DEBUG);
+		TargetAll target = platform1.createTarget(null, TargetAll.class);
+		Future<Document> result = platform1.execute(TaskTestComponent.MULTI_TASK_NAME, doc, null, target);
+		assertNotNull(result);
+		Document res = result.get();//result.get(5, TimeUnit.SECONDS);
+		assertNotNull(res);
+		Unmarshaller u = taskJAXBContext.createUnmarshaller();
+		JAXBElement<MultiTaskOutput> xout = (JAXBElement<MultiTaskOutput>) u.unmarshal(res);
+		MultiTaskOutput out = xout.getValue();
+		assertNotNull(out);
+		assertEquals("MultiTaskOutput", out.getValue());
 	}
 
 	//@Test
@@ -232,6 +252,11 @@ public class TaskTest {
 
 	//@Test
 	public void rollbackTaskActionTest() throws Exception {
+
+	}
+
+	//@Test
+	public void failTaskTest() throws Exception {
 
 	}
 
@@ -431,8 +456,9 @@ public class TaskTest {
 				}
 		*/
 		@Override
-		public void update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
+		public boolean update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
 			fail();//should not be called
+			return false;
 		}
 
 		@Override
@@ -484,7 +510,7 @@ public class TaskTest {
 		}
 		*/
 		@Override
-		public void update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
+		public boolean update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
 			assertEquals(TaskTestComponent.SINGLE_ACTION_DEP_NAME, request.action);
 			assertEquals(1, dependencyResponses.size());
 			TaskActionResponse<SingleTaskOutput> response = dependencyResponses.iterator().next();
@@ -492,12 +518,14 @@ public class TaskTest {
 			assertNotNull(response.output);
 			assertEquals("SingleActionOutput", response.output.getValue());
 			request.input.setValue("SingleActionDepInput");
+			return true;
 		}
 
 		@Override
 		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
 			assertEquals(2, actions.size());
 			for (TaskActionResponse<SingleTaskOutput> response : actions) {
+				assertTrue(response.success);
 				assertNotNull(response.output);
 				if (TaskTestComponent.SINGLE_ACTION_NAME.equals(response.action)) {
 					assertEquals("SingleActionOutput", response.output.getValue());
@@ -563,11 +591,18 @@ public class TaskTest {
 		public Set<TaskActionRequest<MultiTaskInput>> init(TaskContext ctx, MultiTaskInput input, String localNodeId, TaskCallback<?, ?> callback,
 				Target... targets) {
 			String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
+			assertEquals(2, nodeIds.length);
 			HashSet<TaskActionRequest<MultiTaskInput>> actions = new HashSet<TaskActionRequest<MultiTaskInput>>();
-			TaskActionRequest<MultiTaskInput> req = new TaskActionRequest<MultiTaskInput>(TaskTestComponent.MULTI_ACTION1_NAME, nodeIds[0], input);
-			actions.add(req);
-			req = new TaskActionRequest<MultiTaskInput>(TaskTestComponent.MULTI_ACTION2_NAME, nodeIds[0], input);
-			actions.add(req);
+			for (String nodeId : nodeIds) {
+				MultiTaskInput actionInput = new MultiTaskInput();
+				actionInput.setValue("MultiAction1Input");
+				actions.add(new TaskActionRequest<MultiTaskInput>(TaskTestComponent.MULTI_ACTION1_NAME, nodeId, actionInput));
+				if (localNodeId.equals(nodeId)) {
+					actionInput = new MultiTaskInput();
+					actionInput.setValue(null);
+					actions.add(new TaskActionRequest<MultiTaskInput>(TaskTestComponent.MULTI_ACTION2_NAME, localNodeId, actionInput));
+				}
+			}
 			return actions;
 		}
 
@@ -580,14 +615,35 @@ public class TaskTest {
 		*/
 
 		@Override
-		public void update(TaskActionRequest<MultiTaskInput> request, Set<TaskActionResponse<MultiTaskOutput>> dependencyResponses) {
-			// TODO Auto-generated method stub
+		public boolean update(TaskActionRequest<MultiTaskInput> request, Set<TaskActionResponse<MultiTaskOutput>> dependencyResponses) {
+			assertEquals(TaskTestComponent.MULTI_ACTION2_NAME, request.action);
+			assertEquals(2, dependencyResponses.size());
+			for (TaskActionResponse<MultiTaskOutput> response : dependencyResponses) {
+				assertEquals(TaskTestComponent.MULTI_ACTION1_NAME, response.action);
+				assertTrue(response.success);
+				assertNotNull(response.output);
+				assertEquals("MultiAction1Output", response.output.getValue());
+			}
+			request.input.setValue("MultiAction2Input");
+			return true;
 
 		}
 
 		@Override
 		public MultiTaskOutput finish(Set<TaskActionResponse<MultiTaskOutput>> actions, MultiTaskOutput output) {
-			return null;
+			assertEquals(3, actions.size());
+			for (TaskActionResponse<MultiTaskOutput> response : actions) {
+				assertTrue(response.success);
+				assertNotNull(response.output);
+				if (TaskTestComponent.MULTI_ACTION1_NAME.equals(response.action)) {
+					assertEquals("MultiAction1Output", response.output.getValue());
+				} else if (TaskTestComponent.MULTI_ACTION2_NAME.equals(response.action)) {
+					assertEquals("MultiAction2Output", response.output.getValue());
+				}
+			}
+			output = new MultiTaskOutput();
+			output.setValue("MultiTaskOutput");
+			return output;
 		}
 
 		@Override
@@ -597,31 +653,42 @@ public class TaskTest {
 
 		@Override
 		public Set<QName> dependencies() {
-			HashSet<QName> deps = new HashSet<QName>();
-			deps.add(TaskTestComponent.SINGLE_TASK_COORD_NAME);
-			return deps;
+			return Collections.EMPTY_SET;
 		}
 
 	}
 
 	public static class MultiTaskActionExec implements TaskActionExec<MultiTaskInput, MultiTaskOutput> {
+		TaskActionContext ctx;
+		MultiTaskOutput out = new MultiTaskOutput();
 
 		@Override
 		public void start(TaskActionContext ctx, MultiTaskInput input) {
-			// TODO Auto-generated method stub
+			this.ctx = ctx;
+			ctx.log(LogLevel.INFO, 1, "start");
+			if (TaskTestComponent.MULTI_ACTION1_NAME.equals(ctx.name())) {
+				assertEquals("MultiAction1Input", input.getValue());
+			} else if (TaskTestComponent.MULTI_ACTION2_NAME.equals(ctx.name())) {
+				assertEquals("MultiAction2Input", input.getValue());
 
+			}
 		}
 
 		@Override
 		public void execute() {
-			// TODO Auto-generated method stub
+			ctx.log(LogLevel.INFO, 2, "execute");
+			if (TaskTestComponent.MULTI_ACTION1_NAME.equals(ctx.name())) {
+				out.setValue("MultiAction1Output");
+			} else if (TaskTestComponent.MULTI_ACTION2_NAME.equals(ctx.name())) {
+				out.setValue("MultiAction2Output");
 
+			}
 		}
 
 		@Override
 		public MultiTaskOutput finish() {
-			// TODO Auto-generated method stub
-			return null;
+			ctx.log(LogLevel.INFO, 3, "finish");
+			return out;
 		}
 
 	}

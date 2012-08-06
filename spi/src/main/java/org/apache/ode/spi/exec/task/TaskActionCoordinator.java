@@ -35,7 +35,7 @@ public interface TaskActionCoordinator<TI, I, O, TO> {
 
 	//void refresh(TaskActionResponse<O> action);
 
-	void update(TaskActionRequest<I> request, Set<TaskActionResponse<O>> dependencyResponses);
+	boolean update(TaskActionRequest<I> request, Set<TaskActionResponse<O>> dependencyResponses);
 
 	TO finish(Set<TaskActionResponse<O>> actions, TO output);
 

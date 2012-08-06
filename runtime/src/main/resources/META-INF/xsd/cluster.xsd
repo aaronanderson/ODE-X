@@ -98,9 +98,12 @@
 			<enumeration value="START" />
 			<enumeration value="EXECUTE" />
 			<enumeration value="FINISH" />
+			<enumeration value="PENDING" />
 			<enumeration value="ROLLBACK" />
 			<enumeration value="COMMIT" />
 			<enumeration value="COMPLETE" />
+			<enumeration value="SKIPPED" />
+			<enumeration value="FAILED" />
 		</restriction>
 	</simpleType>
 

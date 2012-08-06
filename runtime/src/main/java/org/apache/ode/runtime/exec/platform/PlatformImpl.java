@@ -35,7 +35,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.ode.runtime.exec.cluster.xml.TargetAll;
 import org.apache.ode.runtime.exec.platform.target.TargetAllImpl;
 import org.apache.ode.runtime.exec.platform.target.TargetClusterImpl;
 import org.apache.ode.runtime.exec.platform.target.TargetImpl.TargetPK;
@@ -47,6 +46,7 @@ import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.Program;
 import org.apache.ode.spi.exec.target.Target;
+import org.apache.ode.spi.exec.target.TargetAll;
 import org.apache.ode.spi.exec.target.TargetCluster;
 import org.apache.ode.spi.exec.target.TargetNode;
 import org.apache.ode.spi.exec.task.Task;
@@ -156,7 +156,7 @@ public class PlatformImpl implements Platform {
 		}
 		T target = null;
 		if (TargetAll.class.equals(type)) {
-			target = (T) pmgr.find(TargetAllImpl.class, new TargetPK(null, TargetAllImpl.TYPE));
+			target = (T) pmgr.find(TargetAllImpl.class, new TargetPK(TargetAllImpl.TYPE, TargetAllImpl.TYPE));
 		} else if (TargetNode.class.equals(type)) {
 			target = (T) pmgr.find(TargetNodeImpl.class, new TargetPK(id, TargetNodeImpl.TYPE));
 		} else if (TargetCluster.class.equals(type)) {

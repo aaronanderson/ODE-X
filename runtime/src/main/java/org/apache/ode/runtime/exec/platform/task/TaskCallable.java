@@ -224,13 +224,15 @@ public class TaskCallable implements Callable<TaskResult> {
 				msgUpdateTopicConnection.start();
 
 				Map<QName, TaskCoordinatorExecution> coordinators = new HashMap<QName, TaskCoordinatorExecution>();
-				Map<QName, TaskActionExecution> actionExecutions = new HashMap<QName, TaskActionExecution>();
+				Map<QName, Set<TaskActionExecution>> actionExecutions = new HashMap<QName, Set<TaskActionExecution>>();
 				try {
 					init(coordinators, actionExecutions);
 					do {
-						for (TaskActionExecution tae : actionExecutions.values()) {
-							refreshAction(tae);
-							executeAction(tae);
+						for (Set<TaskActionExecution> taes : actionExecutions.values()) {
+							for (TaskActionExecution tae : taes) {
+								refreshAction(tae);
+								executeAction(tae);
+							}
 						}
 					} while (!complete(actionExecutions.values()));
 				} finally {
@@ -293,7 +295,7 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	}
 
-	public void init(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
+	public void init(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, Set<TaskActionExecution>> actionExecutions) throws PlatformException {
 
 		TaskDefinition<?, ?> def = tasks.get(task.name());
 		if (def == null) {
@@ -312,9 +314,9 @@ public class TaskCallable implements Callable<TaskResult> {
 			taskCordExec.finialized = false;
 			coordinators.put(coordinator.name(), taskCordExec);
 		}
-		/*if (coordinators.size() == 0) {
+		if (coordinators.size() == 0) {
 			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskCoordinators registered for task %s", task.name()), true);
-		} can't happen*/
+		}
 		for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
 			for (QName dep : (Set<QName>) coordExec.coordinator.dependencies()) {
 				if (!coordinators.containsKey(dep)) {
@@ -346,7 +348,11 @@ public class TaskCallable implements Callable<TaskResult> {
 							taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.action.toString()), true);
 						}
 						if (actionExecutions.containsKey(canidate.action)) {
-							taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.action.toString()), true);
+							for (TaskActionExecution tae : actionExecutions.get(canidate.action)) {
+								if (canidate.nodeId.equals(tae.request.nodeId)) {
+									taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.action.toString()), true);
+								}
+							}
 						}
 						TaskActionExecution tae = new TaskActionExecution();
 						tae.owner = coordExec;
@@ -360,7 +366,12 @@ public class TaskCallable implements Callable<TaskResult> {
 							taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true);
 						}
 						coordExec.requests.add(tae);
-						actionExecutions.put(canidate.action, tae);
+						Set<TaskActionExecution> taes = actionExecutions.get(canidate.action);
+						if (taes == null) {
+							taes = new HashSet<TaskActionExecution>();
+							actionExecutions.put(canidate.action, taes);
+						}
+						taes.add(tae);
 					}
 					modified = true;
 				} else {
@@ -379,41 +390,43 @@ public class TaskCallable implements Callable<TaskResult> {
 			finished = true;
 			boolean modified = false;
 			Set<QName> remaining = new HashSet<QName>();
-			for (TaskActionExecution actionExec : actionExecutions.values()) {
-				if (resolved.get(actionExec.request.action) != null) {
-					if (resolved.get(actionExec.request.action)) {
-						continue;
-					}
-					boolean dependenciesResolved = true;
-					for (QName dep : actions.get(actionExec.request.action).dependencies()) {
-						if (resolved.get(dep)) {
+			for (Set<TaskActionExecution> actionExecs : actionExecutions.values()) {
+				for (TaskActionExecution actionExec : actionExecs) {
+					if (resolved.get(actionExec.request.action) != null) {
+						if (resolved.get(actionExec.request.action)) {
 							continue;
-						} else {
-							remaining.add(dep);
-							dependenciesResolved = false;
-							finished = false;
-							break;
 						}
-					}
-					if (dependenciesResolved) {
-						resolved.put(actionExec.request.action, true);
+						boolean dependenciesResolved = true;
+						for (QName dep : actions.get(actionExec.request.action).dependencies()) {
+							if (resolved.get(dep)) {
+								continue;
+							} else {
+								remaining.add(dep);
+								dependenciesResolved = false;
+								finished = false;
+								break;
+							}
+						}
+						if (dependenciesResolved) {
+							resolved.put(actionExec.request.action, true);
+							modified = true;
+						}
+					} else {
+						resolved.put(actionExec.request.action, false);
+						finished = false;
 						modified = true;
-					}
-				} else {
-					resolved.put(actionExec.request.action, false);
-					finished = false;
-					modified = true;
-					for (QName dep : actions.get(actionExec.request.action).dependencies()) {
-						TaskActionExecution depActionExec = actionExecutions.get(dep);
-						if (depActionExec == null) {
-							taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction %s dependency %s not submitted for execution by a task coordinator",
-									actionExec.request.action, dep), true);
+						for (QName dep : actions.get(actionExec.request.action).dependencies()) {
+							Set<TaskActionExecution> depActionExec = actionExecutions.get(dep);
+							if (depActionExec == null) {
+								taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction %s dependency %s not submitted for execution by a task coordinator",
+										actionExec.request.action, dep), true);
+							}
+							actionExec.prevDependencies.addAll(depActionExec);
+							//depActionExec.nextDependencies.add(actionExec);
 						}
-						actionExec.prevDependencies.add(depActionExec);
-						//depActionExec.nextDependencies.add(actionExec);
 					}
-				}
 
+				}
 			}
 			if (!modified) {
 				taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction circular dependency detected: %s", remaining), true);
@@ -445,7 +458,7 @@ public class TaskCallable implements Callable<TaskResult> {
 	public void executeAction(TaskActionExecution tae) throws PlatformException {
 		if (System.currentTimeMillis() - tae.lastUpdate > config.getActionTimeout()) {
 			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.action, tae.request.nodeId), false);
-			tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false);
+			//tae.state=TaskActionState.FAILED;
 		}
 		org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = convert(tae);
 
@@ -465,7 +478,10 @@ public class TaskCallable implements Callable<TaskResult> {
 						dependencies.add(dep.response);
 					}
 					if (dependencies.size() > 0) {
-						tae.owner.coordinator.update(tae.request, dependencies);
+						if (!tae.owner.coordinator.update(tae.request, dependencies)) {
+							tae.state = TaskActionState.SKIPPED;
+							return;
+						}
 					}
 					xmlTaskAction.setState(org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT);
 					if (tae.request.input != null) {
@@ -531,6 +547,27 @@ public class TaskCallable implements Callable<TaskResult> {
 				}
 				break;
 
+			case SKIPPED:
+				tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false);
+				pmgr.getTransaction().begin();
+				try {
+					TaskActionImpl taskAction = pmgr.find(TaskActionImpl.class, Long.valueOf(xmlTaskAction.getActionId()));
+					if (taskAction != null) {
+						taskAction.setState(TaskActionState.SKIPPED);
+						Date now = new Date();
+						taskAction.setStart(now);
+						taskAction.setFinish(now);
+						pmgr.merge(taskAction);
+						pmgr.getTransaction().commit();
+					} else {
+						log.warning(String.format("Unable to find TaskAction %s for Task %s", xmlTaskAction.getActionId(), taskId));
+						pmgr.getTransaction().rollback();
+					}
+				} catch (PersistenceException pe) {
+					log.log(Level.SEVERE, "", pe);
+				}
+				break;
+
 			case FAILED:
 				output = tae.actionOutput != null ? convertToObject(tae.actionOutput,
 						locateActionTarget(tae.owner.coordinator.getClass(), ExchangeType.OUTPUT), tae.actionJaxbContext) : null;
@@ -546,18 +583,20 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	}
 
-	public boolean complete(Collection<TaskActionExecution> taes) throws PlatformException {
+	public boolean complete(Collection<Set<TaskActionExecution>> actionExecutions) throws PlatformException {
 
 		boolean finished = true;
-		for (TaskActionExecution tae : taes) {
-			if (tae.state != TaskActionState.PENDING) {
-				finished &= !isExecuting(tae);
+		for (Set<TaskActionExecution> taes : actionExecutions) {
+			for (TaskActionExecution tae : taes) {
+				if (tae.state != TaskActionState.PENDING) {
+					finished &= !isExecuting(tae);
+				}
 			}
 		}
 		return finished;
 	}
 
-	public Document destroy(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, TaskActionExecution> actionExecutions) throws PlatformException {
+	public Document destroy(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, Set<TaskActionExecution>> actionExecutions) throws PlatformException {
 
 		Document doc = null;
 
@@ -596,13 +635,15 @@ public class TaskCallable implements Callable<TaskResult> {
 		}
 
 		Set<TaskActionExecution> pending = new HashSet<TaskActionExecution>();
-		for (TaskActionExecution tae : actionExecutions.values()) {
-			if (tae.state == TaskActionState.PENDING) {
-				pending.add(tae);
-				org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = convert(tae);
-				xmlTaskAction.setState(taskContext.failed ? org.apache.ode.runtime.exec.cluster.xml.TaskActionState.ROLLBACK
-						: org.apache.ode.runtime.exec.cluster.xml.TaskActionState.COMMIT);
-				updateTaskAction(xmlTaskAction, tae.actionCorrelationId, tae.actionRequestor);
+		for (Set<TaskActionExecution> taes : actionExecutions.values()) {
+			for (TaskActionExecution tae : taes) {
+				if (tae.state == TaskActionState.PENDING) {
+					pending.add(tae);
+					org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = convert(tae);
+					xmlTaskAction.setState(taskContext.failed ? org.apache.ode.runtime.exec.cluster.xml.TaskActionState.ROLLBACK
+							: org.apache.ode.runtime.exec.cluster.xml.TaskActionState.COMMIT);
+					updateTaskAction(xmlTaskAction, tae.actionCorrelationId, tae.actionRequestor);
+				}
 			}
 		}
 
@@ -613,12 +654,14 @@ public class TaskCallable implements Callable<TaskResult> {
 			}
 		}
 
-		for (TaskActionExecution tae : actionExecutions.values()) {
-			try {
-				if (tae.actionRequestorReceiver != null) {
-					tae.actionRequestorReceiver.close();
+		for (Set<TaskActionExecution> taes : actionExecutions.values()) {
+			for (TaskActionExecution tae : taes) {
+				try {
+					if (tae.actionRequestorReceiver != null) {
+						tae.actionRequestorReceiver.close();
+					}
+				} catch (JMSException e) {//don't care on close
 				}
-			} catch (JMSException e) {//don't care on close
 			}
 		}
 
@@ -676,7 +719,7 @@ public class TaskCallable implements Callable<TaskResult> {
 	}
 
 	public boolean isExecuting(TaskActionExecution tae) {
-		return tae.state == TaskActionState.COMPLETE || tae.state == TaskActionState.FAILED ? false : true;
+		return tae.state == TaskActionState.SKIPPED || tae.state == TaskActionState.COMPLETE || tae.state == TaskActionState.FAILED ? false : true;
 	}
 
 	public void taskLogIt(LogLevel level, int code, String msg, boolean error) throws PlatformException {
