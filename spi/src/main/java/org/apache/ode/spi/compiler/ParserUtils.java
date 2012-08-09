@@ -45,7 +45,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.apache.ode.spi.exec.xml.ContextMode;
+import org.apache.ode.spi.exec.executable.xml.ContextMode;
 import org.apache.ode.spi.exec.xml.SourceId;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
@@ -70,13 +70,13 @@ public class ParserUtils {
 		return input.getAttributeValue(LOCATION_NS, LOCATION_END_LINE_ATTR) != null ? true : false;
 	}
 
-	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Instructional ins) throws XMLStreamException {
+	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.executable.xml.Source src, Instructional ins) throws XMLStreamException {
 		ins.instruction().setSref(new SourceId(src.getSrc().id()));
 		ins.instruction().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));
 		ins.instruction().setColumn(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_COL_ATTR)));
 	}
 
-	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.xml.Source src, Contextual ctx) throws XMLStreamException {
+	public static void setLocation(XMLStreamReader input, org.apache.ode.spi.exec.executable.xml.Source src, Contextual ctx) throws XMLStreamException {
 		ctx.beginContext().setSref(new SourceId(src.getSrc().id()));
 		ctx.endContext().setMode(ContextMode.START);
 		ctx.beginContext().setLine(Integer.parseInt(input.getAttributeValue(LOCATION_NS, LOCATION_START_LINE_ATTR)));

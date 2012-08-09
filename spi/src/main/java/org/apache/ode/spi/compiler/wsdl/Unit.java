@@ -25,9 +25,9 @@ import java.util.Map;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.xml.Block;
-import org.apache.ode.spi.exec.xml.CompilerSetting;
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Block;
+import org.apache.ode.spi.exec.executable.xml.CompilerSetting;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 
 public abstract class Unit {
 	

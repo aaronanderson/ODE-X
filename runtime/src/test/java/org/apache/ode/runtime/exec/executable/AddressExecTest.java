@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+package org.apache.ode.runtime.exec.executable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-import org.apache.ode.runtime.exec.test.xml.AddressTest;
+import org.apache.ode.runtime.exec.executable.test.xml.AddressTest;
 import org.apache.ode.runtime.interpreter.IndexedBlockAddress;
 import org.apache.ode.runtime.interpreter.IndexedInstructionAddress;
 import org.junit.AfterClass;

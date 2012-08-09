@@ -36,9 +36,9 @@ import org.apache.ode.spi.compiler.wsdl.Definition;
 import org.apache.ode.spi.compiler.wsdl.WSDLCompilerContext;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Installation;
-import org.apache.ode.spi.exec.xml.InstructionSets;
+import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Installation;
+import org.apache.ode.spi.exec.executable.xml.InstructionSets;
 
 public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 	WSDLContext wsdlCtx;

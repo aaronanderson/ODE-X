@@ -28,7 +28,7 @@
 		</jxb:schemaBindings>
 
 		<jxb:bindings node="//xs:element[@name='TestVariables']//xs:element[@name='TestVariable']">
-			<jxb:property name="variables" collectionType="org.apache.ode.runtime.exec.test.TestMap" />
+			<jxb:property name="variables" collectionType="org.apache.ode.runtime.exec.executable.TestMap" />
 		</jxb:bindings>
 	
 		<!--

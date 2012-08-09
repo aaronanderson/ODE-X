@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+package org.apache.ode.runtime.exec.executable;
 
 import org.apache.ode.runtime.ectx.test.xml.GetInputTest;
 import org.apache.ode.runtime.ectx.test.xml.GetOperationTest;

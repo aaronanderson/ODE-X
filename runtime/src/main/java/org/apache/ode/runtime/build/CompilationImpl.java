@@ -41,7 +41,7 @@ import org.apache.ode.spi.compiler.AbstractCompilerContext.Compilation;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source;
 import org.apache.ode.spi.exec.Component.InstructionSet;
-import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Executable;
 import org.w3c.dom.Node;
 
 public class CompilationImpl implements Compilation{

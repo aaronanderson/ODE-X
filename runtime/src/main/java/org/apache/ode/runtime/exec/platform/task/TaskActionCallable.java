@@ -19,7 +19,7 @@
 package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.MessageHandler.log;
-import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToDocument;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
@@ -62,9 +62,9 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.runtime.exec.cluster.xml.ExchangeType;
-import org.apache.ode.runtime.exec.cluster.xml.TaskAction.Exchange;
-import org.apache.ode.runtime.exec.cluster.xml.TaskActionMessages;
+import org.apache.ode.spi.exec.platform.xml.ExchangeType;
+import org.apache.ode.spi.exec.platform.xml.TaskAction.Exchange;
+import org.apache.ode.spi.exec.platform.xml.TaskActionMessages;
 import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
@@ -120,7 +120,7 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 	private JAXBContext actionJAXBContext;
 	private LogLevel logLevel = LogLevel.WARNING;
 	private String taskId;
-	private LinkedList<org.apache.ode.runtime.exec.cluster.xml.Message> msgQueue = new LinkedList<org.apache.ode.runtime.exec.cluster.xml.Message>();
+	private LinkedList<org.apache.ode.spi.exec.platform.xml.Message> msgQueue = new LinkedList<org.apache.ode.spi.exec.platform.xml.Message>();
 	private final Lock actionUpdateLock = new ReentrantLock();
 	private final Condition actionUpdateSignal = actionUpdateLock.newCondition();
 	private ConcurrentHashMap<String, TaskActionCallable> executingActions;
@@ -333,7 +333,7 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		*/
 	}
 
-	public void externalUpdate(org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlAction) {
+	public void externalUpdate(org.apache.ode.spi.exec.platform.xml.TaskAction xmlAction) {
 		try {
 			actionUpdateLock.lock();
 			taskAction.setState(TaskAction.TaskActionState.valueOf(xmlAction.getState().value()));
@@ -355,13 +355,13 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		}
 		if (actionRequestorSender != null) {
 			try {
-				org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlAction = convert(taskAction);
+				org.apache.ode.spi.exec.platform.xml.TaskAction xmlAction = convert(taskAction);
 				BytesMessage jmsMessage = actionUpdateSession.createBytesMessage();
 				jmsMessage.setJMSCorrelationID(correlationId);
 				//jmsMessage.setJMSReplyTo(actionUpdate);
-				Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+				Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class,
+				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.spi.exec.platform.xml.TaskAction.class,
 						xmlAction), bos);
 				jmsMessage.writeBytes(bos.toByteArray());
 				actionRequestorSender.send(jmsMessage);
@@ -434,14 +434,14 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 
 	}
 
-	public org.apache.ode.runtime.exec.cluster.xml.TaskAction convert(TaskActionImpl action) {
-		org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlAction = new org.apache.ode.runtime.exec.cluster.xml.TaskAction();
+	public org.apache.ode.spi.exec.platform.xml.TaskAction convert(TaskActionImpl action) {
+		org.apache.ode.spi.exec.platform.xml.TaskAction xmlAction = new org.apache.ode.spi.exec.platform.xml.TaskAction();
 		xmlAction.setName(action.name());
 		//xmlAction.setComponent(action.component());
 		xmlAction.setActionId(String.valueOf(((TaskActionIdImpl) action.id()).taskActionId));
 		xmlAction.setTaskId(taskId);
 		xmlAction.setNodeId(nodeId);
-		xmlAction.setState(org.apache.ode.runtime.exec.cluster.xml.TaskActionState.valueOf(action.state().name()));
+		xmlAction.setState(org.apache.ode.spi.exec.platform.xml.TaskActionState.valueOf(action.state().name()));
 
 		Calendar mod = Calendar.getInstance();
 		mod.setTime(action.modified());

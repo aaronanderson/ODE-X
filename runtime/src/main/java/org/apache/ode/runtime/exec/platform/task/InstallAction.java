@@ -18,8 +18,8 @@
  */
 package org.apache.ode.runtime.exec.platform.task;
 
-import org.apache.ode.runtime.exec.cluster.xml.InstallProgramInput;
-import org.apache.ode.runtime.exec.cluster.xml.InstallProgramOutput;
+import org.apache.ode.spi.exec.platform.xml.InstallProgramInput;
+import org.apache.ode.spi.exec.platform.xml.InstallProgramOutput;
 import org.apache.ode.spi.exec.task.TaskActionTransaction;
 import org.apache.ode.spi.exec.task.TaskActionContext;
 import org.apache.ode.spi.exec.task.TaskActionExec;

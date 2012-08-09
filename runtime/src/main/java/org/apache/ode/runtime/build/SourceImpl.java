@@ -33,7 +33,7 @@ public class SourceImpl implements Source {
 	String checkSum;
 	byte[] contents;
 	SourceType sourceType;
-	org.apache.ode.spi.exec.xml.Source xmlSrc;
+	org.apache.ode.spi.exec.executable.xml.Source xmlSrc;
 
 	public SourceImpl(QName qname, String contentType, String version, String checkSum, byte[] contents, String id, SourceType sourceType) {
 		this.qname = qname;
@@ -41,7 +41,7 @@ public class SourceImpl implements Source {
 		this.version = version;
 		this.checkSum = checkSum;
 		this.contents = contents;
-		this.xmlSrc= new org.apache.ode.spi.exec.xml.Source();
+		this.xmlSrc= new org.apache.ode.spi.exec.executable.xml.Source();
 		this.xmlSrc.setSrc(new SourceId(id));
 		this.xmlSrc.setQname(qname);
 		this.xmlSrc.setContentType(contentType);
@@ -59,7 +59,7 @@ public class SourceImpl implements Source {
 		this.sourceType = impl.sourceType();
 	}
 	
-	org.apache.ode.spi.exec.xml.Source xmlSrc(){
+	org.apache.ode.spi.exec.executable.xml.Source xmlSrc(){
 		return xmlSrc;
 	}
 
@@ -89,7 +89,7 @@ public class SourceImpl implements Source {
 	}
 
 	@Override
-	public org.apache.ode.spi.exec.xml.Source srcRef() {
+	public org.apache.ode.spi.exec.executable.xml.Source srcRef() {
 		return xmlSrc;
 	}
 

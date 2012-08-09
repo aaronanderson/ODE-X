@@ -18,7 +18,7 @@
  */
 package org.apache.ode.spi.compiler;
 
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 import org.apache.ode.spi.xml.HandlerException;
 
 public class ParserRegistry

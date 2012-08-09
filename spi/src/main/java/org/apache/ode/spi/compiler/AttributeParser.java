@@ -21,7 +21,7 @@ package org.apache.ode.spi.compiler;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
 
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 import org.apache.ode.spi.xml.AttributeHandler;
 
 public interface AttributeParser<M extends Unit<? extends Instruction>> extends AttributeHandler<M, ExecCompilerContext, ParserException> {

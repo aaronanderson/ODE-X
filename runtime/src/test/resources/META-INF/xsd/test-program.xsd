@@ -19,15 +19,15 @@
     under the License.
 
 -->
-<schema targetNamespace="http://ode.apache.org/program-test" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:cst="http://ode.apache.org/cluster"
+<schema targetNamespace="http://ode.apache.org/program-test" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:pfm="http://ode.apache.org/platform"
 	xmlns:tns="http://ode.apache.org/program-test">
 
-	<import namespace="http://ode.apache.org/cluster" />
+	<import namespace="http://ode.apache.org/platform" />
 
-	<element name="setupTaskInput" substitutionGroup="cst:input">
+	<element name="setupTaskInput" substitutionGroup="pfm:input">
 		<complexType>
 			<complexContent>
-				<extension base="cst:inputType">
+				<extension base="pfm:inputType">
 					<attribute name="value" type="string" />
 				</extension>
 			</complexContent>

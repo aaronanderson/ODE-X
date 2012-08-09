@@ -19,7 +19,7 @@
 package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.MessageHandler.log;
-import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToDocument;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToElement;
 import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
@@ -70,8 +70,8 @@ import javax.xml.bind.annotation.XmlAccessOrder;
 import javax.xml.namespace.QName;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.ode.runtime.exec.cluster.xml.ExchangeType;
-import org.apache.ode.runtime.exec.cluster.xml.TaskAction.Exchange;
+import org.apache.ode.spi.exec.platform.xml.ExchangeType;
+import org.apache.ode.spi.exec.platform.xml.TaskAction.Exchange;
 import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
@@ -146,7 +146,7 @@ public class TaskCallable implements Callable<TaskResult> {
 	private TaskImpl task;
 	private LogLevel logLevel;
 
-	private LinkedList<org.apache.ode.runtime.exec.cluster.xml.Message> msgQueue = new LinkedList<org.apache.ode.runtime.exec.cluster.xml.Message>();
+	private LinkedList<org.apache.ode.spi.exec.platform.xml.Message> msgQueue = new LinkedList<org.apache.ode.spi.exec.platform.xml.Message>();
 
 	private static final Logger log = Logger.getLogger(TaskCallable.class.getName());
 
@@ -460,7 +460,7 @@ public class TaskCallable implements Callable<TaskResult> {
 			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.action, tae.request.nodeId), false);
 			//tae.state=TaskActionState.FAILED;
 		}
-		org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = convert(tae);
+		org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = convert(tae);
 
 		try {
 			switch (tae.state) {
@@ -483,7 +483,7 @@ public class TaskCallable implements Callable<TaskResult> {
 							return;
 						}
 					}
-					xmlTaskAction.setState(org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT);
+					xmlTaskAction.setState(org.apache.ode.spi.exec.platform.xml.TaskActionState.SUBMIT);
 					if (tae.request.input != null) {
 						xmlTaskAction.setExchange(new Exchange());
 						xmlTaskAction.getExchange().setType(ExchangeType.INPUT);
@@ -520,7 +520,7 @@ public class TaskCallable implements Callable<TaskResult> {
 					TaskActionCoordinationResponse cres = new TaskActionCoordinationResponse(tae.request.action, tae.request.nodeId, input, false);
 					TaskActionCoordinationRequest creq = ((CoordinatedTaskActionCoordinator) tae.owner).coordinate(cres);
 					tae.actionCoordinationOutput = null;
-					xmlTaskAction.setState(org.apache.ode.runtime.exec.cluster.xml.TaskActionState.EXECUTE);
+					xmlTaskAction.setState(org.apache.ode.spi.exec.platform.xml.TaskActionState.EXECUTE);
 					xmlTaskAction.setExchange(new Exchange());
 					xmlTaskAction.getExchange().setType(ExchangeType.COORDINATE_INPUT);
 					xmlTaskAction.getExchange().setPayload(convertToElement(creq.input, tae.actionJaxbContext));
@@ -639,9 +639,9 @@ public class TaskCallable implements Callable<TaskResult> {
 			for (TaskActionExecution tae : taes) {
 				if (tae.state == TaskActionState.PENDING) {
 					pending.add(tae);
-					org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = convert(tae);
-					xmlTaskAction.setState(taskContext.failed ? org.apache.ode.runtime.exec.cluster.xml.TaskActionState.ROLLBACK
-							: org.apache.ode.runtime.exec.cluster.xml.TaskActionState.COMMIT);
+					org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = convert(tae);
+					xmlTaskAction.setState(taskContext.failed ? org.apache.ode.spi.exec.platform.xml.TaskActionState.ROLLBACK
+							: org.apache.ode.spi.exec.platform.xml.TaskActionState.COMMIT);
 					updateTaskAction(xmlTaskAction, tae.actionCorrelationId, tae.actionRequestor);
 				}
 			}
@@ -690,15 +690,15 @@ public class TaskCallable implements Callable<TaskResult> {
 					if (tae.actionCorrelationId.equals(message.getJMSCorrelationID())) {
 						byte[] payload = new byte[(int) message.getBodyLength()];
 						message.readBytes(payload);
-						Unmarshaller umarshaller = CLUSTER_JAXB_CTX.createUnmarshaller();
-						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
-								new ByteArrayInputStream(payload)), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class);
-						org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = element.getValue();
+						Unmarshaller umarshaller = PLATFORM_JAXB_CTX.createUnmarshaller();
+						JAXBElement<org.apache.ode.spi.exec.platform.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
+								new ByteArrayInputStream(payload)), org.apache.ode.spi.exec.platform.xml.TaskAction.class);
+						org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = element.getValue();
 						tae.taskActionId = xmlTaskAction.getActionId();
 						tae.previousState = tae.state;
 						tae.state = TaskActionState.valueOf(xmlTaskAction.getState().value());
 						tae.lastUpdate = xmlTaskAction.getModified().getTimeInMillis();
-						for (org.apache.ode.runtime.exec.cluster.xml.Message msg : xmlTaskAction.getTaskActionMessages().getTaskActionMessage()) {
+						for (org.apache.ode.spi.exec.platform.xml.Message msg : xmlTaskAction.getTaskActionMessages().getTaskActionMessage()) {
 							//TODO update task listener
 						}
 						if (xmlTaskAction.getExchange() != null && xmlTaskAction.getExchange().getType() == ExchangeType.OUTPUT) {
@@ -756,11 +756,11 @@ public class TaskCallable implements Callable<TaskResult> {
 		}
 		if (taskRequestorSender != null) {
 			try {
-				org.apache.ode.runtime.exec.cluster.xml.Task xmlTask = convert(task);
+				org.apache.ode.spi.exec.platform.xml.Task xmlTask = convert(task);
 				BytesMessage jmsMessage = taskUpdateSession.createBytesMessage();
-				Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+				Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Task"), org.apache.ode.runtime.exec.cluster.xml.Task.class, xmlTask), bos);
+				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Task"), org.apache.ode.spi.exec.platform.xml.Task.class, xmlTask), bos);
 				jmsMessage.writeBytes(bos.toByteArray());
 				taskRequestorSender.send(jmsMessage);
 			} catch (Exception je) {
@@ -770,7 +770,7 @@ public class TaskCallable implements Callable<TaskResult> {
 		}
 	}
 
-	public void updateTaskAction(org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction, String actionCorrelationId, Queue actionRequestor)
+	public void updateTaskAction(org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction, String actionCorrelationId, Queue actionRequestor)
 			throws PlatformException {
 		try {
 			BytesMessage jmsMessage = taskUpdateSession.createBytesMessage();
@@ -780,9 +780,9 @@ public class TaskCallable implements Callable<TaskResult> {
 			jmsMessage.setStringProperty(Node.NODE_MQ_PROP_NODE, xmlTaskAction.getNodeId());
 			jmsMessage.setStringProperty(Node.NODE_MQ_PROP_ACTIONID, xmlTaskAction.getActionId());
 
-			Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+			Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class,
+			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.spi.exec.platform.xml.TaskAction.class,
 					xmlTaskAction), bos);
 			jmsMessage.writeBytes(bos.toByteArray());
 			taskActionSender.send(jmsMessage);
@@ -792,8 +792,8 @@ public class TaskCallable implements Callable<TaskResult> {
 		}
 	}
 
-	public org.apache.ode.runtime.exec.cluster.xml.Task convert(TaskImpl task) {
-		org.apache.ode.runtime.exec.cluster.xml.Task xmlTask = new org.apache.ode.runtime.exec.cluster.xml.Task();
+	public org.apache.ode.spi.exec.platform.xml.Task convert(TaskImpl task) {
+		org.apache.ode.spi.exec.platform.xml.Task xmlTask = new org.apache.ode.spi.exec.platform.xml.Task();
 		xmlTask.setTaskId(String.valueOf(((TaskIdImpl) task.id()).taskId));
 		xmlTask.setNodeId(nodeId);
 		Calendar mod = Calendar.getInstance();
@@ -817,7 +817,7 @@ public class TaskCallable implements Callable<TaskResult> {
 		case COMPLETE:
 			Document out = task.getDOMOutput();
 			if (out != null) {
-				xmlTask.setExchange(new org.apache.ode.runtime.exec.cluster.xml.Task.Exchange());
+				xmlTask.setExchange(new org.apache.ode.spi.exec.platform.xml.Task.Exchange());
 				xmlTask.getExchange().setType(ExchangeType.OUTPUT);
 				xmlTask.getExchange().setPayload(out.getDocumentElement());
 
@@ -836,8 +836,8 @@ public class TaskCallable implements Callable<TaskResult> {
 		return xmlTask;
 	}
 
-	public org.apache.ode.runtime.exec.cluster.xml.TaskAction convert(TaskActionExecution tae) {
-		org.apache.ode.runtime.exec.cluster.xml.TaskAction xmlTaskAction = new org.apache.ode.runtime.exec.cluster.xml.TaskAction();
+	public org.apache.ode.spi.exec.platform.xml.TaskAction convert(TaskActionExecution tae) {
+		org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = new org.apache.ode.spi.exec.platform.xml.TaskAction();
 		xmlTaskAction.setName(tae.request.action);
 		//xmlTaskAction.setComponent(tae.)
 		xmlTaskAction.setActionId(tae.taskActionId);
@@ -845,7 +845,7 @@ public class TaskCallable implements Callable<TaskResult> {
 		xmlTaskAction.setNodeId(tae.request.nodeId);
 		xmlTaskAction.setName(tae.request.action);
 		//xmlTaskAction.setState(value)
-		xmlTaskAction.setLogLevel(org.apache.ode.runtime.exec.cluster.xml.LogLevel.valueOf(logLevel.name()));
+		xmlTaskAction.setLogLevel(org.apache.ode.spi.exec.platform.xml.LogLevel.valueOf(logLevel.name()));
 		return xmlTaskAction;
 
 	}

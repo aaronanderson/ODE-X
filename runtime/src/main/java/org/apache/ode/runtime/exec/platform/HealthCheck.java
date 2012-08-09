@@ -18,7 +18,7 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 
 import java.io.ByteArrayInputStream;
@@ -295,11 +295,11 @@ public class HealthCheck implements Runnable {
 			}
 			pmgr.clear();
 			*/
-			org.apache.ode.runtime.exec.cluster.xml.NodeStatus xmlNodeStatus = convert(local);
+			org.apache.ode.spi.exec.platform.xml.NodeStatus xmlNodeStatus = convert(local);
 			BytesMessage message = nodeStatusSession.createBytesMessage();
-			Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+			Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "NodeStatus"), org.apache.ode.runtime.exec.cluster.xml.NodeStatus.class,
+			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "NodeStatus"), org.apache.ode.spi.exec.platform.xml.NodeStatus.class,
 					xmlNodeStatus), bos);
 			message.writeBytes(bos.toByteArray());
 			publisher.publish(message);
@@ -312,9 +312,9 @@ public class HealthCheck implements Runnable {
 					}
 					byte[] payload = new byte[(int) message.getBodyLength()];
 					message.readBytes(payload);
-					Unmarshaller umarshaller = CLUSTER_JAXB_CTX.createUnmarshaller();
-					JAXBElement<org.apache.ode.runtime.exec.cluster.xml.NodeStatus> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
-							payload)), org.apache.ode.runtime.exec.cluster.xml.NodeStatus.class);
+					Unmarshaller umarshaller = PLATFORM_JAXB_CTX.createUnmarshaller();
+					JAXBElement<org.apache.ode.spi.exec.platform.xml.NodeStatus> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+							payload)), org.apache.ode.spi.exec.platform.xml.NodeStatus.class);
 					xmlNodeStatus = element.getValue();
 					currentNodes.add(convert(xmlNodeStatus));
 				} catch (JMSException e) {
@@ -340,16 +340,16 @@ public class HealthCheck implements Runnable {
 		}
 	}
 
-	public static org.apache.ode.runtime.exec.cluster.xml.NodeStatus convert(NodeStatusImpl status) {
-		org.apache.ode.runtime.exec.cluster.xml.NodeStatus xmlNodeStatus = new org.apache.ode.runtime.exec.cluster.xml.NodeStatus();
+	public static org.apache.ode.spi.exec.platform.xml.NodeStatus convert(NodeStatusImpl status) {
+		org.apache.ode.spi.exec.platform.xml.NodeStatus xmlNodeStatus = new org.apache.ode.spi.exec.platform.xml.NodeStatus();
 		xmlNodeStatus.setClusterId(status.clusterId());
 		xmlNodeStatus.setNodeId(status.nodeId());
-		xmlNodeStatus.setState(org.apache.ode.runtime.exec.cluster.xml.NodeState.valueOf(status.state().toString()));
+		xmlNodeStatus.setState(org.apache.ode.spi.exec.platform.xml.NodeState.valueOf(status.state().toString()));
 		xmlNodeStatus.setHeartbeat(status.getHeartBeat());
 		return xmlNodeStatus;
 	}
 
-	public static NodeStatusImpl convert(org.apache.ode.runtime.exec.cluster.xml.NodeStatus xmlNodeStatus) {
+	public static NodeStatusImpl convert(org.apache.ode.spi.exec.platform.xml.NodeStatus xmlNodeStatus) {
 		NodeStatusImpl nodeStatus = new NodeStatusImpl();
 		nodeStatus.setClusterId(xmlNodeStatus.getClusterId());
 		nodeStatus.setNodeId(xmlNodeStatus.getNodeId());

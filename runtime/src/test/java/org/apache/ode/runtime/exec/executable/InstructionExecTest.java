@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+package org.apache.ode.runtime.exec.executable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,12 +32,12 @@ import org.apache.ode.runtime.ectx.test.xml.GetOperationTest;
 import org.apache.ode.runtime.ectx.test.xml.SetOperationTest;
 import org.apache.ode.runtime.ectx.test.xml.TestVariables;
 import org.apache.ode.runtime.ectx.test.xml.TestVariables.TestVariable;
+import org.apache.ode.runtime.exec.executable.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
+import org.apache.ode.runtime.exec.executable.TestObjectFactory.TestObjectFactoryImpl;
+import org.apache.ode.runtime.exec.executable.test.xml.InstructionTest;
 import org.apache.ode.runtime.exec.platform.ExecutableObjectFactoryImpl;
 import org.apache.ode.runtime.exec.platform.ExecutionContextObjectFactoryImpl;
 import org.apache.ode.runtime.exec.platform.ScopeContext.InstructionScopeContext;
-import org.apache.ode.runtime.exec.test.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
-import org.apache.ode.runtime.exec.test.TestObjectFactory.TestObjectFactoryImpl;
-import org.apache.ode.runtime.exec.test.xml.InstructionTest;
 import org.apache.ode.runtime.interpreter.ExecutionContextImpl;
 import org.apache.ode.spi.exec.ExecutableObjectFactory;
 import org.apache.ode.spi.exec.ExecutableScope;

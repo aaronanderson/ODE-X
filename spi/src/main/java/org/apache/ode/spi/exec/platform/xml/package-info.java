@@ -16,16 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = Platform.PLATFORM_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Platform.PLATFORM_NAMESPACE, prefix = "pfm") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.spi.exec.platform.xml;
 
-import org.apache.ode.runtime.ectx.test.xml.TestVariables.TestVariable;
-import org.apache.ode.spi.exec.ListMap;
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 
-public class TestMap<T extends TestVariable> extends ListMap<String, T> {
+import org.apache.ode.spi.exec.Platform;
 
-	@Override
-	public String getKey(T value) {
-		return value.getName();
-	}
-
-}

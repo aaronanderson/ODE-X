@@ -24,9 +24,9 @@ import java.util.Stack;
 
 import javax.xml.bind.JAXBElement;
 
-import org.apache.ode.spi.exec.xml.Block;
-import org.apache.ode.spi.exec.xml.Context;
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Block;
+import org.apache.ode.spi.exec.executable.xml.Context;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 
 /**
  * Akin to a branch node

@@ -23,7 +23,7 @@ import java.util.Map;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.xml.CompilerSetting;
+import org.apache.ode.spi.exec.executable.xml.CompilerSetting;
 
 /**
  * Represents a singleton compiler definition for a given contentType

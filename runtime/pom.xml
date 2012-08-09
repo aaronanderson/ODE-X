@@ -213,21 +213,19 @@
 							we must include and recompile the main schemas again in the test phase so that all of the resources
 							are available to XJC,. In eclipse org/w3/_2001/xmlschema/** and org/apache/ode/runtime/exec/cluster/xml/** should
 							be added to the exclusion list for the target/generated-test-sources/xjc Java Build Path Source -->
-							<schemaDirectory>src</schemaDirectory>
+							<schemaDirectory>src/test/resources/META-INF/xsd</schemaDirectory>
 							<schemaIncludes>
-								<schemaInclude>main/resources/META-INF/xsd/cluster.xsd</schemaInclude>
-								<schemaInclude>test/resources/META-INF/xsd/test.xsd</schemaInclude>
-								<schemaInclude>test/resources/META-INF/xsd/test-context.xsd</schemaInclude>
-								<schemaInclude>test/resources/META-INF/xsd/test-task.xsd</schemaInclude>
-								<schemaInclude>test/resources/META-INF/xsd/test-program.xsd</schemaInclude>
+								<schemaInclude>test-executable.xsd</schemaInclude>
+								<schemaInclude>test-context.xsd</schemaInclude>
+								<schemaInclude>test-task.xsd</schemaInclude>
+								<schemaInclude>test-program.xsd</schemaInclude>
 							</schemaIncludes>
-							<bindingDirectory>src</bindingDirectory>
+							<bindingDirectory>src/test/bindings</bindingDirectory>
 							<bindingIncludes>
-								<bindingInclude>main/bindings/cluster.xjb</bindingInclude>
-								<bindingInclude>test/bindings/test.xjb</bindingInclude>
-								<bindingInclude>test/bindings/test-context.xjb</bindingInclude>
-								<bindingInclude>test/bindings/test-task.xjb</bindingInclude>
-								<bindingInclude>test/bindings/test-program.xjb</bindingInclude>
+								<bindingInclude>test-executable.xjb</bindingInclude>
+								<bindingInclude>test-context.xjb</bindingInclude>
+								<bindingInclude>test-task.xjb</bindingInclude>
+								<bindingInclude>test-program.xjb</bindingInclude>
 							</bindingIncludes>
 							<catalog>src/test/bindings/catalog.xml</catalog>
 							<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>

@@ -16,37 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+package org.apache.ode.runtime.exec.executable;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.xml.bind.annotation.XmlRegistry;
-import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.apache.ode.runtime.ectx.test.xml.GetOperationTest;
-import org.apache.ode.runtime.ectx.test.xml.ObjectFactory;
-import org.apache.ode.runtime.ectx.test.xml.SetOperationTest;
+import org.apache.ode.runtime.exec.executable.test.xml.InstructionTest;
+import org.apache.ode.runtime.exec.executable.test.xml.ObjectFactory;
 
 @XmlRegistry
-public abstract class TestCtxObjectFactory extends ObjectFactory {
+public abstract class TestObjectFactory extends ObjectFactory {
 
 	@XmlRegistry
-	public static class TestCtxObjectFactoryImpl extends TestCtxObjectFactory {
+	public static class TestObjectFactoryImpl extends TestObjectFactory {
 		@Inject
-		Provider<SetOperationTest> testSetProvider;
-
-		@Inject
-		Provider<GetOperationTest> testGetProvider;
+		Provider<TestInstruction> testProvider;
 		
 		@Override
-		public SetOperationTest createSetOperationTest() {
-			return testSetProvider.get();
-		}
-
-		@Override
-		public GetOperationTest createGetOperationTest() {
-			return testGetProvider.get();
+		public InstructionTest createInstructionTest() {
+			return testProvider.get();
 		}
 	}
 
 }
+

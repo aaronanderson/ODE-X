@@ -21,9 +21,9 @@ package org.apache.ode.spi.compiler;
 import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.xml.Block;
-import org.apache.ode.spi.exec.xml.Context;
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Block;
+import org.apache.ode.spi.exec.executable.xml.Context;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 
 /**
  * Akin to a leaf node

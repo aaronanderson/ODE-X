@@ -19,15 +19,15 @@
     under the License.
 
 -->
-<schema targetNamespace="http://ode.apache.org/task-test" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:cst="http://ode.apache.org/cluster"
+<schema targetNamespace="http://ode.apache.org/task-test" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:pfm="http://ode.apache.org/platform"
 	xmlns:tns="http://ode.apache.org/task-test">
 
-	<import namespace="http://ode.apache.org/cluster" />
+	<import namespace="http://ode.apache.org/platform" />
 
-	<element name="singleTaskInput" substitutionGroup="cst:input">
+	<element name="singleTaskInput" substitutionGroup="pfm:input">
 		<complexType>
 			<complexContent>
-				<extension base="cst:inputType">
+				<extension base="pfm:inputType">
 					<attribute name="value" type="string" />
 				</extension>
 			</complexContent>
@@ -35,20 +35,20 @@
 	</element>
 
 
-	<element name="singleTaskOutput" substitutionGroup="cst:output">
+	<element name="singleTaskOutput" substitutionGroup="pfm:output">
 		<complexType>
 			<complexContent>
-				<extension base="cst:outputType">
+				<extension base="pfm:outputType">
 					<attribute name="value" type="string" />
 				</extension>
 			</complexContent>
 		</complexType>
 	</element>
 
-	<element name="multiTaskInput" substitutionGroup="cst:input">
+	<element name="multiTaskInput" substitutionGroup="pfm:input">
 		<complexType>
 			<complexContent>
-				<extension base="cst:inputType">
+				<extension base="pfm:inputType">
 					<attribute name="value" type="string" />
 				</extension>
 			</complexContent>
@@ -56,10 +56,10 @@
 	</element>
 
 
-	<element name="multiTaskOutput" substitutionGroup="cst:output">
+	<element name="multiTaskOutput" substitutionGroup="pfm:output">
 		<complexType>
 			<complexContent>
-				<extension base="cst:outputType">
+				<extension base="pfm:outputType">
 					<attribute name="value" type="string" />
 				</extension>
 			</complexContent>

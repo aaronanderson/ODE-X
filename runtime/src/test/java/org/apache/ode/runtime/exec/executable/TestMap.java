@@ -16,18 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec;
+package org.apache.ode.runtime.exec.executable;
 
-import javax.xml.bind.annotation.XmlRegistry;
+import org.apache.ode.runtime.ectx.test.xml.TestVariables.TestVariable;
+import org.apache.ode.spi.exec.ListMap;
 
-import org.apache.ode.spi.exec.executable.xml.ObjectFactory;
+public class TestMap<T extends TestVariable> extends ListMap<String, T> {
 
-//Convenience class for injecting multiple JAXB object factories
-@XmlRegistry
-public abstract class ExecutableObjectFactory extends ObjectFactory {
-
-
-	
-	
+	@Override
+	public String getKey(T value) {
+		return value.getName();
+	}
 
 }

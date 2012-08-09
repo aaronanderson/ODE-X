@@ -18,7 +18,7 @@
  */
 package org.apache.ode.spi.compiler;
 
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 
 /**
  * Represents a singleton compiler definition for a given contentType

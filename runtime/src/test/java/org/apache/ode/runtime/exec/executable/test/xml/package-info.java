@@ -20,7 +20,7 @@
  * Added to specify namespace prefix during unmarshall
  */
 @XmlSchema(namespace = "http://ode.apache.org/executable-test", xmlns = { @XmlNs(namespaceURI = "http://ode.apache.org/executable-test", prefix = "test") }, elementFormDefault = XmlNsForm.QUALIFIED)
-package org.apache.ode.runtime.exec.test.xml;
+package org.apache.ode.runtime.exec.executable.test.xml;
 
 import javax.xml.bind.annotation.XmlNs;
 import javax.xml.bind.annotation.XmlNsForm;

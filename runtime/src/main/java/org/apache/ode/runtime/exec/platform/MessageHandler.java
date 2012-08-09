@@ -18,7 +18,7 @@
  */
 package org.apache.ode.runtime.exec.platform;
 
-import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 
 import java.io.ByteArrayInputStream;
@@ -26,7 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -136,8 +135,8 @@ public class MessageHandler implements Runnable {
 
 	public void log(LogLevel level, int code, String messageText, String targetNodeId, String targetClusterId, String taskId) {
 		try {
-			org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = new org.apache.ode.runtime.exec.cluster.xml.Message();
-			xmlMessage.setLevel(org.apache.ode.runtime.exec.cluster.xml.LogLevel.valueOf(level.toString()));
+			org.apache.ode.spi.exec.platform.xml.Message xmlMessage = new org.apache.ode.spi.exec.platform.xml.Message();
+			xmlMessage.setLevel(org.apache.ode.spi.exec.platform.xml.LogLevel.valueOf(level.toString()));
 			xmlMessage.setCode(BigInteger.valueOf(code));
 			xmlMessage.setValue(messageText);
 			xmlMessage.setTimestamp(Calendar.getInstance());
@@ -149,10 +148,9 @@ public class MessageHandler implements Runnable {
 			message.setStringProperty(MSG_MQ_ORIG_CLUSTER, clusterId);
 			message.setStringProperty(MSG_MQ_TASK, taskId);
 
-			Marshaller marshaller = NodeImpl.CLUSTER_JAXB_CTX.createMarshaller();
+			Marshaller marshaller = NodeImpl.PLATFORM_JAXB_CTX.createMarshaller();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller
-					.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class, xmlMessage), bos);
+			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.spi.exec.platform.xml.Message.class, xmlMessage), bos);
 			message.writeBytes(bos.toByteArray());
 			producer.send(message);
 		} catch (Exception je) {
@@ -161,17 +159,17 @@ public class MessageHandler implements Runnable {
 
 	}
 
-	public static void log(MessageImpl m, LogLevel logLevel, java.util.Queue<org.apache.ode.runtime.exec.cluster.xml.Message> msgQueue,
+	public static void log(MessageImpl m, LogLevel logLevel, java.util.Queue<org.apache.ode.spi.exec.platform.xml.Message> msgQueue,
 			TopicSession msgUpdateSession, String correlationId, TopicPublisher msgUpdatePublisher) {
 		try {
-			org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = convert(m);
+			org.apache.ode.spi.exec.platform.xml.Message xmlMessage = convert(m);
 			if (logLevel.ordinal() >= xmlMessage.getLevel().ordinal()) {
 				msgQueue.add(xmlMessage);
 
 				BytesMessage jmsMessage = msgUpdateSession.createBytesMessage();
-				Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
+				Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.runtime.exec.cluster.xml.Message.class, xmlMessage),
+				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "Message"), org.apache.ode.spi.exec.platform.xml.Message.class, xmlMessage),
 						bos);
 				jmsMessage.writeBytes(bos.toByteArray());
 				jmsMessage.setJMSCorrelationID(correlationId);
@@ -182,9 +180,9 @@ public class MessageHandler implements Runnable {
 		}
 	}
 
-	public static org.apache.ode.runtime.exec.cluster.xml.Message convert(MessageImpl message) {
-		org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = new org.apache.ode.runtime.exec.cluster.xml.Message();
-		xmlMessage.setLevel(org.apache.ode.runtime.exec.cluster.xml.LogLevel.fromValue(message.level().toString()));
+	public static org.apache.ode.spi.exec.platform.xml.Message convert(MessageImpl message) {
+		org.apache.ode.spi.exec.platform.xml.Message xmlMessage = new org.apache.ode.spi.exec.platform.xml.Message();
+		xmlMessage.setLevel(org.apache.ode.spi.exec.platform.xml.LogLevel.fromValue(message.level().toString()));
 		xmlMessage.setCode(BigInteger.valueOf(message.code()));
 		xmlMessage.setTimestamp(Calendar.getInstance());
 		xmlMessage.setValue(message.message());
@@ -229,10 +227,10 @@ public class MessageHandler implements Runnable {
 					try {
 						byte[] payload = new byte[(int) message.getBodyLength()];
 						message.readBytes(payload);
-						Unmarshaller umarshaller = CLUSTER_JAXB_CTX.createUnmarshaller();
-						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.Message> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
-								payload)), org.apache.ode.runtime.exec.cluster.xml.Message.class);
-						org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage = element.getValue();
+						Unmarshaller umarshaller = PLATFORM_JAXB_CTX.createUnmarshaller();
+						JAXBElement<org.apache.ode.spi.exec.platform.xml.Message> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+								payload)), org.apache.ode.spi.exec.platform.xml.Message.class);
+						org.apache.ode.spi.exec.platform.xml.Message xmlMessage = element.getValue();
 						MessageEventImpl event = convert(xmlMessage, origNodeId, origClusterId);
 						for (MessageListener l : interested) {
 							l.message(event);
@@ -253,7 +251,7 @@ public class MessageHandler implements Runnable {
 
 	}
 
-	public static MessageEventImpl convert(org.apache.ode.runtime.exec.cluster.xml.Message xmlMessage, String origNodeId, String origClusterId) {
+	public static MessageEventImpl convert(org.apache.ode.spi.exec.platform.xml.Message xmlMessage, String origNodeId, String origClusterId) {
 		MessageImpl message = new MessageImpl();
 		message.setLevel(xmlMessage.getLevel().toString());
 		message.setCode(xmlMessage.getCode().intValue());

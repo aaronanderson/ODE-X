@@ -19,7 +19,7 @@
     under the License.
 
 -->
-<cluster-config xmlns="http://ode.apache.org/cluster-config" name="default-cluster">
+<cluster-config xmlns="http://ode.apache.org/cluster" name="default-cluster">
 <!-- xmlns:cluster="http://ode.apache.org/cluster-config"
 	xmlns:xs="http://www.w3.org/2001/XMLSchema" name="default-cluster">
 	 	<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://ode.apache.org/cluster-config"

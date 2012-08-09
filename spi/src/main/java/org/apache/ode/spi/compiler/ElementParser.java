@@ -21,7 +21,7 @@ package org.apache.ode.spi.compiler;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 import org.apache.ode.spi.xml.ElementHandler;
 
 public interface ElementParser<M extends Unit<? extends Instruction>> extends ElementHandler<M, ExecCompilerContext, ParserException> {

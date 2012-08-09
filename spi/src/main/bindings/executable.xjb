@@ -24,7 +24,7 @@
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/executable.xsd">
 
 		<jxb:schemaBindings>
-			<jxb:package name="org.apache.ode.spi.exec.xml" />
+			<jxb:package name="org.apache.ode.spi.exec.executable.xml" />
 		</jxb:schemaBindings>
 
 		<!-- add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->

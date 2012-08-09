@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+package org.apache.ode.runtime.exec.executable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,18 +36,18 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
 import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
+import org.apache.ode.runtime.exec.executable.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
+import org.apache.ode.runtime.exec.executable.TestObjectFactory.TestObjectFactoryImpl;
 import org.apache.ode.runtime.exec.modules.ScopeModule;
 import org.apache.ode.runtime.exec.platform.ExecutableObjectFactoryImpl;
 import org.apache.ode.runtime.exec.platform.ExecutionContextObjectFactoryImpl;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
-import org.apache.ode.runtime.exec.test.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
-import org.apache.ode.runtime.exec.test.TestObjectFactory.TestObjectFactoryImpl;
 import org.apache.ode.runtime.interpreter.IndexedExecutable;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.ExecutableObjectFactory;
 import org.apache.ode.spi.exec.instruction.ExecutionContextObjectFactory;
-import org.apache.ode.spi.exec.xml.Block;
-import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Block;
+import org.apache.ode.spi.exec.executable.xml.Executable;
 
 import com.google.inject.AbstractModule;
 import com.mycila.inject.jsr250.Jsr250;

@@ -92,7 +92,7 @@ public class TaskTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		taskJAXBContext = JAXBContext.newInstance("org.apache.ode.runtime.exec.cluster.xml:org.apache.ode.runtime.exec.task.test.xml");
+		taskJAXBContext = JAXBContext.newInstance("org.apache.ode.spi.exec.platform.xml:org.apache.ode.runtime.exec.task.test.xml");
 
 		injector1 = Jsr250.createInjector(new VMServerModule("vm://task?broker.persistent=true&broker.useJmx=false&broker.dataDirectory=target/activemq-data",
 				"tcluster", "node1"), new TaskTestModule());
@@ -316,7 +316,7 @@ public class TaskTest {
 		QueueReceiver receiver = session.createReceiver(responseQueue);
 
 		Marshaller marshaller = CLUSTER_JAXB_CTX.createMarshaller();
-		org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = new org.apache.ode.runtime.exec.cluster.xml.TaskAction();
+		org.apache.ode.spi.exec.platform.xml.TaskAction taskAction = new org.apache.ode.spi.exec.platform.xml.TaskAction();
 		taskAction.setActionId(Node.NODE_MQ_PROP_VALUE_NEW);
 		taskAction.setState(TaskActionState.SUBMIT);
 		ByteArrayOutputStream payload = new ByteArrayOutputStream();

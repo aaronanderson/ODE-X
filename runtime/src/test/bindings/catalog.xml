@@ -23,5 +23,6 @@
     <public publicId="http://ode.apache.org/executable" uri="classpath:META-INF/xsd/executable.xsd"/>
     <public publicId="http://ode.apache.org/execution-context" uri="classpath:META-INF/xsd/execution-context.xsd"/>
     <public publicId="http://ode.apache.org/program" uri="classpath:META-INF/xsd/program.xsd"/>
-     <public publicId="http://ode.apache.org/cluster" uri="../../main/resources/META-INF/xsd/cluster.xsd"/>
+    <public publicId="http://ode.apache.org/platform" uri="classpath:META-INF/xsd/platform.xsd"/>
+    <!--  <public publicId="http://ode.apache.org/cluster" uri="../../main/resources/META-INF/xsd/cluster.xsd"/> -->
 </catalog>

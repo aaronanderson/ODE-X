@@ -18,7 +18,7 @@
  */
 package org.apache.ode.runtime.exec.platform.task;
 
-import static org.apache.ode.runtime.exec.platform.NodeImpl.CLUSTER_JAXB_CTX;
+import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
 import static org.apache.ode.spi.exec.Node.NODE_MQ_CORRELATIONID_ACTION;
 
 import java.io.ByteArrayInputStream;
@@ -64,7 +64,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.runtime.exec.cluster.xml.ExchangeType;
+import org.apache.ode.spi.exec.platform.xml.ExchangeType;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
@@ -175,13 +175,13 @@ public class TaskExecutor implements Runnable {
 					String correlationId = message.getJMSCorrelationID();
 					byte[] payload = new byte[(int) message.getBodyLength()];
 					message.readBytes(payload);
-					Unmarshaller umarshaller = CLUSTER_JAXB_CTX.createUnmarshaller();
+					Unmarshaller umarshaller = PLATFORM_JAXB_CTX.createUnmarshaller();
 					if (message.getStringProperty(Node.NODE_MQ_PROP_TASKID) != null) {
 						//TODO tasks are typically submitted from platform, but in future would like to support task initiation externally from MQ and provide updates like actions
-						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.Task> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
-								payload)), org.apache.ode.runtime.exec.cluster.xml.Task.class);
-						org.apache.ode.runtime.exec.cluster.xml.Task xmlTask = element.getValue();
-						if (org.apache.ode.runtime.exec.cluster.xml.TaskState.SUBMIT == xmlTask.getState()) {
+						JAXBElement<org.apache.ode.spi.exec.platform.xml.Task> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+								payload)), org.apache.ode.spi.exec.platform.xml.Task.class);
+						org.apache.ode.spi.exec.platform.xml.Task xmlTask = element.getValue();
+						if (org.apache.ode.spi.exec.platform.xml.TaskState.SUBMIT == xmlTask.getState()) {
 
 							submitTask(LogLevel.valueOf(xmlTask.getLogLevel().value()), correlationId, requestor, xmlTask.getName(),
 									xmlTask.getExchange() != null ? xmlTask.getExchange().getPayload() : null, null, ExchangeTypes(xmlTask));
@@ -189,18 +189,18 @@ public class TaskExecutor implements Runnable {
 							log.log(Level.WARNING, String.format("Unsupported Task state %s", xmlTask.getState()));
 						}
 					} else if (message.getStringProperty(Node.NODE_MQ_PROP_ACTIONID) != null) {
-						JAXBElement<org.apache.ode.runtime.exec.cluster.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
-								new ByteArrayInputStream(payload)), org.apache.ode.runtime.exec.cluster.xml.TaskAction.class);
-						org.apache.ode.runtime.exec.cluster.xml.TaskAction taskAction = element.getValue();
-						if (org.apache.ode.runtime.exec.cluster.xml.TaskActionState.SUBMIT == taskAction.getState()) {
+						JAXBElement<org.apache.ode.spi.exec.platform.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+								payload)), org.apache.ode.spi.exec.platform.xml.TaskAction.class);
+						org.apache.ode.spi.exec.platform.xml.TaskAction taskAction = element.getValue();
+						if (org.apache.ode.spi.exec.platform.xml.TaskActionState.SUBMIT == taskAction.getState()) {
 							if (correlationId == null) {
 								String.format(NODE_MQ_CORRELATIONID_ACTION, System.currentTimeMillis());
 							}
 							submitTaskAction(LogLevel.valueOf(taskAction.getLogLevel().value()), correlationId, requestor, taskAction.getTaskId(),
 									taskAction.getName(), taskAction.getExchange() != null ? taskAction.getExchange().getPayload() : null);
-						} else if (org.apache.ode.runtime.exec.cluster.xml.TaskActionState.EXECUTE == taskAction.getState()
-								|| org.apache.ode.runtime.exec.cluster.xml.TaskActionState.COMMIT == taskAction.getState()
-								|| org.apache.ode.runtime.exec.cluster.xml.TaskActionState.ROLLBACK == taskAction.getState()) {
+						} else if (org.apache.ode.spi.exec.platform.xml.TaskActionState.EXECUTE == taskAction.getState()
+								|| org.apache.ode.spi.exec.platform.xml.TaskActionState.COMMIT == taskAction.getState()
+								|| org.apache.ode.spi.exec.platform.xml.TaskActionState.ROLLBACK == taskAction.getState()) {
 							TaskActionCallable callable = executingActions.get(correlationId);
 							if (callable != null) {
 								callable.externalUpdate(taskAction);
@@ -342,20 +342,20 @@ public class TaskExecutor implements Runnable {
 
 	}
 
-	public Target[] ExchangeTypes(org.apache.ode.runtime.exec.cluster.xml.Task xmlTask) {
+	public Target[] ExchangeTypes(org.apache.ode.spi.exec.platform.xml.Task xmlTask) {
 		List<Target> targets = new ArrayList<Target>();
 		EntityManager pmgr = pmgrFactory.createEntityManager();
 		try {
-			for (JAXBElement<? extends org.apache.ode.runtime.exec.cluster.xml.Target> xmlTargetElement : xmlTask.getTargets().getTarget()) {
-				org.apache.ode.runtime.exec.cluster.xml.Target xmlTarget = xmlTargetElement.getValue();
-				if (xmlTarget instanceof org.apache.ode.runtime.exec.cluster.xml.TargetAll) {
+			for (JAXBElement<? extends org.apache.ode.spi.exec.platform.xml.Target> xmlTargetElement : xmlTask.getTargets().getTarget()) {
+				org.apache.ode.spi.exec.platform.xml.Target xmlTarget = xmlTargetElement.getValue();
+				if (xmlTarget instanceof org.apache.ode.spi.exec.platform.xml.TargetAll) {
 					targets.add(pmgr.find(TargetAllImpl.class, new TargetPK(null, TargetAllImpl.TYPE)));
-				} else if (xmlTarget instanceof org.apache.ode.runtime.exec.cluster.xml.TargetNode) {
-					targets.add(pmgr.find(TargetNodeImpl.class, new TargetPK(((org.apache.ode.runtime.exec.cluster.xml.TargetNode) xmlTarget).getNodeId(),
+				} else if (xmlTarget instanceof org.apache.ode.spi.exec.platform.xml.TargetNode) {
+					targets.add(pmgr.find(TargetNodeImpl.class, new TargetPK(((org.apache.ode.spi.exec.platform.xml.TargetNode) xmlTarget).getNodeId(),
 							TargetNodeImpl.TYPE)));
-				} else if (xmlTarget instanceof org.apache.ode.runtime.exec.cluster.xml.TargetCluster) {
-					targets.add(pmgr.find(TargetClusterImpl.class,
-							new TargetPK(((org.apache.ode.runtime.exec.cluster.xml.TargetCluster) xmlTarget).getClusterId(), TargetClusterImpl.TYPE)));
+				} else if (xmlTarget instanceof org.apache.ode.spi.exec.platform.xml.TargetCluster) {
+					targets.add(pmgr.find(TargetClusterImpl.class, new TargetPK(
+							((org.apache.ode.spi.exec.platform.xml.TargetCluster) xmlTarget).getClusterId(), TargetClusterImpl.TYPE)));
 				} else {
 					//throw new PlatformException(String.format("Invalid target type %s", xmlTarget.getClass().getName()));//TODO return error
 				}

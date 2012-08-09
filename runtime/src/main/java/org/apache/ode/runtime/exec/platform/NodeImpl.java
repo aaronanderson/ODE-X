@@ -124,8 +124,8 @@ import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskDefinition;
 import org.apache.ode.spi.exec.task.TaskException;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.InstructionSets;
+import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.InstructionSets;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -135,12 +135,18 @@ import org.w3c.dom.NodeList;
 @Singleton
 public class NodeImpl implements Node, MessageListener {
 
+	public static JAXBContext PLATFORM_JAXB_CTX;
 	public static JAXBContext CLUSTER_JAXB_CTX;
 	private static final Logger log = Logger.getLogger(NodeImpl.class.getName());
 
 	public static final Logger msgLog = Logger.getLogger("org.apache.ode.runtime.exec.platform.Message");
 
 	static {
+		try {
+			PLATFORM_JAXB_CTX = JAXBContext.newInstance("org.apache.ode.spi.exec.platform.xml");
+		} catch (JAXBException je) {
+			log.log(Level.SEVERE, "", je);
+		}
 		try {
 			CLUSTER_JAXB_CTX = JAXBContext.newInstance("org.apache.ode.runtime.exec.cluster.xml");
 		} catch (JAXBException je) {

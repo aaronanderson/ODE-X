@@ -22,73 +22,11 @@
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
 	jxb:extensionBindingPrefixes="xjc" version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/cluster.xsd">
-	<!-- TODO 
-	http://java.net/jira/browse/JAXB-611 unless package name specified at XJC level adapters go into default package. Look into breaking out global bindings into sperate maven jaxb execution with package specified
-	try this approach to define custom adapter at package level http://blog.bdoughan.com/2012/02/jaxb-and-package-level-xmladapters.html#more
-	-->
-		<jxb:globalBindings>
-			<jxb:javaType name="java.util.Calendar" xmlType="xs:dateTime" parseMethod="javax.xml.bind.DatatypeConverter.parseDateTime" printMethod="javax.xml.bind.DatatypeConverter.printDateTime" />
-		</jxb:globalBindings>
+
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.runtime.exec.cluster.xml" />
 		</jxb:schemaBindings>
-		<jxb:bindings node="//xs:element[@name='NodeStatus']/xs:complexType">
-			<jxb:class name="NodeStatus" />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='messageType']">
-			<jxb:class name="Message" />
-		</jxb:bindings>
 
-
-		<jxb:bindings node="//xs:complexType[@name='inputType']">
-			<jxb:class name="Input" />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='outputType']">
-			<jxb:class name="Output" />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='coordinationInputType']">
-			<jxb:class name="CoordinationInput" />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='coordinationOutputType']">
-			<jxb:class name="CoordinationOutput" />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:complexType[@name='targetType']">
-			<jxb:class name="Target" />
-		</jxb:bindings>
-		<!-- <jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:input']">
-			<xjc:dom />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:output']">
-			<xjc:dom />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:coordinationInput']">
-			<xjc:dom />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType//xs:element[@ref='tns:coordinationOutput']">
-			<xjc:dom />
-		</jxb:bindings> -->
-		<jxb:bindings node="//xs:element[@name='TaskAction']/xs:complexType/xs:sequence/xs:element[@name='exchange']/xs:complexType/xs:choice">
-			<jxb:property name="payload" />
-			<xjc:dom />
-		</jxb:bindings>
-		<!-- 
-		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:input']">
-			<xjc:dom />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:output']">
-			<xjc:dom />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:coordinationInput']">
-			<xjc:dom />
-		</jxb:bindings>
-		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType//xs:element[@ref='tns:coordinationOutput']">
-			<xjc:dom />
-		</jxb:bindings>
- -->
-		<jxb:bindings node="//xs:element[@name='Task']/xs:complexType/xs:sequence/xs:element[@name='exchange']/xs:complexType/xs:choice">
-			<jxb:property name="payload" />
-			<xjc:dom />
-		</jxb:bindings>
 		<jxb:bindings node="//xs:complexType[@name='clusterConfigType']">
 			<jxb:class name="ClusterConfig" />
 		</jxb:bindings>

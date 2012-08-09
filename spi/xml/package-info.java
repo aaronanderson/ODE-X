@@ -16,28 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = Platform.PROGRAM_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Platform.PROGRAM_NAMESPACE, prefix = "prg") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.spi.exec.program.xml;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.xml.bind.annotation.XmlRegistry;
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 
-import org.apache.ode.runtime.exec.test.xml.InstructionTest;
-import org.apache.ode.runtime.exec.test.xml.ObjectFactory;
-
-@XmlRegistry
-public abstract class TestObjectFactory extends ObjectFactory {
-
-	@XmlRegistry
-	public static class TestObjectFactoryImpl extends TestObjectFactory {
-		@Inject
-		Provider<TestInstruction> testProvider;
-		
-		@Override
-		public InstructionTest createInstructionTest() {
-			return testProvider.get();
-		}
-	}
-
-}
+import org.apache.ode.spi.exec.Platform;
 

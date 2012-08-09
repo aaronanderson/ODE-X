@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import javax.xml.bind.Binder;
 
 import org.apache.ode.spi.compiler.Source.SourceType;
-import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Executable;
 import org.w3c.dom.Node;
 
 /**

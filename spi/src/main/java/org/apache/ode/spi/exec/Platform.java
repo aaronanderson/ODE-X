@@ -47,7 +47,7 @@ public interface Platform {
 
 	public static final QName EXEC_INSTRUCTION_SET_NAME = new QName(EXEC_NAMESPACE, "Executable");
 	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.xml",
-			org.apache.ode.spi.exec.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",
+			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",
 			org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
 
 	public enum PlatformTask {

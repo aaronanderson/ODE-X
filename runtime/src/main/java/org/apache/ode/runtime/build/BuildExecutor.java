@@ -60,12 +60,12 @@ import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Source.SourceType;
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Node;
-import org.apache.ode.spi.exec.xml.Block;
+import org.apache.ode.spi.exec.executable.xml.Block;
 import org.apache.ode.spi.exec.xml.BlockAddress;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 import org.apache.ode.spi.exec.xml.InstructionAddress;
-import org.apache.ode.spi.exec.xml.Sources;
+import org.apache.ode.spi.exec.executable.xml.Sources;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -203,7 +203,7 @@ public class BuildExecutor implements CommandObject {
 		}
 
 		compilation.setExecutable(exec);
-		org.apache.ode.spi.exec.xml.ObjectFactory of = new org.apache.ode.spi.exec.xml.ObjectFactory();
+		org.apache.ode.spi.exec.executable.xml.ObjectFactory of = new org.apache.ode.spi.exec.executable.xml.ObjectFactory();
 		compilation.setExecBase(of.createExecutable(exec));
 
 		Binder<org.w3c.dom.Node> binder;

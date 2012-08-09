@@ -28,11 +28,11 @@ import org.apache.ode.runtime.interpreter.IndexedBlockAddress.IndexedBlcAddAdapt
 import org.apache.ode.runtime.interpreter.IndexedBlockAddress.IndexedBlcAddRefAdapter;
 import org.apache.ode.runtime.interpreter.IndexedInstructionAddress.IndexedInsAddAdapter;
 import org.apache.ode.runtime.interpreter.IndexedInstructionAddress.IndexedInsAddRefAdapter;
-import org.apache.ode.spi.exec.xml.Block;
+import org.apache.ode.spi.exec.executable.xml.Block;
 import org.apache.ode.spi.exec.xml.BlockAddress.BlcAddAdapter;
 import org.apache.ode.spi.exec.xml.BlockAddress.BlcAddRefAdapter;
-import org.apache.ode.spi.exec.xml.Executable;
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 import org.apache.ode.spi.exec.xml.InstructionAddress.InsAddAdapter;
 import org.apache.ode.spi.exec.xml.InstructionAddress.InsAddRefAdapter;
 

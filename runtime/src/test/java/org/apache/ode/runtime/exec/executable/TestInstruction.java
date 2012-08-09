@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.exec.test;
+package org.apache.ode.runtime.exec.executable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -28,7 +28,7 @@ import org.apache.ode.runtime.ectx.test.xml.GetInputTest;
 import org.apache.ode.runtime.ectx.test.xml.GetResultTest;
 import org.apache.ode.runtime.ectx.test.xml.SetInputTest;
 import org.apache.ode.runtime.ectx.test.xml.SetResultTest;
-import org.apache.ode.runtime.exec.test.xml.InstructionTest;
+import org.apache.ode.runtime.exec.executable.test.xml.InstructionTest;
 import org.apache.ode.spi.exec.ExecutableScope;
 import org.apache.ode.spi.exec.instruction.ExecutionContext;
 import org.apache.ode.spi.exec.instruction.Instruction;

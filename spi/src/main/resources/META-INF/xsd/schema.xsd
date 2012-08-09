@@ -1,0 +1,13 @@
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.w3.org/2001/XMLSchema" xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" jxb:version="2.0">
+	<!--  http://jaxb.java.net/guide/Customizing_Java_packages.html -->
+	<annotation>
+		<appinfo>
+			<jxb:globalBindings>
+				<jxb:javaType name="java.util.Calendar" xmlType="xs:dateTime" parseMethod="javax.xml.bind.DatatypeConverter.parseDateTime" printMethod="javax.xml.bind.DatatypeConverter.printDateTime" />
+			</jxb:globalBindings>
+			<jxb:schemaBindings>
+				<jxb:package name="org.apache.ode.spi.exec.schema.xml" />
+			</jxb:schemaBindings>
+		</appinfo>
+	</annotation>
+</schema>

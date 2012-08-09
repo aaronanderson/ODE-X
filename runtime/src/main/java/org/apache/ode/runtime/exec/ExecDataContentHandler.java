@@ -35,7 +35,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.ode.runtime.exec.platform.NodeImpl;
-import org.apache.ode.spi.exec.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.Executable;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.XMLDataContentHandler;
 
