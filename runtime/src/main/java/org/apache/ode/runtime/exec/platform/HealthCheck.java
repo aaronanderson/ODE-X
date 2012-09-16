@@ -299,8 +299,8 @@ public class HealthCheck implements Runnable {
 			BytesMessage message = nodeStatusSession.createBytesMessage();
 			Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "NodeStatus"), org.apache.ode.spi.exec.platform.xml.NodeStatus.class,
-					xmlNodeStatus), bos);
+			marshaller.marshal(
+					new JAXBElement(new QName(CLUSTER_NAMESPACE, "NodeStatus"), org.apache.ode.spi.exec.platform.xml.NodeStatus.class, xmlNodeStatus), bos);
 			message.writeBytes(bos.toByteArray());
 			publisher.publish(message);
 
@@ -336,7 +336,10 @@ public class HealthCheck implements Runnable {
 			nodeStatus.set(Collections.unmodifiableSet(currentNodes));
 			onlineClusterNodes.set(Collections.unmodifiableSet(currentOnlineClusterNodes));
 		} catch (Throwable t) {
-			log.log(Level.SEVERE, "", t);
+			if (!(t instanceof JMSException && (((JMSException) t).getCause() instanceof InterruptedException))) {
+				log.log(Level.SEVERE, "", t);
+			}
+
 		}
 	}
 

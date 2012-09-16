@@ -56,9 +56,16 @@ import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.exec.target.TargetAll;
 import org.apache.ode.spi.exec.target.TargetNode;
+import org.apache.ode.spi.exec.task.IOBuilder;
+import org.apache.ode.spi.exec.task.IOBuilderDefault;
+import org.apache.ode.spi.exec.task.Input;
+import org.apache.ode.spi.exec.task.Output;
+import org.apache.ode.spi.exec.task.Request;
+import org.apache.ode.spi.exec.task.Response;
 import org.apache.ode.spi.exec.task.Task;
 import org.apache.ode.spi.exec.task.Task.TaskId;
 import org.apache.ode.spi.exec.task.Task.TaskState;
+import org.apache.ode.spi.exec.task.TaskDefinition.TaskActionCoordinatorDefinition;
 import org.apache.ode.spi.exec.task.TaskAction;
 import org.apache.ode.spi.exec.task.TaskActionContext;
 import org.apache.ode.spi.exec.task.TaskActionCoordinator;
@@ -354,8 +361,22 @@ public class TaskTest {
 		public static final QName MULTI_ACTION1_NAME = new QName(TEST_NS, "MultiTaskTask1");
 		public static final QName MULTI_ACTION2_NAME = new QName(TEST_NS, "MultiTaskTask2");
 
+		public final static QName SINGLE_TASK_INPUT_QNAME = new QName("http://ode.apache.org/task-test", "singleTaskInput");
+		public final static QName SINGLE_TASK_OUTPUT_QNAME = new QName("http://ode.apache.org/task-test", "singleTaskOutput");
+		public final static QName MULTI_TASK_INPUT_QNAME = new QName("http://ode.apache.org/task-test", "multiTaskInput");
+		public final static QName MULTI_TASK_OUTPUT_QNAME = new QName("http://ode.apache.org/task-test", "multiTaskOutput");
+
 		@Inject
 		Node node;
+
+		@Inject
+		Provider<SingleTaskActionCoordinator> singleActionCoord;
+
+		@Inject
+		Provider<SingleDependencyTaskActionCoordinator> singleDepActionCoord;
+
+		@Inject
+		Provider<MultiTaskActionCoordinator> multiActionCoord;
 
 		@Inject
 		Provider<SingleTaskActionExec> singleAction;
@@ -384,23 +405,33 @@ public class TaskTest {
 		@Override
 		public List<TaskDefinition> tasks() {
 			ArrayList<TaskDefinition> defs = new ArrayList<TaskDefinition>();
-			defs.add(new TaskDefinition(SINGLE_TASK_NAME, new SingleTaskActionCoordinator(), taskJAXBContext));
-			defs.add(new TaskDefinition(SINGLE_TASK_DEP_NAME, new SingleDependencyTaskActionCoordinator(), taskJAXBContext));
-			defs.add(new TaskDefinition(MULTI_TASK_NAME, new MultiTaskActionCoordinator(), taskJAXBContext));
+			defs.add(new TaskDefinition(SINGLE_TASK_NAME, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME, SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME,
+					SingleTaskOutput.class), new TaskActionCoordinatorDefinition(SINGLE_TASK_NAME, Collections.EMPTY_SET, singleActionCoord,
+					org.apache.ode.runtime.exec.task.test.xml.ObjectFactory.class)));
+			defs.add(new TaskDefinition(SINGLE_TASK_DEP_NAME, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME, SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME,
+					SingleTaskOutput.class), new TaskActionCoordinatorDefinition(SINGLE_TASK_NAME, Collections.EMPTY_SET, singleDepActionCoord,
+					org.apache.ode.runtime.exec.task.test.xml.ObjectFactory.class)));
+			defs.add(new TaskDefinition(MULTI_TASK_NAME, new IOBuilderDefault(MULTI_TASK_INPUT_QNAME, MultiTaskInput.class, MULTI_TASK_OUTPUT_QNAME,
+					MultiTaskOutput.class), new TaskActionCoordinatorDefinition(SINGLE_TASK_NAME, Collections.EMPTY_SET, multiActionCoord,
+					org.apache.ode.runtime.exec.task.test.xml.ObjectFactory.class)));
 			return defs;
 		}
 
 		@Override
 		public List<TaskActionDefinition> actions() {
 			ArrayList<TaskActionDefinition> defs = new ArrayList<TaskActionDefinition>();
-			defs.add(new TaskActionDefinition(SINGLE_ACTION_NAME, (Set<QName>) Collections.EMPTY_SET, singleAction, taskJAXBContext));
+			defs.add(new TaskActionDefinition(SINGLE_ACTION_NAME, (Set<QName>) Collections.EMPTY_SET, singleAction, new IOBuilderDefault(
+					SINGLE_TASK_INPUT_QNAME, SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME, SingleTaskOutput.class), taskJAXBContext));
 			Set<QName> dependencies = new HashSet<QName>();
 			dependencies.add(SINGLE_ACTION_NAME);
-			defs.add(new TaskActionDefinition(SINGLE_ACTION_DEP_NAME, dependencies, singleAction, taskJAXBContext));
-			defs.add(new TaskActionDefinition(MULTI_ACTION1_NAME, (Set<QName>) Collections.EMPTY_SET, multiAction, taskJAXBContext));
+			defs.add(new TaskActionDefinition(SINGLE_ACTION_DEP_NAME, dependencies, singleAction, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME,
+					SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME, SingleTaskOutput.class), taskJAXBContext));
+			defs.add(new TaskActionDefinition(MULTI_ACTION1_NAME, (Set<QName>) Collections.EMPTY_SET, multiAction, new IOBuilderDefault(MULTI_TASK_INPUT_QNAME,
+					MultiTaskInput.class, MULTI_TASK_OUTPUT_QNAME, MultiTaskOutput.class), taskJAXBContext));
 			Set<QName> deps = new HashSet<QName>();
 			deps.add(MULTI_ACTION1_NAME);
-			defs.add(new TaskActionDefinition(MULTI_ACTION2_NAME, deps, multiAction, taskJAXBContext));
+			defs.add(new TaskActionDefinition(MULTI_ACTION2_NAME, deps, multiAction, new IOBuilderDefault(MULTI_TASK_INPUT_QNAME, MultiTaskInput.class,
+					MULTI_TASK_OUTPUT_QNAME, MultiTaskOutput.class), taskJAXBContext));
 			return defs;
 		}
 
@@ -435,117 +466,92 @@ public class TaskTest {
 
 	}
 
-	public static class SingleTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
+	public static class SingleTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskOutput> {
 
 		@Override
-		public Set<TaskActionRequest<SingleTaskInput>> init(TaskContext ctx, SingleTaskInput input, String localNodeId, TaskCallback<?, ?> callback,
-				Target... targets) {
-			assertEquals("SingleTaskInput", input.getValue());
-			input.setValue("SingleActionInput");
+		public Set<Request<?>> init(TaskContext ctx, Input<SingleTaskInput> request, TaskCallback<?, ?> callback, Target... targets) {
+			assertEquals(TaskTestComponent.SINGLE_TASK_NAME, ctx.name());
+			assertEquals("SingleTaskInput", request.value.getValue());
+			request.value.setValue("SingleActionInput");
 			String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
-			HashSet<TaskActionRequest<SingleTaskInput>> actions = new HashSet<TaskActionRequest<SingleTaskInput>>();
-			TaskActionRequest<SingleTaskInput> req = new TaskActionRequest<SingleTaskInput>(TaskTestComponent.SINGLE_ACTION_NAME, nodeIds[0], input);
+			HashSet<Request<?>> actions = new HashSet<Request<?>>();
+			Request<SingleTaskInput> req = ctx.newRequest(TaskTestComponent.SINGLE_ACTION_NAME, nodeIds[0], request.value);
 			actions.add(req);
 			return actions;
 		}
 
 		/*
 				@Override
-				public void refresh(TaskActionResponse<SingleTaskOutput> action) {
+				public void refresh(Response<SingleTaskOutput> action) {
 					assertEquals(TaskTestComponent.SINGLE_ACTION_NAME, action.action);
 				}
 		*/
 		@Override
-		public boolean update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
+		public void update(Request<?> request, Set<Response<?>> dependencyResponses) {
 			fail();//should not be called
-			return false;
 		}
 
 		@Override
-		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
+		public void finish(Set<Response<?>> actions, Output<SingleTaskOutput> result) {
 			assertEquals(1, actions.size());
-			TaskActionResponse<SingleTaskOutput> response = actions.iterator().next();
-			assertEquals(TaskTestComponent.SINGLE_ACTION_NAME, response.action);
+			Response<SingleTaskOutput> response = (Response<SingleTaskOutput>) actions.iterator().next();
 			assertTrue(response.success);
 			assertNotNull(response.output);
-			assertEquals("SingleActionOutput", response.output.getValue());
-			output = new SingleTaskOutput();
-			output.setValue("SingleTaskOutput");
-			return output;
-		}
-
-		@Override
-		public QName name() {
-			return TaskTestComponent.SINGLE_TASK_COORD_NAME;
-		}
-
-		@Override
-		public Set<QName> dependencies() {
-			return Collections.EMPTY_SET;
+			assertEquals("SingleActionOutput", response.output.value.getValue());
+			result.value = new SingleTaskOutput();
+			result.value.setValue("SingleTaskOutput");
 		}
 
 	}
 
-	public static class SingleDependencyTaskActionCoordinator implements
-			TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
+	public static class SingleDependencyTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskOutput> {
 
 		@Override
-		public Set<TaskActionRequest<SingleTaskInput>> init(TaskContext ctx, SingleTaskInput input, String localNodeId, TaskCallback<?, ?> callback,
-				Target... targets) {
-			assertEquals("SingleTaskInput", input.getValue());
-			input.setValue("SingleActionInput");
+		public Set<Request<?>> init(TaskContext ctx, Input<SingleTaskInput> request, TaskCallback<?, ?> callback, Target... targets) {
+			assertEquals(TaskTestComponent.SINGLE_TASK_DEP_NAME, ctx.name());
+			assertEquals("SingleTaskInput", request.value.getValue());
+			request.value.setValue("SingleActionInput");
 			String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
-			HashSet<TaskActionRequest<SingleTaskInput>> actions = new HashSet<TaskActionRequest<SingleTaskInput>>();
-			TaskActionRequest<SingleTaskInput> req = new TaskActionRequest<SingleTaskInput>(TaskTestComponent.SINGLE_ACTION_NAME, nodeIds[0], input);
+			HashSet<Request<?>> actions = new HashSet<Request<?>>();
+			Request<SingleTaskInput> req = ctx.newRequest(TaskTestComponent.SINGLE_ACTION_NAME, nodeIds[0], request.value);
 			actions.add(req);
-			req = new TaskActionRequest<SingleTaskInput>(TaskTestComponent.SINGLE_ACTION_DEP_NAME, nodeIds[0], input);
+			req = ctx.newRequest(TaskTestComponent.SINGLE_ACTION_DEP_NAME, nodeIds[0], request.value);
 			actions.add(req);
 			return actions;
 		}
 
 		/*
 		@Override
-		public void refresh(TaskActionResponse<SingleTaskOutput> action) {
+		public void refresh(Response<SingleTaskOutput> action) {
 
 		}
 		*/
 		@Override
-		public boolean update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
-			assertEquals(TaskTestComponent.SINGLE_ACTION_DEP_NAME, request.action);
+		public void update(Request<?> request, Set<Response<?>> dependencyResponses) {
+			assertEquals(TaskTestComponent.SINGLE_ACTION_DEP_NAME, request.name);
 			assertEquals(1, dependencyResponses.size());
-			TaskActionResponse<SingleTaskOutput> response = dependencyResponses.iterator().next();
+			Response<SingleTaskOutput> response = (Response<SingleTaskOutput>) dependencyResponses.iterator().next();
 			assertTrue(response.success);
 			assertNotNull(response.output);
-			assertEquals("SingleActionOutput", response.output.getValue());
-			request.input.setValue("SingleActionDepInput");
-			return true;
+			assertNotNull(response.output.value);
+			assertEquals("SingleActionOutput", response.output.value.getValue());
+			((Request<SingleTaskInput>) request).input.value.setValue("SingleActionDepInput");
 		}
 
 		@Override
-		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
+		public void finish(Set<Response<?>> actions, Output<SingleTaskOutput> response) {
 			assertEquals(2, actions.size());
-			for (TaskActionResponse<SingleTaskOutput> response : actions) {
-				assertTrue(response.success);
-				assertNotNull(response.output);
-				if (TaskTestComponent.SINGLE_ACTION_NAME.equals(response.action)) {
-					assertEquals("SingleActionOutput", response.output.getValue());
-				} else if (TaskTestComponent.SINGLE_ACTION_DEP_NAME.equals(response.action)) {
-					assertEquals("SingleActionDepOutput", response.output.getValue());
+			for (Response<?> res : actions) {
+				Response<SingleTaskOutput> actResponse = (Response<SingleTaskOutput>) res;
+				assertTrue(actResponse.success);
+				if (TaskTestComponent.SINGLE_ACTION_NAME.equals(actResponse.name)) {
+					assertEquals("SingleActionOutput", actResponse.output.value.getValue());
+				} else if (TaskTestComponent.SINGLE_ACTION_DEP_NAME.equals(actResponse.name)) {
+					assertEquals("SingleActionDepOutput", actResponse.output.value.getValue());
 				}
 			}
-			output = new SingleTaskOutput();
-			output.setValue("SingleTaskOutput");
-			return output;
-		}
-
-		@Override
-		public QName name() {
-			return TaskTestComponent.SINGLE_TASK_DEP_COORD_NAME;
-		}
-
-		@Override
-		public Set<QName> dependencies() {
-			return Collections.EMPTY_SET;
+			response.value = new SingleTaskOutput();
+			response.value.setValue("SingleTaskOutput");
 		}
 
 	}
@@ -555,13 +561,13 @@ public class TaskTest {
 		SingleTaskOutput out = new SingleTaskOutput();
 
 		@Override
-		public void start(TaskActionContext ctx, SingleTaskInput input) {
+		public void start(TaskActionContext ctx, Input<SingleTaskInput> request) {
 			this.ctx = ctx;
 			ctx.log(LogLevel.INFO, 1, "start");
 			if (TaskTestComponent.SINGLE_ACTION_NAME.equals(ctx.name())) {
-				assertEquals("SingleActionInput", input.getValue());
+				assertEquals("SingleActionInput", request.value.getValue());
 			} else if (TaskTestComponent.SINGLE_ACTION_DEP_NAME.equals(ctx.name())) {
-				assertEquals("SingleActionDepInput", input.getValue());
+				assertEquals("SingleActionDepInput", request.value.getValue());
 
 			}
 		}
@@ -578,29 +584,29 @@ public class TaskTest {
 		}
 
 		@Override
-		public SingleTaskOutput finish() {
+		public void finish(Output<SingleTaskOutput> response) {
 			ctx.log(LogLevel.INFO, 3, "finish");
-			return out;
+			response.value =out;
 		}
 
 	}
 
-	public static class MultiTaskActionCoordinator implements TaskActionCoordinator<MultiTaskInput, MultiTaskInput, MultiTaskOutput, MultiTaskOutput> {
+	public static class MultiTaskActionCoordinator implements TaskActionCoordinator<MultiTaskInput, MultiTaskOutput> {
 
 		@Override
-		public Set<TaskActionRequest<MultiTaskInput>> init(TaskContext ctx, MultiTaskInput input, String localNodeId, TaskCallback<?, ?> callback,
-				Target... targets) {
+		public Set<Request<?>> init(TaskContext ctx, Input<MultiTaskInput> input, TaskCallback<?, ?> callback, Target... targets) {
+			assertEquals(TaskTestComponent.MULTI_TASK_NAME, ctx.name());
 			String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
 			assertEquals(2, nodeIds.length);
-			HashSet<TaskActionRequest<MultiTaskInput>> actions = new HashSet<TaskActionRequest<MultiTaskInput>>();
+			HashSet<Request<?>> actions = new HashSet<Request<?>>();
 			for (String nodeId : nodeIds) {
 				MultiTaskInput actionInput = new MultiTaskInput();
 				actionInput.setValue("MultiAction1Input");
-				actions.add(new TaskActionRequest<MultiTaskInput>(TaskTestComponent.MULTI_ACTION1_NAME, nodeId, actionInput));
-				if (localNodeId.equals(nodeId)) {
+				actions.add(ctx.newRequest(TaskTestComponent.MULTI_ACTION1_NAME, nodeId, actionInput));
+				if (ctx.localNodeId().equals(nodeId)) {
 					actionInput = new MultiTaskInput();
 					actionInput.setValue(null);
-					actions.add(new TaskActionRequest<MultiTaskInput>(TaskTestComponent.MULTI_ACTION2_NAME, localNodeId, actionInput));
+					actions.add(ctx.newRequest(TaskTestComponent.MULTI_ACTION2_NAME, ctx.localNodeId(), actionInput));
 				}
 			}
 			return actions;
@@ -608,52 +614,43 @@ public class TaskTest {
 
 		/*
 		@Override
-		public void refresh(TaskActionResponse<MultiTaskOutput> action) {
+		public void refresh(Response<MultiTaskOutput> action) {
 			// TODO Auto-generated method stub
 
 		}
 		*/
 
 		@Override
-		public boolean update(TaskActionRequest<MultiTaskInput> request, Set<TaskActionResponse<MultiTaskOutput>> dependencyResponses) {
-			assertEquals(TaskTestComponent.MULTI_ACTION2_NAME, request.action);
+		public void update(Request<?> request, Set<Response<?>> dependencyResponses) {
+			assertEquals(TaskTestComponent.MULTI_ACTION2_NAME, request.name);
 			assertEquals(2, dependencyResponses.size());
-			for (TaskActionResponse<MultiTaskOutput> response : dependencyResponses) {
-				assertEquals(TaskTestComponent.MULTI_ACTION1_NAME, response.action);
+			for (Response<?> res : dependencyResponses) {
+				Response<MultiTaskOutput> response = (Response<MultiTaskOutput>) res;
+				assertEquals(TaskTestComponent.MULTI_ACTION1_NAME, response.name);
 				assertTrue(response.success);
 				assertNotNull(response.output);
-				assertEquals("MultiAction1Output", response.output.getValue());
+				assertNotNull(response.output.value);
+				assertEquals("MultiAction1Output", response.output.value.getValue());
 			}
-			request.input.setValue("MultiAction2Input");
-			return true;
+			((Request<MultiTaskInput>) request).input.value.setValue("MultiAction2Input");
 
 		}
 
 		@Override
-		public MultiTaskOutput finish(Set<TaskActionResponse<MultiTaskOutput>> actions, MultiTaskOutput output) {
+		public void finish(Set<Response<?>> actions, Output<MultiTaskOutput> response) {
 			assertEquals(3, actions.size());
-			for (TaskActionResponse<MultiTaskOutput> response : actions) {
-				assertTrue(response.success);
-				assertNotNull(response.output);
-				if (TaskTestComponent.MULTI_ACTION1_NAME.equals(response.action)) {
-					assertEquals("MultiAction1Output", response.output.getValue());
-				} else if (TaskTestComponent.MULTI_ACTION2_NAME.equals(response.action)) {
-					assertEquals("MultiAction2Output", response.output.getValue());
+			for (Response<?> res : actions) {
+				Response<MultiTaskOutput> actResponse = (Response<MultiTaskOutput>) res;
+				assertTrue(actResponse.success);
+				assertNotNull(actResponse.output);
+				if (TaskTestComponent.MULTI_ACTION1_NAME.equals(actResponse.name)) {
+					assertEquals("MultiAction1Output", actResponse.output.value.getValue());
+				} else if (TaskTestComponent.MULTI_ACTION2_NAME.equals(actResponse.name)) {
+					assertEquals("MultiAction2Output", actResponse.output.value.getValue());
 				}
 			}
-			output = new MultiTaskOutput();
-			output.setValue("MultiTaskOutput");
-			return output;
-		}
-
-		@Override
-		public QName name() {
-			return TaskTestComponent.MULTI_TASK_COORD_NAME;
-		}
-
-		@Override
-		public Set<QName> dependencies() {
-			return Collections.EMPTY_SET;
+			response.value = new MultiTaskOutput();
+			response.value.setValue("MultiTaskOutput");
 		}
 
 	}
@@ -663,13 +660,13 @@ public class TaskTest {
 		MultiTaskOutput out = new MultiTaskOutput();
 
 		@Override
-		public void start(TaskActionContext ctx, MultiTaskInput input) {
+		public void start(TaskActionContext ctx, Input<MultiTaskInput> request) {
 			this.ctx = ctx;
 			ctx.log(LogLevel.INFO, 1, "start");
 			if (TaskTestComponent.MULTI_ACTION1_NAME.equals(ctx.name())) {
-				assertEquals("MultiAction1Input", input.getValue());
+				assertEquals("MultiAction1Input", request.value.getValue());
 			} else if (TaskTestComponent.MULTI_ACTION2_NAME.equals(ctx.name())) {
-				assertEquals("MultiAction2Input", input.getValue());
+				assertEquals("MultiAction2Input", request.value.getValue());
 
 			}
 		}
@@ -686,9 +683,9 @@ public class TaskTest {
 		}
 
 		@Override
-		public MultiTaskOutput finish() {
+		public void finish(Output<MultiTaskOutput> response) {
 			ctx.log(LogLevel.INFO, 3, "finish");
-			return out;
+			response.value = out;
 		}
 
 	}

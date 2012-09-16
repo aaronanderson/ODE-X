@@ -22,9 +22,6 @@ import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
 import static org.apache.ode.spi.exec.Node.NODE_MQ_CORRELATIONID_ACTION;
 
 import java.io.ByteArrayInputStream;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -54,17 +51,16 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
+import javax.xml.bind.Binder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
-import javax.xml.bind.Marshaller;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.ode.runtime.exec.cluster.xml.ClusterConfig;
-import org.apache.ode.spi.exec.platform.xml.ExchangeType;
 import org.apache.ode.runtime.exec.platform.NodeImpl.LocalNodeState;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
@@ -82,10 +78,9 @@ import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
 import org.apache.ode.spi.exec.target.Target;
-import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator;
+import org.apache.ode.spi.exec.task.IOBuilder;
 import org.apache.ode.spi.exec.task.Task.TaskState;
 import org.apache.ode.spi.exec.task.TaskAction;
-import org.apache.ode.spi.exec.task.TaskActionCoordinator;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskDefinition;
@@ -366,7 +361,113 @@ public class TaskExecutor implements Runnable {
 		return targets.toArray(new Target[targets.size()]);
 	}
 
-	public static Class<?> locateTaskTarget(Class<?> clazz, ExchangeType target) throws PlatformException {
+
+	public static <I, O> Document binderDocument(IOType type, Object value, Document doc, IOBuilder<I, O> ioBuilder, Binder<org.w3c.dom.Node> binder)
+			throws PlatformException {
+		if (value != null) {
+			Element el2 = (Element) binder.getXMLNode(value);
+			if (el2 != null) {
+				return el2.getOwnerDocument();
+			}
+			try {
+				switch (type) {
+				case INPUT:
+					ioBuilder.setInput(doc, (I) value, binder);
+					break;
+				case OUTPUT:
+					ioBuilder.setOutput(doc, (O) value, binder);
+					break;
+				}
+				return doc;
+			} catch (JAXBException je) {
+				throw new PlatformException(je);
+			}
+		}
+		return null;
+	}
+
+	public static class JAXBConversion {
+		Object jValue;
+		Document xValue;
+		Binder<org.w3c.dom.Node> binder;
+	}
+
+	public static enum IOType {
+		INPUT, OUTPUT;
+	}
+
+	public static <I, O> JAXBConversion convertXML(IOType type, Element value, IOBuilder<I, O> ioBuilder, JAXBContext jaxbContext) throws PlatformException {
+		JAXBConversion out = new JAXBConversion();
+
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			dbf.setNamespaceAware(true);
+			out.xValue = dbf.newDocumentBuilder().newDocument();
+			out.binder = jaxbContext.createBinder(org.w3c.dom.Node.class);
+			if (value != null) {
+				out.xValue.appendChild(out.xValue.adoptNode(value));
+				switch (type) {
+				case INPUT:
+					out.jValue = ioBuilder.newInput(out.xValue, out.binder);
+					break;
+				case OUTPUT:
+					out.jValue = ioBuilder.newOutput(out.xValue, out.binder);
+					break;
+				}
+			}
+		} catch (Exception je) {
+			log.severe(String.format("Unable to convert input XML target {%s}%s", value.getNamespaceURI(), value.getLocalName()));
+			throw new PlatformException(je);
+		}
+		return out;
+
+	}
+
+	public static <I, O> JAXBConversion convertObject(IOType type, Object value, IOBuilder<I, O> ioBuilder, JAXBContext jaxbContext) throws PlatformException {
+		JAXBConversion out = new JAXBConversion();
+
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			dbf.setNamespaceAware(true);
+			out.xValue = dbf.newDocumentBuilder().newDocument();
+			out.binder = jaxbContext.createBinder(org.w3c.dom.Node.class);
+			out.jValue = value;
+			if (value != null) {
+				switch (type) {
+				case INPUT:
+					ioBuilder.setInput(out.xValue, (I) value, out.binder);
+					break;
+				case OUTPUT:
+					ioBuilder.setOutput(out.xValue, (O) value, out.binder);
+					break;
+				}
+			}
+		} catch (Exception je) {
+			log.severe(String.format("Unable to convert input Object target %s", value.getClass()));
+			throw new PlatformException(je);
+		}
+		return out;
+
+	}
+
+	public static Document newDocument(Element element) {
+		if (element != null) {
+			try {
+				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+				dbf.setNamespaceAware(true);
+				Document doc = dbf.newDocumentBuilder().newDocument();
+				Element el = (Element) doc.adoptNode(element);
+				doc.appendChild(el);
+				return doc;
+			} catch (Exception je) {
+				log.log(Level.SEVERE, "", je);
+			}
+		}
+		return null;
+
+	}
+
+	/*public static Class<?> locateTaskTarget(Class<?> clazz, ExchangeType target) throws PlatformException {
 
 		Class<?> targetClass = null;
 		for (Type t : clazz.getGenericInterfaces()) {
@@ -518,6 +619,7 @@ public class TaskExecutor implements Runnable {
 			throw new PlatformException(je);
 		}
 	}
+	*/
 
 	public void setupTasks(Collection<Component> components) throws PlatformException {
 		/*// add built in actions

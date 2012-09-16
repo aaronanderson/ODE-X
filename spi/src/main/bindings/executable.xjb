@@ -29,67 +29,67 @@
 
 		<!-- add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->
 		<jxb:bindings node="//xs:simpleType[@name='srcIdType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.SrcId" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.SrcId" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='srcIdRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.SrcIdRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.SrcIdRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='memAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.MemAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.MemAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='memAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.MemAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.MemAddRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='prgAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.PrgAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.PrgAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='prgAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.PrgAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.PrgAddRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='prcAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.PrcAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.PrcAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='prcAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.PrcAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.PrcAddRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='thdAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.ThdAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.ThdAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='thdAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.ThdAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.ThdAddRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='stkAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.StkAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.StkAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='stkAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.StkAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.StkAddRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='insAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.InsAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.InsAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='insAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.InsAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.InsAddRef" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='blcAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.BlcAdd" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.BlcAdd" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='blcAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.xml.BlcAddRef" />
+			<jxb:class ref="org.apache.ode.spi.exec.executable.xml.BlcAddRef" />
 		</jxb:bindings>
 
 

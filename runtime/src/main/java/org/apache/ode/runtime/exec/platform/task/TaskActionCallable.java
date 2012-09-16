@@ -20,8 +20,10 @@ package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.MessageHandler.log;
 import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToDocument;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertObject;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertXML;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.binderDocument;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.newDocument;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 
 import java.io.ByteArrayOutputStream;
@@ -62,18 +64,24 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.platform.xml.ExchangeType;
-import org.apache.ode.spi.exec.platform.xml.TaskAction.Exchange;
-import org.apache.ode.spi.exec.platform.xml.TaskActionMessages;
 import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.task.TaskActionImpl.TaskActionIdImpl;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor.IOType;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor.JAXBConversion;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.platform.xml.ExchangeType;
+import org.apache.ode.spi.exec.platform.xml.TaskAction.Exchange;
+import org.apache.ode.spi.exec.platform.xml.TaskActionMessages;
+import org.apache.ode.spi.exec.task.CoordinatedTaskActionDefinition;
 import org.apache.ode.spi.exec.task.CoordinatedTaskActionExec;
+import org.apache.ode.spi.exec.task.IOBuilder;
+import org.apache.ode.spi.exec.task.Input;
+import org.apache.ode.spi.exec.task.Output;
 import org.apache.ode.spi.exec.task.TaskAction;
 import org.apache.ode.spi.exec.task.TaskActionActivity;
 import org.apache.ode.spi.exec.task.TaskActionContext;
@@ -115,6 +123,8 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 
 	private TaskActionIdImpl id;
 	private Element actionInput;
+	private IOBuilder actionIOBuilder;
+	private IOBuilder coordifnationIOBuilder;
 
 	private org.apache.ode.runtime.exec.cluster.xml.TaskCheck config;
 	private JAXBContext actionJAXBContext;
@@ -202,6 +212,10 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 			fail(String.format("Unsupported TaskAction %s", taskAction.name().toString()), false);
 		}
 		actionJAXBContext = def.jaxbContext();
+		actionIOBuilder = def.ioBuilder();
+		if (def instanceof CoordinatedTaskActionDefinition) {
+			coordifnationIOBuilder = ((CoordinatedTaskActionDefinition) def).coordinatedIOBuilder();
+		}
 		taskActionCtx = new TaskActionContextImpl();
 		exec = (TaskActionActivity) def.actionExec().get();
 
@@ -218,7 +232,9 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		taskAction.setStart(new Date());
 		updateAction();
 		try {
-			exec.start(taskActionCtx, convertToObject(actionInput, locateTarget(exec.getClass(), ExchangeType.INPUT), actionJAXBContext));
+			JAXBConversion value = convertXML(IOType.INPUT, actionInput, actionIOBuilder, actionJAXBContext);
+			Input request = new Input(value.jValue, value.binder);
+			exec.start(taskActionCtx, request);
 		} catch (Throwable t) {
 			fail(t.getMessage(), true);
 		}
@@ -241,9 +257,15 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 			while (!taskActionCtx.failed && TaskAction.TaskActionState.EXECUTE == taskAction.state()) {
 				refresh(config.getActionCoordinationTimeout());
 				try {
-					Object cresult = cexec.execute(convertToObject(taskAction.getCoordinationInput(),
-							locateTarget(exec.getClass(), ExchangeType.COORDINATE_INPUT), actionJAXBContext));
-					taskAction.setCoordinationOutput(convertToDocument(cresult, actionJAXBContext));
+					JAXBConversion value = convertXML(IOType.INPUT, taskAction.getCoordinationInput() != null ? taskAction.getCoordinationInput()
+							.getDocumentElement() : null, coordifnationIOBuilder, actionJAXBContext);
+					Input request = new Input(value.jValue, value.binder);
+					value = convertObject(IOType.OUTPUT, null, coordifnationIOBuilder, actionJAXBContext);
+					Output response = new Output(value.jValue, value.binder);
+					cexec.execute(request, response);
+					if (!taskActionCtx.failed) {
+						taskAction.setCoordinationOutput(binderDocument(IOType.OUTPUT, response.value, value.xValue, actionIOBuilder, value.binder));
+					}
 					updateAction();
 				} catch (Throwable t) {
 					fail(t.getMessage(), true);
@@ -259,12 +281,16 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		taskAction.setState(TaskAction.TaskActionState.FINISH);
 		updateAction();
 		try {
-			Object result = exec.finish();
+			JAXBConversion value = convertObject(IOType.OUTPUT, null, actionIOBuilder, actionJAXBContext);
+			Output response = new Output(value.jValue, value.binder);
+			exec.finish(response);
 
 			if (taskActionCtx.failed) {
 				fail(null, true);
 			}
-			taskAction.setDOMOutput(convertToDocument(result, actionJAXBContext));
+			if (!taskActionCtx.failed) {
+				taskAction.setDOMOutput(binderDocument(IOType.OUTPUT, response.value, value.xValue, actionIOBuilder, response.binder));
+			}
 		} catch (Throwable t) {
 			fail(t.getMessage(), true);
 		}
@@ -337,7 +363,7 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		try {
 			actionUpdateLock.lock();
 			taskAction.setState(TaskAction.TaskActionState.valueOf(xmlAction.getState().value()));
-			taskAction.setCoordinationInput(convertToDocument(xmlAction.getExchange().getPayload()));
+			taskAction.setCoordinationInput(xmlAction.getExchange().getPayload() != null ? newDocument(xmlAction.getExchange().getPayload()) : null);
 			taskAction.setCoordinationOutput(null);
 			actionUpdateSignal.signal();
 		} finally {
@@ -361,8 +387,8 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 				//jmsMessage.setJMSReplyTo(actionUpdate);
 				Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.spi.exec.platform.xml.TaskAction.class,
-						xmlAction), bos);
+				marshaller.marshal(
+						new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.spi.exec.platform.xml.TaskAction.class, xmlAction), bos);
 				jmsMessage.writeBytes(bos.toByteArray());
 				actionRequestorSender.send(jmsMessage);
 			} catch (Exception je) {

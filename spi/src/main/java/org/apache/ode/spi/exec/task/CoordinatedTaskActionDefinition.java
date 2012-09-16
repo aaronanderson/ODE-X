@@ -25,16 +25,17 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.namespace.QName;
 
 public class CoordinatedTaskActionDefinition<I, CI, CO, O> extends TaskActionDefinition<I, O> {
-	//final Provider<? extends CoordinatedTaskActionExec<I, CI, CO, O>> actionExec;
+	private final IOBuilder<CI, CO> coordinatedIOBuilder;
 
-	public CoordinatedTaskActionDefinition(QName name, Set<QName> dependencies, Provider<? extends CoordinatedTaskActionExec<I, CI, CO, O>> actionExec,
-			JAXBContext jaxbContext) {
-		super(name, dependencies, actionExec, jaxbContext);
+	public CoordinatedTaskActionDefinition(QName name, Set<QName> dependencies, Provider<? extends TaskActionActivity<I, O>> actionExec,
+			IOBuilder<I, O> ioBuilder, IOBuilder<CI, CO> coordinatedIOBuilder, JAXBContext jaxbContext) {
+		super(name, dependencies, actionExec, ioBuilder, jaxbContext);
+		this.coordinatedIOBuilder = coordinatedIOBuilder;
 	}
 
-	//@SuppressWarnings("unchecked")
-	@Override
-	public Provider<? extends CoordinatedTaskActionExec<I, CI, CO, O>> actionExec() {
-		return (Provider<? extends CoordinatedTaskActionExec<I, CI, CO, O>>) actionExec;
+	public IOBuilder<CI, CO> coordinatedIOBuilder() {
+		return coordinatedIOBuilder;
+
 	}
+
 }

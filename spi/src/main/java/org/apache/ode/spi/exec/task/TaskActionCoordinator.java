@@ -20,51 +20,18 @@ package org.apache.ode.spi.exec.task;
 
 import java.util.Set;
 
-import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.target.Target;
 
-public interface TaskActionCoordinator<TI, I, O, TO> {
+public interface TaskActionCoordinator<TI, TO> {
 	//all will be called on master
 
-	QName name();
-
-	Set<QName> dependencies();
-
-	Set<TaskActionRequest<I>> init(TaskContext ctx, TI input, String localNodeId, TaskCallback<?, ?> callback, Target... targets);
+	Set<Request<?>> init(TaskContext ctx, Input<TI> request, TaskCallback<?, ?> callback, Target... targets);
 
 	//void refresh(TaskActionResponse<O> action);
 
-	boolean update(TaskActionRequest<I> request, Set<TaskActionResponse<O>> dependencyResponses);
+	void update(Request<?> actionRequest, Set<Response<?>> dependencyResponses);
 
-	TO finish(Set<TaskActionResponse<O>> actions, TO output);
-
-	public static class TaskActionRequest<I> {
-		public final QName action;
-		public final String nodeId;
-		public final I input;
-
-		public TaskActionRequest(QName action, String nodeId, I input) {
-			this.action = action;
-			this.input = input;
-			this.nodeId = nodeId;
-		}
-
-	}
-
-	public static class TaskActionResponse<O> {
-		public final QName action;
-		public final O output;
-		public final String nodeId;
-		public final boolean success;
-
-		public TaskActionResponse(QName action, String nodeId, O output, boolean success) {
-			this.action = action;
-			this.output = output;
-			this.nodeId = nodeId;
-			this.success = success;
-		}
-
-	}
+	void finish(Set<Response<?>> actions, Output<TO> response);
 
 }

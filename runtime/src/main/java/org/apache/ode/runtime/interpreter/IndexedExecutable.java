@@ -29,12 +29,12 @@ import org.apache.ode.runtime.interpreter.IndexedBlockAddress.IndexedBlcAddRefAd
 import org.apache.ode.runtime.interpreter.IndexedInstructionAddress.IndexedInsAddAdapter;
 import org.apache.ode.runtime.interpreter.IndexedInstructionAddress.IndexedInsAddRefAdapter;
 import org.apache.ode.spi.exec.executable.xml.Block;
-import org.apache.ode.spi.exec.xml.BlockAddress.BlcAddAdapter;
-import org.apache.ode.spi.exec.xml.BlockAddress.BlcAddRefAdapter;
 import org.apache.ode.spi.exec.executable.xml.Executable;
 import org.apache.ode.spi.exec.executable.xml.Instruction;
-import org.apache.ode.spi.exec.xml.InstructionAddress.InsAddAdapter;
-import org.apache.ode.spi.exec.xml.InstructionAddress.InsAddRefAdapter;
+import org.apache.ode.spi.exec.executable.xml.BlockAddress.BlcAddAdapter;
+import org.apache.ode.spi.exec.executable.xml.BlockAddress.BlcAddRefAdapter;
+import org.apache.ode.spi.exec.executable.xml.InstructionAddress.InsAddAdapter;
+import org.apache.ode.spi.exec.executable.xml.InstructionAddress.InsAddRefAdapter;
 
 public class IndexedExecutable {
 
@@ -55,7 +55,7 @@ public class IndexedExecutable {
 		return listener.getExecutable();
 	}
 
-	static class IndexedListener extends Unmarshaller.Listener {
+	public static class IndexedListener extends Unmarshaller.Listener {
 		Map<String, IndexedBlockAddress> blocks;
 		Map<String, IndexedInstructionAddress> instructions;
 		IndexedExecutable executable;

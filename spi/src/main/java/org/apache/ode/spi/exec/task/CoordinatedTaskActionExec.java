@@ -20,6 +20,6 @@ package org.apache.ode.spi.exec.task;
 
 public interface CoordinatedTaskActionExec<I, CI, CO, O> extends TaskActionActivity<I, O> {
 
-	public CO execute(CI coordination);// throws TaskException;
+	public void execute(Input<CI> request, Output <CI> response);// throws TaskException;
 
 }

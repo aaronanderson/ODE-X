@@ -20,58 +20,39 @@ package org.apache.ode.runtime.exec.platform;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.activation.DataHandler;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.ode.runtime.exec.modules.ServerModule.VMServerModule;
 import org.apache.ode.runtime.exec.task.test.xml.MultiTaskInput;
 import org.apache.ode.runtime.exec.task.test.xml.MultiTaskOutput;
-import org.apache.ode.runtime.exec.task.test.xml.SingleTaskInput;
-import org.apache.ode.runtime.exec.task.test.xml.SingleTaskOutput;
 import org.apache.ode.spi.exec.Component;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.Platform.PlatformTask;
+import org.apache.ode.spi.exec.Platform.PlatformTaskCommand;
 import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.target.Target;
-import org.apache.ode.spi.exec.target.TargetAll;
-import org.apache.ode.spi.exec.target.TargetNode;
-import org.apache.ode.spi.exec.task.Task;
-import org.apache.ode.spi.exec.task.Task.TaskId;
-import org.apache.ode.spi.exec.task.Task.TaskState;
-import org.apache.ode.spi.exec.task.TaskAction;
+import org.apache.ode.spi.exec.task.Input;
+import org.apache.ode.spi.exec.task.Output;
 import org.apache.ode.spi.exec.task.TaskActionContext;
-import org.apache.ode.spi.exec.task.TaskActionCoordinator;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskActionExec;
-import org.apache.ode.spi.exec.task.TaskCallback;
-import org.apache.ode.spi.exec.task.TaskContext;
 import org.apache.ode.spi.exec.task.TaskDefinition;
+import org.apache.ode.spi.repo.Repository;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import com.google.inject.AbstractModule;
 import com.mycila.inject.jsr250.Jsr250;
@@ -201,20 +182,50 @@ public class ProgramTest {
 		public static final String TEST_NS = "http://ode.apache.org/ProgramTest";
 		public static final QName COMPONENT_NAME = new QName(TEST_NS, "ProgramComponent");
 
-		public static final QName SETUP_TASK_COORD_NAME = new QName(TEST_NS, "SetupTaskCoordinator");
+		public static final String TEST_MIMETYPE = "application/program-test";
 
+		public static final QName SETUP_TASK_COORD_NAME = new QName(TEST_NS, "SetupTaskCoordinator");
 		public static final QName SETUP_ACTION_NAME = new QName(TEST_NS, "SetupTaskAction");
 
 		@Inject
 		Node node;
 
 		@Inject
+		Repository repository;
+
+		@Inject
 		Provider<SetupTaskActionExec> setupAction;
 
 		@PostConstruct
 		public void init() {
-			log.fine("Initializing ProgramTestComponent");
+			log.fine("Initializing ProgramTest Component");
 			node.registerComponent(this);
+			repository.registerFileExtension("test", TEST_MIMETYPE);
+			repository.registerNamespace(TEST_NS, TEST_MIMETYPE);
+			repository.registerCommandInfo(TEST_MIMETYPE, Platform.PlatformTaskCommand.PLATFORM_TASK_CMD, true, new Provider<PlatformTaskCommand>() {
+
+				@Override
+				public PlatformTaskCommand get() {
+					return new PlatformTaskCommand() {
+
+						@Override
+						public void setCommandContext(String verb, DataHandler dh) throws IOException {
+
+						}
+
+						@Override
+						public QName task(PlatformTask platformTask) {
+							switch (platformTask) {
+
+							case SETUP_TASK:
+
+							}
+							return null;
+						}
+					};
+				}
+
+			});
 			log.fine("ProgramTestComponent Initialized");
 
 		}
@@ -237,7 +248,7 @@ public class ProgramTest {
 		@Override
 		public List<TaskActionDefinition> actions() {
 			ArrayList<TaskActionDefinition> defs = new ArrayList<TaskActionDefinition>();
-			defs.add(new TaskActionDefinition(SETUP_ACTION_NAME, (Set<QName>) Collections.EMPTY_SET, setupAction, programJAXBContext));
+			//defs.add(new TaskActionDefinition(SETUP_ACTION_NAME, (Set<QName>) Collections.EMPTY_SET, setupAction, programJAXBContext));
 			return defs;
 		}
 
@@ -255,67 +266,63 @@ public class ProgramTest {
 
 	}
 
-	public static class SetupTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
+	/*
+		public static class SetupTaskActionCoordinator implements TaskActionCoordinator<SingleTaskInput, SingleTaskInput, SingleTaskOutput, SingleTaskOutput> {
 
-		@Override
-		public Set<TaskActionRequest<SingleTaskInput>> init(TaskContext ctx, SingleTaskInput input, String localNodeId, TaskCallback<?, ?> callback,
-				Target... targets) {
-			assertEquals("SingleTaskInput", input.getValue());
-			input.setValue("SingleActionInput");
-			String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
-			HashSet<TaskActionRequest<SingleTaskInput>> actions = new HashSet<TaskActionRequest<SingleTaskInput>>();
-			TaskActionRequest<SingleTaskInput> req = new TaskActionRequest<SingleTaskInput>(ProgramTestComponent.SETUP_ACTION_NAME, nodeIds[0], input);
-			actions.add(req);
-			return actions;
+			@Override
+			public Set<TaskActionRequest<?>> init(TaskContext ctx, TaskRequest<SingleTaskInput> input, TaskCallback<?, ?> callback,
+					Target... targets) {
+				assertEquals("SingleTaskInput", input.getValue());
+				input.setValue("SingleActionInput");
+				String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
+				HashSet<TaskActionRequest<SingleTaskInput>> actions = new HashSet<TaskActionRequest<SingleTaskInput>>();
+				TaskActionRequest<SingleTaskInput> req = new TaskActionRequest<SingleTaskInput>(ProgramTestComponent.SETUP_ACTION_NAME, nodeIds[0], input);
+				actions.add(req);
+				return actions;
+			}
+
+			
+			@Override
+			public boolean update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
+				fail();//should not be called
+				return false;
+			}
+
+			@Override
+			public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
+				assertEquals(1, actions.size());
+				TaskActionResponse<SingleTaskOutput> response = actions.iterator().next();
+				assertEquals(ProgramTestComponent.SETUP_ACTION_NAME, response.action);
+				assertTrue(response.success);
+				assertNotNull(response.output);
+				assertEquals("SingleActionOutput", response.output.getValue());
+				output = new SingleTaskOutput();
+				output.setValue("SingleTaskOutput");
+				return output;
+			}
+
+			@Override
+			public QName name() {
+				return ProgramTestComponent.SETUP_TASK_COORD_NAME;
+			}
+
+			@Override
+			public Set<QName> dependencies() {
+				return Collections.EMPTY_SET;
+			}
+
 		}
-
-		/*
-				@Override
-				public void refresh(TaskActionResponse<SingleTaskOutput> action) {
-					assertEquals(TaskTestComponent.SINGLE_ACTION_NAME, action.action);
-				}
-		*/
-		@Override
-		public boolean update(TaskActionRequest<SingleTaskInput> request, Set<TaskActionResponse<SingleTaskOutput>> dependencyResponses) {
-			fail();//should not be called
-			return false;
-		}
-
-		@Override
-		public SingleTaskOutput finish(Set<TaskActionResponse<SingleTaskOutput>> actions, SingleTaskOutput output) {
-			assertEquals(1, actions.size());
-			TaskActionResponse<SingleTaskOutput> response = actions.iterator().next();
-			assertEquals(ProgramTestComponent.SETUP_ACTION_NAME, response.action);
-			assertTrue(response.success);
-			assertNotNull(response.output);
-			assertEquals("SingleActionOutput", response.output.getValue());
-			output = new SingleTaskOutput();
-			output.setValue("SingleTaskOutput");
-			return output;
-		}
-
-		@Override
-		public QName name() {
-			return ProgramTestComponent.SETUP_TASK_COORD_NAME;
-		}
-
-		@Override
-		public Set<QName> dependencies() {
-			return Collections.EMPTY_SET;
-		}
-
-	}
-
+	*/
 	public static class SetupTaskActionExec implements TaskActionExec<MultiTaskInput, MultiTaskOutput> {
 		TaskActionContext ctx;
 		MultiTaskOutput out = new MultiTaskOutput();
 
 		@Override
-		public void start(TaskActionContext ctx, MultiTaskInput input) {
+		public void start(TaskActionContext ctx, Input<MultiTaskInput> request) {
 			this.ctx = ctx;
 			ctx.log(LogLevel.INFO, 1, "start");
 			if (ProgramTestComponent.SETUP_ACTION_NAME.equals(ctx.name())) {
-				assertEquals("MultiAction1Input", input.getValue());
+				assertEquals("MultiAction1Input", request.value.getValue());
 			}
 		}
 
@@ -328,9 +335,9 @@ public class ProgramTest {
 		}
 
 		@Override
-		public MultiTaskOutput finish() {
+		public void finish(Output<MultiTaskOutput> response) {
 			ctx.log(LogLevel.INFO, 3, "finish");
-			return out;
+
 		}
 
 	}

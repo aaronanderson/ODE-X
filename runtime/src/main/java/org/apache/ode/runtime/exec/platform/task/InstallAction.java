@@ -20,14 +20,16 @@ package org.apache.ode.runtime.exec.platform.task;
 
 import org.apache.ode.spi.exec.platform.xml.InstallProgramInput;
 import org.apache.ode.spi.exec.platform.xml.InstallProgramOutput;
-import org.apache.ode.spi.exec.task.TaskActionTransaction;
+import org.apache.ode.spi.exec.task.Input;
+import org.apache.ode.spi.exec.task.Output;
 import org.apache.ode.spi.exec.task.TaskActionContext;
 import org.apache.ode.spi.exec.task.TaskActionExec;
+import org.apache.ode.spi.exec.task.TaskActionTransaction;
 
 public class InstallAction implements TaskActionExec<InstallProgramInput, InstallProgramOutput>, TaskActionTransaction {
 
 	@Override
-	public void start(TaskActionContext ctx, InstallProgramInput input) {
+	public void start(TaskActionContext ctx, Input<InstallProgramInput> request) {
 
 	}
 
@@ -37,9 +39,8 @@ public class InstallAction implements TaskActionExec<InstallProgramInput, Instal
 	}
 
 	@Override
-	public InstallProgramOutput finish() {
+	public void finish(Output<InstallProgramOutput> response) {
 
-		return null;
 	}
 
 	@Override

@@ -28,10 +28,10 @@ import java.util.Map;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
 
-import org.apache.ode.runtime.ectx.test.xml.GetOperationTest;
-import org.apache.ode.runtime.ectx.test.xml.SetOperationTest;
-import org.apache.ode.runtime.ectx.test.xml.TestVariables;
-import org.apache.ode.runtime.ectx.test.xml.TestVariables.TestVariable;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetOperationTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.SetOperationTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.TestVariables;
+import org.apache.ode.runtime.exec.ectx.test.xml.TestVariables.TestVariable;
 import org.apache.ode.runtime.exec.executable.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
 import org.apache.ode.runtime.exec.executable.TestObjectFactory.TestObjectFactoryImpl;
 import org.apache.ode.runtime.exec.executable.test.xml.InstructionTest;

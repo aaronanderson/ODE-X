@@ -23,9 +23,9 @@ import javax.inject.Provider;
 import javax.xml.bind.annotation.XmlRegistry;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.apache.ode.runtime.ectx.test.xml.GetOperationTest;
-import org.apache.ode.runtime.ectx.test.xml.ObjectFactory;
-import org.apache.ode.runtime.ectx.test.xml.SetOperationTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetOperationTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.ObjectFactory;
+import org.apache.ode.runtime.exec.ectx.test.xml.SetOperationTest;
 
 @XmlRegistry
 public abstract class TestCtxObjectFactory extends ObjectFactory {

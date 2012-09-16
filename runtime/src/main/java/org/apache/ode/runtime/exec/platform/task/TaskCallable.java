@@ -20,11 +20,10 @@ package org.apache.ode.runtime.exec.platform.task;
 
 import static org.apache.ode.runtime.exec.platform.MessageHandler.log;
 import static org.apache.ode.runtime.exec.platform.NodeImpl.PLATFORM_JAXB_CTX;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToDocument;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToElement;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertToObject;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.locateActionTarget;
-import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.locateTaskTarget;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertObject;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.binderDocument;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.convertXML;
+import static org.apache.ode.runtime.exec.platform.task.TaskExecutor.newDocument;
 import static org.apache.ode.spi.exec.Node.CLUSTER_NAMESPACE;
 import static org.apache.ode.spi.exec.Node.NODE_MQ_CORRELATIONID_ACTION;
 
@@ -33,6 +32,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,38 +65,42 @@ import javax.persistence.PersistenceException;
 import javax.persistence.PersistenceUnit;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessOrder;
 import javax.xml.namespace.QName;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.ode.spi.exec.platform.xml.ExchangeType;
-import org.apache.ode.spi.exec.platform.xml.TaskAction.Exchange;
 import org.apache.ode.runtime.exec.platform.MessageImpl;
 import org.apache.ode.runtime.exec.platform.NodeImpl.MessageCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.NodeImpl.TaskCheck;
 import org.apache.ode.runtime.exec.platform.target.TargetImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskCallable.TaskResult;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor.IOType;
+import org.apache.ode.runtime.exec.platform.task.TaskExecutor.JAXBConversion;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.platform.xml.ExchangeType;
+import org.apache.ode.spi.exec.platform.xml.TaskAction.Exchange;
 import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator;
-import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator.TaskActionCoordinationRequest;
-import org.apache.ode.spi.exec.task.CoordinatedTaskActionCoordinator.TaskActionCoordinationResponse;
+import org.apache.ode.spi.exec.task.IOBuilder;
+import org.apache.ode.spi.exec.task.Input;
+import org.apache.ode.spi.exec.task.Output;
+import org.apache.ode.spi.exec.task.Request;
+import org.apache.ode.spi.exec.task.Response;
 import org.apache.ode.spi.exec.task.Task.TaskId;
 import org.apache.ode.spi.exec.task.Task.TaskState;
 import org.apache.ode.spi.exec.task.TaskAction.TaskActionState;
 import org.apache.ode.spi.exec.task.TaskActionCoordinator;
-import org.apache.ode.spi.exec.task.TaskActionCoordinator.TaskActionRequest;
-import org.apache.ode.spi.exec.task.TaskActionCoordinator.TaskActionResponse;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskContext;
 import org.apache.ode.spi.exec.task.TaskDefinition;
+import org.apache.ode.spi.exec.task.TaskDefinition.TaskActionCoordinatorDefinition;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -140,7 +145,12 @@ public class TaskCallable implements Callable<TaskResult> {
 	private TaskIdImpl taskId;
 	private TaskContextImpl taskContext;
 	private TaskCallback<?, ?> callback;
+	private IOBuilder taskIOBuilder;
 	private Element taskInput;
+	private Element taskOutput;
+
+	private JAXBContext taskJaxbContext;
+
 	private Target[] targets;
 	private EntityManager pmgr;
 	private TaskImpl task;
@@ -176,8 +186,9 @@ public class TaskCallable implements Callable<TaskResult> {
 		Element actionOutput;
 		JAXBContext actionJaxbContext;
 		boolean addedTaskAction = false;
-		TaskActionResponse response;
-		TaskActionRequest request;
+		IOBuilder actionIOBuilder;
+		Response response;
+		Request request;
 		Set<TaskActionExecution> prevDependencies = new HashSet<TaskActionExecution>();
 		//Set<TaskActionExecution> nextDependencies = new HashSet<TaskActionExecution>();
 		private Queue actionRequestor;
@@ -187,11 +198,13 @@ public class TaskCallable implements Callable<TaskResult> {
 	}
 
 	public class TaskCoordinatorExecution {
+		QName name;
+		Set<QName> dependendencies;
 		TaskActionCoordinator coordinator;
 		Set<TaskActionExecution> requests = new HashSet<TaskActionExecution>();
-		JAXBContext taskJaxbContext;
 		boolean initialized = false;
 		boolean finialized = false;
+		int initOrder = -1;
 	}
 
 	public static class TaskResult {
@@ -293,6 +306,16 @@ public class TaskCallable implements Callable<TaskResult> {
 
 		}
 
+		@Override
+		public String localNodeId() {
+			return nodeId;
+		}
+
+		@Override
+		public <I> Request<I> newRequest(QName action, String nodeId, I input) {
+			TaskActionDefinition def = actions.get(action);
+			return new Request<I>(action, nodeId, new Input(input, def.jaxbContext().createBinder(org.w3c.dom.Node.class)), false);
+		}
 	}
 
 	public void init(Map<QName, TaskCoordinatorExecution> coordinators, Map<QName, Set<TaskActionExecution>> actionExecutions) throws PlatformException {
@@ -305,25 +328,35 @@ public class TaskCallable implements Callable<TaskResult> {
 		task.setState(TaskState.START);
 		task.setStart(new Date());
 		updateTask();
-
-		for (TaskActionCoordinator coordinator : def.coordinators()) {
+		try {
+			taskJaxbContext = def.jaxbContext();
+		} catch (JAXBException je) {
+			throw new PlatformException(je);
+		}
+		taskIOBuilder = def.ioFactory();
+		for (TaskActionCoordinatorDefinition coordinatorDef : def.coordinators()) {
 			TaskCoordinatorExecution taskCordExec = new TaskCoordinatorExecution();
-			taskCordExec.taskJaxbContext = def.jaxbContext();
-			taskCordExec.coordinator = coordinator;
+			taskCordExec.name = coordinatorDef.name;
+			taskCordExec.dependendencies = coordinatorDef.dependencies;
+			taskCordExec.coordinator = (TaskActionCoordinator) coordinatorDef.coordinator.get();
 			taskCordExec.initialized = false;
 			taskCordExec.finialized = false;
-			coordinators.put(coordinator.name(), taskCordExec);
+			coordinators.put(coordinatorDef.name, taskCordExec);
 		}
 		if (coordinators.size() == 0) {
 			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskCoordinators registered for task %s", task.name()), true);
 		}
 		for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
-			for (QName dep : (Set<QName>) coordExec.coordinator.dependencies()) {
+			for (QName dep : (Set<QName>) coordExec.dependendencies) {
 				if (!coordinators.containsKey(dep)) {
-					taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator %s dependency %s not registered", coordExec.coordinator.name(), dep), true);
+					taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator %s dependency %s not registered", coordExec.name, dep), true);
 				}
 			}
 		}
+
+		JAXBConversion value = convertXML(IOType.INPUT, taskInput, taskIOBuilder, taskJaxbContext);
+		Input taskRequest = new Input(value.jValue, value.binder);
+		int initOrder = 0;
 		boolean finished = false;
 		while (!finished) {
 			finished = true;
@@ -331,7 +364,7 @@ public class TaskCallable implements Callable<TaskResult> {
 			Set<QName> remaining = new HashSet<QName>();
 			for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
 				boolean dependenciesCompleted = true;
-				for (QName depExecName : (Set<QName>) coordExec.coordinator.dependencies()) {
+				for (QName depExecName : (Set<QName>) coordExec.dependendencies) {
 					if (!coordinators.get(depExecName).initialized) {
 						dependenciesCompleted = false;
 						remaining.add(depExecName);
@@ -339,25 +372,27 @@ public class TaskCallable implements Callable<TaskResult> {
 					}
 				}
 				if (dependenciesCompleted) {
-					Set<TaskActionRequest<?>> requests = coordExec.coordinator.init(taskContext,
-							convertToObject(taskInput, locateTaskTarget(coordExec.coordinator.getClass(), ExchangeType.INPUT), coordExec.taskJaxbContext),
-							nodeId, callback, targets);
+					coordExec.initOrder = initOrder++;
+					Set<Request<?>> requests = coordExec.coordinator.init(taskContext, taskRequest, callback, targets);
+					coordExec.initialized=true;
 
-					for (TaskActionRequest<?> canidate : requests) {
-						if (!actions.containsKey(canidate.action)) {
-							taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.action.toString()), true);
+					for (Request<?> canidate : requests) {
+						TaskActionDefinition tad = actions.get(canidate.name);
+						if (tad == null) {
+							taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.name.toString()), true);
 						}
-						if (actionExecutions.containsKey(canidate.action)) {
-							for (TaskActionExecution tae : actionExecutions.get(canidate.action)) {
+						if (actionExecutions.containsKey(canidate.name)) {
+							for (TaskActionExecution tae : actionExecutions.get(canidate.name)) {
 								if (canidate.nodeId.equals(tae.request.nodeId)) {
-									taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.action.toString()), true);
+									taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.name.toString()), true);
 								}
 							}
 						}
 						TaskActionExecution tae = new TaskActionExecution();
 						tae.owner = coordExec;
 						tae.request = canidate;
-						tae.actionJaxbContext = actions.get(canidate.action).jaxbContext();
+						tae.actionJaxbContext = tad.jaxbContext();
+						tae.actionIOBuilder = tad.ioBuilder();
 						try {
 							tae.actionRequestor = taskUpdateSession.createTemporaryQueue();
 							tae.actionRequestorReceiver = taskUpdateSession.createReceiver(tae.actionRequestor);
@@ -366,10 +401,10 @@ public class TaskCallable implements Callable<TaskResult> {
 							taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true);
 						}
 						coordExec.requests.add(tae);
-						Set<TaskActionExecution> taes = actionExecutions.get(canidate.action);
+						Set<TaskActionExecution> taes = actionExecutions.get(canidate.name);
 						if (taes == null) {
 							taes = new HashSet<TaskActionExecution>();
-							actionExecutions.put(canidate.action, taes);
+							actionExecutions.put(canidate.name, taes);
 						}
 						taes.add(tae);
 					}
@@ -392,12 +427,12 @@ public class TaskCallable implements Callable<TaskResult> {
 			Set<QName> remaining = new HashSet<QName>();
 			for (Set<TaskActionExecution> actionExecs : actionExecutions.values()) {
 				for (TaskActionExecution actionExec : actionExecs) {
-					if (resolved.get(actionExec.request.action) != null) {
-						if (resolved.get(actionExec.request.action)) {
+					if (resolved.get(actionExec.request.name) != null) {
+						if (resolved.get(actionExec.request.name)) {
 							continue;
 						}
 						boolean dependenciesResolved = true;
-						for (QName dep : actions.get(actionExec.request.action).dependencies()) {
+						for (QName dep : actions.get(actionExec.request.name).dependencies()) {
 							if (resolved.get(dep)) {
 								continue;
 							} else {
@@ -408,18 +443,18 @@ public class TaskCallable implements Callable<TaskResult> {
 							}
 						}
 						if (dependenciesResolved) {
-							resolved.put(actionExec.request.action, true);
+							resolved.put(actionExec.request.name, true);
 							modified = true;
 						}
 					} else {
-						resolved.put(actionExec.request.action, false);
+						resolved.put(actionExec.request.name, false);
 						finished = false;
 						modified = true;
-						for (QName dep : actions.get(actionExec.request.action).dependencies()) {
+						for (QName dep : actions.get(actionExec.request.name).dependencies()) {
 							Set<TaskActionExecution> depActionExec = actionExecutions.get(dep);
 							if (depActionExec == null) {
 								taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction %s dependency %s not submitted for execution by a task coordinator",
-										actionExec.request.action, dep), true);
+										actionExec.request.name, dep), true);
 							}
 							actionExec.prevDependencies.addAll(depActionExec);
 							//depActionExec.nextDependencies.add(actionExec);
@@ -438,7 +473,7 @@ public class TaskCallable implements Callable<TaskResult> {
 		pmgr.getTransaction().begin();
 		try {
 			task.setState(TaskState.EXECUTE);
-			task.setDOMInput(convertToDocument(taskInput));
+			task.setDOMInput(newDocument(taskInput));
 			Set<TargetImpl> targetEntities = new HashSet<TargetImpl>();
 			for (Target target : targets) {
 				TargetImpl targetImpl = (TargetImpl) target;
@@ -457,7 +492,7 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	public void executeAction(TaskActionExecution tae) throws PlatformException {
 		if (System.currentTimeMillis() - tae.lastUpdate > config.getActionTimeout()) {
-			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.action, tae.request.nodeId), false);
+			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.name, tae.request.nodeId), false);
 			//tae.state=TaskActionState.FAILED;
 		}
 		org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = convert(tae);
@@ -473,12 +508,13 @@ public class TaskCallable implements Callable<TaskResult> {
 					}
 				}
 				if (ready && tae.previousState != TaskActionState.SUBMIT) {
-					Set<TaskActionResponse> dependencies = new HashSet<TaskActionResponse>();
+					Set<Response> dependencies = new HashSet<Response>();
 					for (TaskActionExecution dep : tae.prevDependencies) {
 						dependencies.add(dep.response);
 					}
 					if (dependencies.size() > 0) {
-						if (!tae.owner.coordinator.update(tae.request, dependencies)) {
+						tae.owner.coordinator.update(tae.request, dependencies);
+						if (tae.request.skipped) {
 							tae.state = TaskActionState.SKIPPED;
 							return;
 						}
@@ -487,7 +523,8 @@ public class TaskCallable implements Callable<TaskResult> {
 					if (tae.request.input != null) {
 						xmlTaskAction.setExchange(new Exchange());
 						xmlTaskAction.getExchange().setType(ExchangeType.INPUT);
-						xmlTaskAction.getExchange().setPayload(convertToElement(tae.request.input, tae.actionJaxbContext));
+						JAXBConversion value = convertObject(IOType.INPUT, tae.request.input.value, tae.actionIOBuilder, tae.actionJaxbContext);
+						xmlTaskAction.getExchange().setPayload(value.xValue.getDocumentElement());
 					}
 					updateTaskAction(xmlTaskAction, tae.actionCorrelationId, tae.actionRequestor);
 					tae.previousState = TaskActionState.SUBMIT;//so we don't resend the same request before an update from the action executor
@@ -514,23 +551,24 @@ public class TaskCallable implements Callable<TaskResult> {
 			case EXECUTE:
 				if (tae.owner instanceof CoordinatedTaskActionCoordinator
 						&& (tae.actionCoordinationOutput != null || tae.previousState == TaskActionState.START)) {
-					Object input = convertToObject(tae.actionCoordinationOutput,
-							locateActionTarget(tae.owner.coordinator.getClass(), ExchangeType.COORDINATE_INPUT), tae.owner.taskJaxbContext);
+					TaskActionDefinition coordAction = actions.get(xmlTaskAction.getName());
+					if (coordAction == null) {
 
-					TaskActionCoordinationResponse cres = new TaskActionCoordinationResponse(tae.request.action, tae.request.nodeId, input, false);
-					TaskActionCoordinationRequest creq = ((CoordinatedTaskActionCoordinator) tae.owner).coordinate(cres);
+					}
+					JAXBConversion value = convertXML(IOType.OUTPUT, tae.actionCoordinationOutput, coordAction.ioBuilder(), tae.actionJaxbContext);
+					Response cres = new Response(coordAction.action(), xmlTaskAction.getNodeId(), new Output(value.jValue, value.binder), true);
+					Request creq = ((CoordinatedTaskActionCoordinator) tae.owner).coordinate(cres);
 					tae.actionCoordinationOutput = null;
 					xmlTaskAction.setState(org.apache.ode.spi.exec.platform.xml.TaskActionState.EXECUTE);
 					xmlTaskAction.setExchange(new Exchange());
 					xmlTaskAction.getExchange().setType(ExchangeType.COORDINATE_INPUT);
-					xmlTaskAction.getExchange().setPayload(convertToElement(creq.input, tae.actionJaxbContext));
+					xmlTaskAction.getExchange().setPayload(value.xValue.getDocumentElement());
 					updateTaskAction(xmlTaskAction, tae.actionCorrelationId, tae.actionRequestor);
 				}
 				break;
 			case PENDING:
-				Object output = tae.actionOutput != null ? convertToObject(tae.actionOutput,
-						locateActionTarget(tae.owner.coordinator.getClass(), ExchangeType.OUTPUT), tae.actionJaxbContext) : null;
-				tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, output, true);
+				JAXBConversion value = convertXML(IOType.OUTPUT, tae.actionOutput, tae.actionIOBuilder, tae.actionJaxbContext);
+				tae.response = new Response(tae.request.name, tae.request.nodeId, new Output(value.jValue, value.binder), true);
 				break;
 			/*case FINISH:
 			break;
@@ -541,14 +579,13 @@ public class TaskCallable implements Callable<TaskResult> {
 			break;*/
 			case COMPLETE:
 				if (tae.previousState != TaskActionState.PENDING) {
-					output = tae.actionOutput != null ? convertToObject(tae.actionOutput,
-							locateActionTarget(tae.owner.coordinator.getClass(), ExchangeType.OUTPUT), tae.actionJaxbContext) : null;
-					tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, output, true);
+					value = convertXML(IOType.OUTPUT, tae.actionOutput, tae.actionIOBuilder, tae.actionJaxbContext);
+					tae.response = new Response(tae.request.name, tae.request.nodeId, new Output(value.jValue, value.binder), true);
 				}
 				break;
 
 			case SKIPPED:
-				tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false);
+				tae.response = new Response(tae.request.name, tae.request.nodeId, null, false);
 				pmgr.getTransaction().begin();
 				try {
 					TaskActionImpl taskAction = pmgr.find(TaskActionImpl.class, Long.valueOf(xmlTaskAction.getActionId()));
@@ -569,9 +606,8 @@ public class TaskCallable implements Callable<TaskResult> {
 				break;
 
 			case FAILED:
-				output = tae.actionOutput != null ? convertToObject(tae.actionOutput,
-						locateActionTarget(tae.owner.coordinator.getClass(), ExchangeType.OUTPUT), tae.actionJaxbContext) : null;
-				tae.response = new TaskActionResponse(tae.request.action, tae.request.nodeId, output, false);
+				value = convertXML(IOType.OUTPUT, tae.actionOutput, tae.actionIOBuilder, tae.actionJaxbContext);
+				tae.response = new Response(tae.request.name, tae.request.nodeId, new Output(value.jValue, value.binder), false);
 				break;
 
 			}
@@ -603,36 +639,34 @@ public class TaskCallable implements Callable<TaskResult> {
 		task.setState(TaskState.FINISH);
 		updateTask();
 
-		boolean finished = false;
-		while (!finished) {//dependency loops should have already been resolved
-			finished = true;
-			Set<QName> remaining = new HashSet<QName>();
-			for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
-				boolean dependenciesCompleted = true;
-				for (QName depExecName : (Set<QName>) coordExec.coordinator.dependencies()) {
-					if (coordinators.get(depExecName).initialized && !coordinators.get(depExecName).finialized) {
-						dependenciesCompleted = false;
-						remaining.add(depExecName);
-						break;
-					}
-				}
-				if (dependenciesCompleted) {
-					Object output = convertToObject(doc, locateTaskTarget(coordExec.coordinator.getClass(), ExchangeType.OUTPUT), coordExec.taskJaxbContext);
-					Set<TaskActionResponse> responses = new HashSet<TaskActionResponse>();
-					for (TaskActionExecution tae : coordExec.requests) {
-						if (tae.response != null) {
-							responses.add(tae.response);
-						} else {
-							responses.add(new TaskActionResponse(tae.request.action, tae.request.nodeId, null, false));
-						}
-					}
-					output = coordExec.coordinator.finish(responses, output);
-					doc = convertToDocument(output, coordExec.taskJaxbContext);
+		List<TaskCoordinatorExecution> destroyList = new ArrayList<TaskCoordinatorExecution>(coordinators.values());
+		Collections.sort(destroyList, new Comparator<TaskCoordinatorExecution>() {
+
+			@Override
+			public int compare(TaskCoordinatorExecution arg0, TaskCoordinatorExecution arg1) {
+				//we want to destroy in backwards order
+				return arg0.initOrder < arg1.initOrder ? 1 : arg0.initOrder > arg1.initOrder ? -1 : 0;
+			}
+		});
+		JAXBConversion value = convertObject(IOType.OUTPUT, null, taskIOBuilder, taskJaxbContext);
+		Output response = new Output(value.jValue, value.binder);
+		for (TaskCoordinatorExecution coordExec : destroyList) {
+			if (!coordExec.initialized) {
+				continue;
+			}
+			//Object output = convertToObject(doc, locateTaskTarget(coordExec.coordinator.getClass(), ExchangeType.OUTPUT), coordExec.taskJaxbContext);
+			Set<Response> responses = new HashSet<Response>();
+			for (TaskActionExecution tae : coordExec.requests) {
+				if (tae.response != null) {
+					responses.add(tae.response);
 				} else {
-					finished = false;
+					Response res = new Response(tae.request.name, tae.request.nodeId, null, false);
+					responses.add(res);
 				}
 			}
+			coordExec.coordinator.finish(responses, response);
 		}
+		doc = binderDocument(IOType.OUTPUT, response.value, value.xValue, taskIOBuilder, value.binder);
 
 		Set<TaskActionExecution> pending = new HashSet<TaskActionExecution>();
 		for (Set<TaskActionExecution> taes : actionExecutions.values()) {
@@ -691,8 +725,8 @@ public class TaskCallable implements Callable<TaskResult> {
 						byte[] payload = new byte[(int) message.getBodyLength()];
 						message.readBytes(payload);
 						Unmarshaller umarshaller = PLATFORM_JAXB_CTX.createUnmarshaller();
-						JAXBElement<org.apache.ode.spi.exec.platform.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(
-								new ByteArrayInputStream(payload)), org.apache.ode.spi.exec.platform.xml.TaskAction.class);
+						JAXBElement<org.apache.ode.spi.exec.platform.xml.TaskAction> element = umarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(
+								payload)), org.apache.ode.spi.exec.platform.xml.TaskAction.class);
 						org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = element.getValue();
 						tae.taskActionId = xmlTaskAction.getActionId();
 						tae.previousState = tae.state;
@@ -782,8 +816,8 @@ public class TaskCallable implements Callable<TaskResult> {
 
 			Marshaller marshaller = PLATFORM_JAXB_CTX.createMarshaller();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			marshaller.marshal(new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.spi.exec.platform.xml.TaskAction.class,
-					xmlTaskAction), bos);
+			marshaller.marshal(
+					new JAXBElement(new QName(CLUSTER_NAMESPACE, "TaskAction"), org.apache.ode.spi.exec.platform.xml.TaskAction.class, xmlTaskAction), bos);
 			jmsMessage.writeBytes(bos.toByteArray());
 			taskActionSender.send(jmsMessage);
 		} catch (Exception je) {
@@ -838,16 +872,103 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	public org.apache.ode.spi.exec.platform.xml.TaskAction convert(TaskActionExecution tae) {
 		org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = new org.apache.ode.spi.exec.platform.xml.TaskAction();
-		xmlTaskAction.setName(tae.request.action);
+		xmlTaskAction.setName(tae.request.name);
 		//xmlTaskAction.setComponent(tae.)
 		xmlTaskAction.setActionId(tae.taskActionId);
 		xmlTaskAction.setTaskId(String.valueOf(taskId.taskId));
 		xmlTaskAction.setNodeId(tae.request.nodeId);
-		xmlTaskAction.setName(tae.request.action);
+		xmlTaskAction.setName(tae.request.name);
 		//xmlTaskAction.setState(value)
 		xmlTaskAction.setLogLevel(org.apache.ode.spi.exec.platform.xml.LogLevel.valueOf(logLevel.name()));
 		return xmlTaskAction;
 
 	}
+
+	/*
+		public <TI> TaskRequest<TI> buildTaskRequest() throws PlatformException {
+			try {
+				Binder<org.w3c.dom.Node> binder = taskJaxbContext.createBinder(org.w3c.dom.Node.class);
+				TI input = (TI) binder.unmarshal(taskInput);
+				TaskRequest<TI> request = new TaskRequest<TI>(input);
+				request.binder = binder;
+				return request;
+			} catch (JAXBException je) {
+				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				throw new PlatformException(je);
+			}
+		}
+
+		public <TO> TaskResponse<TO> buildTaskResponse() throws PlatformException {
+			try {
+				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+				dbf.setNamespaceAware(true);
+				Document doc = dbf.newDocumentBuilder().newDocument();
+				Binder<org.w3c.dom.Node> binder = taskJaxbContext.createBinder(org.w3c.dom.Node.class);
+				TO output = (TO) taskIOFactory.newOutput();
+				taskOutput = doc.getDocumentElement();
+				binder.marshal(output, taskOutput);
+				return new TaskResponse<TO>(output);
+			} catch (Exception je) {
+				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				throw new PlatformException(je);
+			}
+		}
+
+		public Element buildActionRequestElement(TaskActionExecution tae) throws PlatformException {
+			//tae.request.input, tae.actionJaxbContext
+			try {
+				if (tae.request.binder == null) {
+					DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+					dbf.setNamespaceAware(true);
+					Document doc = dbf.newDocumentBuilder().newDocument();
+					Binder<org.w3c.dom.Node> binder = tae.actionJaxbContext.createBinder(org.w3c.dom.Node.class);
+					binder.marshal(tae.request.input, doc.getDocumentElement());
+				}
+				return (Element) tae.request.binder.getXMLNode(tae.request.input);
+			} catch (Exception je) {
+				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				throw new PlatformException(je);
+			}
+
+		}
+		/*
+		public Element buildCoordRequestElement(TaskActionExecution tae) throws PlatformException {
+			//tae.request.input, tae.actionJaxbContext
+			try {
+				if (tae.request.binder == null) {
+					DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+					dbf.setNamespaceAware(true);
+					Document doc = dbf.newDocumentBuilder().newDocument();
+					Binder<org.w3c.dom.Node> binder = tae.actionJaxbContext.createBinder(org.w3c.dom.Node.class);
+					binder.marshal(tae.coordRequest.input, doc.getDocumentElement());
+				}
+				return (Element) tae.request.binder.getXMLNode(tae.request.input);
+			} catch (Exception je) {
+				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				throw new PlatformException(je);
+			}
+
+		}
+
+		public Element buildActionResponseElement(TaskActionExecution tae) {
+			//tae.request.input, tae.actionJaxbContext
+		}
+
+		public TaskActionRequest buildRequest(TaskActionExecution tae) {
+			//tae.request.input, tae.actionJaxbContext
+		}
+
+		/*public TaskActionResponse buildResponse(TaskActionExecution tae, boolean success) {
+			//Object output = tae.actionOutput != null ? convertToObject(tae.actionOutput, tae.actionJaxbContext) : null;
+			//tae.request.input, tae.actionJaxbContext
+		}
+
+		public TaskActionCoordinationRequest buildCoordinationRequest(TaskActionExecution tae) {
+			//tae.request.input, tae.actionJaxbContext
+		}
+
+		public TaskActionCoordinationResponse buildCoordinationResponse(TaskActionExecution tae) {
+			//tae.request.input, tae.actionJaxbContext
+		}*/
 
 }

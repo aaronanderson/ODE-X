@@ -18,7 +18,7 @@
  */
 package org.apache.ode.runtime.exec.executable;
 
-import org.apache.ode.runtime.ectx.test.xml.TestVariables.TestVariable;
+import org.apache.ode.runtime.exec.ectx.test.xml.TestVariables.TestVariable;
 import org.apache.ode.spi.exec.ListMap;
 
 public class TestMap<T extends TestVariable> extends ListMap<String, T> {

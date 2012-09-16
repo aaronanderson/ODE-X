@@ -18,15 +18,15 @@
  */
 package org.apache.ode.spi.exec.task;
 
+
 public interface TaskActionActivity<I, O> {
 
 	//communicating exceptions over messages would be difficult, force all transmissions over I/O
-	public void start(TaskActionContext ctx, I input);// throws TaskException;
+	public void start(TaskActionContext ctx, Input<I> request);// throws TaskException;
 
-	public O finish();// throws TaskException;
-	
+	public void finish(Output<O> response);// throws TaskException;
+
 	@Override
 	public boolean equals(Object o);
-	
 
 }

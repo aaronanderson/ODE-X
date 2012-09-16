@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.ode.spi.exec.xml.InsAdd;
-import org.apache.ode.spi.exec.xml.InsAddRef;
+import org.apache.ode.spi.exec.executable.xml.InsAdd;
+import org.apache.ode.spi.exec.executable.xml.InsAddRef;
 import org.apache.ode.spi.exec.executable.xml.Instruction;
-import org.apache.ode.spi.exec.xml.InstructionAddress;
+import org.apache.ode.spi.exec.executable.xml.InstructionAddress;
 
 public class IndexedInstructionAddress extends InstructionAddress {
 

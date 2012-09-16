@@ -18,26 +18,10 @@
  */
 package org.apache.ode.spi.exec.task;
 
-import javax.xml.namespace.QName;
 
-public interface CoordinatedTaskActionCoordinator<TI, I, CI, CO, O, TO> extends TaskActionCoordinator<TI, I, O, TO> {
 
-	TaskActionCoordinationRequest<CI> coordinate(TaskActionCoordinationResponse<CO> response);
+public interface CoordinatedTaskActionCoordinator<TI, TO> extends TaskActionCoordinator<TI, TO> {
 
-	public static class TaskActionCoordinationRequest<CI> extends TaskActionRequest<CI> {
-
-		public TaskActionCoordinationRequest(QName action, String nodeId, CI input) {
-			super(action, nodeId, input);
-		}
-
-	}
-
-	public static class TaskActionCoordinationResponse<CO> extends TaskActionResponse<CO> {
-
-		public TaskActionCoordinationResponse(QName action, String nodeId, CO output, boolean success) {
-			super(action, nodeId, output, success);
-		}
-
-	}
+	Request<?> coordinate(Response<?> response);
 
 }

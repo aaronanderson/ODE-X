@@ -18,11 +18,11 @@
  */
 package org.apache.ode.runtime.exec.executable;
 
-import org.apache.ode.runtime.ectx.test.xml.GetInputTest;
-import org.apache.ode.runtime.ectx.test.xml.GetOperationTest;
-import org.apache.ode.runtime.ectx.test.xml.GetResultTest;
-import org.apache.ode.runtime.ectx.test.xml.TestVariables;
-import org.apache.ode.runtime.ectx.test.xml.TestVariables.TestVariable;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetInputTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetOperationTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetResultTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.TestVariables;
+import org.apache.ode.runtime.exec.ectx.test.xml.TestVariables.TestVariable;
 import org.apache.ode.spi.exec.InstructionScope;
 import org.apache.ode.spi.exec.ListMap;
 import org.apache.ode.spi.exec.instruction.Operation;

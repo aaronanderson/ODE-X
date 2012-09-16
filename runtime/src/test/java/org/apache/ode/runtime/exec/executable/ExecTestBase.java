@@ -69,7 +69,7 @@ public abstract class ExecTestBase {
 			SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 			ClassLoader cl = Thread.currentThread().getContextClassLoader();
 			eschema = schemaFactory.newSchema(new Source[] { new StreamSource(cl.getResourceAsStream("META-INF/xsd/executable.xsd")),
-					new StreamSource(cl.getResourceAsStream("META-INF/xsd/test.xsd")) });
+					new StreamSource(cl.getResourceAsStream("META-INF/xsd/test-executable.xsd")) });
 			ectxschema = schemaFactory.newSchema(new Source[] { new StreamSource(cl.getResourceAsStream("META-INF/xsd/execution-context.xsd")),
 					new StreamSource(cl.getResourceAsStream("META-INF/xsd/test-context.xsd")) });
 		} catch (Exception e) {
@@ -81,7 +81,7 @@ public abstract class ExecTestBase {
 
 	public static void setup(String executablePath, AbstractModule... modules) throws Exception {
 		set = new HashSet<InstructionSet>();
-		set.add(new InstructionSet(null, "org.apache.ode.runtime.exec.test.xml", TestObjectFactoryImpl.class, "org.apache.ode.runtime.ectx.test.xml",
+		set.add(new InstructionSet(null, "org.apache.ode.runtime.exec.executable.test.xml", TestObjectFactoryImpl.class, "org.apache.ode.runtime.exec.ectx.test.xml",
 				TestCtxObjectFactoryImpl.class));
 		ectx = JAXBRuntimeUtil.executableJAXBContextByPath(set);
 		ecctx = JAXBRuntimeUtil.executionContextJAXBContextByPath(set);

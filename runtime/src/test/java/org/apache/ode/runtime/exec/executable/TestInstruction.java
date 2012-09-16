@@ -24,10 +24,10 @@ import static org.junit.Assert.assertNotNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-import org.apache.ode.runtime.ectx.test.xml.GetInputTest;
-import org.apache.ode.runtime.ectx.test.xml.GetResultTest;
-import org.apache.ode.runtime.ectx.test.xml.SetInputTest;
-import org.apache.ode.runtime.ectx.test.xml.SetResultTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetInputTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.GetResultTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.SetInputTest;
+import org.apache.ode.runtime.exec.ectx.test.xml.SetResultTest;
 import org.apache.ode.runtime.exec.executable.test.xml.InstructionTest;
 import org.apache.ode.spi.exec.ExecutableScope;
 import org.apache.ode.spi.exec.instruction.ExecutionContext;

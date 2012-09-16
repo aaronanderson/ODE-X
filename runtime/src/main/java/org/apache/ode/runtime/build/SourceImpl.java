@@ -23,7 +23,7 @@ import javax.xml.namespace.QName;
 import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.exec.xml.SourceId;
+import org.apache.ode.spi.exec.executable.xml.SourceId;
 
 public class SourceImpl implements Source {
 

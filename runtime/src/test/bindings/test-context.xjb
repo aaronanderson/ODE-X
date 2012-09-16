@@ -24,7 +24,7 @@
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/test-context.xsd">
 
 		<jxb:schemaBindings>
-			<jxb:package name="org.apache.ode.runtime.ectx.test.xml" />
+			<jxb:package name="org.apache.ode.runtime.exec.ectx.test.xml" />
 		</jxb:schemaBindings>
 
 		<jxb:bindings node="//xs:element[@name='TestVariables']//xs:element[@name='TestVariable']">

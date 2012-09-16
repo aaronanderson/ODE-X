@@ -23,7 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Provider;
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.target.Target;
@@ -31,38 +33,68 @@ import org.apache.ode.spi.exec.target.Target;
 public class TaskDefinition<TI, TO> {
 
 	private final QName name;
-	private final Set<TaskActionCoordinator<TI, ?, ?, TO>> coordinators;
-	final JAXBContext jaxbContext;
+	private final Set<TaskActionCoordinatorDefinition<TI, TO>> coordinators;
+	private final IOBuilder<TI, TO> ioFactory;
 
-	public TaskDefinition(QName name, JAXBContext jaxbContext) {
-		this(name, null, jaxbContext);
+	//final JAXBContext jaxbContext;
+
+	public TaskDefinition(QName name, IOBuilder<TI, TO> ioFactory) {
+		this.name = name;
+		this.coordinators = new HashSet<TaskActionCoordinatorDefinition<TI, TO>>();
+		this.ioFactory = ioFactory;
+
 	}
 
-	public TaskDefinition(QName name, TaskActionCoordinator<TI, ?, ?, TO> coordinator, JAXBContext jaxbContext) {
-		this.name = name;
-		this.coordinators = new HashSet<TaskActionCoordinator<TI, ?, ?, TO>>();
-		if (coordinator != null) {
-			coordinators.add(coordinator);
+	public TaskDefinition(QName name, IOBuilder<TI, TO> ioFactory, TaskActionCoordinatorDefinition<TI, TO> coordinatorDefinition) {
+		this(name, ioFactory);
+		if (coordinatorDefinition != null) {
+			this.coordinators.add(coordinatorDefinition);
 		}
-		this.jaxbContext = jaxbContext;
 	}
 
 	public QName task() {
 		return name;
 	}
 
-	public JAXBContext jaxbContext() {
-		return jaxbContext;
+	public IOBuilder<TI, TO> ioFactory() {
+		return ioFactory;
+
 	}
 
-	public void addTaskActionCoordinator(TaskActionCoordinator<TI, ?, ?, TO> coordinator) {
+	public JAXBContext jaxbContext() throws JAXBException {
+		Set<Class<?>> ofClasses = new HashSet<Class<?>>();
+		for (TaskActionCoordinatorDefinition def : coordinators) {
+			for (Class<?> clazz : def.jaxbFactoryClasses) {
+				ofClasses.add(clazz);
+			}
+
+		}
+		return JAXBContext.newInstance(ofClasses.toArray(new Class<?>[ofClasses.size()]));
+	}
+
+	public void addTaskActionCoordinator(TaskActionCoordinatorDefinition<TI, TO> def) {
 		synchronized (coordinators) {
-			coordinators.add(coordinator);
+			coordinators.add(def);
 		}
 	}
 
-	public Set<TaskActionCoordinator<TI, ?, ?, TO>> coordinators() {
+	public Set<TaskActionCoordinatorDefinition<TI, TO>> coordinators() {
 		return coordinators;
+	}
+
+	public static class TaskActionCoordinatorDefinition<TI, TO> {
+		public final QName name;
+		public final Set<QName> dependencies;
+		public final Class<?>[] jaxbFactoryClasses;
+		public final Provider<? extends TaskActionCoordinator<TI, TO>> coordinator;
+
+		public TaskActionCoordinatorDefinition(QName name, Set<QName> dependencies, Provider<? extends TaskActionCoordinator<TI, TO>> coordinator,
+				Class<?>... jaxbFactoryClasses) {
+			this.name = name;
+			this.dependencies = dependencies;
+			this.jaxbFactoryClasses = jaxbFactoryClasses;
+			this.coordinator = coordinator;
+		}
 	}
 
 	@Override

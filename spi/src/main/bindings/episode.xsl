@@ -39,71 +39,71 @@
 			<xsl:apply-templates select="@*|node()" />
 
 			<xsl:choose>
-				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.xml']">
+				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.executable.xml']">
 					<!-- <xsl:variable name="xjc" select="document('executable.xjb')" /> <xsl:for-each select="$xjc//j:bindings[@node]"> <xsl:if test="j:class[@ref]"> <xsl:copy> 
 						<xsl:apply-templates select="@*|node()" /> </xsl:copy> </xsl:if> </xsl:for-each> -->
 					<bindings scd="~tns:srcIdType">
-						<class ref="org.apache.ode.spi.exec.xml.SrcId" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.SrcId" />
 					</bindings>
 
 					<bindings scd="~tns:srcIdRefType">
-						<class ref="org.apache.ode.spi.exec.xml.SrcIdRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.SrcIdRef" />
 					</bindings>
 
 					<bindings scd="~tns:memAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.MemAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.MemAdd" />
 					</bindings>
 
 					<bindings scd="~tns:memAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.MemAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.MemAddRef" />
 					</bindings>
 
 					<bindings scd="~tns:prgAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.PrgAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.PrgAdd" />
 					</bindings>
 
 					<bindings scd="~tns:prgAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.PrgAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.PrgAddRef" />
 					</bindings>
 
 					<bindings scd="~tns:prcAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.PrcAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.PrcAdd" />
 					</bindings>
 
 					<bindings scd="~tns:prcAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.PrcAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.PrcAddRef" />
 					</bindings>
 
 					<bindings scd="~tns:thdAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.ThdAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.ThdAdd" />
 					</bindings>
 
 					<bindings scd="~tns:thdAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.ThdAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.ThdAddRef" />
 					</bindings>
 
 					<bindings scd="~tns:stkAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.StkAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.StkAdd" />
 					</bindings>
 
 					<bindings scd="~tns:stkAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.StkAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.StkAddRef" />
 					</bindings>
 
 					<bindings scd="~tns:insAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.InsAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.InsAdd" />
 					</bindings>
 
 					<bindings scd="~tns:insAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.InsAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.InsAddRef" />
 					</bindings>
 
 					<bindings scd="~tns:blcAddressType">
-						<class ref="org.apache.ode.spi.exec.xml.BlcAdd" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.BlcAdd" />
 					</bindings>
 
 					<bindings scd="~tns:blcAddressRefType">
-						<class ref="org.apache.ode.spi.exec.xml.BlcAddRef" />
+						<class ref="org.apache.ode.spi.exec.executable.xml.BlcAddRef" />
 					</bindings>
 
 				</xsl:when>

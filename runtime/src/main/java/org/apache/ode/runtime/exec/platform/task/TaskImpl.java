@@ -315,14 +315,18 @@ public class TaskImpl implements Task, Serializable {
 	}
 
 	public static byte[] domToContent(Document doc) throws PlatformException {
-		try {
-			Transformer tform = transformFactory.newTransformer();
-			tform.setOutputProperty(OutputKeys.INDENT, "yes");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			tform.transform(new DOMSource(doc), new StreamResult(bos));
-			return bos.toByteArray();
-		} catch (Exception e) {
-			throw new PlatformException(e);
+		if (doc != null) {
+			try {
+				Transformer tform = transformFactory.newTransformer();
+				tform.setOutputProperty(OutputKeys.INDENT, "yes");
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				tform.transform(new DOMSource(doc), new StreamResult(bos));
+				return bos.toByteArray();
+			} catch (Exception e) {
+				throw new PlatformException(e);
+			}
+		} else {
+			return null;
 		}
 	}
 

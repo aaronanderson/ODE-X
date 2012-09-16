@@ -39,7 +39,7 @@ import org.apache.ode.spi.compiler.Instructional;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Unit;
-import org.apache.ode.spi.exec.xml.Instruction;
+import org.apache.ode.spi.exec.executable.xml.Instruction;
 
 public class VariablesParser implements ElementParser<Contextual<Scope>> {
 	public static final QName VARIABLES = new QName(BPEL.BPEL_EXEC_NAMESPACE, "variables");

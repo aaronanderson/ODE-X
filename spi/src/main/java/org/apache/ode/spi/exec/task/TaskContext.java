@@ -29,9 +29,13 @@ public interface TaskContext {
 	public QName name();
 
 	public void log(LogLevel level, int code, String message);
+	
+	public <I> Request<I> newRequest(QName action, String nodeId, I input);
 
 	public Task.TaskState getState();
 
 	public void setFailed();
+
+	public String localNodeId();
 
 }

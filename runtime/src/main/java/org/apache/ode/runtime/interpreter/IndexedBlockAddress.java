@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.ode.spi.exec.xml.BlcAdd;
-import org.apache.ode.spi.exec.xml.BlcAddRef;
-import org.apache.ode.spi.exec.xml.BlockAddress;
+import org.apache.ode.spi.exec.executable.xml.BlcAdd;
+import org.apache.ode.spi.exec.executable.xml.BlcAddRef;
+import org.apache.ode.spi.exec.executable.xml.BlockAddress;
 
 public class IndexedBlockAddress extends BlockAddress {
 

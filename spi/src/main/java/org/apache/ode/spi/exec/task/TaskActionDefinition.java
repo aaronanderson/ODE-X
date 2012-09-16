@@ -30,13 +30,16 @@ public class TaskActionDefinition<I, O> {
 	final QName name;
 	final Set<QName> dependencies;
 	final Provider<? extends TaskActionActivity<I, O>> actionExec;
+	private final IOBuilder<I, O> ioBuilder;
 	final JAXBContext jaxbContext;
 	boolean isTransactional;
 
-	public TaskActionDefinition(QName name, Set<QName> dependencies, Provider<? extends TaskActionActivity<I, O>> actionExec, JAXBContext jaxbContext) {
+	public TaskActionDefinition(QName name, Set<QName> dependencies, Provider<? extends TaskActionActivity<I, O>> actionExec, IOBuilder<I, O> ioFactory,
+			JAXBContext jaxbContext) {
 		this.name = name;
 		this.dependencies = dependencies;
 		this.actionExec = actionExec;
+		this.ioBuilder = ioFactory;
 		this.jaxbContext = jaxbContext;
 		boolean isTransactional = false;
 		for (Type t : actionExec.getClass().getGenericInterfaces()) {
@@ -53,6 +56,11 @@ public class TaskActionDefinition<I, O> {
 
 	public QName action() {
 		return name;
+	}
+
+	public IOBuilder<I, O> ioBuilder() {
+		return ioBuilder;
+
 	}
 
 	public JAXBContext jaxbContext() {

@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import javax.xml.namespace.QName;
+import javax.activation.CommandObject;
 
 import org.apache.ode.spi.exec.Component.InstructionSet;
 import org.apache.ode.spi.exec.Message.LogLevel;
@@ -46,15 +47,15 @@ public interface Platform {
 	public static final String ARCHITECTURE_NAMESPACE = "http://ode.apache.org/architecture";
 
 	public static final QName EXEC_INSTRUCTION_SET_NAME = new QName(EXEC_NAMESPACE, "Executable");
-	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.xml",
+	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.executable.xml",
 			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",
 			org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
 
 	public enum PlatformTask {
 
-		INSTALL_TASK(new QName(PLATFORM_NAMESPACE, "install")), ONLINE_TASK(new QName(PLATFORM_NAMESPACE, "online")), START_TASK(new QName(PLATFORM_NAMESPACE,
-				"start")), STOP_TASK(new QName(PLATFORM_NAMESPACE, "stop")), OFFLINE_TASK(new QName(PLATFORM_NAMESPACE, "offline")), UNINSTALL_TASK(new QName(
-				PLATFORM_NAMESPACE, "uninstall"));
+		SETUP_TASK(new QName(PLATFORM_NAMESPACE, "setup")), INSTALL_TASK(new QName(PLATFORM_NAMESPACE, "install")), ONLINE_TASK(new QName(PLATFORM_NAMESPACE,
+				"online")), START_TASK(new QName(PLATFORM_NAMESPACE, "start")), STOP_TASK(new QName(PLATFORM_NAMESPACE, "stop")), OFFLINE_TASK(new QName(
+				PLATFORM_NAMESPACE, "offline")), UNINSTALL_TASK(new QName(PLATFORM_NAMESPACE, "uninstall"));
 
 		private PlatformTask(QName qname) {
 			this.qname = qname;
@@ -65,6 +66,13 @@ public interface Platform {
 		public QName qname() {
 			return qname;
 		}
+	}
+
+	public interface PlatformTaskCommand extends CommandObject{
+		public static final String PLATFORM_TASK_CMD = "platformTasks";
+
+		public QName task(PlatformTask platformTask);
+
 	}
 
 	public static interface AuthContext extends TaskCallback<Document, Document> {

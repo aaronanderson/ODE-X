@@ -46,7 +46,7 @@ import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.ode.spi.exec.executable.xml.ContextMode;
-import org.apache.ode.spi.exec.xml.SourceId;
+import org.apache.ode.spi.exec.executable.xml.SourceId;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
