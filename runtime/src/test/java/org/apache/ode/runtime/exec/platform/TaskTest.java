@@ -65,6 +65,7 @@ import org.apache.ode.spi.exec.task.Response;
 import org.apache.ode.spi.exec.task.Task;
 import org.apache.ode.spi.exec.task.Task.TaskId;
 import org.apache.ode.spi.exec.task.Task.TaskState;
+import org.apache.ode.spi.exec.task.TaskActionTransaction;
 import org.apache.ode.spi.exec.task.TaskDefinition.TaskActionCoordinatorDefinition;
 import org.apache.ode.spi.exec.task.TaskAction;
 import org.apache.ode.spi.exec.task.TaskActionContext;
@@ -144,7 +145,7 @@ public class TaskTest {
 
 	}
 
-	public void testSingleTaskAction(QName taskName, String nodeId) throws Exception {
+	public void testTaskAction(QName taskName, String nodeId) throws Exception {
 		assertTrue(node1.getComponents().contains(TaskTestComponent.COMPONENT_NAME));
 		//Execute operations on platform
 
@@ -172,12 +173,12 @@ public class TaskTest {
 
 	@Test
 	public void localTaskActionTest() throws Exception {
-		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_NAME, "node1");
+		testTaskAction(TaskTestComponent.SINGLE_TASK_NAME, "node1");
 	}
 
 	@Test
 	public void remoteTaskActionTest() throws Exception {
-		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_NAME, "node2");
+		testTaskAction(TaskTestComponent.SINGLE_TASK_NAME, "node2");
 	}
 
 	@Test
@@ -225,7 +226,7 @@ public class TaskTest {
 
 	@Test
 	public void dependencyTaskActionTest() throws Exception {
-		testSingleTaskAction(TaskTestComponent.SINGLE_TASK_DEP_NAME, "node1");
+		testTaskAction(TaskTestComponent.SINGLE_TASK_DEP_NAME, "node1");
 	}
 
 	@Test
@@ -252,9 +253,10 @@ public class TaskTest {
 		assertEquals("MultiTaskOutput", out.getValue());
 	}
 
-	//@Test
+	@Test
 	public void commitTaskActionTest() throws Exception {
-
+		testTaskAction(TaskTestComponent.TRANS_TASK_NAME, "node1");
+		assertTrue(TransTaskActionExec.completed);
 	}
 
 	//@Test
@@ -355,11 +357,14 @@ public class TaskTest {
 		public static final QName SINGLE_TASK_DEP_COORD_NAME = new QName(TEST_NS, "SingleDependencyTaskCoordinator");
 		public static final QName MULTI_TASK_NAME = new QName(TEST_NS, "MultiTask");
 		public static final QName MULTI_TASK_COORD_NAME = new QName(TEST_NS, "MultiTaskTaskCoordinator");
+		public static final QName TRANS_TASK_NAME = new QName(TEST_NS, "TransTask");
+		public static final QName TRANS_TASK_COORD_NAME = new QName(TEST_NS, "TransTaskTaskCoordinator");
 
 		public static final QName SINGLE_ACTION_NAME = new QName(TEST_NS, "SingleTaskAction");
 		public static final QName SINGLE_ACTION_DEP_NAME = new QName(TEST_NS, "SingleTaskActionDependency");
 		public static final QName MULTI_ACTION1_NAME = new QName(TEST_NS, "MultiTaskTask1");
 		public static final QName MULTI_ACTION2_NAME = new QName(TEST_NS, "MultiTaskTask2");
+		public static final QName TRANS_ACTION_NAME = new QName(TEST_NS, "TransTaskAction");
 
 		public final static QName SINGLE_TASK_INPUT_QNAME = new QName("http://ode.apache.org/task-test", "singleTaskInput");
 		public final static QName SINGLE_TASK_OUTPUT_QNAME = new QName("http://ode.apache.org/task-test", "singleTaskOutput");
@@ -379,10 +384,16 @@ public class TaskTest {
 		Provider<MultiTaskActionCoordinator> multiActionCoord;
 
 		@Inject
+		Provider<TransTaskActionCoordinator> transActionCoord;
+
+		@Inject
 		Provider<SingleTaskActionExec> singleAction;
 
 		@Inject
 		Provider<MultiTaskActionExec> multiAction;
+
+		@Inject
+		Provider<TransTaskActionExec> transAction;
 
 		@PostConstruct
 		public void init() {
@@ -414,14 +425,17 @@ public class TaskTest {
 			defs.add(new TaskDefinition(MULTI_TASK_NAME, new IOBuilderDefault(MULTI_TASK_INPUT_QNAME, MultiTaskInput.class, MULTI_TASK_OUTPUT_QNAME,
 					MultiTaskOutput.class), new TaskActionCoordinatorDefinition(SINGLE_TASK_NAME, Collections.EMPTY_SET, multiActionCoord,
 					org.apache.ode.runtime.exec.task.test.xml.ObjectFactory.class)));
+			defs.add(new TaskDefinition(TRANS_TASK_NAME, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME, SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME,
+					SingleTaskOutput.class), new TaskActionCoordinatorDefinition(TRANS_TASK_NAME, Collections.EMPTY_SET, transActionCoord,
+					org.apache.ode.runtime.exec.task.test.xml.ObjectFactory.class)));
 			return defs;
 		}
 
 		@Override
 		public List<TaskActionDefinition> actions() {
 			ArrayList<TaskActionDefinition> defs = new ArrayList<TaskActionDefinition>();
-			defs.add(new TaskActionDefinition(SINGLE_ACTION_NAME, (Set<QName>) Collections.EMPTY_SET, singleAction, new IOBuilderDefault(
-					SINGLE_TASK_INPUT_QNAME, SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME, SingleTaskOutput.class), taskJAXBContext));
+			defs.add(new TaskActionDefinition(SINGLE_ACTION_NAME, Collections.EMPTY_SET, singleAction, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME,
+					SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME, SingleTaskOutput.class), taskJAXBContext));
 			Set<QName> dependencies = new HashSet<QName>();
 			dependencies.add(SINGLE_ACTION_NAME);
 			defs.add(new TaskActionDefinition(SINGLE_ACTION_DEP_NAME, dependencies, singleAction, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME,
@@ -432,6 +446,8 @@ public class TaskTest {
 			deps.add(MULTI_ACTION1_NAME);
 			defs.add(new TaskActionDefinition(MULTI_ACTION2_NAME, deps, multiAction, new IOBuilderDefault(MULTI_TASK_INPUT_QNAME, MultiTaskInput.class,
 					MULTI_TASK_OUTPUT_QNAME, MultiTaskOutput.class), taskJAXBContext));
+			defs.add(new TaskActionDefinition(TRANS_ACTION_NAME, Collections.EMPTY_SET, transAction, new IOBuilderDefault(SINGLE_TASK_INPUT_QNAME,
+					SingleTaskInput.class, SINGLE_TASK_OUTPUT_QNAME, SingleTaskOutput.class), taskJAXBContext));
 			return defs;
 		}
 
@@ -586,7 +602,7 @@ public class TaskTest {
 		@Override
 		public void finish(Output<SingleTaskOutput> response) {
 			ctx.log(LogLevel.INFO, 3, "finish");
-			response.value =out;
+			response.value = out;
 		}
 
 	}
@@ -689,4 +705,52 @@ public class TaskTest {
 		}
 
 	}
+
+	public static class TransTaskActionCoordinator extends SingleTaskActionCoordinator {
+
+		@Override
+		public Set<Request<?>> init(TaskContext ctx, Input<SingleTaskInput> request, TaskCallback<?, ?> callback, Target... targets) {
+			request.value.setValue("SingleActionInput");
+			String[] nodeIds = TaskDefinition.targetsToNodeIds(targets);
+			HashSet<Request<?>> actions = new HashSet<Request<?>>();
+			Request<SingleTaskInput> req = ctx.newRequest(TaskTestComponent.TRANS_ACTION_NAME, nodeIds[0], request.value);
+			actions.add(req);
+			return actions;
+		}
+
+	}
+
+	public static class TransTaskActionExec extends SingleTaskActionExec implements TaskActionTransaction {
+
+		public static boolean completed = false;
+		TaskActionContext ctx;
+		SingleTaskOutput out = new SingleTaskOutput();
+
+		@Override
+		public void start(TaskActionContext ctx, Input<SingleTaskInput> request) {
+			this.ctx = ctx;
+			ctx.log(LogLevel.INFO, 1, "start");
+			assertEquals(TaskTestComponent.TRANS_ACTION_NAME, ctx.name());
+			assertEquals("SingleActionInput", request.value.getValue());
+		}
+
+		@Override
+		public void execute() {
+			ctx.log(LogLevel.INFO, 2, "execute");
+			out.setValue("SingleActionOutput");
+		}
+
+		@Override
+		public void finish(Output<SingleTaskOutput> response) {
+			ctx.log(LogLevel.INFO, 3, "finish");
+			response.value = out;
+		}
+
+		@Override
+		public void complete() {
+			completed = true;
+		}
+
+	}
+
 }

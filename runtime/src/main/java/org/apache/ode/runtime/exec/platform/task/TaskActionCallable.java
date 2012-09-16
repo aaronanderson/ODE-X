@@ -363,7 +363,8 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		try {
 			actionUpdateLock.lock();
 			taskAction.setState(TaskAction.TaskActionState.valueOf(xmlAction.getState().value()));
-			taskAction.setCoordinationInput(xmlAction.getExchange().getPayload() != null ? newDocument(xmlAction.getExchange().getPayload()) : null);
+			taskAction.setCoordinationInput((xmlAction.getExchange() != null && xmlAction.getExchange().getPayload() != null) ? newDocument(xmlAction
+					.getExchange().getPayload()) : null);
 			taskAction.setCoordinationOutput(null);
 			actionUpdateSignal.signal();
 		} finally {
@@ -450,7 +451,11 @@ public class TaskActionCallable implements Callable<TaskAction.TaskActionState> 
 		}
 		if (rollback && exec instanceof TaskActionTransaction) {
 			taskAction.setState(TaskAction.TaskActionState.ROLLBACK);
-			((TaskActionTransaction) exec).complete();
+			try {
+				((TaskActionTransaction) exec).complete();
+			} catch (Throwable t) {
+				updateLog(LogLevel.ERROR, 0, t.getMessage());
+			}
 		}
 		taskAction.setState(TaskAction.TaskActionState.FAILED);
 		taskAction.setFinish(new Date());

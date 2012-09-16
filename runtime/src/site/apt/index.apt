@@ -33,24 +33,18 @@ Platform
   
   A heartbeat mechanism is in place so that as soon as a node comes up node state updates are persisted. At the given polling interval the state of all nodes are retrieved from the persistence store. This availability information is then used to deduce targets for actions. submitted for execution
   
-  * Action
+  * Task
 
-  An action represents a command that may be executed once or executed simultaneously on a given set of targets. There are four types of actions
-	
-	* Action - A single action that is executed on a single cluster node, typically the local one
-	
-	* Master - A controlling action that is executed on a single cluster node, typically the local one. This master action coordinates with slave actions to accomplish an overall action result
-	
-	* Slave - An action that is executed on every single target node.  Slaves coordinate with the master action to peform a given task on each node target.
-  
-    * Single Slave - Indentical to a normal slave except it is only executed on a single cluster node, typically the local one. This is useful for heterogenous tasks such as a platform install where many different slave tasks are coordinated together to fullfill a master task but the slave task really only needs to execute once. 
+  A task represents a command that may be executed once or executed simultaneously on a given set of targets. Tasks have XML input and output.
+	* TaskActionCoordinator - Tasks have coordinators that analyze the task input, returns a list of actions that should be executed, and then updates the task output based on the results of the action executions.
 
-  * Target
+	* TaskAction - A single action that is executed on a single cluster node. TaskActions may be coordinated where the task coordinator and action collaborate synchronously to complete. TaskActions may also be transactional so that they may commit their own local transactions once the task reaches it final stage.
+	
+	* Definition - Tasks, TaskActionCoordinators, and TaskActions need definitions to provide metadata on how their interface implementations should be executed.
+
+  	* Target - For each task that is executed a target is provided to indicate to the platform on which phyiscal nodes the task should execute.
   
-  For each task that is executed a target is provided to indicate to the platform on which phyiscal nodes the task should execute.
-  
-  * Action Polling
-  
-  If a task is to be executed on a remote node the action state is persisted and then a remote action polling process periodically scans for local tasks to execute, updates the action state to executing, and then executes the task locally.
+  * JMS Coordination
+	JMS is used as an implementation agnostic mechanism for mulitple clustered nodes to communicate with each other.
 
   

@@ -249,12 +249,14 @@ public class TaskCallable implements Callable<TaskResult> {
 						}
 					} while (!complete(actionExecutions.values()));
 				} finally {
+					//TODO if Platform exception is thrown above but then finished method called on coordinator and it throws a separate exception the first
+					//exception may be lost
 					output = destroy(coordinators, actionExecutions);
 				}
 
 			} catch (JMSException je) {
 				log.log(Level.SEVERE, "", je);
-				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true);
+				taskLogIt(LogLevel.ERROR, 0, je.getMessage(), true, true);
 
 			} finally {
 				try {
@@ -314,6 +316,9 @@ public class TaskCallable implements Callable<TaskResult> {
 		@Override
 		public <I> Request<I> newRequest(QName action, String nodeId, I input) {
 			TaskActionDefinition def = actions.get(action);
+			if (def == null) {
+				throw new IllegalArgumentException(String.format("Unsupported TaskAction %s", action.toString()));
+			}
 			return new Request<I>(action, nodeId, new Input(input, def.jaxbContext().createBinder(org.w3c.dom.Node.class)), false);
 		}
 	}
@@ -322,7 +327,7 @@ public class TaskCallable implements Callable<TaskResult> {
 
 		TaskDefinition<?, ?> def = tasks.get(task.name());
 		if (def == null) {
-			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskDefinition defined for task %s", task.name()), true);
+			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskDefinition defined for task %s", task.name()), true, true);
 		}
 
 		task.setState(TaskState.START);
@@ -344,12 +349,12 @@ public class TaskCallable implements Callable<TaskResult> {
 			coordinators.put(coordinatorDef.name, taskCordExec);
 		}
 		if (coordinators.size() == 0) {
-			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskCoordinators registered for task %s", task.name()), true);
+			taskLogIt(LogLevel.ERROR, 0, String.format("No TaskCoordinators registered for task %s", task.name()), true, true);
 		}
 		for (TaskCoordinatorExecution coordExec : (coordinators.values())) {
 			for (QName dep : (Set<QName>) coordExec.dependendencies) {
 				if (!coordinators.containsKey(dep)) {
-					taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator %s dependency %s not registered", coordExec.name, dep), true);
+					taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator %s dependency %s not registered", coordExec.name, dep), true, true);
 				}
 			}
 		}
@@ -373,18 +378,23 @@ public class TaskCallable implements Callable<TaskResult> {
 				}
 				if (dependenciesCompleted) {
 					coordExec.initOrder = initOrder++;
-					Set<Request<?>> requests = coordExec.coordinator.init(taskContext, taskRequest, callback, targets);
-					coordExec.initialized=true;
+					Set<Request<?>> requests = null;
+					try {
+						requests = coordExec.coordinator.init(taskContext, taskRequest, callback, targets);
+					} catch (Throwable t) {
+						taskLogIt(LogLevel.ERROR, 0, t.getMessage(), true, false);
+					}
+					coordExec.initialized = true;
 
 					for (Request<?> canidate : requests) {
 						TaskActionDefinition tad = actions.get(canidate.name);
 						if (tad == null) {
-							taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.name.toString()), true);
+							taskLogIt(LogLevel.ERROR, 0, String.format("Unsupported TaskAction %s", canidate.name.toString()), true, true);
 						}
 						if (actionExecutions.containsKey(canidate.name)) {
 							for (TaskActionExecution tae : actionExecutions.get(canidate.name)) {
 								if (canidate.nodeId.equals(tae.request.nodeId)) {
-									taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.name.toString()), true);
+									taskLogIt(LogLevel.ERROR, 0, String.format("Duplicate TaskAction %s", canidate.name.toString()), true, true);
 								}
 							}
 						}
@@ -398,7 +408,7 @@ public class TaskCallable implements Callable<TaskResult> {
 							tae.actionRequestorReceiver = taskUpdateSession.createReceiver(tae.actionRequestor);
 							tae.actionCorrelationId = String.format(NODE_MQ_CORRELATIONID_ACTION, System.currentTimeMillis());
 						} catch (JMSException e) {
-							taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true);
+							taskLogIt(LogLevel.ERROR, 0, e.getMessage(), true, true);
 						}
 						coordExec.requests.add(tae);
 						Set<TaskActionExecution> taes = actionExecutions.get(canidate.name);
@@ -414,7 +424,7 @@ public class TaskCallable implements Callable<TaskResult> {
 				}
 			}
 			if (!modified) {
-				taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator circular dependency detected: %s", remaining), true);
+				taskLogIt(LogLevel.ERROR, 0, String.format("TaskCoordinator circular dependency detected: %s", remaining), true, true);
 			}
 
 		}
@@ -454,7 +464,7 @@ public class TaskCallable implements Callable<TaskResult> {
 							Set<TaskActionExecution> depActionExec = actionExecutions.get(dep);
 							if (depActionExec == null) {
 								taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction %s dependency %s not submitted for execution by a task coordinator",
-										actionExec.request.name, dep), true);
+										actionExec.request.name, dep), true, true);
 							}
 							actionExec.prevDependencies.addAll(depActionExec);
 							//depActionExec.nextDependencies.add(actionExec);
@@ -464,7 +474,7 @@ public class TaskCallable implements Callable<TaskResult> {
 				}
 			}
 			if (!modified) {
-				taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction circular dependency detected: %s", remaining), true);
+				taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction circular dependency detected: %s", remaining), true, true);
 
 			}
 		}
@@ -492,7 +502,7 @@ public class TaskCallable implements Callable<TaskResult> {
 
 	public void executeAction(TaskActionExecution tae) throws PlatformException {
 		if (System.currentTimeMillis() - tae.lastUpdate > config.getActionTimeout()) {
-			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.name, tae.request.nodeId), false);
+			taskLogIt(LogLevel.ERROR, 0, String.format("TaskAction timed out: %s %s", tae.request.name, tae.request.nodeId), false, false);
 			//tae.state=TaskActionState.FAILED;
 		}
 		org.apache.ode.spi.exec.platform.xml.TaskAction xmlTaskAction = convert(tae);
@@ -513,7 +523,11 @@ public class TaskCallable implements Callable<TaskResult> {
 						dependencies.add(dep.response);
 					}
 					if (dependencies.size() > 0) {
-						tae.owner.coordinator.update(tae.request, dependencies);
+						try {
+							tae.owner.coordinator.update(tae.request, dependencies);
+						} catch (Throwable t) {
+							taskLogIt(LogLevel.ERROR, 0, t.getMessage(), true, false);
+						}
 						if (tae.request.skipped) {
 							tae.state = TaskActionState.SKIPPED;
 							return;
@@ -664,7 +678,11 @@ public class TaskCallable implements Callable<TaskResult> {
 					responses.add(res);
 				}
 			}
-			coordExec.coordinator.finish(responses, response);
+			try {
+				coordExec.coordinator.finish(responses, response);
+			} catch (Throwable t) {
+				taskLogIt(LogLevel.ERROR, 0, t.getMessage(), true, false);
+			}
 		}
 		doc = binderDocument(IOType.OUTPUT, response.value, value.xValue, taskIOBuilder, value.binder);
 
@@ -747,7 +765,7 @@ public class TaskCallable implements Callable<TaskResult> {
 				}
 			} catch (Exception e) {
 				tae.state = TaskActionState.FAILED;
-				taskLogIt(LogLevel.ERROR, 0, e.getMessage(), false);
+				taskLogIt(LogLevel.ERROR, 0, e.getMessage(), false, false);
 			}
 		}
 	}
@@ -756,7 +774,7 @@ public class TaskCallable implements Callable<TaskResult> {
 		return tae.state == TaskActionState.SKIPPED || tae.state == TaskActionState.COMPLETE || tae.state == TaskActionState.FAILED ? false : true;
 	}
 
-	public void taskLogIt(LogLevel level, int code, String msg, boolean error) throws PlatformException {
+	public void taskLogIt(LogLevel level, int code, String msg, boolean error, boolean exception) throws PlatformException {
 		MessageImpl m = new MessageImpl();
 		pmgr.getTransaction().begin();
 		try {
@@ -776,6 +794,8 @@ public class TaskCallable implements Callable<TaskResult> {
 		if (error) {
 			task.setState(TaskState.FAIL);
 			updateTask();
+		}
+		if (exception) {
 			throw new PlatformException(msg);
 		}
 	}

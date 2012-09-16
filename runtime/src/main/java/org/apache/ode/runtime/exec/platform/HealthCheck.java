@@ -45,6 +45,7 @@ import javax.jms.TopicConnectionFactory;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
+import javax.jms.IllegalStateException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceException;
@@ -63,7 +64,6 @@ import org.apache.ode.runtime.exec.platform.NodeImpl.NodeCheck;
 import org.apache.ode.runtime.exec.platform.NodeImpl.NodeId;
 import org.apache.ode.runtime.exec.platform.target.TargetAllImpl;
 import org.apache.ode.runtime.exec.platform.target.TargetClusterImpl;
-import org.apache.ode.runtime.exec.platform.target.TargetImpl.TargetPK;
 import org.apache.ode.runtime.exec.platform.target.TargetNodeImpl;
 import org.apache.ode.spi.exec.Platform.NodeStatus;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
@@ -318,7 +318,7 @@ public class HealthCheck implements Runnable {
 					xmlNodeStatus = element.getValue();
 					currentNodes.add(convert(xmlNodeStatus));
 				} catch (JMSException e) {
-					if (e.getCause() instanceof InterruptedException) {
+					if (e instanceof IllegalStateException || e.getCause() instanceof InterruptedException) {
 						break;
 					} else {
 						log.log(Level.SEVERE, "", e);
@@ -336,7 +336,7 @@ public class HealthCheck implements Runnable {
 			nodeStatus.set(Collections.unmodifiableSet(currentNodes));
 			onlineClusterNodes.set(Collections.unmodifiableSet(currentOnlineClusterNodes));
 		} catch (Throwable t) {
-			if (!(t instanceof JMSException && (((JMSException) t).getCause() instanceof InterruptedException))) {
+			if (!(t instanceof JMSException && (t instanceof IllegalStateException || ((JMSException) t).getCause() instanceof InterruptedException))) {
 				log.log(Level.SEVERE, "", t);
 			}
 

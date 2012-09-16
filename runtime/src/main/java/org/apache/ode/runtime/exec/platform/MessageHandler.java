@@ -36,6 +36,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jms.BytesMessage;
+import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -45,6 +46,7 @@ import javax.jms.TopicConnection;
 import javax.jms.TopicConnectionFactory;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
+import javax.jms.IllegalStateException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.bind.JAXBElement;
@@ -241,7 +243,7 @@ public class MessageHandler implements Runnable {
 
 				}
 			} catch (Throwable e) {
-				if (e.getCause() instanceof InterruptedException) {
+				if (e instanceof IllegalStateException || e.getCause() instanceof InterruptedException) {
 					break;
 				} else {
 					log.log(Level.SEVERE, "", e);

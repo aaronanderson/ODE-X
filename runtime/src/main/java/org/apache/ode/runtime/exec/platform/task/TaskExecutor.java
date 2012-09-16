@@ -40,6 +40,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.jms.BytesMessage;
+import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.QueueConnection;
@@ -215,7 +216,7 @@ public class TaskExecutor implements Runnable {
 						}*/
 
 				} catch (JMSException e) {
-					if (e.getCause() instanceof InterruptedException) {
+					if (e instanceof IllegalStateException || e.getCause() instanceof InterruptedException) {
 						break;
 					} else {
 						log.log(Level.SEVERE, "", e);
@@ -360,7 +361,6 @@ public class TaskExecutor implements Runnable {
 		}
 		return targets.toArray(new Target[targets.size()]);
 	}
-
 
 	public static <I, O> Document binderDocument(IOType type, Object value, Document doc, IOBuilder<I, O> ioBuilder, Binder<org.w3c.dom.Node> binder)
 			throws PlatformException {
