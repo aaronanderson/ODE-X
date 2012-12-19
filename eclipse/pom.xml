@@ -30,16 +30,30 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 	<modules>
-		<module>org.apache.ode.eclipse.runtime</module>
+		<module>plugins/org.apache.ode.eclipse.server.core</module>
+		<!-- <module>plugins/org.apache.ode.eclipse.server.ui</module> -->
+		<!-- <module>plugins/org.apache.ode.eclipse.bpel.core</module> -->
+                <!-- <module>plugins/org.apache.ode.eclipse.bpel.ui</module> -->		
+		<!-- <module>plugins/org.apache.ode.eclipse.bpmn.core</module> -->
+                <!-- <module>plugins/org.apache.ode.eclipse.bpmn.ui</module> -->
+	 	<!-- <module>plugins/org.apache.ode.eclipse.wsht.core</module> -->
+                <!-- <module>plugins/org.apache.ode.eclipse.wshtl.ui</module> -->
+
 	</modules>
 	<properties>
-		<tycho-version>0.9.0</tycho-version>
+		<tycho-version>0.16.0</tycho-version>
 	</properties>
 
-	<repositories>
-		<repository>
-			<id>helios</id>
-			<url>http://download.eclipse.org/releases/helios/</url>
+	 <repositories>
+   <repository>
+     <id>juno-platform</id>
+     <layout>p2</layout>
+     <url>http://download.eclipse.org/releases/juno</url>
+   </repository>
+   
+   <repository>
+			<id>eclipse-webtools</id>
+			<url>(http://download.eclipse.org/releases/juno</url>
 			<layout>p2</layout>
 			<snapshots>
 				<enabled>true</enabled>
@@ -48,59 +62,18 @@
 				<enabled>true</enabled>
 			</releases>
 		</repository>
-		<repository>
-			<id>eclipse36</id>
-			<url>http://download.eclipse.org/eclipse/updates/3.6.x/</url>
-			<layout>p2</layout>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-		<repository>
-			<id>bpel</id>
-			<url>http://download.eclipse.org/technology/bpel/update-site/</url>
-			<layout>p2</layout>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-	</repositories>
+		
+  </repositories>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.sonatype.tycho</groupId>
-				<artifactId>maven-osgi-packaging-plugin</artifactId>
-				<version>${tycho-version}</version>
-				<configuration>
-					<format>'v'yyyyMMdd-HHmm'-CI'</format>
-					<archiveSite>true</archiveSite>
-					<strictVersions>false</strictVersions>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.sonatype.tycho</groupId>
-				<artifactId>tycho-maven-plugin</artifactId>
-				<version>${tycho-version}</version>
-				<extensions>true</extensions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.sonatype.tycho</groupId>
-				<artifactId>target-platform-configuration</artifactId>
-				<version>${tycho-version}</version>
-				<configuration>
-					<resolver>p2</resolver>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-maven-plugin</artifactId>
+        <version>${tycho-version}</version>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

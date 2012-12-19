@@ -1,14 +1,14 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: ODE Runtime Eclipse Plugin
-Bundle-SymbolicName: org.apache.ode.eclipse.runtime;singleton:=true
+Bundle-Name: ODE-X Runtime Eclipse Plugin
+Bundle-SymbolicName: org.apache.ode.eclipse.server.core;singleton:=true
 Bundle-Version: 0.1.0.qualifier
 Bundle-Vendor: ode.apache.org
 Bundle-Localization: plugin
 Bundle-Activator: org.apache.ode.eclipse.runtime.ODEPlugin
-Export-Package: org.apache.ode.eclipse.runtime
+Export-Package: org.apache.ode.eclipse.server.core
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.eclipse.ui;bundle-version="[3.6.0,4.0.0)",
  org.eclipse.core.runtime;bundle-version="[3.6.0,4.0.0)",
  org.eclipse.bpel.runtimes;bundle-version="0.5.0",

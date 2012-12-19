@@ -32,6 +32,7 @@
        		<moduleType
 				types="bpel.module"
          		versions="2.0"/>
+		<!-- TODO, add other runtime types -->
     	</runtimeType>
    	</extension>
 	<extension point="org.eclipse.wst.server.core.serverTypes">
@@ -54,6 +55,8 @@
 		</serverType>     
 	</extension>
 	
+<!-- TODO do we need a org.eclipse.wst.server.core.runtimeLocators extension here? -->
+
 	<extension point="org.eclipse.wst.server.ui.wizardFragments">
 		<fragment
 			id="org.eclipse.jst.server.generic.runtime"
@@ -150,7 +153,7 @@
 	</extension>
    	
 	
-	
+	<!-- is a org.eclipse.wst.server.core.launchableAdapters extension needed here?-->
 	
 	
 	

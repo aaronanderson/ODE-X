@@ -7,7 +7,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
+	<prerequisites>     
+		<maven>3.0</maven>
+        </prerequisites>
 	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-pom</artifactId>
 	<version>0.1-SNAPSHOT</version>
@@ -27,6 +29,7 @@
 		<url>http://www.ode.apache.org/</url>
 	</organization>
 	<url>http://ode.apache.org</url>
+	<inceptionYear>2012</inceptionYear>
 	<scm>
 		<connection>scm:git:git://github.com/aaronanderson/ODE-X.git</connection>
 		<developerConnection>scm:git:ssh//github.com/aaronanderson/ODE-X.git</developerConnection>
@@ -79,72 +82,86 @@
 
 		<!--<module>eclipse</module> -->
 	</modules>
+		<!--
+		    Build tools:
+
+		    mvn versions:display-dependency-updates
+		    mvn versions:display-plugin-updates
+		    mvn versions:set -DnewVersion=0.2-SNAPSHOT
+		    mvn versions:use-latest-versions
+
+		   get rid of eclipse plugin warning:
+		   cd /tmp
+		   mvn archetype:generate -DgroupId=org.eclipse.m2e -DartifactId=lifecycle-mapping -Dversion=1.0.0 -DarchetypeArtifactId=maven-archetype-mojo
+		   cd lifecycle-mapping
+		   mvn clean install
+
+		   there are a few Java classes in a target package and due to the gitignore file will need to be forced added in order to commit
+		   
+ -->
 	<build>
 		<plugins>
-		<!-- mvn license:check 
-			 mvn license:format -->
+		<!-- mvn license:check-file-header
+		mvn license:update-file-header
+		mvn versions:use-latest-versions
+		  -->
 			<plugin>
-				<groupId>com.mycila.maven-license-plugin</groupId>
-				<artifactId>maven-license-plugin</artifactId>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>1.3</version>
 				<configuration>
-					<header>src/header.txt</header>
-					<strictCheck>true</strictCheck>
-					<useDefaultExcludes>true</useDefaultExcludes>
-					<excludes>
-						<exclude>**/src/main/resources/META-INF/xsd/ws-bpel*.xsd</exclude>
-						<exclude>**/src/main/resources/META-INF/xsd/BPMN20.xsd</exclude>
-						<exclude>**/src/main/resources/META-INF/xsd/Semantic.xsd</exclude>
-						<exclude>**/src/main/resources/META-INF/xsd/ws-wsdl.xsd</exclude>
-						<exclude>**/src/main/resources/META-INF/xsd/ws-humantask*</exclude>
-						<exclude>**/src/test/resources/deadlines/*</exclude>
-						<exclude>**/src/test/resources/deadlines/*</exclude>
-						<exclude>**/src/test/resources/reassignment/*</exclude>
-						<exclude>**/src/test/resources/topart/document/*</exclude>
-						<exclude>**/src/test/resources/topart/rpc/*</exclude>
-						<exclude>**/src/test/resources/emailvoting/*.bpmn</exclude>
-					</excludes>
-					<mapping>
-						<serverdef>XML_STYLE</serverdef>
-						<java>JAVADOC_STYLE</java>
-						<svg>XML_STYLE</svg>
-						<xml>XML_STYLE</xml>
-						<bpel>XML_STYLE</bpel>
-						<bpmn>XML_STYLE</bpmn>
-						<hi>XML_STYLE</hi>
-						<wsdl>XML_STYLE</wsdl>
-						<xjb>XML_STYLE</xjb>
-						<xsd>XML_STYLE</xsd>
-						<html>XML_STYLE</html>
-						<htm>XML_STYLE</htm>
-						<xsl>XML_STYLE</xsl>
-						<apt>DOUBLETILDE_STYLE</apt>
-						<properties>SCRIPT_STYLE</properties>
-						<sh>SCRIPT_STYLE</sh>
-						<txt>TEXT</txt>
-						<bat>BATCH</bat>
-						<cmd>BATCH</cmd>
-						<sql>DOUBLEDASHES_STYLE</sql>
-						<ftl>FTL</ftl>
-						<xhtml>XML_STYLE</xhtml>
-						<vm>SHARPSTAR_STYLE</vm>
-						<jspx>XML_STYLE</jspx>
-					</mapping>
-
+					<verbose>false</verbose>
+					<addSvnKeyWords>true</addSvnKeyWords>
+					<licenseName>apache_v2</licenseName>
+							<addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+							<excludes>
+								<exclude>**/src/main/resources/META-INF/xsd/ws-bpel*.xsd</exclude>
+								<exclude>**/src/main/resources/META-INF/xsd/BPMN20.xsd</exclude>
+								<exclude>**/src/main/resources/META-INF/xsd/Semantic.xsd</exclude>
+								<exclude>**/src/main/resources/META-INF/xsd/ws-wsdl.xsd</exclude>
+								<exclude>**/src/main/resources/META-INF/xsd/ws-humantask*</exclude>
+								<exclude>**/src/test/resources/deadlines/*</exclude>
+								<exclude>**/src/test/resources/deadlines/*</exclude>
+								<exclude>**/src/test/resources/reassignment/*</exclude>
+								<exclude>**/src/test/resources/topart/document/*</exclude>
+								<exclude>**/src/test/resources/topart/rpc/*</exclude>
+								<exclude>**/src/test/resources/emailvoting/*.bpmn</exclude>
+							</excludes>
+							<extraExtensions>
+								<serverdef>xml</serverdef>
+								<svg>xml</svg>
+								<bpel>xml</bpel>
+								<bpmn>xml</bpmn>
+								<hi>xml</hi>
+								<wsdl>xml</wsdl>
+								<xjb>xml</xjb>
+								<xsd>xml</xsd>
+								<xsl>xml</xsl>
+								<!-- 
+								<sh>SCRIPT_STYLE</sh>
+								<txt>TEXT</txt>
+								<bat>BATCH</bat>
+								<cmd>BATCH</cmd>
+								<sql>DOUBLEDASHES_STYLE</sql>
+								 -->
+							</extraExtensions>
 				</configuration>
 			</plugin>
+
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.0</version>
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
-					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>3.0-beta-2</version>
+				<version>3.2</version>
 				<configuration>
 					<reportPlugins>
 						<plugin>
@@ -288,37 +305,6 @@
 		<!-- <pluginRepository> <id>ode.apache.org</id> <name>ODE Maven Repository</name> <url>http://ode.apache.org/nexus/content/groups/public/</url> <releases> <enabled>true</enabled> 
 			</releases> <snapshots> <enabled>true</enabled> </snapshots> </pluginRepository> -->
 	</pluginRepositories>
-
-	<profiles>
-		<profile>
-			<id>buildhive</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-compiler-plugin</artifactId>
-						<configuration>
-							<source>1.7</source>
-							<target>1.7</target>
-							<showDeprecation>true</showDeprecation>
-							<showWarnings>true</showWarnings>
-							<encoding>UTF-8</encoding>
-							<executable>/opt/jdk/jdk1.7.0/bin/javac</executable>
-							<fork>true</fork>
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-							<jvm>/opt/jdk/jdk1.7.0/bin/java</jvm>
-							<forkMode>once</forkMode>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 
 </project>
 

@@ -28,5 +28,6 @@
 		<groupId>org.apache.ode.eclipse</groupId>
 		<artifactId>eclipse-pom</artifactId>
 		<version>0.1-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
 </project>
