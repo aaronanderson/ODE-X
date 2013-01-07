@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<schema targetNamespace="http://ode.apache.org/event" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/event">
+
+	<!-- This schema contains standard event definitions. 
+	 -->
+
+<!--    Event    - Action that occurs in environment
+		Channels - Logical route an event takes through the system, from source to destination(s) 
+	    Stream -   While Channels are stateless sometimes two stateful entities need to maintain an association across one or more channels. A stream is a stateful conversation on a channel such that only events pertaining to current in scope association are processed.
+	    Address -  Virtual location of an event channel source or destination. Consist of a virtual address where one or more channels are bound to. Channel addresses are non-unique and there may be many to many sources and destinations for the same channel. 
+	    EventBus - Entity used to send or receive events to channel addresses.
+ -->
+<!--  address format:
+		
+	1) [be] - (stream only) indicates beginning or end of a channel stream. Note that this only applies to the local stream address, so a source address my be a stream while the destination may still be a channel. l
+	2) [t]  - transactional - propagates an existing transaction or starts a new one. JTA suspend/resume is used to transfer transaction across all threads. All events marked as transactional will be processed sequentially.
+	3) [io] - Destination or Source address. Although there are different XML schema types this provides a simple indicator on the type of address rather than digging through the schema definitions
+	4) \d+   - local Channel ID
+	5) (\w\d+)+ - virtual address
+	6) :    - delimiter
+	7) QName - QName of event type. Should map to JAXB class that extends abstract event element
+	-->
+
+	<simpleType name="channelAddressType">
+		<restriction base="token">
+			<pattern value="[be]?[io]\d+(\w\d+)+:([\i-[:]][\c-[:]]*:)?[\i-[:]][\c-[:]]" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="sourceChannelAddressType">
+		<restriction base="tns:channelAddressType">
+			<pattern value="[be]?o\d+(\w\d+)+:([\i-[:]][\c-[:]]*:)?[\i-[:]][\c-[:]]" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="destinationChannelAddressType">
+		<restriction base="tns:channelAddressType">
+			<pattern value="[be]?i\d+(\w\d+)+:([\i-[:]][\c-[:]]*:)?[\i-[:]][\c-[:]]" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="sourceStreamAddressType">
+		<restriction base="tns:sourceChannelAddressType">
+			<pattern value="[be]o\d+(\w\d+)+:([\i-[:]][\c-[:]]*:)?[\i-[:]][\c-[:]]" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="destinationStreamAddressType">
+		<restriction base="tns:destinationChannelAddressType">
+			<pattern value="[be]i\d+(\w\d+)+:([\i-[:]][\c-[:]]*:)?[\i-[:]][\c-[:]]" />
+		</restriction>
+	</simpleType>
+
+
+	<complexType name="eventType" abstract="true">
+
+	</complexType>
+
+	<element name="event" type="tns:eventType" abstract="true" />
+
+	<!-- Need at least one instruction defined in this schema so that JAXB generates a JAXBElement<? extends Instruction> wrapper for the substitution group see http://java.net/jira/browse/JAXB-893 -->
+
+	<element name="createThread" substitutionGroup="tns:event">
+		<complexType>
+			<complexContent>
+				<extension base="tns:eventType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+</schema>

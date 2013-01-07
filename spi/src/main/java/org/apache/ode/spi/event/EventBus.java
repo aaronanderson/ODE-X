@@ -18,8 +18,14 @@
  */
 package org.apache.ode.spi.event;
 
-public interface Channel<T> {
+import org.apache.ode.spi.event.xml.DestinationChannelAdd;
+import org.apache.ode.spi.event.xml.SourceChannelAdd;
 
-	void send(T event);
+public interface EventBus {
+
+	<E> void send(E event, SourceChannelAdd<E> address);
+	
+	<E> E receive(DestinationChannelAdd<E> address);
+	
 	
 }

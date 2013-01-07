@@ -30,6 +30,24 @@
 			<jxb:class name="ProgramConfiguration" />
 		</jxb:bindings>
 
+		
+		<!-- add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->
+		<jxb:bindings node="//xs:simpleType[@name='excAddressType']">
+			<jxb:class ref="org.apache.ode.spi.exec.program.xml.ExcAdd" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='excAddressRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.program.xml.ExcAddRef" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='jntAddressType']">
+			<jxb:class ref="org.apache.ode.spi.exec.program.xml.JntAdd" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='jntAddressRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.program.xml.JntAddRef" />
+		</jxb:bindings>
+		
 		<jxb:bindings node="//xs:complexType[@name='executablesType']">
 			<jxb:class name="Executables" />
 		</jxb:bindings>
@@ -38,12 +56,12 @@
 			<jxb:class name="Executable" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='exchangesType']">
-			<jxb:class name="Exchanges" />
+		<jxb:bindings node="//xs:complexType[@name='junctionsType']">
+			<jxb:class name="Junctions" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='exchangeType']">
-			<jxb:class name="Exchange" />
+		<jxb:bindings node="//xs:complexType[@name='junctionType']">
+			<jxb:class name="Junction" />
 		</jxb:bindings>
 
 	</jxb:bindings>

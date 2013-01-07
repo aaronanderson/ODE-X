@@ -204,6 +204,49 @@
 			</extension>
 		</complexContent>
 	</complexType>
+	
+	
+	<simpleType name="eptAddressType">
+		<restriction base="ID">
+			<pattern value="x\d+e\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="eptAddressRefType">
+		<restriction base="IDREF">
+			<pattern value="x\d+e\d+" />
+		</restriction>
+	</simpleType>
+	
+	<complexType name="endpointType" abstract="true">
+		<attribute name="ept" type="tns:eptAddressType" use="required" />
+	</complexType>
+
+	<element name="endpoint" type="tns:endpointType" abstract="true" />
+	
+	
+	<simpleType name="excAddressType">
+		<restriction base="ID">
+			<pattern value="x\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="excAddressRefType">
+		<restriction base="IDREF">
+			<pattern value="x\d+" />
+		</restriction>
+	</simpleType>
+	
+	
+	<complexType name="exchangeType">
+		<sequence>
+			<element ref="tns:endpoint" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="exc" type="tns:excAddressType" use="required" />
+	</complexType>
+	<element name="exchange" type="tns:exchangeType" />
+	
+	
 	<!-- <simpleType name="syncMode"> <restriction base="string"> <enumeration value="SYNC" /> <enumeration value="ASYNC" /> </restriction> </simpleType> <complexType 
 		name="invocationType" abstract="true"> <complexContent> <extension base="tns:sourceRefType"> <attribute name="save" type="boolean" use="optional" default="true" 
 		/> <attribute name="mode" type="tns:syncMode" use="optional" default="SYNC" /> <attribute name="inv" type="ID" use="required" /> </extension> </complexContent> </complexType> 

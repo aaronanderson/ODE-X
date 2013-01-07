@@ -16,8 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.exchange;
+package org.apache.ode.spi.event.xml;
 
-public class Exchange {
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
+import org.apache.ode.spi.event.xml.DestinationStreamAddress.DestinationStreamAddAdapter;
+
+@XmlJavaTypeAdapter(DestinationStreamAddAdapter.class)
+public interface DestinationStreamAdd<E> extends DestinationChannelAdd<E> {
 
 }

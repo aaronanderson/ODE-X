@@ -36,6 +36,7 @@ import org.w3c.dom.Document;
 
 public interface Platform {
 
+	public static final String EVENT_NAMESPACE = "http://ode.apache.org/event";
 	public static final String EXEC_MIMETYPE = "application/ode-executable";
 	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
 	public static final String EXEC_CTX_NAMESPACE = "http://ode.apache.org/execution-context";

@@ -33,11 +33,24 @@
 
 	<complexType name="programConfigurationType">
 		<sequence>
-			<element name="executables" type="tns:exchangesType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="executables" type="tns:junctionsType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="name" type="QName" use="required" />
 		<attribute name="architecture" type="QName" use="required" />
 	</complexType>
+	
+	<simpleType name="excAddressType">
+		<restriction base="ID">
+			<pattern value="e\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="excAddressRefType">
+		<restriction base="IDREF">
+			<pattern value="e\d+" />
+		</restriction>
+	</simpleType>
+	
 
 	<complexType name="executablesType">
 		<sequence>
@@ -47,27 +60,39 @@
 
 	<complexType name="executableType">
 		<sequence>
-			<element name="exchanges" type="tns:exchangesType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="exchanges" type="tns:junctionsType" minOccurs="0" maxOccurs="unbounded" />
 			<element name="insrumentations" type="tns:insrumentationsType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
-		<attribute name="executable" type="ID" use="required" />
+		<attribute name="executable" type="tns:excAddressType" use="required" />
 		<attribute name="qname" type="QName" use="required" />
 		<attribute name="version" type="string" use="required" />
 		<attribute name="checksum" type="string" use="required" />
 	</complexType>
 
 
-	<complexType name="exchangesType">
+	<complexType name="junctionsType">
 		<sequence>
-			<element name="exchange" type="tns:exchangeType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="junction" type="tns:junctionType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
+	</complexType>
+	
+	<simpleType name="jntAddressType">
+		<restriction base="ID">
+			<pattern value="j\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="jntAddressRefType">
+		<restriction base="IDREF">
+			<pattern value="j\d+" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="junctionType" abstract="true">
+	    <attribute name="jnt" type="tns:jntAddressType" use="required" />	
 	</complexType>
 
-	<complexType name="exchangeType" abstract="true">
-		<sequence>
-			<element name="id" type="ID" minOccurs="1" maxOccurs="1" />
-		</sequence>
-	</complexType>
+	<element name="junction" type="tns:junctionType" abstract="true" />
 
 	<complexType name="insrumentationsType">
 		<sequence>

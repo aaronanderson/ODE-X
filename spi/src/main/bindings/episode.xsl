@@ -39,6 +39,28 @@
 			<xsl:apply-templates select="@*|node()" />
 
 			<xsl:choose>
+				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.event.xml']">
+					<bindings scd="~tns:channelAddressType">
+						<class ref="org.apache.ode.spi.event.xml.ChannelAdd" />
+					</bindings>
+
+					<bindings scd="~tns:sourceChannelAddressType">
+						<class ref="org.apache.ode.spi.event.xml.SourceChannelAdd" />
+					</bindings>
+
+					<bindings scd="~tns:destinationChannelAddressType">
+						<class ref="org.apache.ode.spi.event.xml.DestinationChannelAdd" />
+					</bindings>
+
+					<bindings scd="~tns:sourceStreamAddressType">
+						<class ref="org.apache.ode.spi.event.xml.SourceStreamAdd" />
+					</bindings>
+
+					<bindings scd="~tns:destinationStreamAddressType">
+						<class ref="org.apache.ode.spi.event.xml.DestinationStreamAdd" />
+					</bindings>
+
+				</xsl:when>
 				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.executable.xml']">
 					<!-- <xsl:variable name="xjc" select="document('executable.xjb')" /> <xsl:for-each select="$xjc//j:bindings[@node]"> <xsl:if test="j:class[@ref]"> <xsl:copy> 
 						<xsl:apply-templates select="@*|node()" /> </xsl:copy> </xsl:if> </xsl:for-each> -->
@@ -104,6 +126,24 @@
 
 					<bindings scd="~tns:blcAddressRefType">
 						<class ref="org.apache.ode.spi.exec.executable.xml.BlcAddRef" />
+					</bindings>
+
+				</xsl:when>
+				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.program.xml']">
+					<bindings scd="~tns:excAddressType">
+						<class ref="org.apache.ode.spi.exec.program.xml.ExcAdd" />
+					</bindings>
+
+					<bindings scd="~tns:excAddressRefType">
+						<class ref="org.apache.ode.spi.exec.program.xml.ExcAddRef" />
+					</bindings>
+
+					<bindings scd="~tns:jntAddressType">
+						<class ref="org.apache.ode.spi.exec.program.xml.JntAdd" />
+					</bindings>
+
+					<bindings scd="~tns:jntAddressRefType">
+						<class ref="org.apache.ode.spi.exec.program.xml.JntAddRef" />
 					</bindings>
 
 				</xsl:when>

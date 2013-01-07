@@ -16,8 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.exchange;
+package org.apache.ode.spi.exec.program.xml;
 
-public class Bond {
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import org.apache.ode.spi.exec.program.xml.JntAddress.JntAddRefAdapter;
+
+
+@XmlJavaTypeAdapter(JntAddRefAdapter.class)
+public interface JntAddRef {
+	
+	String address();
 }
