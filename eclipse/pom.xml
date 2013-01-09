@@ -23,6 +23,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.apache.ode.eclipse</groupId>
 	<artifactId>eclipse-pom</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<parent>
 		<groupId>org.apache.ode</groupId>
@@ -31,11 +32,13 @@
 	</parent>
 	<modules>
 		<module>plugins/org.apache.ode.eclipse.server.core</module>
-		<!-- <module>plugins/org.apache.ode.eclipse.server.ui</module> -->
-		<!-- <module>plugins/org.apache.ode.eclipse.bpel.core</module> -->
-                <!-- <module>plugins/org.apache.ode.eclipse.bpel.ui</module> -->		
-		<!-- <module>plugins/org.apache.ode.eclipse.bpmn.core</module> -->
-                <!-- <module>plugins/org.apache.ode.eclipse.bpmn.ui</module> -->
+		<module>plugins/org.apache.ode.eclipse.server.ui</module>
+		<module>plugins/org.apache.ode.eclipse.bpel.core</module>
+                <module>plugins/org.apache.ode.eclipse.bpel.ui</module>		
+		<module>plugins/org.apache.ode.eclipse.bpmn.core</module>
+                <module>plugins/org.apache.ode.eclipse.bpmn.ui</module>
+		<module>features/org.apache.ode.eclipse.feature</module>
+		<module>site</module>
 	 	<!-- <module>plugins/org.apache.ode.eclipse.wsht.core</module> -->
                 <!-- <module>plugins/org.apache.ode.eclipse.wshtl.ui</module> -->
 
@@ -51,9 +54,13 @@
      <url>http://download.eclipse.org/releases/juno</url>
    </repository>
    
+
+<!-- 
+
+Tried to add to get interim builds but repository contains stale links to milestone builds that have been archived and tycho fails.
    <repository>
 			<id>eclipse-webtools</id>
-			<url>(http://download.eclipse.org/releases/juno</url>
+			<url>http://download.eclipse.org/webtools/repository/juno</url>
 			<layout>p2</layout>
 			<snapshots>
 				<enabled>true</enabled>
@@ -62,7 +69,7 @@
 				<enabled>true</enabled>
 			</releases>
 		</repository>
-		
+-->		
   </repositories>
 
   <build>
@@ -73,6 +80,8 @@
         <version>${tycho-version}</version>
         <extensions>true</extensions>
       </plugin>
+
+	
     </plugins>
   </build>
 
