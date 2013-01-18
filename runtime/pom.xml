@@ -215,6 +215,7 @@
 							be added to the exclusion list for the target/generated-test-sources/xjc Java Build Path Source -->
 							<schemaDirectory>src/test/resources/META-INF/xsd</schemaDirectory>
 							<schemaIncludes>
+								<schemaInclude>test-event.xsd</schemaInclude>
 								<schemaInclude>test-executable.xsd</schemaInclude>
 								<schemaInclude>test-context.xsd</schemaInclude>
 								<schemaInclude>test-task.xsd</schemaInclude>
@@ -222,6 +223,7 @@
 							</schemaIncludes>
 							<bindingDirectory>src/test/bindings</bindingDirectory>
 							<bindingIncludes>
+								<bindingInclude>test-event.xjb</bindingInclude>
 								<bindingInclude>test-executable.xjb</bindingInclude>
 								<bindingInclude>test-context.xjb</bindingInclude>
 								<bindingInclude>test-task.xjb</bindingInclude>

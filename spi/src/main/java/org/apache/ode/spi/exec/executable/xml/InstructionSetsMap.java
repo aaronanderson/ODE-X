@@ -16,16 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.junction;
+package org.apache.ode.spi.exec.executable.xml;
 
-import java.util.List;
+import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.event.xml.DestinationChannelAdd;
-import org.apache.ode.spi.event.xml.SourceChannelAdd;
+import org.apache.ode.spi.exec.ListMap;
 
-public interface Junction {
+public class InstructionSetsMap<T extends InstructionSet> extends ListMap<QName, T> {
 
-	void bond(List<SourceChannelAdd> publishers, List<DestinationChannelAdd> subscribers);
-	
-	void unbond();
+	@Override
+	public QName getKey(T value) {
+		return value.name;
+	}
+
 }

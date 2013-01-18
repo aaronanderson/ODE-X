@@ -24,11 +24,11 @@ import javax.xml.namespace.QName;
 import org.apache.ode.spi.event.xml.ChannelAddress.ChannelAddAdapter;
 
 @XmlJavaTypeAdapter(ChannelAddAdapter.class)
-public interface ChannelAdd<E> {
+public interface ChannelAdd {
 
 	String address();
 	QName type();
-	Class<E> javaType();
+	Class<?> javaType();
 	
 
 }

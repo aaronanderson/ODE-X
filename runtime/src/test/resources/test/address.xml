@@ -21,7 +21,7 @@
 -->
 <exec:executable xmlns:exec="http://ode.apache.org/executable" xmlns:test="http://ode.apache.org/executable-test">
 	<exec:instruction-sets>
-		<exec:instruction-set>test:Test</exec:instruction-set>
+		<exec:instruction-set name="test:Test"/>
 	</exec:instruction-sets>
 	<exec:installation />
 	<exec:sources>

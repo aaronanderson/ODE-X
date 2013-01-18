@@ -16,16 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.junction;
+package org.apache.ode.spi.exec.executable.xml;
 
-import java.util.List;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import org.apache.ode.spi.event.xml.DestinationChannelAdd;
-import org.apache.ode.spi.event.xml.SourceChannelAdd;
+import org.apache.ode.spi.exec.executable.xml.EventSetId.EvtSetIdAdapter;
 
-public interface Junction {
-
-	void bond(List<SourceChannelAdd> publishers, List<DestinationChannelAdd> subscribers);
+@XmlJavaTypeAdapter(EvtSetIdAdapter.class)
+public interface EvtSetId {
 	
-	void unbond();
+	String id();
+
 }

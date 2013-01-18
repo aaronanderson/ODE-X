@@ -35,9 +35,21 @@
 		<attribute name="name" type="string" use="optional" />
 	</complexType>
 
+	<simpleType name="evtSetIDType">
+		<restriction base="ID">
+			<pattern value="e\d+" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="instructionSetType">
+		<attribute name="name" type="QName" use="required" />
+		<attribute name="eventSetId" type="tns:evtSetIDType" use="optional" />
+	</complexType>
+
+
 	<complexType name="instructionSetsType">
 		<sequence>
-			<element name="instruction-set" type="QName" minOccurs="1" maxOccurs="unbounded" />
+			<element name="instruction-set" type="tns:instructionSetType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
@@ -204,8 +216,8 @@
 			</extension>
 		</complexContent>
 	</complexType>
-	
-	
+
+
 	<simpleType name="eptAddressType">
 		<restriction base="ID">
 			<pattern value="x\d+e\d+" />
@@ -217,14 +229,14 @@
 			<pattern value="x\d+e\d+" />
 		</restriction>
 	</simpleType>
-	
+
 	<complexType name="endpointType" abstract="true">
 		<attribute name="ept" type="tns:eptAddressType" use="required" />
 	</complexType>
 
 	<element name="endpoint" type="tns:endpointType" abstract="true" />
-	
-	
+
+
 	<simpleType name="excAddressType">
 		<restriction base="ID">
 			<pattern value="x\d+" />
@@ -236,8 +248,8 @@
 			<pattern value="x\d+" />
 		</restriction>
 	</simpleType>
-	
-	
+
+
 	<complexType name="exchangeType">
 		<sequence>
 			<element ref="tns:endpoint" minOccurs="1" maxOccurs="unbounded" />

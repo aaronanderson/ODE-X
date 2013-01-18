@@ -412,6 +412,21 @@ public class TaskTest {
 		public List<InstructionSet> instructionSets() {
 			return Collections.EMPTY_LIST;
 		}
+		
+		@Override
+		public List<ExecutionContextSet> executionContextSets() {
+			return Collections.EMPTY_LIST;
+		}
+
+		@Override
+		public List<EventSet> eventSets() {
+			return Collections.EMPTY_LIST;
+		}
+
+		@Override
+		public List<ProgramSet> programSets() {
+			return Collections.EMPTY_LIST;
+		}
 
 		@Override
 		public List<TaskDefinition> tasks() {
@@ -462,6 +477,8 @@ public class TaskTest {
 			// TODO Auto-generated method stub
 
 		}
+
+
 
 	}
 

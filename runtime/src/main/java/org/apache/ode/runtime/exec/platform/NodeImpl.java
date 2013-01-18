@@ -113,6 +113,7 @@ import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageEvent;
 import org.apache.ode.spi.exec.Message.MessageListener;
 import org.apache.ode.spi.exec.Node;
+import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.Platform.NodeStatus;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
@@ -1001,7 +1002,8 @@ public class NodeImpl implements Node, MessageListener {
 			if ("instruction-sets".equals(reader.getLocalName())) {
 				reader.nextTag();// first instruction set
 				while ("instruction-set".equals(reader.getLocalName())) {
-					String[] text = reader.getElementText().split(":");
+					String isetName = reader.getAttributeValue(Platform.EXEC_NAMESPACE, "name");					
+					String[] text = isetName.split(":");
 					if (text.length == 2) {
 						QName iset = new QName(reader.getNamespaceContext().getNamespaceURI(text[0]), text[1]);
 						InstructionSet is = getInstructionSets().get(iset);
@@ -1026,8 +1028,8 @@ public class NodeImpl implements Node, MessageListener {
 		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
 		InstructionSets isets = executable.getInstructionSets();
 		if (isets != null) {
-			for (QName iset : isets.getInstructionSet()) {
-				InstructionSet is = getInstructionSets().get(iset);
+			for (org.apache.ode.spi.exec.executable.xml.InstructionSet iset : isets.getInstructionSets()) {
+				InstructionSet is = getInstructionSets().get(iset.getName());
 				if (is == null) {
 					throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
 				}
@@ -1041,12 +1043,12 @@ public class NodeImpl implements Node, MessageListener {
 		List<QName> isets = new ArrayList<QName>();
 		InstructionSets eisets = executable.getInstructionSets();
 		if (eisets != null) {
-			for (QName iset : eisets.getInstructionSet()) {
-				InstructionSet is = getInstructionSets().get(iset);
+			for (org.apache.ode.spi.exec.executable.xml.InstructionSet iset : eisets.getInstructionSets()) {
+				InstructionSet is = getInstructionSets().get(iset.getName());
 				if (is == null) {
 					throw new PlatformException("Unknown instruction set " + iset.toString());
 				}
-				isets.add(iset);
+				isets.add(iset.getName());
 			}
 		}
 		return isets;

@@ -18,22 +18,23 @@
  */
 package org.apache.ode.spi.event.xml;
 
+import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.namespace.QName;
 
-public class SourceChannelAddress<E> extends ChannelAddress<E> implements SourceChannelAdd<E> {
+public class SourceChannelAddress extends ChannelAddress implements SourceChannelAdd {
 	
 	public SourceChannelAddress(String address, QName type) {
 		super(address, type);
 	}
 
-	public SourceChannelAddress(String address, QName type, Class<E> javaType) {
+	public SourceChannelAddress(String address, QName type, Class<?> javaType) {
 		super(address, type, javaType);
 	}
 
-	public static class SourceChannelAddAdapter<E> extends ChannelAddAdapter<SourceChannelAddress<E>> {
+	public static class SourceChannelAddAdapter  extends XmlAdapter<String, SourceChannelAdd> {
 
 		@Override
-		public String marshal(SourceChannelAddress<E> addr) throws Exception {
+		public String marshal(SourceChannelAdd addr) throws Exception {
 			if (addr != null) {
 				return addr.address();
 			}
@@ -41,7 +42,7 @@ public class SourceChannelAddress<E> extends ChannelAddress<E> implements Source
 		}
 
 		@Override
-		public SourceChannelAddress<E> unmarshal(String addr) throws Exception {
+		public SourceChannelAdd unmarshal(String addr) throws Exception {
 			return new SourceChannelAddress(addr, null);
 		}
 

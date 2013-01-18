@@ -21,19 +21,20 @@ package org.apache.ode.spi.event.xml;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.namespace.QName;
 
-public class ChannelAddress<E> implements ChannelAdd<E> {
+public class ChannelAddress implements ChannelAdd {
 	
 	
 	private String address;
 	private QName type;
-	private Class<E> javaType;
+	private Class<?> javaType;
+	
 	
 	public ChannelAddress(String address, QName type) {
 		this.address = address;
 		this.type=type;
 	}
 	
-	public ChannelAddress(String address, QName type, Class<E> javaType) {
+	public ChannelAddress(String address, QName type, Class<?> javaType) {
 		this(address, type);
 		this.javaType=javaType;
 	}
@@ -49,15 +50,15 @@ public class ChannelAddress<E> implements ChannelAdd<E> {
 	}
 	
 	@Override
-	public Class<E> javaType() {
+	public Class<?> javaType() {
 		return javaType;
 	}
 
 	
-	public static class ChannelAddAdapter<C extends ChannelAdd<?>> extends XmlAdapter<String, C> {
+	public static class ChannelAddAdapter extends XmlAdapter<String, ChannelAdd> {
 
 		@Override
-		public String marshal(C addr) throws Exception {
+		public String marshal(ChannelAdd addr) throws Exception {
 			if (addr != null) {
 				return addr.address();
 			}
@@ -65,10 +66,12 @@ public class ChannelAddress<E> implements ChannelAdd<E> {
 		}
 
 		@Override
-		public C unmarshal(String addr) throws Exception {
-			return (C) new ChannelAddress(addr,null);
+		public ChannelAdd unmarshal(String addr) throws Exception {
+			return (ChannelAdd) new ChannelAddress(addr,null);
 		}
 
 	}
+	
+	
 
 }

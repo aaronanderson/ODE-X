@@ -20,9 +20,10 @@
 
 -->
 <schema targetNamespace="http://ode.apache.org/executable-test" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:exec="http://ode.apache.org/executable"
-	xmlns:tns="http://ode.apache.org/executable-test">
+	xmlns:evt="http://ode.apache.org/event" xmlns:tns="http://ode.apache.org/executable-test">
 
 	<import namespace="http://ode.apache.org/executable" />
+	<import namespace="http://ode.apache.org/event" />
 
 	<element name="instructionTest" substitutionGroup="exec:instruction">
 		<complexType>
@@ -63,6 +64,17 @@
 				<extension base="exec:instructionType">
 					<attribute name="arg1" type="string" />
 					<attribute name="arg2" type="string" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	<element name="exchangeTest" substitutionGroup="exec:instruction">
+		<complexType>
+			<complexContent>
+				<extension base="exec:instructionType">
+					<attribute name="send" type="evt:sourceStreamAddressType" />
+					<attribute name="receive" type="evt:destinationStreamAddressType" />
 				</extension>
 			</complexContent>
 		</complexType>

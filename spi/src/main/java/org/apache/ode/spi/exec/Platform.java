@@ -21,10 +21,13 @@ package org.apache.ode.spi.exec;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import javax.xml.namespace.QName;
 import javax.activation.CommandObject;
+import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.Component.EventSet;
+import org.apache.ode.spi.exec.Component.ExecutionContextSet;
 import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ProgramSet;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageListener;
 import org.apache.ode.spi.exec.target.Target;
@@ -48,9 +51,18 @@ public interface Platform {
 	public static final String ARCHITECTURE_NAMESPACE = "http://ode.apache.org/architecture";
 
 	public static final QName EXEC_INSTRUCTION_SET_NAME = new QName(EXEC_NAMESPACE, "Executable");
+	public static final QName EXEC_CTX_SET_NAME = new QName(EXEC_CTX_NAMESPACE, "ExecContext");
+	public static final QName EVENT_SET_NAME = new QName(EVENT_NAMESPACE, "Event");
+	public static final QName PROGRAM_SET_NAME = new QName(PROGRAM_NAMESPACE, "Program");
+	
 	public static final InstructionSet EXEC_INSTRUCTION_SET = new InstructionSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.executable.xml",
-			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, "org.apache.ode.spi.exec.instruction.xml",
+			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_SET_NAME,PROGRAM_SET_NAME);
+	public static final ExecutionContextSet EXEC_CTX_SET = new ExecutionContextSet(EXEC_CTX_SET_NAME, "org.apache.ode.spi.exec.instruction.xml",
 			org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
+	public static final EventSet EVENT_SET = new EventSet(EVENT_SET_NAME, "org.apache.ode.spi.event.xml",
+			org.apache.ode.spi.event.xml.ObjectFactory.class);
+	public static final ProgramSet PROGRAM_SET = new ProgramSet(EVENT_SET_NAME, "org.apache.ode.spi.exec.program.xml",
+			org.apache.ode.spi.exec.program.xml.ObjectFactory.class);
 
 	public enum PlatformTask {
 

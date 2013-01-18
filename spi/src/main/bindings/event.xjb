@@ -26,7 +26,7 @@
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.event.xml" />
 		</jxb:schemaBindings>
-
+         
 		<!-- add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->
 		<jxb:bindings node="//xs:simpleType[@name='channelAddressType']">
 			<jxb:class ref="org.apache.ode.spi.event.xml.ChannelAdd" />
@@ -50,6 +50,10 @@
 
 		<jxb:bindings node="//xs:complexType[@name='eventType']">
 			<jxb:class name="Event" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:attribute[@name='type']">
+			 <jxb:property fixedAttributeAsConstantProperty="true" />
 		</jxb:bindings>
 
 		

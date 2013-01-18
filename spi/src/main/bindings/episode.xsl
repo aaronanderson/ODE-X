@@ -64,6 +64,11 @@
 				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.executable.xml']">
 					<!-- <xsl:variable name="xjc" select="document('executable.xjb')" /> <xsl:for-each select="$xjc//j:bindings[@node]"> <xsl:if test="j:class[@ref]"> <xsl:copy> 
 						<xsl:apply-templates select="@*|node()" /> </xsl:copy> </xsl:if> </xsl:for-each> -->
+					
+					<bindings scd="~tns:evtSetIDType">
+						<class ref="org.apache.ode.spi.exec.executable.xml.EventSetId" />
+					</bindings>
+		
 					<bindings scd="~tns:srcIdType">
 						<class ref="org.apache.ode.spi.exec.executable.xml.SrcId" />
 					</bindings>

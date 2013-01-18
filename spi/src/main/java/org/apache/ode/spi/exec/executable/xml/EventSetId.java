@@ -16,16 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.junction;
+package org.apache.ode.spi.exec.executable.xml;
 
-import java.util.List;
+import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-import org.apache.ode.spi.event.xml.DestinationChannelAdd;
-import org.apache.ode.spi.event.xml.SourceChannelAdd;
+public class EventSetId implements EvtSetId {
+	public EventSetId() {
+	}
 
-public interface Junction {
+	public EventSetId(String id) {
+		this.id = id;
+	}
 
-	void bond(List<SourceChannelAdd> publishers, List<DestinationChannelAdd> subscribers);
-	
-	void unbond();
+	private String id;
+
+	@Override
+	public String id() {
+		return id;
+	}
+
+	public static class EvtSetIdAdapter extends XmlAdapter<String, EvtSetId> {
+
+		@Override
+		public String marshal(EvtSetId id) throws Exception {
+			if (id != null) {
+				return id.id();
+			}
+			return null;
+		}
+
+		@Override
+		public EvtSetId unmarshal(String id) throws Exception {
+			return new EventSetId(id);
+		}
+
+	}	
+
 }

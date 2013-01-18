@@ -18,10 +18,19 @@
  */
 package org.apache.ode.spi.exec;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.event.xml.ChannelAddress;
+import org.apache.ode.spi.event.xml.Event;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskDefinition;
 
@@ -31,8 +40,14 @@ public interface Component {
 
 	public List<InstructionSet> instructionSets();
 
+	public List<ExecutionContextSet> executionContextSets();
+
+	public List<EventSet> eventSets();
+
+	public List<ProgramSet> programSets();
+
 	public List<TaskDefinition> tasks();
-	
+
 	public List<TaskActionDefinition> actions();
 
 	public void online() throws PlatformException;
@@ -43,23 +58,21 @@ public interface Component {
 		final QName name;
 		final String jaxbExecPath;
 		final Class<?> jaxbExecFactory;
-		final String jaxbExecContextPath;
-		final Class<?> jaxbExecContextFactory;
+		final QName execContextSetName;
+		final QName eventSetName;
+		final QName programSetName;
 
-		public InstructionSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory) {
+		public InstructionSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory, QName execContextSetName, QName eventSetName, QName programSetName) {
+			if (name == null || ((jaxbExecPath == null && jaxbExecFactory == null))) {
+				throw new NullPointerException("name and path or class required");
+			}
 			this.name = name;
 			this.jaxbExecPath = jaxbExecPath;
 			this.jaxbExecFactory = jaxbExecFactory;
-			this.jaxbExecContextPath = null;
-			this.jaxbExecContextFactory = null;
-		}
+			this.execContextSetName = execContextSetName;
+			this.eventSetName = eventSetName;
+			this.programSetName = programSetName;
 
-		public InstructionSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory, String jaxbExecContextPath, Class<?> jaxbExecContextFactory) {
-			this.name = name;
-			this.jaxbExecPath = jaxbExecPath;
-			this.jaxbExecFactory = jaxbExecFactory;
-			this.jaxbExecContextPath = jaxbExecContextPath;
-			this.jaxbExecContextFactory = jaxbExecContextFactory;
 		}
 
 		public QName getName() {
@@ -74,6 +87,38 @@ public interface Component {
 			return jaxbExecFactory;
 		}
 
+		public QName getExecContextSetName() {
+			return execContextSetName;
+		}
+
+		public QName getEventSetName() {
+			return eventSetName;
+		}
+
+		public QName getProgramSetName() {
+			return programSetName;
+		}
+
+	}
+
+	public class ExecutionContextSet {
+		final QName name;
+		final String jaxbExecContextPath;
+		final Class<?> jaxbExecContextFactory;
+
+		public ExecutionContextSet(QName name, String jaxbExecContextPath, Class<?> jaxbExecContextFactory) {
+			if (name == null || ((jaxbExecContextPath == null && jaxbExecContextFactory == null))) {
+				throw new NullPointerException("name and path or class required");
+			}
+			this.name = name;
+			this.jaxbExecContextPath = jaxbExecContextPath;
+			this.jaxbExecContextFactory = jaxbExecContextFactory;
+		}
+
+		public QName getName() {
+			return name;
+		}
+
 		public String getJAXBExecContextPath() {
 			return jaxbExecContextPath;
 		}
@@ -81,6 +126,100 @@ public interface Component {
 		public Class<?> getJAXBExecContextFactory() {
 			return jaxbExecContextFactory;
 		}
+	}
+
+	public class EventSet {
+		final QName name;
+		final String jaxbEventPath;
+		final Class<?> jaxbEventFactory;
+		final Map<String, Class<? extends Event>> eventTypes;
+
+		private static final Logger log = Logger.getLogger(EventSet.class.getName());
+
+		public EventSet(QName name, String jaxbEventPath, Class<?> jaxbEventFactory) {
+			if (name == null || ((jaxbEventPath == null && jaxbEventFactory == null))) {
+				throw new NullPointerException("name and path or class required");
+			}
+			this.name = name;
+			this.jaxbEventPath = jaxbEventPath;
+			this.jaxbEventFactory = jaxbEventFactory;
+			this.eventTypes = buildEvents(jaxbEventPath, jaxbEventFactory);
+		}
+
+		public QName getName() {
+			return name;
+		}
+
+		public String getJAXBEventPath() {
+			return jaxbEventPath;
+		}
+
+		public Class<?> getJAXBEventFactory() {
+			return jaxbEventFactory;
+		}
+
+		public Map<String, Class<? extends Event>> getEventTypes() {
+			return eventTypes;
+		}
+
+		public static Map<String, Class<? extends Event>> buildEvents(String jaxbEventPath, Class<?> jaxbEventFactory) {
+			try {
+				if (jaxbEventFactory == null) {
+					if (jaxbEventPath == null) {
+						return null;
+					}
+					jaxbEventFactory = Class.forName(jaxbEventPath + ".ObjectFactory");
+				}
+				Map<String, Class<? extends Event>> eventTypes = new HashMap<String, Class<? extends Event>>();
+				for (Method m : jaxbEventFactory.getMethods()) {
+					if (m.getName().startsWith("create")) {
+						if (Event.class.isAssignableFrom(m.getReturnType())) {
+							try {
+								Field type = m.getReturnType().getField("type");
+								eventTypes.put((String) type.get(null),(Class<? extends Event>) m.getReturnType());
+							} catch (NoSuchFieldException nsfe) {
+								log.log(Level.WARNING, String.format("Event class %s is does not have fixed type attribute field", m.getReturnType().getName()));
+							}
+						}
+					}
+				}
+				return Collections.unmodifiableMap(eventTypes);
+			} catch (Exception e) {
+				log.log(Level.SEVERE, "", e);
+			}
+
+			return null;
+		}
+
+	}
+
+	public class ProgramSet {
+		final QName name;
+		final String jaxbProgramPath;
+		final Class<?> jaxbProgramFactory;
+
+		public ProgramSet(QName name, String jaxbProgramPath, Class<?> jaxbProgramFactory) {
+
+			if (name == null || ((jaxbProgramPath == null && jaxbProgramFactory == null))) {
+				throw new NullPointerException("name and path or class required");
+			}
+			this.name = name;
+			this.jaxbProgramPath = jaxbProgramPath;
+			this.jaxbProgramFactory = jaxbProgramFactory;
+		}
+
+		public QName getName() {
+			return name;
+		}
+
+		public String getJAXBProgramPath() {
+			return jaxbProgramPath;
+		}
+
+		public Class<?> getJAXBProgramFactory() {
+			return jaxbProgramFactory;
+		}
+
 	}
 
 }

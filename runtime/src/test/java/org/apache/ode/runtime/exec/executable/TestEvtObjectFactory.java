@@ -16,16 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.junction;
+package org.apache.ode.runtime.exec.executable;
 
-import java.util.List;
+import javax.xml.bind.annotation.XmlRegistry;
 
-import org.apache.ode.spi.event.xml.DestinationChannelAdd;
-import org.apache.ode.spi.event.xml.SourceChannelAdd;
+import org.apache.ode.runtime.exec.program.test.xml.ObjectFactory;
 
-public interface Junction {
+@XmlRegistry
+public abstract class TestEvtObjectFactory extends ObjectFactory {
 
-	void bond(List<SourceChannelAdd> publishers, List<DestinationChannelAdd> subscribers);
-	
-	void unbond();
+	@XmlRegistry
+	public static class TestEvtObjectFactoryImpl extends TestEvtObjectFactory {
+	}
+
 }

@@ -22,14 +22,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.Unmarshaller.Listener;
+import javax.xml.namespace.QName;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -38,16 +40,21 @@ import javax.xml.validation.SchemaFactory;
 import org.apache.ode.runtime.exec.JAXBRuntimeUtil;
 import org.apache.ode.runtime.exec.executable.TestCtxObjectFactory.TestCtxObjectFactoryImpl;
 import org.apache.ode.runtime.exec.executable.TestObjectFactory.TestObjectFactoryImpl;
+import org.apache.ode.runtime.exec.executable.TestEvtObjectFactory.TestEvtObjectFactoryImpl;
+import org.apache.ode.runtime.exec.executable.TestPrgObjectFactory.TestPrgObjectFactoryImpl;
 import org.apache.ode.runtime.exec.modules.ScopeModule;
 import org.apache.ode.runtime.exec.platform.ExecutableObjectFactoryImpl;
 import org.apache.ode.runtime.exec.platform.ExecutionContextObjectFactoryImpl;
 import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
 import org.apache.ode.runtime.interpreter.IndexedExecutable;
+import org.apache.ode.spi.exec.Component.EventSet;
+import org.apache.ode.spi.exec.Component.ExecutionContextSet;
 import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ProgramSet;
 import org.apache.ode.spi.exec.ExecutableObjectFactory;
-import org.apache.ode.spi.exec.instruction.ExecutionContextObjectFactory;
 import org.apache.ode.spi.exec.executable.xml.Block;
 import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.instruction.ExecutionContextObjectFactory;
 
 import com.google.inject.AbstractModule;
 import com.mycila.inject.jsr250.Jsr250;
@@ -57,18 +64,28 @@ public abstract class ExecTestBase {
 	//protected static final Logger log = Logger.getLogger(ExecTestBase.class.getName());
 	protected static Block block;
 	protected static IndexedExecutable eIndex;
-	protected static Set<InstructionSet> set;
+	protected static Set<InstructionSet> insSet;
+	protected static Set<ExecutionContextSet> exCtxSet;
+	protected static Set<EventSet> evtSet;
+	protected static Set<ProgramSet> prgSet;
 	protected static Jsr250Injector injector;
 	protected static JAXBContext ectx;
 	protected static JAXBContext ecctx;
 	protected static Schema eschema;
 	protected static Schema ectxschema;
 	protected static ExecutableScopeContext esc;
+
+	public static QName TEST_EXEC_SET_NAME = new QName("http://ode.apache.org/executable-test", "TestExec");
+	public static QName TEST_EXEC_CTX_SET_NAME = new QName("http://ode.apache.org/execution-context-test", "TestExecCtx");
+	public static QName TEST_EVENT_SET_NAME = new QName("http://ode.apache.org/event-test", "TestEvent");
+	public static QName TEST_PROGRAM_SET_NAME = new QName("http://ode.apache.org/program-test", "TestProgram");
+
 	static {
 		try {
 			SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 			ClassLoader cl = Thread.currentThread().getContextClassLoader();
-			eschema = schemaFactory.newSchema(new Source[] { new StreamSource(cl.getResourceAsStream("META-INF/xsd/executable.xsd")),
+			eschema = schemaFactory.newSchema(new Source[] { new StreamSource(cl.getResourceAsStream("META-INF/xsd/event.xsd")),
+					new StreamSource(cl.getResourceAsStream("META-INF/xsd/executable.xsd")), new StreamSource(cl.getResourceAsStream("META-INF/xsd/test-event.xsd")),
 					new StreamSource(cl.getResourceAsStream("META-INF/xsd/test-executable.xsd")) });
 			ectxschema = schemaFactory.newSchema(new Source[] { new StreamSource(cl.getResourceAsStream("META-INF/xsd/execution-context.xsd")),
 					new StreamSource(cl.getResourceAsStream("META-INF/xsd/test-context.xsd")) });
@@ -80,11 +97,20 @@ public abstract class ExecTestBase {
 	}
 
 	public static void setup(String executablePath, AbstractModule... modules) throws Exception {
-		set = new HashSet<InstructionSet>();
-		set.add(new InstructionSet(null, "org.apache.ode.runtime.exec.executable.test.xml", TestObjectFactoryImpl.class, "org.apache.ode.runtime.exec.ectx.test.xml",
-				TestCtxObjectFactoryImpl.class));
-		ectx = JAXBRuntimeUtil.executableJAXBContextByPath(set);
-		ecctx = JAXBRuntimeUtil.executionContextJAXBContextByPath(set);
+		exCtxSet = new HashSet<ExecutionContextSet>();
+		exCtxSet.add(new ExecutionContextSet(TEST_EXEC_CTX_SET_NAME, "org.apache.ode.runtime.exec.ectx.test.xml", TestCtxObjectFactoryImpl.class));
+		evtSet = new HashSet<EventSet>();
+		evtSet.add(new EventSet(TEST_EVENT_SET_NAME, "org.apache.ode.spi.event.xml", TestEvtObjectFactoryImpl.class));
+		prgSet = new HashSet<ProgramSet>();
+		prgSet.add(new ProgramSet(TEST_PROGRAM_SET_NAME, "org.apache.ode.runtime.exec.program.test.xml", TestPrgObjectFactoryImpl.class));
+
+		insSet = new HashSet<InstructionSet>();
+		insSet.add(new InstructionSet(TEST_EXEC_SET_NAME, "org.apache.ode.runtime.exec.executable.test.xml", TestObjectFactoryImpl.class, TEST_EXEC_CTX_SET_NAME,
+				TEST_EVENT_SET_NAME, TEST_PROGRAM_SET_NAME));
+		ectx = JAXBRuntimeUtil.executableJAXBContextByPath(insSet);
+		Map<QName, ExecutionContextSet> exCtxMap = new HashMap<QName, ExecutionContextSet>();
+		exCtxMap.put(TEST_EXEC_CTX_SET_NAME, exCtxSet.iterator().next());
+		ecctx = JAXBRuntimeUtil.executionContextJAXBContextByPath(insSet, exCtxMap);
 
 		Unmarshaller eum = ectx.createUnmarshaller();
 		eIndex = IndexedExecutable.configure(eum);

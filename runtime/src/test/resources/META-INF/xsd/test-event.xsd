@@ -19,10 +19,10 @@
     under the License.
 
 -->
-<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="public">
-	<public publicId="http://ode.apache.org/event" uri="classpath:META-INF/xsd/event.xsd"/>
-	<public publicId="http://ode.apache.org/executable" uri="classpath:META-INF/xsd/executable.xsd" />
-	<public publicId="http://ode.apache.org/execution-context" uri="classpath:META-INF/xsd/execution-context.xsd" />
-	<public publicId="http://ode.apache.org/program" uri="classpath:META-INF/xsd/program.xsd" />
-	<public publicId="http://ode.apache.org/platform" uri="classpath:META-INF/xsd/platform.xsd" />
-</catalog>
+<schema targetNamespace="http://ode.apache.org/event-test" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:evt="http://ode.apache.org/event"
+	xmlns:tns="http://ode.apache.org/event-test">
+
+	<import namespace="http://ode.apache.org/event" />
+
+
+</schema>

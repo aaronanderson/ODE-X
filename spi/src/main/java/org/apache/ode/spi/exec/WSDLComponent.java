@@ -26,13 +26,13 @@ import javax.xml.namespace.QName;
 public abstract class WSDLComponent implements Component {
 
 	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
-	public static final QName WSDL_INSTRUCTION_SET = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
-
+	public static final QName WSDL_INSTRUCTION_SET_NAME = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
+	public static final InstructionSet WSDL_INSTRUCTION_SET = new InstructionSet(WSDL_INSTRUCTION_SET_NAME, null,null,null,null, null);
+	
 	@Override
 	public List<InstructionSet> instructionSets() {
 		List<InstructionSet> instructions = new ArrayList<InstructionSet>();
-		InstructionSet is = new InstructionSet(WSDL_INSTRUCTION_SET, null,null);
-		instructions.add(is);
+		instructions.add(WSDL_INSTRUCTION_SET);
 		return instructions;
 	}
 

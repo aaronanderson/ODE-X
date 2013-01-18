@@ -23,6 +23,6 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.apache.ode.spi.event.xml.SourceStreamAddress.SourceStreamAddAdapter;
 
 @XmlJavaTypeAdapter(SourceStreamAddAdapter.class)
-public interface SourceStreamAdd <E> extends SourceChannelAdd<E> {
+public interface SourceStreamAdd extends SourceChannelAdd{
 
 }

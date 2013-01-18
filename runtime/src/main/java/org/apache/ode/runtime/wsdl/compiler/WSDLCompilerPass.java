@@ -19,6 +19,7 @@
 package org.apache.ode.runtime.wsdl.compiler;
 
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.xml.namespace.QName;
@@ -38,7 +39,9 @@ import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.executable.xml.Executable;
 import org.apache.ode.spi.exec.executable.xml.Installation;
+import org.apache.ode.spi.exec.executable.xml.InstructionSet;
 import org.apache.ode.spi.exec.executable.xml.InstructionSets;
+import org.apache.ode.spi.exec.executable.xml.InstructionSetsMap;
 
 public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 	WSDLContext wsdlCtx;
@@ -96,8 +99,11 @@ public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 				is = new InstructionSets();
 				exec.setInstructionSets(is);
 			}
-			if (!is.getInstructionSet().contains(WSDLComponent.WSDL_INSTRUCTION_SET)) {
-				is.getInstructionSet().add(WSDLComponent.WSDL_INSTRUCTION_SET);
+			Map<QName,InstructionSet> map = ((InstructionSetsMap<InstructionSet>)is.getInstructionSets()).mapView();
+			if (!map.containsKey(WSDLComponent.WSDL_INSTRUCTION_SET)) {
+				org.apache.ode.spi.exec.executable.xml.InstructionSet xis = new org.apache.ode.spi.exec.executable.xml.InstructionSet();
+				xis.setName(WSDLComponent.WSDL_INSTRUCTION_SET_NAME);
+				is.getInstructionSets().add(xis);
 			}
 			Configuration config = new Configuration();
 			config.setBase("HelloWorld");
