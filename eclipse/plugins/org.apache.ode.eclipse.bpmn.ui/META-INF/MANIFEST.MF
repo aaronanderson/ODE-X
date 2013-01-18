@@ -1,12 +1,12 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
-Bundle-SymbolicName: org.apache.ode.eclipse.server.core;singleton:=true
+Bundle-SymbolicName: org.apache.ode.eclipse.bpmn.ui;singleton:=true
 Bundle-Version: 0.1.0.qualifier
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
-Bundle-Activator: org.apache.ode.eclipse.server.core.ODEServerCorePlugin
-Export-Package: org.apache.ode.eclipse.server.core
+Bundle-Activator: org.apache.ode.eclipse.bpmn.ui.ODEBPMNUIPlugin
+Export-Package: org.apache.ode.eclipse.bpmn.ui
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.eclipse.ui;bundle-version="[3.6.0,4.0.0)",

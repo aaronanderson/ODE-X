@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/org.apache.ode.eclipse.feature_0.0.0.jar" id="org.apache.ode.eclipse.feature" version="0.0.0">
+      <category name="ODE-X Eclipse Integration"/>
+   </feature>   
+   <category-def name="ODE-X Eclipse Integration" label="ODE-X Eclipse Integration">
+      <description>
+         Update site for the ODE-X Eclipse Integration.
+      </description>
+   </category-def>
+</site>
