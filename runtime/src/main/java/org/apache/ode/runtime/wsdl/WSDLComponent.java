@@ -36,9 +36,9 @@ public abstract class WSDLComponent extends org.apache.ode.spi.exec.WSDLComponen
 	}
 
 	@Override
-	public List<InstructionSet> instructionSets() {
-		List<InstructionSet> iset = new ArrayList<InstructionSet>();
-		iset.add(new InstructionSet(WSDL_INSTRUCTION_SET_NAME, "org.apache.ode.runtime.exec.wsdl.xml", ObjectFactory.class, null, null, null));
+	public List<ExecutableSet> executableSets() {
+		List<ExecutableSet> iset = new ArrayList<ExecutableSet>();
+		iset.add(new ExecutableSet(WSDL_INSTRUCTION_SET_NAME, "org.apache.ode.runtime.exec.wsdl.xml", ObjectFactory.class, null, null, null));
 		return iset;
 	}
 

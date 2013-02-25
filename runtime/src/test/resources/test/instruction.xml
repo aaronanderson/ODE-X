@@ -20,9 +20,9 @@
 
 -->
 <exec:executable xmlns:exec="http://ode.apache.org/executable" xmlns:test="http://ode.apache.org/executable-test">
-	<exec:instruction-sets>
-		<exec:instruction-set name="test:Test"/>
-	</exec:instruction-sets>
+	<exec:executable-sets>
+		<exec:executable-set name="test:Test"/>
+	</exec:executable-sets>
 	<exec:installation />
 	<exec:sources>
 		<exec:sources version="1.0" checksum="" src="s0" qname="test:InstructionTest" contentType="" />

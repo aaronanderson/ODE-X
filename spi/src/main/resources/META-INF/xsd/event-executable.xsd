@@ -19,16 +19,27 @@
     under the License.
 
 -->
-<exec:executable xmlns:exec="http://ode.apache.org/executable" xmlns:test="http://ode.apache.org/executable-test">
-	<exec:executable-sets>
-		<exec:executable-set name="test:Test"/>
-	</exec:executable-sets>
-	<exec:installation />
-	<exec:sources>
-		<exec:sources version="1.0" checksum="" src="s0" qname="test:InstructionTest" contentType="" />
-	</exec:sources>
-	<exec:block blc="b0">
-		<test:instructionTest ins="b0i0" sref="s0" line="0" column="0" arg1="arg1" arg2="arg2" /> 
-		<!-- <exec:itest ins="b0i0" sref="s0" line="0" column="0"  /> --> 
-	</exec:block>
-</exec:executable>
+<schema targetNamespace="http://ode.apache.org/event-executable" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/event-executable" xmlns:evt="http://ode.apache.org/event">
+
+	<import namespace="http://ode.apache.org/event" />
+	
+	<complexType name="exchangeEventType" abstract="true">
+		<complexContent>
+			<extension base="evt:eventType"/>
+		</complexContent>
+	</complexType>
+
+	<element name="exchangeEvent" type="tns:exchangeEventType" abstract="true" />
+	
+	
+	<element name="CreateThread" substitutionGroup="tns:exchangeEvent">
+		<complexType>
+			<complexContent>
+				<extension base="tns:exchangeEventType">
+					<attribute name="type" type="evt:eventIdType" use="required" fixed="v0" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+</schema>

@@ -20,9 +20,10 @@ package org.apache.ode.spi.exec.executable.xml;
 
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.executable.xml.ExecutableSet;
 import org.apache.ode.spi.exec.ListMap;
 
-public class InstructionSetsMap<T extends InstructionSet> extends ListMap<QName, T> {
+public class ExecutableSetsMap<T extends ExecutableSet> extends ListMap<QName, T> {
 
 	@Override
 	public QName getKey(T value) {

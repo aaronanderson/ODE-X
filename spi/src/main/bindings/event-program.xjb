@@ -20,43 +20,24 @@
 
 -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
-	xmlns:ode="http://ode.apache.org/xjc-extension" xmlns:event="http://ode.apache.org/event" extensionBindingPrefixes="xjc ode" version="2.1">
-	<jxb:bindings schemaLocation="../resources/META-INF/xsd/event.xsd">
+	xmlns:ode="http://ode.apache.org/xjc-extension" xmlns:evt-prg="http://ode.apache.org/event-program" extensionBindingPrefixes="xjc ode" version="2.1">
+	<jxb:bindings schemaLocation="../resources/META-INF/xsd/event-program.xsd">
 
 		<jxb:schemaBindings>
-			<jxb:package name="org.apache.ode.spi.event.xml" />
+			<jxb:package name="org.apache.ode.spi.event.program.xml" />
 		</jxb:schemaBindings>
-		
+         		
 		<jxb:bindings node="//xs:attribute[@name='type']">
 			 <jxb:property fixedAttributeAsConstantProperty="true" />
 		</jxb:bindings>
 		
-         
-		<!-- add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->
-		<jxb:bindings node="//xs:simpleType[@name='channelAddressType']">
-			<jxb:class ref="org.apache.ode.spi.event.xml.ChannelAdd" />
-		</jxb:bindings>
-
-		<jxb:bindings node="//xs:simpleType[@name='sourceChannelAddressType']">
-			<jxb:class ref="org.apache.ode.spi.event.xml.SourceChannelAdd" />
+		<jxb:bindings node="//xs:complexType[@name='junctionEventType']">
+			<jxb:class name="JunctionEvent" />
 		</jxb:bindings>
 		
-		<jxb:bindings node="//xs:simpleType[@name='destinationChannelAddressType']">
-			<jxb:class ref="org.apache.ode.spi.event.xml.DestinationChannelAdd" />
+		<jxb:bindings node="//xs:complexType[@name='programEventType']">
+			<jxb:class name="ProgramEvent" />
 		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:simpleType[@name='sourceStreamAddressType']">
-			<jxb:class ref="org.apache.ode.spi.event.xml.SourceStreamAdd" />
-		</jxb:bindings>
-
-		<jxb:bindings node="//xs:simpleType[@name='destinationStreamAddressType']">
-			<jxb:class ref="org.apache.ode.spi.event.xml.DestinationStreamAdd" />
-		</jxb:bindings>
-
-		<jxb:bindings node="//xs:complexType[@name='eventType']">
-			<jxb:class name="Event" />
-		</jxb:bindings>
-	
 		
 	</jxb:bindings>
 </jxb:bindings>

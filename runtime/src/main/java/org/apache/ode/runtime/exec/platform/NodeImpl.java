@@ -106,7 +106,7 @@ import org.apache.ode.runtime.exec.platform.task.TaskExecutor;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl;
 import org.apache.ode.runtime.exec.platform.task.TaskImpl.TaskIdImpl;
 import org.apache.ode.spi.exec.Component;
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.Executors;
 import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.Message.LogLevel;
@@ -117,6 +117,8 @@ import org.apache.ode.spi.exec.Platform;
 import org.apache.ode.spi.exec.Platform.NodeStatus;
 import org.apache.ode.spi.exec.Platform.NodeStatus.NodeState;
 import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.ExecutableSets;
 import org.apache.ode.spi.exec.target.Target;
 import org.apache.ode.spi.exec.task.Task;
 import org.apache.ode.spi.exec.task.Task.TaskId;
@@ -125,8 +127,6 @@ import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.exec.task.TaskDefinition;
 import org.apache.ode.spi.exec.task.TaskException;
-import org.apache.ode.spi.exec.executable.xml.Executable;
-import org.apache.ode.spi.exec.executable.xml.InstructionSets;
 import org.apache.ode.spi.repo.JAXBDataContentHandler;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -183,7 +183,7 @@ public class NodeImpl implements Node, MessageListener {
 	AtomicReference<NodeState> localNodeState;
 
 	private Map<QName, Component> components = new ConcurrentHashMap<QName, Component>();
-	private Map<QName, InstructionSet> instructions = new ConcurrentHashMap<QName, InstructionSet>();
+	private Map<QName, ExecutableSet> instructions = new ConcurrentHashMap<QName, ExecutableSet>();
 	private Map<QName, TaskDefinition<?, ?>> tasks = new ConcurrentHashMap<QName, TaskDefinition<?, ?>>();
 	private Map<QName, TaskActionDefinition<?, ?>> actions = new ConcurrentHashMap<QName, TaskActionDefinition<?, ?>>();
 
@@ -288,7 +288,7 @@ public class NodeImpl implements Node, MessageListener {
 	@Override
 	public void registerComponent(Component component) {
 		components.put(component.name(), component);
-		for (InstructionSet is : component.instructionSets()) {
+		for (ExecutableSet is : component.executableSets()) {
 			instructions.put(is.getName(), is);
 		}
 		for (TaskDefinition<?, ?> td : component.tasks()) {
@@ -306,7 +306,7 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	@Override
-	public Map<QName, InstructionSet> getInstructionSets() {
+	public Map<QName, ExecutableSet> getInstructionSets() {
 		return instructions;
 	}
 
@@ -336,8 +336,7 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	public void executeSync(QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws TaskException {
-		Future<TaskResult> result = taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback,
-				targets).result;
+		Future<TaskResult> result = taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback, targets).result;
 		try {
 			result.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -349,8 +348,7 @@ public class NodeImpl implements Node, MessageListener {
 		return taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback, targets).id;
 	}
 
-	public Future<TaskResult> executeAsyncFuture(QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback, Target... targets)
-			throws TaskException {
+	public Future<TaskResult> executeAsyncFuture(QName task, LogLevel logLevel, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws TaskException {
 		return taskExec.submitTask(logLevel, null, null, task, taskInput != null ? taskInput.getDocumentElement() : null, callback, targets).result;
 
 	}
@@ -717,8 +715,7 @@ public class NodeImpl implements Node, MessageListener {
 
 				KeyStore ks = KeyStore.getInstance("PKCS12");
 				ks.load(new ByteArrayInputStream(clusterConfig.getSecurity().getEncKeyStore()), clusterConfig.getSecurity().getEncKeyStorePass().toCharArray());
-				PrivateKey privateKey = (PrivateKey) ks.getKey(clusterConfig.getSecurity().getKeyAlias(), clusterConfig.getSecurity().getEncKeyPass()
-						.toCharArray());
+				PrivateKey privateKey = (PrivateKey) ks.getKey(clusterConfig.getSecurity().getKeyAlias(), clusterConfig.getSecurity().getEncKeyPass().toCharArray());
 				if (privateKey == null) {
 					throw new Exception(String.format("Can't find private key alias %s in cluster config keystore", clusterConfig.getSecurity().getKeyAlias()));
 				}
@@ -790,8 +787,7 @@ public class NodeImpl implements Node, MessageListener {
 				valContext = new DOMValidateContext(key, nl.item(0));
 			} else {
 				valContext = new DOMValidateContext(new KeySelector() {
-					public KeySelectorResult select(KeyInfo keyInfo, KeySelector.Purpose purpose, AlgorithmMethod method, XMLCryptoContext context)
-							throws KeySelectorException {
+					public KeySelectorResult select(KeyInfo keyInfo, KeySelector.Purpose purpose, AlgorithmMethod method, XMLCryptoContext context) throws KeySelectorException {
 						if (keyInfo == null) {
 							throw new KeySelectorException("KeyInfo is null");
 						}
@@ -967,8 +963,7 @@ public class NodeImpl implements Node, MessageListener {
 				System.out.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -decrypt <encKey> <cleartext>");
 				System.out
 						.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -sign <keystore> <keystorePass> <keyPass> <alias> <include keyInfo> <inXmlFile> <outXmlFile>");
-				System.out
-						.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -verify <useKeyInfo> <keystore> <keystorePass> <alias> <inXmlFile>");
+				System.out.println("\torg.apache.ode.runtime.exec.platform.NodeImpl$ClusterXMLDSig -verify <useKeyInfo> <keystore> <keystorePass> <alias> <inXmlFile>");
 			}
 		}
 	}
@@ -982,9 +977,9 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	public JAXBContext getJAXBContext(List<QName> isets) throws JAXBException {
-		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
+		Set<ExecutableSet> isetSet = new HashSet<ExecutableSet>();
 		for (QName iset : isets) {
-			InstructionSet is = getInstructionSets().get(iset);
+			ExecutableSet is = getInstructionSets().get(iset);
 			if (is == null) {
 				throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
 			}
@@ -999,20 +994,20 @@ public class NodeImpl implements Node, MessageListener {
 			XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(executable);
 			reader.nextTag();// root
 			reader.nextTag();// Instruction set, if present
-			if ("instruction-sets".equals(reader.getLocalName())) {
+			if ("executable-sets".equals(reader.getLocalName())) {
 				reader.nextTag();// first instruction set
-				while ("instruction-set".equals(reader.getLocalName())) {
-					String isetName = reader.getAttributeValue(Platform.EXEC_NAMESPACE, "name");					
+				while ("executable-set".equals(reader.getLocalName())) {
+					String isetName = reader.getAttributeValue(Platform.EXEC_NAMESPACE, "name");
 					String[] text = isetName.split(":");
 					if (text.length == 2) {
 						QName iset = new QName(reader.getNamespaceContext().getNamespaceURI(text[0]), text[1]);
-						InstructionSet is = getInstructionSets().get(iset);
+						ExecutableSet is = getInstructionSets().get(iset);
 						if (is == null) {
-							throw new PlatformException("Unknown instruction set " + iset.toString());
+							throw new PlatformException("Unknown executable set " + iset.toString());
 						}
 						isets.add(iset);
 					} else {
-						throw new PlatformException("Unknown instruction set " + reader.getElementText());
+						throw new PlatformException("Unknown executable set " + reader.getElementText());
 					}
 					reader.nextTag();
 				}
@@ -1025,13 +1020,13 @@ public class NodeImpl implements Node, MessageListener {
 	}
 
 	public JAXBContext getJAXBContext(Executable executable) throws JAXBException {
-		Set<InstructionSet> isetSet = new HashSet<InstructionSet>();
-		InstructionSets isets = executable.getInstructionSets();
+		Set<ExecutableSet> isetSet = new HashSet<ExecutableSet>();
+		ExecutableSets isets = executable.getExecutableSets();
 		if (isets != null) {
-			for (org.apache.ode.spi.exec.executable.xml.InstructionSet iset : isets.getInstructionSets()) {
-				InstructionSet is = getInstructionSets().get(iset.getName());
+			for (org.apache.ode.spi.exec.executable.xml.ExecutableSet iset : isets.getExecutableSets()) {
+				ExecutableSet is = getInstructionSets().get(iset.getName());
 				if (is == null) {
-					throw new JAXBException(new PlatformException("Unknown instruction set " + iset.toString()));
+					throw new JAXBException(new PlatformException("Unknown executable set " + iset.toString()));
 				}
 				isetSet.add(is);
 			}
@@ -1041,12 +1036,12 @@ public class NodeImpl implements Node, MessageListener {
 
 	public List<QName> getInstructionSets(Executable executable) throws PlatformException {
 		List<QName> isets = new ArrayList<QName>();
-		InstructionSets eisets = executable.getInstructionSets();
+		ExecutableSets eisets = executable.getExecutableSets();
 		if (eisets != null) {
-			for (org.apache.ode.spi.exec.executable.xml.InstructionSet iset : eisets.getInstructionSets()) {
-				InstructionSet is = getInstructionSets().get(iset.getName());
+			for (org.apache.ode.spi.exec.executable.xml.ExecutableSet iset : eisets.getExecutableSets()) {
+				ExecutableSet is = getInstructionSets().get(iset.getName());
 				if (is == null) {
-					throw new PlatformException("Unknown instruction set " + iset.toString());
+					throw new PlatformException("Unknown executable set " + iset.toString());
 				}
 				isets.add(iset.getName());
 			}

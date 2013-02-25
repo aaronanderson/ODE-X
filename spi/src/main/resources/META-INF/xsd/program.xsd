@@ -39,6 +39,25 @@
 		<attribute name="architecture" type="QName" use="required" />
 	</complexType>
 	
+	<simpleType name="evtSetIDType">
+		<restriction base="ID">
+			<pattern value="e\d+" />
+		</restriction>
+	</simpleType>
+	
+	<complexType name="programSetType">
+		<attribute name="name" type="QName" use="required" />
+		<attribute name="eventSetId" type="tns:evtSetIDType" use="optional" />
+	</complexType>
+
+
+	<complexType name="programSetsType">
+		<sequence>
+			<element name="program-set" type="tns:programSetType" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
+	
+	
 	<simpleType name="excAddressType">
 		<restriction base="ID">
 			<pattern value="e\d+" />

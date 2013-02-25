@@ -67,6 +67,8 @@
 					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
 					<schemaIncludes>
 						<schemaInclude>event.xsd</schemaInclude>
+						<schemaInclude>event-executable.xsd</schemaInclude>
+						<schemaInclude>event-program.xsd</schemaInclude>
 						<schemaInclude>executable.xsd</schemaInclude>
 						<schemaInclude>execution-context.xsd</schemaInclude>
 						<schemaInclude>program.xsd</schemaInclude>
@@ -76,11 +78,14 @@
 					<bindingDirectory>src/main/bindings</bindingDirectory>
 					<bindingIncludes>
 						<bindingInclude>event.xjb</bindingInclude>
+						<bindingInclude>event-executable.xjb</bindingInclude>
+						<bindingInclude>event-program.xjb</bindingInclude>
 						<bindingInclude>executable.xjb</bindingInclude>
 						<bindingInclude>execution-context.xjb</bindingInclude>
 						<bindingInclude>program.xjb</bindingInclude>
 						<bindingInclude>platform.xjb</bindingInclude>
 					</bindingIncludes>
+					<catalog>src/main/bindings/catalog.xml</catalog>
 					<extension>true</extension>
 					<!-- <plugins>
 						<plugin>

@@ -58,7 +58,7 @@ import org.apache.ode.spi.compiler.InlineSource;
 import org.apache.ode.spi.compiler.ParserException;
 import org.apache.ode.spi.compiler.ParserUtils;
 import org.apache.ode.spi.compiler.Source.SourceType;
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.exec.executable.xml.Block;
 import org.apache.ode.spi.exec.executable.xml.BlockAddress;
@@ -259,7 +259,7 @@ public class BuildExecutor implements CommandObject {
 			}
 			compilation.getCompilers().put(contentType, impl);
 			for (QName iset : impl.getInstructionSets()) {
-				InstructionSet is = node.getInstructionSets().get(iset);
+				ExecutableSet is = node.getInstructionSets().get(iset);
 				if (is == null) {
 					throw new BuildException(String.format("Unsupported instructionset %s", iset));
 				}

@@ -117,20 +117,6 @@ public class ProgramTest {
 
 	}
 
-	public void setup() {
-	}
-
-	public void install() {
-	}
-
-	public void start() {
-	}
-
-	public void stop() {
-	}
-
-	public void uninstall() {
-	}
 
 	//@Test
 	public void setupTest() throws Exception {
@@ -236,7 +222,7 @@ public class ProgramTest {
 		}
 
 		@Override
-		public List<InstructionSet> instructionSets() {
+		public List<ExecutableSet> executableSets() {
 			return Collections.EMPTY_LIST;
 		}
 		

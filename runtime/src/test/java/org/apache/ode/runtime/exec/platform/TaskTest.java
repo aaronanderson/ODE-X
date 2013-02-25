@@ -409,7 +409,7 @@ public class TaskTest {
 		}
 
 		@Override
-		public List<InstructionSet> instructionSets() {
+		public List<ExecutableSet> executableSets() {
 			return Collections.EMPTY_LIST;
 		}
 		

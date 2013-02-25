@@ -105,16 +105,16 @@
 			<jxb:property name="Blocks" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='instructionSetsType']">
-			<jxb:class name="InstructionSets" />
+		<jxb:bindings node="//xs:complexType[@name='executableSetsType']">
+			<jxb:class name="ExecutableSets" />
 		</jxb:bindings>
 		
-		<jxb:bindings node="//xs:complexType[@name='instructionSetsType']//xs:sequence//xs:element[@name='instruction-set']">
-			<jxb:property name="instructionSets" collectionType="org.apache.ode.spi.exec.executable.xml.InstructionSetsMap" />
+		<jxb:bindings node="//xs:complexType[@name='executableSetsType']//xs:sequence//xs:element[@name='executable-set']">
+			<jxb:property name="executableSets" collectionType="org.apache.ode.spi.exec.executable.xml.ExecutableSetsMap" />
 		</jxb:bindings>
 		
-		<jxb:bindings node="//xs:complexType[@name='instructionSetType']">
-			<jxb:class name="InstructionSet" />
+		<jxb:bindings node="//xs:complexType[@name='executableSetType']">
+			<jxb:class name="ExecutableSet" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='installDataType']">

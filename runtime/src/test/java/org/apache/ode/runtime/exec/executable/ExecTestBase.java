@@ -49,7 +49,7 @@ import org.apache.ode.runtime.exec.platform.ScopeContext.ExecutableScopeContext;
 import org.apache.ode.runtime.interpreter.IndexedExecutable;
 import org.apache.ode.spi.exec.Component.EventSet;
 import org.apache.ode.spi.exec.Component.ExecutionContextSet;
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.Component.ProgramSet;
 import org.apache.ode.spi.exec.ExecutableObjectFactory;
 import org.apache.ode.spi.exec.executable.xml.Block;
@@ -64,7 +64,7 @@ public abstract class ExecTestBase {
 	//protected static final Logger log = Logger.getLogger(ExecTestBase.class.getName());
 	protected static Block block;
 	protected static IndexedExecutable eIndex;
-	protected static Set<InstructionSet> insSet;
+	protected static Set<ExecutableSet> insSet;
 	protected static Set<ExecutionContextSet> exCtxSet;
 	protected static Set<EventSet> evtSet;
 	protected static Set<ProgramSet> prgSet;
@@ -102,10 +102,10 @@ public abstract class ExecTestBase {
 		evtSet = new HashSet<EventSet>();
 		evtSet.add(new EventSet(TEST_EVENT_SET_NAME, "org.apache.ode.spi.event.xml", TestEvtObjectFactoryImpl.class));
 		prgSet = new HashSet<ProgramSet>();
-		prgSet.add(new ProgramSet(TEST_PROGRAM_SET_NAME, "org.apache.ode.runtime.exec.program.test.xml", TestPrgObjectFactoryImpl.class));
+		prgSet.add(new ProgramSet(TEST_PROGRAM_SET_NAME, "org.apache.ode.runtime.exec.program.test.xml", TestPrgObjectFactoryImpl.class,TEST_EVENT_SET_NAME));
 
-		insSet = new HashSet<InstructionSet>();
-		insSet.add(new InstructionSet(TEST_EXEC_SET_NAME, "org.apache.ode.runtime.exec.executable.test.xml", TestObjectFactoryImpl.class, TEST_EXEC_CTX_SET_NAME,
+		insSet = new HashSet<ExecutableSet>();
+		insSet.add(new ExecutableSet(TEST_EXEC_SET_NAME, "org.apache.ode.runtime.exec.executable.test.xml", TestObjectFactoryImpl.class, TEST_EXEC_CTX_SET_NAME,
 				TEST_EVENT_SET_NAME, TEST_PROGRAM_SET_NAME));
 		ectx = JAXBRuntimeUtil.executableJAXBContextByPath(insSet);
 		Map<QName, ExecutionContextSet> exCtxMap = new HashMap<QName, ExecutionContextSet>();

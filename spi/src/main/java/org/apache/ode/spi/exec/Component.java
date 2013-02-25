@@ -38,7 +38,7 @@ public interface Component {
 
 	public QName name();
 
-	public List<InstructionSet> instructionSets();
+	public List<ExecutableSet> executableSets();
 
 	public List<ExecutionContextSet> executionContextSets();
 
@@ -54,7 +54,7 @@ public interface Component {
 
 	public void offline() throws PlatformException;
 
-	public class InstructionSet {
+	public class ExecutableSet {
 		final QName name;
 		final String jaxbExecPath;
 		final Class<?> jaxbExecFactory;
@@ -62,7 +62,7 @@ public interface Component {
 		final QName eventSetName;
 		final QName programSetName;
 
-		public InstructionSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory, QName execContextSetName, QName eventSetName, QName programSetName) {
+		public ExecutableSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory, QName execContextSetName, QName eventSetName, QName programSetName) {
 			if (name == null || ((jaxbExecPath == null && jaxbExecFactory == null))) {
 				throw new NullPointerException("name and path or class required");
 			}
@@ -197,8 +197,9 @@ public interface Component {
 		final QName name;
 		final String jaxbProgramPath;
 		final Class<?> jaxbProgramFactory;
+		final QName eventSetName;
 
-		public ProgramSet(QName name, String jaxbProgramPath, Class<?> jaxbProgramFactory) {
+		public ProgramSet(QName name, String jaxbProgramPath, Class<?> jaxbProgramFactory, QName eventSetName) {
 
 			if (name == null || ((jaxbProgramPath == null && jaxbProgramFactory == null))) {
 				throw new NullPointerException("name and path or class required");
@@ -206,10 +207,15 @@ public interface Component {
 			this.name = name;
 			this.jaxbProgramPath = jaxbProgramPath;
 			this.jaxbProgramFactory = jaxbProgramFactory;
+			this.eventSetName = eventSetName;
 		}
 
 		public QName getName() {
 			return name;
+		}
+		
+		public QName getEventSetName() {
+			return eventSetName;
 		}
 
 		public String getJAXBProgramPath() {

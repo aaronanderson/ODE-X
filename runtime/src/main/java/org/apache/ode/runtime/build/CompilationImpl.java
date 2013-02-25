@@ -40,7 +40,7 @@ import org.apache.ode.spi.compiler.AbstractCompiler;
 import org.apache.ode.spi.compiler.AbstractCompilerContext.Compilation;
 import org.apache.ode.spi.compiler.Location;
 import org.apache.ode.spi.compiler.Source;
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.executable.xml.Executable;
 import org.w3c.dom.Node;
 
@@ -48,7 +48,7 @@ public class CompilationImpl implements Compilation{
 	private AtomicInteger srcIdCounter=new AtomicInteger();
 	private Executable executable;
 	private Binder<Node> binder;
-	private final Set<InstructionSet> instructionSets = new HashSet<InstructionSet>();
+	private final Set<ExecutableSet> instructionSets = new HashSet<ExecutableSet>();
 	private final ReentrantReadWriteLock executableLock = new ReentrantReadWriteLock();
 	private final Map<String, Object> subContext = new HashMap<String, Object>();
 	boolean terminated = false;
@@ -150,7 +150,7 @@ public class CompilationImpl implements Compilation{
 		return addedSources;
 	}
 
-	public Set<InstructionSet> getInstructionSets() {
+	public Set<ExecutableSet> getInstructionSets() {
 		return instructionSets;
 	}
 

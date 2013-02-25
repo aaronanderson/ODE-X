@@ -23,7 +23,7 @@
 
 	<complexType name="executableType">
 		<sequence>
-			<element name="instruction-sets" type="tns:instructionSetsType" minOccurs="0" maxOccurs="1" />
+			<element name="executable-sets" type="tns:executableSetsType" minOccurs="0" maxOccurs="1" />
 			<element name="installation" type="tns:installationType" minOccurs="1" maxOccurs="1" />
 			<element name="sources" type="tns:sourcesType" minOccurs="1" maxOccurs="1" />
 			<!--<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" /> <element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" 
@@ -41,15 +41,15 @@
 		</restriction>
 	</simpleType>
 
-	<complexType name="instructionSetType">
+	<complexType name="executableSetType">
 		<attribute name="name" type="QName" use="required" />
 		<attribute name="eventSetId" type="tns:evtSetIDType" use="optional" />
 	</complexType>
 
 
-	<complexType name="instructionSetsType">
+	<complexType name="executableSetsType">
 		<sequence>
-			<element name="instruction-set" type="tns:instructionSetType" minOccurs="1" maxOccurs="unbounded" />
+			<element name="executable-set" type="tns:executableSetType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 

@@ -23,7 +23,7 @@ import java.util.Set;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Component.InstructionSet;
+import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskDefinition;
 
@@ -60,7 +60,7 @@ public interface Node {
 
 	public void unregisterComponent(Component component);
 
-	public Map<QName, InstructionSet> getInstructionSets();
+	public Map<QName, ExecutableSet> getInstructionSets();
 
 	public Map<QName, TaskDefinition<?, ?>> getTaskDefinitions();
 

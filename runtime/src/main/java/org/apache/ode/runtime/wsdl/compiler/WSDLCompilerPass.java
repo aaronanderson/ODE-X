@@ -38,10 +38,10 @@ import org.apache.ode.spi.compiler.wsdl.WSDLCompilerContext;
 import org.apache.ode.spi.compiler.wsdl.WSDLContext;
 import org.apache.ode.spi.compiler.xsd.XSDContext;
 import org.apache.ode.spi.exec.executable.xml.Executable;
+import org.apache.ode.spi.exec.executable.xml.ExecutableSet;
+import org.apache.ode.spi.exec.executable.xml.ExecutableSets;
+import org.apache.ode.spi.exec.executable.xml.ExecutableSetsMap;
 import org.apache.ode.spi.exec.executable.xml.Installation;
-import org.apache.ode.spi.exec.executable.xml.InstructionSet;
-import org.apache.ode.spi.exec.executable.xml.InstructionSets;
-import org.apache.ode.spi.exec.executable.xml.InstructionSetsMap;
 
 public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 	WSDLContext wsdlCtx;
@@ -94,16 +94,16 @@ public class WSDLCompilerPass implements CompilerPass<WSDLCompilerContext> {
 		case EMIT:
 			ObjectFactory wsdlFactory = new ObjectFactory();
 			Executable exec = ctx.executable();
-			InstructionSets is = exec.getInstructionSets();
+			ExecutableSets is = exec.getExecutableSets();
 			if (is == null) {
-				is = new InstructionSets();
-				exec.setInstructionSets(is);
+				is = new ExecutableSets();
+				exec.setExecutableSets(is);
 			}
-			Map<QName,InstructionSet> map = ((InstructionSetsMap<InstructionSet>)is.getInstructionSets()).mapView();
+			Map<QName,ExecutableSet> map = ((ExecutableSetsMap<ExecutableSet>)is.getExecutableSets()).mapView();
 			if (!map.containsKey(WSDLComponent.WSDL_INSTRUCTION_SET)) {
-				org.apache.ode.spi.exec.executable.xml.InstructionSet xis = new org.apache.ode.spi.exec.executable.xml.InstructionSet();
+				org.apache.ode.spi.exec.executable.xml.ExecutableSet xis = new org.apache.ode.spi.exec.executable.xml.ExecutableSet();
 				xis.setName(WSDLComponent.WSDL_INSTRUCTION_SET_NAME);
-				is.getInstructionSets().add(xis);
+				is.getExecutableSets().add(xis);
 			}
 			Configuration config = new Configuration();
 			config.setBase("HelloWorld");

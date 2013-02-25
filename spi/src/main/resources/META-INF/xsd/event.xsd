@@ -88,7 +88,7 @@
 
 	<!-- Need at least one instruction defined in this schema so that JAXB generates a JAXBElement<? extends Instruction> wrapper for the substitution group see http://java.net/jira/browse/JAXB-893 -->
 
-	<element name="createThread" substitutionGroup="tns:event">
+	<element name="Audit" substitutionGroup="tns:event">
 		<complexType>
 			<complexContent>
 				<extension base="tns:eventType">
