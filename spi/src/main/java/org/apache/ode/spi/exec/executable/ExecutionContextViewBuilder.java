@@ -16,15 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.instruction;
+package org.apache.ode.spi.exec.executable;
 
-import javax.xml.bind.annotation.XmlRegistry;
+import java.util.List;
 
-import org.apache.ode.spi.exec.instruction.xml.ObjectFactory;
+public interface ExecutionContextViewBuilder {
 
-//Convenience class for injecting multiple JAXB object factories
-@XmlRegistry
-public abstract class ExecutionContextObjectFactory extends ObjectFactory {
-	
+	//one of stack context representations must be executioncontext impl
+	List<?> build(ExecutionContext ectx);
 
 }

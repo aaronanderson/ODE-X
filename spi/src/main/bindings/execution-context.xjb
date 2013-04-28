@@ -23,56 +23,107 @@
 	version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/execution-context.xsd">
 		<jxb:schemaBindings>
-			<jxb:package name="org.apache.ode.spi.exec.instruction.xml" />
+			<jxb:package name="org.apache.ode.spi.exec.context.xml" />
 		</jxb:schemaBindings>
 		
-		<jxb:bindings node="//xs:complexType[@name='operationType']">
-			<jxb:class name="Operation" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='inputType']">
-			<jxb:class name="Input" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='resultType']">
-			<jxb:class name="Result" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='newVariableType']">
-			<jxb:class name="NewVariableOperation" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='newProcessType']">
-			<jxb:class name="NewProcessOperation" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='newThreadType']">
-			<jxb:class name="NewThreadOperation" />
-		</jxb:bindings>
 			
-		<jxb:bindings node="//xs:complexType[@name='frameType']">
-			<jxb:class name="Frame" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='callFrameType']">
-			<jxb:class name="CallFrame" />
-		</jxb:bindings>
-		
-		<jxb:bindings node="//xs:complexType[@name='stackType']">
-			<jxb:class name="Stack" />
+		<jxb:bindings node="//xs:simpleType[@name='eCtxAxisType']">
+			<jxb:typesafeEnumClass name="Axis" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='blockStackType']">
-			<jxb:class name="BlockStack" />
+		<jxb:bindings node="//xs:simpleType[@name='eCtxStateType']">
+			<jxb:typesafeEnumClass name="State" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='contextStackType']">
-			<jxb:class name="ContextStack" />
+		<jxb:bindings node="//xs:complexType[@name='executionContextType']">
+			<jxb:class name="ExecutionContext" implClass="org.apache.ode.spi.exec.context.ExecutionContext" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='executionStateType']">
-			<jxb:class name="ExecutionState" />
+		<jxb:bindings node="//xs:complexType[@name='executionContextLinkType']">
+			<jxb:class name="ExecutionContextLink" implClass="org.apache.ode.spi.exec.context.ExecutionContextLink" />
 		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='extensionType']">
+			<jxb:class name="Extension" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='platformType']">
+			<jxb:class name="Platform"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='programType']">
+			<jxb:class name="Program" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='processType']">
+			<jxb:class name="Process" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='threadType']">
+			<jxb:class name="Thread" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='blockType']">
+			<jxb:class name="Block" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='contextType']">
+			<jxb:class name="Context" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='exchangeType']">
+			<jxb:class name="Exchange" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		</jxb:bindings>
+
+
+		<jxb:bindings node="//xs:complexType[@name='memoryType']">
+			<jxb:class name="Memory" implClass="org.apache.ode.spi.exec.context.Memory" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='referenceType']">
+			<jxb:class name="Reference"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='typeType']">
+			<jxb:class name="Type"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='scopeType']">
+			<jxb:class name="Scope"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='variableType']">
+			<jxb:class name="Variable"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='simpleVariableType']">
+			<jxb:class name="SimpleVariable"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='complexVariableType']">
+			<jxb:class name="ComplexVariable"  />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='complexType']">
+			<jxb:class name="Complex" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='simpleType']">
+			<jxb:class name="Simple" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='javaVariableType']">
+			<jxb:class name="JavaVariable" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='executionContextStateType']">
+			<jxb:class name="ExecutionContextState" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='stateModeType']">
+			<jxb:typesafeEnumClass name="StateMode" />
+		</jxb:bindings>
+
 	
 	</jxb:bindings>
 </jxb:bindings>

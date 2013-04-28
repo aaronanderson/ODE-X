@@ -62,7 +62,7 @@ public interface Platform {
 	public static final ExecutableSet EXEC_INSTRUCTION_SET = new ExecutableSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.executable.xml",
 			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_EXEC_SET_NAME,PROGRAM_SET_NAME);
 	public static final ExecutionContextSet EXEC_CTX_SET = new ExecutionContextSet(EXEC_CTX_SET_NAME, "org.apache.ode.spi.exec.instruction.xml",
-			org.apache.ode.spi.exec.instruction.xml.ObjectFactory.class);
+			org.apache.ode.spi.exec.context.xml.ObjectFactory.class);
 	public static final EventSet EVENT_SET = new EventSet(EVENT_SET_NAME, "org.apache.ode.spi.event.xml",
 			org.apache.ode.spi.event.xml.ObjectFactory.class);
 	public static final EventSet EVENT_EXEC_SET = new EventSet(EVENT_EXEC_SET_NAME, "org.apache.ode.spi.event.executable.xml",

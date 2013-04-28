@@ -16,11 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.instruction;
+package org.apache.ode.spi.exec.context;
 
-import org.apache.ode.spi.exec.instruction.xml.ExecutionState;
-public interface Operation<I,R> {
+import javax.xml.bind.annotation.XmlRegistry;
+
+import org.apache.ode.spi.exec.context.xml.ObjectFactory;
+
+//Convenience class for injecting multiple JAXB object factories
+@XmlRegistry
+public abstract class ExecutionContextObjectFactory extends ObjectFactory {
 	
-	 R execute(ExecutionState state, I input);//, List<JAXBElement<? extends OperatorContext>> operatorContexts);
 
 }

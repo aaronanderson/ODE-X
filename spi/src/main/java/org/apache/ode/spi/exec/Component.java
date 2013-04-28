@@ -18,41 +18,39 @@
  */
 package org.apache.ode.spi.exec;
 
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.event.xml.ChannelAddress;
 import org.apache.ode.spi.event.xml.Event;
-import org.apache.ode.spi.exec.task.TaskActionDefinition;
-import org.apache.ode.spi.exec.task.TaskDefinition;
 
-public interface Component {
-
-	public QName name();
-
-	public List<ExecutableSet> executableSets();
-
-	public List<ExecutionContextSet> executionContextSets();
-
-	public List<EventSet> eventSets();
-
-	public List<ProgramSet> programSets();
-
-	public List<TaskDefinition> tasks();
-
-	public List<TaskActionDefinition> actions();
-
-	public void online() throws PlatformException;
-
-	public void offline() throws PlatformException;
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface Component {
+	
+	
+	public String value() default "";
+	//public QName name();
+	
+	@Retention(RUNTIME)
+	@Target(METHOD)	
+	public @interface ExecutableSets {
+		
+	}
+	//public List<ExecutableSet> executableSets();
 
 	public class ExecutableSet {
 		final QName name;
@@ -101,6 +99,15 @@ public interface Component {
 
 	}
 
+
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface ExecutionContextSets {
+		
+	}
+
+	//public List<ExecutionContextSet> executionContextSets();
+	
 	public class ExecutionContextSet {
 		final QName name;
 		final String jaxbExecContextPath;
@@ -128,6 +135,15 @@ public interface Component {
 		}
 	}
 
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface EventSets {
+		
+	}
+	
+	
+	//public List<EventSet> eventSets();
+	
 	public class EventSet {
 		final QName name;
 		final String jaxbEventPath;
@@ -193,6 +209,14 @@ public interface Component {
 
 	}
 
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface ProgramSets {
+		
+	}
+	
+	//public List<ProgramSet> programSets();
+
 	public class ProgramSet {
 		final QName name;
 		final String jaxbProgramPath;
@@ -227,5 +251,38 @@ public interface Component {
 		}
 
 	}
+
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Tasks {
+		
+	}
+	//public List<TaskDefinition> tasks();
+
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface TaskActions {
+		
+	}
+	//public List<TaskActionDefinition> actions();
+
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Online {
+		
+	}
+	//public void online() throws PlatformException;
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Offline {
+		
+	}
+	//public void offline() throws PlatformException;
+
+	
+	
+
+	
+	
 
 }

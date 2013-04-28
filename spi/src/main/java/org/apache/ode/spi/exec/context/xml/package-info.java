@@ -16,13 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.spi.exec.instruction;
+/*
+ * Added to specify namespace prefix during unmarshall
+ */
+@XmlSchema(namespace = Platform.EXEC_CTX_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Platform.EXEC_CTX_NAMESPACE, prefix = "ectx") }, elementFormDefault = XmlNsForm.QUALIFIED)
+package org.apache.ode.spi.exec.context.xml;
 
-import org.apache.ode.spi.exec.instruction.xml.Input;
-import org.apache.ode.spi.exec.instruction.xml.Result;
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;
 
-public interface ExecutionContext {
+import org.apache.ode.spi.exec.Platform;
 
-	<I extends Input, R extends Result> R execute(Operation<I, R> op, I input);
-
-}

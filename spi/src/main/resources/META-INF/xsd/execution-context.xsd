@@ -21,223 +21,283 @@
 -->
 <schema targetNamespace="http://ode.apache.org/execution-context" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/execution-context">
 
+<!--  
+	Contexts serve two purposes:
+	1) Region based memory
+	2) Execution state
+	
+	http://en.wikipedia.org/wiki/Context_switch
+	http://en.wikipedia.org/wiki/Region-based_memory_management -->
 
-	<complexType name="operationType" abstract="true">
-		<!--  <attribute name="name" type="QName" use="required" />-->
-		<attribute name="inputType" type="Name" use="required" />
-		<attribute name="resultType" type="Name" use="required" />
-	</complexType>
-
-	<complexType name="inputType" abstract="true" />
-
-	<complexType name="resultType" abstract="true" />
-
-	<complexType name="newVariableType">
-		<complexContent>
-			<extension base="tns:operationType" />
-		</complexContent>
-	</complexType>
-
-	<complexType name="newVariableInputType">
-		<complexContent>
-			<extension base="tns:inputType">
-				<attribute name="name" type="string" use="required" />
-				<attribute name="scope" type="tns:scopeType" use="required" />
-			</extension>
-		</complexContent>
-	</complexType>
-
-	<complexType name="newProcessType">
-		<complexContent>
-			<extension base="tns:operationType">
-			</extension>
-		</complexContent>
-	</complexType>
-
-	<complexType name="newThreadType">
-		<complexContent>
-			<extension base="tns:operationType">
-			</extension>
-		</complexContent>
-	</complexType>
-
-	<complexType name="handlerType">
-		<complexContent>
-			<extension base="tns:operationType">
-			</extension>
-		</complexContent>
-	</complexType>
-
-	<complexType name="raiseType">
-		<complexContent>
-			<extension base="tns:operationType">
-			</extension>
-		</complexContent>
-	</complexType>
-
-	<simpleType name="varAddressType">
-		<restriction base="ID">
-			<pattern value="b\d+c\d*[vp]\d+" />
-		</restriction>
+	<simpleType name="eCtxAddressType">
+		<restriction base="long" />
 	</simpleType>
 
-
-	<simpleType name="varAddressRefType">
-		<restriction base="IDREF">
-			<pattern value="b\d+c\d*[vp]\d+" />
-		</restriction>
-	</simpleType>
-
-
-	<simpleType name="insAddressType">
-		<restriction base="ID">
-			<pattern value="b\d+i\d+" />
-		</restriction>
-	</simpleType>
-
-	<complexType name="invokeType">
-		<complexContent>
-			<extension base="tns:operationType">
-				<sequence>
-					<element name="parameter" />
-				</sequence>
-				<attribute name="ins" type="tns:insAddressType" use="required" />
-			</extension>
-		</complexContent>
-	</complexType>
-
-
-	<simpleType name="scopeType">
+	<simpleType name="eCtxRelationType">
 		<restriction base="string" />
 	</simpleType>
 
-	<complexType name="variableType">
+	<simpleType name="eCtxAxisType">
+		<restriction base="string">
+			<enumeration value="SUPERIOR" />
+			<enumeration value="PEER" />
+			<enumeration value="INFERIOR" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="eCtxStateType">
+		<restriction base="string">
+			<enumeration value="ACTIVATING" />
+			<enumeration value="ACTIVE" />
+			<enumeration value="INACTIVATING" />
+			<enumeration value="INACTIVE" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="executionContextLinkType">
+		<attribute name="linkAddr" type="tns:eCtxAddressType" use="required" />
+		<attribute name="eCtxAddr" type="tns:eCtxAddressType" use="required" />
+		<attribute name="relation" type="tns:eCtxRelationType" use="required" />
+		<attribute name="axis" type="tns:eCtxAxisType" use="required" />
+	</complexType>
+
+	<element name="ExecutionContextLink" type="tns:executionContextLinkType" />
+
+	<complexType name="executionContextType" abstract="true">
+		<sequence>
+			<element ref="tns:ExecutionContextLink" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="eCtxAddr" type="tns:eCtxAddressType" use="required" />
 		<attribute name="name" type="string" use="required" />
+		<attribute name="state" type="tns:eCtxStateType" use="required" />
 	</complexType>
 
-	<complexType name="frameType" abstract="true" />
+	<element name="ExecutionContext" type="tns:executionContextType" abstract="true" />
 
-	<element name="frame" type="tns:frameType" abstract="true" />
-
-	<complexType name="variableDefType">
-		<attribute name="var" type="tns:varAddressType" use="required" />
-	</complexType>
-
-	<element name="variableDef" type="tns:variableDefType" />
-
-	<complexType name="variableFrameType">
+	<complexType name="extensionType">
 		<complexContent>
-			<extension base="tns:frameType">
-				<sequence>
-					<element ref="tns:variableDef" minOccurs="1" maxOccurs="1" />
-				</sequence>
+			<extension base="tns:executionContextType">
 			</extension>
 		</complexContent>
 	</complexType>
 
-	<element name="variableFrame" type="tns:variableFrameType" substitutionGroup="tns:frame" />
+	<element name="Extension" type="tns:extensionType" substitutionGroup="tns:ExecutionContext" />
 
-	<complexType name="callFrameType">
+	<complexType name="platformType">
 		<complexContent>
-			<extension base="tns:frameType" />
-		</complexContent>
-	</complexType>
-
-	<element name="callFrame" type="tns:callFrameType" substitutionGroup="tns:frame" />
-
-	<!-- Good insight - http://en.wikipedia.org/wiki/Call_stack  -->
-	<complexType name="stackType">
-		<sequence>
-			<element ref="tns:frame" minOccurs="0" maxOccurs="unbounded" />
-			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
-
-	<element name="stack" type="tns:stackType" abstract="true" />
-
-	<complexType name="blockStackType">
-		<complexContent>
-			<extension base="tns:stackType">
-				<sequence>
-					<element ref="tns:block" minOccurs="0" maxOccurs="1" />
-					<element ref="tns:context" minOccurs="0" maxOccurs="1" />
-				</sequence>
+			<extension base="tns:executionContextType">
 			</extension>
 		</complexContent>
 	</complexType>
 
-	<element name="block" type="tns:blockStackType" substitutionGroup="tns:stack" />
+	<element name="Platform" type="tns:platformType" substitutionGroup="tns:ExecutionContext" />
 
-	<complexType name="contextStackType">
+	<complexType name="programType">
 		<complexContent>
-			<extension base="tns:stackType">
-				<sequence>
-					<element ref="tns:context" minOccurs="0" maxOccurs="1" />
-				</sequence>
+			<extension base="tns:executionContextType">
 			</extension>
 		</complexContent>
 	</complexType>
 
-	<element name="context" type="tns:contextStackType" substitutionGroup="tns:stack" />
+	<element name="Program" type="tns:programType" substitutionGroup="tns:ExecutionContext" />
 
-	<complexType name="statusType" abstract="true" />
+	<complexType name="processType">
+		<complexContent>
+			<extension base="tns:executionContextType">
+			</extension>
+		</complexContent>
+	</complexType>
 
-	<element name="status" type="tns:statusType" abstract="true" />
+	<element name="Process" type="tns:processType" substitutionGroup="tns:ExecutionContext" />
 
-	<element name="running" substitutionGroup="tns:status">
-		<complexType>
-			<complexContent>
-				<extension base="tns:statusType">
-				</extension>
-			</complexContent>
-		</complexType>
-	</element>
+	<complexType name="threadType">
+		<complexContent>
+			<extension base="tns:executionContextType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Thread" type="tns:threadType" substitutionGroup="tns:ExecutionContext" />
+
+	<complexType name="blockType">
+		<complexContent>
+			<extension base="tns:executionContextType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Block" type="tns:blockType" substitutionGroup="tns:ExecutionContext" />
+
+	<complexType name="contextType">
+		<complexContent>
+			<extension base="tns:executionContextType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Context" type="tns:contextType" substitutionGroup="tns:ExecutionContext" />
+
+
+	<complexType name="exchangeType">
+		<complexContent>
+			<extension base="tns:executionContextType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Exchange" type="tns:exchangeType" substitutionGroup="tns:ExecutionContext" />
+
+
+
+	<simpleType name="virtAddressType">
+		<restriction base="string">
+			<pattern value="b\d+c\d*[vp]\d+" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="physAddressType">
+		<restriction base="long" />
+	</simpleType>
+
+	<complexType name="memoryType">
+		<attribute name="virtualAddr" type="tns:virtAddressType" use="required" />
+		<attribute name="physicalAddr" type="tns:physAddressType" use="required" />
+	</complexType>
+
+	<element name="Memory" type="tns:memoryType" />
+
+
+	<complexType name="referenceType">
+		<complexContent>
+			<extension base="tns:memoryType">
+				<attribute name="refAddr" type="tns:physAddressType" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Reference" type="tns:referenceType" substitutionGroup="tns:Memory" />
 	
-	<element name="terminated" substitutionGroup="tns:status">
-		<complexType>
-			<complexContent>
-				<extension base="tns:statusType">
-				</extension>
-			</complexContent>
-		</complexType>
-	</element>
-	
-	<element name="scheduled" substitutionGroup="tns:status">
-		<complexType>
-			<complexContent>
-				<extension base="tns:statusType">
-				</extension>
-			</complexContent>
-		</complexType>
-	</element>
-
-	<element name="locked" substitutionGroup="tns:status">
-		<complexType>
-			<complexContent>
-				<extension base="tns:statusType">
-				</extension>
-			</complexContent>
-		</complexType>
-	</element>
-
-	<element name="exchange" substitutionGroup="tns:status">
-		<complexType>
-			<complexContent>
-				<extension base="tns:statusType">
-				</extension>
-			</complexContent>
-		</complexType>
-	</element>
-
-	<complexType name="executionStateType">
-		<sequence>
-			<element ref="tns:status" minOccurs="1" maxOccurs="1" />
-			<element ref="tns:block" minOccurs="1" maxOccurs="1" />
-			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
+	<!-- 
+	<complexType name="memoryBlockType">
+		<complexContent>
+			<extension base="tns:memoryType">				
+			</extension>
+		</complexContent>
 	</complexType>
 
-	<element name="ExecutionState" type="tns:executionStateType" />
+	<element name="MemoryBlock" type="tns:ProgramType" substitutionGroup="tns:ExecutionContext" />
+	 -->
+
+	<complexType name="typeType">
+		<complexContent>
+			<extension base="tns:memoryType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Type" type="tns:typeType" substitutionGroup="tns:Memory" />
+
+
+	<complexType name="scopeType">
+		<complexContent>
+			<extension base="tns:memoryType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Scope" type="tns:scopeType" substitutionGroup="tns:Memory" />
+
+	<complexType name="variableType">
+		<complexContent>
+			<extension base="tns:memoryType">
+				<sequence>
+					<element ref="tns:Type" minOccurs="1" maxOccurs="1" />
+					<element ref="tns:Scope" minOccurs="1" maxOccurs="1" />
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Variable" type="tns:variableType" substitutionGroup="tns:Memory" />
+
+	<complexType name="simpleVariableType">
+		<complexContent>
+			<extension base="tns:variableType">
+				<attribute name="value" type="anySimpleType" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="SimpleVariable" type="tns:simpleVariableType" substitutionGroup="tns:Memory" />
+
+	<complexType name="complexVariableType">
+		<complexContent>
+			<extension base="tns:variableType">
+				<sequence>
+					<element name="value" minOccurs="1" maxOccurs="1" type="anyType" />
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="ComplexVariable" type="tns:complexVariableType" substitutionGroup="tns:Memory" />
+
+
+	<complexType name="complexType">
+		<complexContent>
+			<extension base="tns:memoryType">
+				<sequence>
+					<element ref="tns:Type" minOccurs="1" maxOccurs="1" />
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Complex" type="tns:complexType" substitutionGroup="tns:Memory" />
+
+	<complexType name="simpleType">
+		<complexContent>
+			<extension base="tns:memoryType">
+				<sequence>
+					<element ref="tns:Type" minOccurs="1" maxOccurs="1" />
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="Simple" type="tns:simpleType" substitutionGroup="tns:Memory" />
+
+
+	<complexType name="javaVariableType">
+		<complexContent>
+			<extension base="tns:variableType">
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="JavaVariable" type="tns:javaVariableType" substitutionGroup="tns:Memory" />
+
+	<!-- elements for creating traces/dumps -->
+
+	<simpleType name="stateModeType">
+		<restriction base="string">
+			<enumeration value="FULL" />
+			<enumeration value="REFERENCED" />
+		</restriction>
+	</simpleType>
+
+	<complexType name="executionContextStateType">
+		<sequence>
+			<element ref="tns:ExecutionContext" minOccurs="1" maxOccurs="unbounded" />
+			<element ref="tns:Memory" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="time" type="dateTime" use="required" />
+		<attribute name="mode" type="tns:stateModeType" use="required" />
+	</complexType>
+
+	<element name="ExecutionContextState" type="tns:executionContextStateType" />
+
 
 
 </schema>
