@@ -40,13 +40,13 @@ public class ExecutionContextLink extends org.apache.ode.spi.exec.context.xml.Ex
 	}*/
 
 	//@OrderColumn(name = "INDEX")
-	public int getIndex() {
+	/*public int getIndex() {
 		return index;
 	}
 
 	public void setIndex(int index) {
 		this.index = index;
-	}
+	}*/
 
 	/*
 	@Override

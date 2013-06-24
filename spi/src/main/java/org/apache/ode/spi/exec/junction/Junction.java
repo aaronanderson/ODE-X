@@ -18,14 +18,28 @@
  */
 package org.apache.ode.spi.exec.junction;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.ode.spi.event.xml.DestinationChannelAdd;
-import org.apache.ode.spi.event.xml.SourceChannelAdd;
+import org.apache.ode.spi.exec.junction.ProgramNode.ProgramException;
 
 public interface Junction {
 
-	void bond(List<SourceChannelAdd> publishers, List<DestinationChannelAdd> subscribers);
+	void setDefaultTimeout(long time, TimeUnit unit);
+
+	Exchange push() throws JunctionException;
+
+	Exchange push(long time, TimeUnit unit)throws JunctionException;
+
+	Exchange pull()throws JunctionException;
+
+	Exchange pull(long time, TimeUnit unit);
+
+	<T> void bind(T junction);
+
+	<T> void unbind(T junction);
 	
-	void unbond();
+	public static class JunctionException extends ProgramException {
+
+	}
+
 }

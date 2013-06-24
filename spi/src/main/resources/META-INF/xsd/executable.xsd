@@ -21,31 +21,31 @@
 -->
 <schema targetNamespace="http://ode.apache.org/executable" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/executable">
 
-	<complexType name="executableType">
-		<sequence>
-			<element name="executable-sets" type="tns:executableSetsType" minOccurs="0" maxOccurs="1" />
-			<element name="installation" type="tns:installationType" minOccurs="1" maxOccurs="1" />
-			<element name="sources" type="tns:sourcesType" minOccurs="1" maxOccurs="1" />
-			<!--<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" /> <element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" 
-				/> -->
-			<element ref="tns:block" minOccurs="1" maxOccurs="unbounded" />
-			<!-- <choice maxOccurs="unbounded"> <element name="operation" type="tns:operationType" /> <element name="block" type="tns:blockType" /> </choice> -->
-		</sequence>
-		<attribute name="targetNamespace" type="string" use="optional" />
-		<attribute name="name" type="string" use="optional" />
-	</complexType>
-
-	<simpleType name="evtSetIDType">
-		<restriction base="ID">
-			<pattern value="e\d+" />
+	<simpleType name="qnameType">
+		<restriction base="string">
+			<pattern value="\{.+\}\c+" />
 		</restriction>
 	</simpleType>
 
-	<complexType name="executableSetType">
-		<attribute name="name" type="QName" use="required" />
-		<attribute name="eventSetId" type="tns:evtSetIDType" use="optional" />
+	<complexType name="executableType">
+		<sequence>
+			<element name="executable-sets" type="tns:executableSetsType" minOccurs="0" maxOccurs="1" />
+			<element name="event-sets" type="tns:executableSetsType" minOccurs="0" maxOccurs="1" />
+			<element name="sources" type="tns:sourcesType" minOccurs="1" maxOccurs="1" />
+			<!--<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" /> <element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" 
+				/> -->
+			<element ref="tns:set" minOccurs="1" maxOccurs="unbounded" />
+			<!-- <choice maxOccurs="unbounded"> <element name="operation" type="tns:operationType" /> <element name="block" type="tns:blockType" /> </choice> -->
+		</sequence>
+		<attribute name="name" type="tns:qnameType" use="optional" />
 	</complexType>
 
+
+	<complexType name="executableSetType">
+		<attribute name="name" type="QName" use="required" />
+		<attribute name="eventName" type="tns:qnameType" use="optional" />
+		<attribute name="eventId" type="integer" use="optional" />
+	</complexType>
 
 	<complexType name="executableSetsType">
 		<sequence>
@@ -53,11 +53,14 @@
 		</sequence>
 	</complexType>
 
-	<complexType name="installDataType" abstract="true" />
+	<complexType name="eventSetType">
+		<attribute name="eventNS" type="tns:qnameType" use="required" />
+		<attribute name="eventId" type="integer" use="required" />
+	</complexType>
 
-	<complexType name="installationType">
+	<complexType name="eventSetsType">
 		<sequence>
-			<any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" />
+			<element name="event-set" type="tns:eventSetType" minOccurs="1" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
@@ -146,25 +149,25 @@
 
 	<simpleType name="stkAddressType">
 		<restriction base="tns:memAddressType">
-			<pattern value="b\d+(c\d+)?" />
+			<pattern value="\w\d+(c\d+)?" />
 		</restriction>
 	</simpleType>
 
 	<simpleType name="stkAddressRefType">
 		<restriction base="tns:memAddressRefType">
-			<pattern value="b\d+(c\d+)?" />
+			<pattern value="\w\d+(c\d+)?" />
 		</restriction>
 	</simpleType>
 
 	<simpleType name="insAddressType">
 		<restriction base="ID">
-			<pattern value="b\d+i\d+" />
+			<pattern value="\w\d+i\d+" />
 		</restriction>
 	</simpleType>
 
 	<simpleType name="insAddressRefType">
 		<restriction base="IDREF">
-			<pattern value="b\d+i\d+" />
+			<pattern value="\w\d+i\d+" />
 		</restriction>
 	</simpleType>
 
@@ -218,25 +221,6 @@
 	</complexType>
 
 
-	<simpleType name="eptAddressType">
-		<restriction base="ID">
-			<pattern value="x\d+e\d+" />
-		</restriction>
-	</simpleType>
-
-	<simpleType name="eptAddressRefType">
-		<restriction base="IDREF">
-			<pattern value="x\d+e\d+" />
-		</restriction>
-	</simpleType>
-
-	<complexType name="endpointType" abstract="true">
-		<attribute name="ept" type="tns:eptAddressType" use="required" />
-	</complexType>
-
-	<element name="endpoint" type="tns:endpointType" abstract="true" />
-
-
 	<simpleType name="excAddressType">
 		<restriction base="ID">
 			<pattern value="x\d+" />
@@ -248,45 +232,102 @@
 			<pattern value="x\d+" />
 		</restriction>
 	</simpleType>
-
-
-	<complexType name="exchangeType">
-		<sequence>
-			<element ref="tns:endpoint" minOccurs="1" maxOccurs="unbounded" />
-		</sequence>
-		<attribute name="exc" type="tns:excAddressType" use="required" />
-	</complexType>
-	<element name="exchange" type="tns:exchangeType" />
 	
 	
 	<!-- <simpleType name="syncMode"> <restriction base="string"> <enumeration value="SYNC" /> <enumeration value="ASYNC" /> </restriction> </simpleType> <complexType 
 		name="invocationType" abstract="true"> <complexContent> <extension base="tns:sourceRefType"> <attribute name="save" type="boolean" use="optional" default="true" 
 		/> <attribute name="mode" type="tns:syncMode" use="optional" default="SYNC" /> <attribute name="inv" type="ID" use="required" /> </extension> </complexContent> </complexType> 
 		<complexType name="controlType" abstract="true"> <complexContent> <extension base="tns:instructionType" /> </complexContent> </complexType> -->
-	<simpleType name="blcAddressType">
+	<simpleType name="setAddressType">
 		<restriction base="ID">
-			<pattern value="b\d+" />
+			<pattern value="\w\d+" />
 		</restriction>
 	</simpleType>
 
-	<simpleType name="blcAddressRefType">
+	<simpleType name="setAddressRefType">
 		<restriction base="IDREF">
-			<pattern value="b\d+" />
+			<pattern value="\w\d+" />
 		</restriction>
 	</simpleType>
 
-	<complexType name="blockType">
+	<complexType name="setType" abstract="true">
 		<sequence>
 			<!--<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" /> <element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" 
 				/> <choice maxOccurs="unbounded"> <element name="variable" type="tns:variableType" /> <element name="in" type="tns:inType" /> <element name="out" type="tns:outType" 
 				/> <any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" /> </choice> -->
 			<element ref="tns:instruction" minOccurs="0" maxOccurs="unbounded" />
-			<element ref="tns:block" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:set" minOccurs="0" maxOccurs="unbounded" />
 			<!-- <any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded" /> -->
 		</sequence>
-		<attribute name="blc" type="tns:blcAddressType" use="required" />
+		<attribute name="set" type="tns:setAddressType" use="required" />
+		<attribute name="mode" type="QName" use="optional" />
 	</complexType>
-	<element name="block" type="tns:blockType" />
+	<element name="set" type="tns:setType" abstract="true" />
+
+
+	<element name="platform" substitutionGroup="tns:set">
+		<complexType>
+			<complexContent>
+				<extension base="tns:setType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="extension" substitutionGroup="tns:set">
+		<complexType>
+			<complexContent>
+				<extension base="tns:setType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="program" substitutionGroup="tns:set">
+		<complexType>
+			<complexContent>
+				<extension base="tns:setType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="process" substitutionGroup="tns:set">
+		<complexType>
+			<complexContent>
+				<extension base="tns:setType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="thread" substitutionGroup="tns:set">
+		<complexType>
+			<complexContent>
+				<extension base="tns:setType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="block" substitutionGroup="tns:set">
+		<complexType>
+			<complexContent>
+				<extension base="tns:setType" />
+			</complexContent>
+		</complexType>
+	</element>
+
+
+	<complexType name="exchangeType" abstract="true">
+		<complexContent>
+			<extension base="tns:setType" />
+		</complexContent>
+	</complexType>
+	<element name="exchange" type="tns:exchangeType" abstract="true" substitutionGroup="tns:set" />
+
+	<element name="scheduler" substitutionGroup="tns:exchange">
+		<complexType>
+			<complexContent>
+				<extension base="tns:exchangeType" />
+			</complexContent>
+		</complexType>
+	</element>
 
 	<!-- <complexType name="typeCtxType" abstract="true" /> <complexType name="typeType"> <sequence> <any namespace="##other" processContents="strict" minOccurs="0" 
 		maxOccurs="unbounded" /> </sequence> <attribute name="typ" type="ID" use="required" /> <attribute name="name" type="QName" use="required" /> </complexType> <attribute 
@@ -309,6 +350,5 @@
 		/> </extension> </complexContent> </complexType> -->
 	<element name="executable" type="tns:executableType" />
 
-	<element name="installation" type="tns:installationType" />
 
 </schema>

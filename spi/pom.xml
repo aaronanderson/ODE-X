@@ -20,8 +20,8 @@
 	</parent>
 
 	<artifactId>ode-spi</artifactId>
-	<name>ODE SPI</name>
-	<description>ODE SPI.</description>
+	<name>ODE-X SPI</name>
+	<description>ODE-X SPI.</description>
 	<packaging>jar</packaging>
 
 	<dependencies>
@@ -29,13 +29,6 @@
 		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-atinject_1.0_spec</artifactId>
-			<version>1.0</version>
-			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.geronimo.specs</groupId>
-			<artifactId>geronimo-jcdi_1.0_spec</artifactId>
 			<version>1.0</version>
 			<scope>provided</scope>
 		</dependency>
@@ -68,10 +61,10 @@
 					<schemaIncludes>
 						<schemaInclude>event.xsd</schemaInclude>
 						<schemaInclude>event-executable.xsd</schemaInclude>
-						<schemaInclude>event-program.xsd</schemaInclude>
+						<schemaInclude>event-junction.xsd</schemaInclude>
 						<schemaInclude>executable.xsd</schemaInclude>
 						<schemaInclude>execution-context.xsd</schemaInclude>
-						<schemaInclude>program.xsd</schemaInclude>
+						<schemaInclude>execution-config.xsd</schemaInclude>
 						<schemaInclude>platform.xsd</schemaInclude>
 						<schemaInclude>schema.xsd</schemaInclude>
 					</schemaIncludes>
@@ -79,10 +72,10 @@
 					<bindingIncludes>
 						<bindingInclude>event.xjb</bindingInclude>
 						<bindingInclude>event-executable.xjb</bindingInclude>
-						<bindingInclude>event-program.xjb</bindingInclude>
+						<bindingInclude>event-junction.xjb</bindingInclude>
 						<bindingInclude>executable.xjb</bindingInclude>
 						<bindingInclude>execution-context.xjb</bindingInclude>
-						<bindingInclude>program.xjb</bindingInclude>
+						<bindingInclude>execution-config.xjb</bindingInclude>
 						<bindingInclude>platform.xjb</bindingInclude>
 					</bindingIncludes>
 					<catalog>src/main/bindings/catalog.xml</catalog>

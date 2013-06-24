@@ -18,6 +18,8 @@
  */
 package org.apache.ode.spi.event;
 
+import java.util.concurrent.Future;
+
 import org.apache.ode.spi.event.xml.DestinationChannelAdd;
 import org.apache.ode.spi.event.xml.Event;
 import org.apache.ode.spi.event.xml.SourceChannelAdd;
@@ -25,8 +27,7 @@ import org.apache.ode.spi.event.xml.SourceChannelAdd;
 public interface EventBus {
 
 	<E extends Event> void send(E event, SourceChannelAdd address);
-	
-	<E extends Event> E receive(DestinationChannelAdd address);
-	
-	
+
+	<E extends Event> Future<E> receive(DestinationChannelAdd address);
+
 }

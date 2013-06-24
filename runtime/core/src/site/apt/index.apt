@@ -1,0 +1,50 @@
+~~
+~~ Licensed to the Apache Software Foundation (ASF) under one
+~~ or more contributor license agreements.  See the NOTICE file
+~~ distributed with this work for additional information
+~~ regarding copyright ownership.  The ASF licenses this file
+~~ to you under the Apache License, Version 2.0 (the
+~~ "License"); you may not use this file except in compliance
+~~ with the License.  You may obtain a copy of the License at
+~~
+~~    http://www.apache.org/licenses/LICENSE-2.0
+~~
+~~ Unless required by applicable law or agreed to in writing,
+~~ software distributed under the License is distributed on an
+~~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+~~ KIND, either express or implied.  See the License for the
+~~ specific language governing permissions and limitations
+~~ under the License.
+~~
+
+Platform
+
+  The platform concept is an abstract representation of the runtime system. It provides an interface to all runtime interactions needed for monitoring, administration, and execution
+  
+* Component
+  
+  The component concept represents a plugable extension of the platform runtime. At platform startup time new components are registered with the platform and at runtime the platform will invoke the components as needed
+
+* Cluster
+
+  The cluster concept is an internal representation of a set of related nodes that can be acted upon as a single unit. A platform consists of a set of clusters and a cluster consists of a set of physical nodes. 
+
+  * HealthCheck
+  
+  A heartbeat mechanism is in place so that as soon as a node comes up node state updates are persisted. At the given polling interval the state of all nodes are retrieved from the persistence store. This availability information is then used to deduce targets for actions. submitted for execution
+  
+  * Task
+
+  A task represents a command that may be executed once or executed simultaneously on a given set of targets. Tasks have XML input and output.
+	* TaskActionCoordinator - Tasks have coordinators that analyze the task input, returns a list of actions that should be executed, and then updates the task output based on the results of the action executions.
+
+	* TaskAction - A single action that is executed on a single cluster node. TaskActions may be coordinated where the task coordinator and action collaborate synchronously to complete. TaskActions may also be transactional so that they may commit their own local transactions once the task reaches it final stage.
+	
+	* Definition - Tasks, TaskActionCoordinators, and TaskActions need definitions to provide metadata on how their interface implementations should be executed.
+
+  	* Target - For each task that is executed a target is provided to indicate to the platform on which phyiscal nodes the task should execute.
+  
+  * JMS Coordination
+	JMS is used as an implementation agnostic mechanism for mulitple clustered nodes to communicate with each other.
+
+  

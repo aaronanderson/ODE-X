@@ -1,9 +1,8 @@
 package org.apache.ode.spi.exec.context;
 
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.List;
-
-import org.apache.ode.spi.exec.context.xml.State;
 /*
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
@@ -42,6 +41,13 @@ public abstract class ExecutionContext extends org.apache.ode.spi.exec.context.x
 
 	//general purpose storage if attribute storage is insufficient
 	protected byte[] content;
+	
+	//Create and Modify times. Modify Time can be used for @Version
+	protected Calendar createTime;
+	protected Calendar modifyTime;
+	
+	//Optional lock value that can be used by a persistence implementation to lock accross nodes
+	protected String lockInfo;
 
 	protected List<Memory> memoryBlocks;
 
@@ -91,6 +97,30 @@ public abstract class ExecutionContext extends org.apache.ode.spi.exec.context.x
 	public void setAttr5(String attr5) {
 		this.attr5 = attr5;
 	}
+	
+	public void setCreateTime(Calendar createTime) {
+		this.createTime = createTime;
+	}
+	
+	public Calendar getCreateTime() {
+		return createTime;
+	}
+	
+	public void setModifyTime(Calendar modifyTime) {
+		this.modifyTime = modifyTime;
+	}
+	
+	public Calendar getModifyTime() {
+		return modifyTime;
+	}
+	
+	public void setLockInfo(String lockInfo) {
+		this.lockInfo = lockInfo;
+	}
+	
+	public String getLockInfo() {
+		return lockInfo;
+	}
 
 	//@Column(name = "CONTENT")
 	//@Lob
@@ -124,12 +154,20 @@ public abstract class ExecutionContext extends org.apache.ode.spi.exec.context.x
 	//		@JoinColumn(name = "ECTX_ADDR", referencedColumnName = "ECTX_ADDR"),
 	//		@JoinColumn(name = "ECTX_ADDR", referencedColumnName = "LINK_ADDR")
 	//}*/)
-	public List<ExecutionContextLink> getECtxLinks() {
-		return (List)this.executionContextLink;
+	public List<ExecutionContextLink> getECtxInLinks() {
+		return (List)inLink;
 	}
 
-	public void setECtxLinks(List<ExecutionContextLink> eCtxLinks) {
-		this.executionContextLink=(List)eCtxLinks;
+	public void setECtxInLinks(List<ExecutionContextLink> eCtxLinks) {
+		inLink=(List)eCtxLinks;
+	}
+	
+	public List<ExecutionContextLink> getECtxOutLinks() {
+		return (List)outLink;
+	}
+
+	public void setECtxOutLinks(List<ExecutionContextLink> eCtxLinks) {
+		outLink=(List)eCtxLinks;
 	}
 
 	/*

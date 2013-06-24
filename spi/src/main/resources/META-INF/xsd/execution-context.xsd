@@ -54,6 +54,13 @@
 		</restriction>
 	</simpleType>
 
+	<complexType name="executionConfigType">
+		<attribute name="id" type="string" use="required" />
+		<attribute name="uri" type="string" use="required" />
+	</complexType>
+	
+	<element name="execution-config" type="tns:executionConfigType" />
+
 	<complexType name="executionContextLinkType">
 		<attribute name="linkAddr" type="tns:eCtxAddressType" use="required" />
 		<attribute name="eCtxAddr" type="tns:eCtxAddressType" use="required" />
@@ -61,27 +68,32 @@
 		<attribute name="axis" type="tns:eCtxAxisType" use="required" />
 	</complexType>
 
-	<element name="ExecutionContextLink" type="tns:executionContextLinkType" />
+	<element name="in-link" type="tns:executionContextLinkType" />
+	<element name="out-link" type="tns:executionContextLinkType" />
+
 
 	<complexType name="executionContextType" abstract="true">
 		<sequence>
-			<element ref="tns:ExecutionContextLink" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:execution-config" minOccurs="1" maxOccurs="1" />
+			<element ref="tns:in-link" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:out-link" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="eCtxAddr" type="tns:eCtxAddressType" use="required" />
-		<attribute name="name" type="string" use="required" />
+		<attribute name="id" type="string" use="required" />
+		<attribute name="name" type="string" use="optional" />
 		<attribute name="state" type="tns:eCtxStateType" use="required" />
 	</complexType>
 
 	<element name="ExecutionContext" type="tns:executionContextType" abstract="true" />
 
-	<complexType name="extensionType">
+	<complexType name="componentType">
 		<complexContent>
 			<extension base="tns:executionContextType">
 			</extension>
 		</complexContent>
 	</complexType>
 
-	<element name="Extension" type="tns:extensionType" substitutionGroup="tns:ExecutionContext" />
+	<element name="component" type="tns:componentType" substitutionGroup="tns:ExecutionContext" />
 
 	<complexType name="platformType">
 		<complexContent>
@@ -90,7 +102,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Platform" type="tns:platformType" substitutionGroup="tns:ExecutionContext" />
+	<element name="platform" type="tns:platformType" substitutionGroup="tns:ExecutionContext" />
 
 	<complexType name="programType">
 		<complexContent>
@@ -99,7 +111,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Program" type="tns:programType" substitutionGroup="tns:ExecutionContext" />
+	<element name="program" type="tns:programType" substitutionGroup="tns:ExecutionContext" />
 
 	<complexType name="processType">
 		<complexContent>
@@ -108,7 +120,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Process" type="tns:processType" substitutionGroup="tns:ExecutionContext" />
+	<element name="process" type="tns:processType" substitutionGroup="tns:ExecutionContext" />
 
 	<complexType name="threadType">
 		<complexContent>
@@ -117,7 +129,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Thread" type="tns:threadType" substitutionGroup="tns:ExecutionContext" />
+	<element name="thread" type="tns:threadType" substitutionGroup="tns:ExecutionContext" />
 
 	<complexType name="blockType">
 		<complexContent>
@@ -126,7 +138,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Block" type="tns:blockType" substitutionGroup="tns:ExecutionContext" />
+	<element name="block" type="tns:blockType" substitutionGroup="tns:ExecutionContext" />
 
 	<complexType name="contextType">
 		<complexContent>
@@ -135,7 +147,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Context" type="tns:contextType" substitutionGroup="tns:ExecutionContext" />
+	<element name="context" type="tns:contextType" substitutionGroup="tns:ExecutionContext" />
 
 
 	<complexType name="exchangeType">
@@ -145,7 +157,7 @@
 		</complexContent>
 	</complexType>
 
-	<element name="Exchange" type="tns:exchangeType" substitutionGroup="tns:ExecutionContext" />
+	<element name="exchange" type="tns:exchangeType" substitutionGroup="tns:ExecutionContext" />
 
 
 

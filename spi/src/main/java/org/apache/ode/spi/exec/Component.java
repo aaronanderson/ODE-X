@@ -40,16 +40,17 @@ import org.apache.ode.spi.event.xml.Event;
 @Retention(RUNTIME)
 @Target(TYPE)
 public @interface Component {
-	
-	
+
 	public String value() default "";
+
 	//public QName name();
-	
+
 	@Retention(RUNTIME)
-	@Target(METHOD)	
+	@Target(METHOD)
 	public @interface ExecutableSets {
-		
+
 	}
+
 	//public List<ExecutableSet> executableSets();
 
 	public class ExecutableSet {
@@ -99,15 +100,14 @@ public @interface Component {
 
 	}
 
-
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface ExecutionContextSets {
-		
+
 	}
 
 	//public List<ExecutionContextSet> executionContextSets();
-	
+
 	public class ExecutionContextSet {
 		final QName name;
 		final String jaxbExecContextPath;
@@ -138,12 +138,11 @@ public @interface Component {
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface EventSets {
-		
+
 	}
-	
-	
+
 	//public List<EventSet> eventSets();
-	
+
 	public class EventSet {
 		final QName name;
 		final String jaxbEventPath;
@@ -192,7 +191,7 @@ public @interface Component {
 						if (Event.class.isAssignableFrom(m.getReturnType())) {
 							try {
 								Field type = m.getReturnType().getField("type");
-								eventTypes.put((String) type.get(null),(Class<? extends Event>) m.getReturnType());
+								eventTypes.put((String) type.get(null), (Class<? extends Event>) m.getReturnType());
 							} catch (NoSuchFieldException nsfe) {
 								log.log(Level.WARNING, String.format("Event class %s is does not have fixed type attribute field", m.getReturnType().getName()));
 							}
@@ -212,18 +211,18 @@ public @interface Component {
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface ProgramSets {
-		
+
 	}
-	
+
 	//public List<ProgramSet> programSets();
 
-	public class ProgramSet {
+	public class ExecutionConfigSet {
 		final QName name;
 		final String jaxbProgramPath;
 		final Class<?> jaxbProgramFactory;
 		final QName eventSetName;
 
-		public ProgramSet(QName name, String jaxbProgramPath, Class<?> jaxbProgramFactory, QName eventSetName) {
+		public ExecutionConfigSet(QName name, String jaxbProgramPath, Class<?> jaxbProgramFactory, QName eventSetName) {
 
 			if (name == null || ((jaxbProgramPath == null && jaxbProgramFactory == null))) {
 				throw new NullPointerException("name and path or class required");
@@ -237,7 +236,7 @@ public @interface Component {
 		public QName getName() {
 			return name;
 		}
-		
+
 		public QName getEventSetName() {
 			return eventSetName;
 		}
@@ -255,34 +254,31 @@ public @interface Component {
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface Tasks {
-		
+
 	}
+
 	//public List<TaskDefinition> tasks();
 
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface TaskActions {
-		
+
 	}
+
 	//public List<TaskActionDefinition> actions();
 
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface Online {
-		
+
 	}
+
 	//public void online() throws PlatformException;
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface Offline {
-		
+
 	}
 	//public void offline() throws PlatformException;
-
-	
-	
-
-	
-	
 
 }

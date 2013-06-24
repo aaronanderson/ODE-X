@@ -34,7 +34,7 @@
 		
 	1) [be] - (stream only) indicates beginning or end of a channel stream. Note that this only applies to the local stream address, so a source address my be a stream while the destination may still be a channel. l
 	2) [t]  - transactional - propagates an existing transaction or starts a new one. JTA suspend/resume is used to transfer transaction across all threads. All events marked as transactional will be processed sequentially.
-	3) [io] - Destination or Source address. Although there are different XML schema types this provides a simple indicator on the type of address rather than digging through the schema definitions
+	3) [\)\(] - Destination or Source address. Although there are different XML schema types this provides a simple indicator on the type of address rather than digging through the schema definitions
 	4) \d+   - local Channel ID
 	5) (\w\d+)+ - virtual address
 	6) (e\d+)?v\d+ - EventSet(c for core events and e for instructionset) and EventType of channel. Should map to JAXB class that extends abstract event element
@@ -42,35 +42,35 @@
 
 	<simpleType name="channelAddressType">
 		<restriction base="token">
-			<pattern value="[be]?[io]\d+(\w\d+)+[ce]\d+v\d+" />
+			<pattern value="[+-=]?[\)\(]\d+(\w\d+)*(\{\d+\})?#\d+" />
 		</restriction>
 	</simpleType>
 
 
 	<simpleType name="sourceChannelAddressType">
 		<restriction base="tns:channelAddressType">
-			<pattern value="[be]?o\d+(\w\d+)+[ce]\d+v\d+" />
+			<pattern value="[+-=]?\(\d+(\w\d+)*(\{\d+\})?#\d+" />
 		</restriction>
 	</simpleType>
 
 
 	<simpleType name="destinationChannelAddressType">
 		<restriction base="tns:channelAddressType">
-			<pattern value="[be]?i\d+(\w\d+)+[ce]\d+v\d+" />
+			<pattern value="[+-=]?\)\d+(\w\d+)*(\{\d+\})?#\d+" />
 		</restriction>
 	</simpleType>
 
 
 	<simpleType name="sourceStreamAddressType">
 		<restriction base="tns:sourceChannelAddressType">
-			<pattern value="[be]o\d+(\w\d+)+[ce]\d+v\d+" />
+			<pattern value="[+-=]?\(\d+(\w\d+)*(\{\d+\})?#\d+" />
 		</restriction>
 	</simpleType>
 
 
 	<simpleType name="destinationStreamAddressType">
 		<restriction base="tns:destinationChannelAddressType">
-			<pattern value="[be]i\d+(\w\d+)+[ce]\d+v\d+" />
+			<pattern value="[+-=]?\)\d+(\w\d+)*(\{\d+\})?#\d+" />
 		</restriction>
 	</simpleType>
 

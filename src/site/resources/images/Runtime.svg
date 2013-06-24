@@ -19,6 +19,7 @@
     under the License.
 
 -->
+
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
@@ -33,7 +34,7 @@
    height="1052.3622047"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.0 r9654"
+   inkscape:version="0.48.3.1 r9886"
    sodipodi:docname="Runtime.svg"
    inkscape:export-filename="C:\dev\ode\ODE-X\src\site\Runtime.png"
    inkscape:export-xdpi="90"
@@ -150,10 +151,10 @@
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="1280"
-     inkscape:window-height="658"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-width="2495"
+     inkscape:window-height="1416"
+     inkscape:window-x="65"
+     inkscape:window-y="24"
      inkscape:window-maximized="1">
     <inkscape:grid
        type="xygrid"
@@ -171,7 +172,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -521,7 +522,7 @@
            y="586.36218"
            x="410"
            id="tspan3815-4-3"
-           sodipodi:role="line">Continuation</tspan></text>
+           sodipodi:role="line">Context</tspan></text>
       <g
          transform="translate(238,74)"
          id="g4065-1">
@@ -587,7 +588,7 @@
            y="586.36218"
            x="410"
            id="tspan3815-4-3-1"
-           sodipodi:role="line">Continuation</tspan></text>
+           sodipodi:role="line">Context</tspan></text>
       <g
          transform="translate(238,74)"
          id="g4065-1-7">
@@ -653,7 +654,7 @@
            y="586.36218"
            x="410"
            id="tspan3815-4-3-9"
-           sodipodi:role="line">Continuation</tspan></text>
+           sodipodi:role="line">Context</tspan></text>
       <g
          transform="translate(238,74)"
          id="g4065-1-3">
@@ -779,7 +780,7 @@
          sodipodi:role="line"
          id="tspan5462"
          x="160"
-         y="572.36218">Events activate Continuations</tspan></text>
+         y="572.36218">Events activate ExecutionContexts</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -1065,7 +1066,7 @@
            height="18.182745"
            x="111.11678"
            y="118.98123" /></flowRegion><flowPara
-         id="flowPara3279"></flowPara></flowRoot>    <path
+         id="flowPara3279" /></flowRoot>    <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker3230)"
        d="m 1200,552.36218 -40,0 0,-380 140,0 0,-40"
        id="path3284"

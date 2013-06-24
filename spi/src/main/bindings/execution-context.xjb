@@ -19,20 +19,23 @@
     under the License.
 
 -->
-<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-	version="2.1">
+<jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.1">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/execution-context.xsd">
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.spi.exec.context.xml" />
 		</jxb:schemaBindings>
-		
-			
+
+
 		<jxb:bindings node="//xs:simpleType[@name='eCtxAxisType']">
 			<jxb:typesafeEnumClass name="Axis" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:simpleType[@name='eCtxStateType']">
 			<jxb:typesafeEnumClass name="State" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='executionConfigType']">
+			<jxb:class name="ExecutionConfiguration" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='executionContextType']">
@@ -43,12 +46,12 @@
 			<jxb:class name="ExecutionContextLink" implClass="org.apache.ode.spi.exec.context.ExecutionContextLink" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='extensionType']">
-			<jxb:class name="Extension" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
+		<jxb:bindings node="//xs:complexType[@name='componentType']">
+			<jxb:class name="Component" /><!--implClass="org.apache.ode.spi.exec.context.ExecutionContext"/>-->
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='platformType']">
-			<jxb:class name="Platform"  />
+			<jxb:class name="Platform" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='programType']">
@@ -81,27 +84,27 @@
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='referenceType']">
-			<jxb:class name="Reference"  />
+			<jxb:class name="Reference" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='typeType']">
-			<jxb:class name="Type"  />
+			<jxb:class name="Type" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='scopeType']">
-			<jxb:class name="Scope"  />
+			<jxb:class name="Scope" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='variableType']">
-			<jxb:class name="Variable"  />
+			<jxb:class name="Variable" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='simpleVariableType']">
-			<jxb:class name="SimpleVariable"  />
+			<jxb:class name="SimpleVariable" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='complexVariableType']">
-			<jxb:class name="ComplexVariable"  />
+			<jxb:class name="ComplexVariable" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='complexType']">
@@ -124,6 +127,6 @@
 			<jxb:typesafeEnumClass name="StateMode" />
 		</jxb:bindings>
 
-	
+
 	</jxb:bindings>
 </jxb:bindings>

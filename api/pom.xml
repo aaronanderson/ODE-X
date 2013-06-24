@@ -21,8 +21,8 @@
 	</parent>
 
 	<artifactId>ode-api</artifactId>
-	<name>ODE API</name>
-	<description>ODE API.</description>
+	<name>ODE-X API</name>
+	<description>ODE-X API.</description>
 	<packaging>jar</packaging>
 
 	<dependencies>

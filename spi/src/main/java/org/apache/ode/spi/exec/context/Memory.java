@@ -1,6 +1,7 @@
 package org.apache.ode.spi.exec.context;
 
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.List;
 /*
 import javax.persistence.Basic;
@@ -64,6 +65,13 @@ public class Memory extends org.apache.ode.spi.exec.context.xml.Memory implement
 	//general purpose storage if attribute storage is insufficient
 	protected byte[] content;
 	
+	//Create and Modify times. Modify Time can be used for @Version
+	protected Calendar createTime;
+	protected Calendar modifyTime;
+		
+	//Optional lock value that can be used by a persistence implementation to lock accross nodes
+	protected String lockInfo;
+	
 	protected List<Memory> memoryBlocks;
 	
 	//This is really only used for memory cleanup so it doesn't make sense to polute the XSD model with it
@@ -114,6 +122,30 @@ public class Memory extends org.apache.ode.spi.exec.context.xml.Memory implement
 
 	public void setAttr5(String attr5) {
 		this.attr5 = attr5;
+	}
+	
+	public void setCreateTime(Calendar createTime) {
+		this.createTime = createTime;
+	}
+	
+	public Calendar getCreateTime() {
+		return createTime;
+	}
+	
+	public void setModifyTime(Calendar modifyTime) {
+		this.modifyTime = modifyTime;
+	}
+	
+	public Calendar getModifyTime() {
+		return modifyTime;
+	}
+	
+	public void setLockInfo(String lockInfo) {
+		this.lockInfo = lockInfo;
+	}
+	
+	public String getLockInfo() {
+		return lockInfo;
 	}
 
 	//@Column(name = "CONTENT")

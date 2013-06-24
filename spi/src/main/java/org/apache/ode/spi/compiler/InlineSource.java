@@ -19,11 +19,23 @@
 package org.apache.ode.spi.compiler;
 
 
-public interface InlineSource extends Source {
+public class InlineSource extends Source {
 	
-	String inlineContentType();
+	private String inlineContentType;
 	
-	Location start();
+	private Location start;
 	
-	Location end();
+	private Location end;
+	
+	public String inlineContentType(){
+		return inlineContentType;
+	}
+	
+	public Location start(){
+		return start;
+	}
+	
+	public Location end(){
+		return end;
+	}
 }

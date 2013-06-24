@@ -13,6 +13,7 @@
 	<groupId>org.apache.ode</groupId>
 	<artifactId>ode-pom</artifactId>
 	<version>0.1-SNAPSHOT</version>
+	<!-- "XML is like violence: if it doesn’t solve your problem, you aren’t using enough of it." - source unknown-->
 	<name>ODE-X</name>
 	<description>ODE-X BPM Platform</description>
 	<packaging>pom</packaging>
@@ -69,17 +70,17 @@
 
 	<modules>
 		<module>api</module>
-		<module>spi</module>
-		<module>repo</module>
-		<module>runtime</module>
 		<module>cli</module>
-		<module>server</module>
-		<module>bpel</module>
+		<module>spi</module>
+		<module>runtime</module>
+		<module>data</module>
+		<!--<module>bpel</module>
 		<module>wsht</module>
-		<module>bpmn</module>
-		<module>tests</module>
-		<module>distro</module>
-
+		<module>bpmn</module>-->
+  		<module>di</module>
+                <module>arch</module>
+		<!--  <module>tests</module>
+		<module>distro</module> -->
 		<!--<module>eclipse</module> -->
 	</modules>
 		<!--

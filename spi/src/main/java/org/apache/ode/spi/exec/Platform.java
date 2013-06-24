@@ -25,9 +25,9 @@ import javax.activation.CommandObject;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Component.EventSet;
-import org.apache.ode.spi.exec.Component.ExecutionContextSet;
 import org.apache.ode.spi.exec.Component.ExecutableSet;
-import org.apache.ode.spi.exec.Component.ProgramSet;
+import org.apache.ode.spi.exec.Component.ExecutionConfigSet;
+import org.apache.ode.spi.exec.Component.ExecutionContextSet;
 import org.apache.ode.spi.exec.Message.LogLevel;
 import org.apache.ode.spi.exec.Message.MessageListener;
 import org.apache.ode.spi.exec.target.Target;
@@ -41,11 +41,11 @@ public interface Platform {
 
 	public static final String EVENT_NAMESPACE = "http://ode.apache.org/event";
 	public static final String EVENT_EXEC_NAMESPACE = "http://ode.apache.org/event-executable";
-	public static final String EVENT_PROGRAM_NAMESPACE = "http://ode.apache.org/event-program";
+	public static final String EVENT_JUNCTION_NAMESPACE = "http://ode.apache.org/event-junction";
 	public static final String EXEC_MIMETYPE = "application/ode-executable";
 	public static final String EXEC_NAMESPACE = "http://ode.apache.org/executable";
 	public static final String EXEC_CTX_NAMESPACE = "http://ode.apache.org/execution-context";
-	public static final String PROGRAM_NAMESPACE = "http://ode.apache.org/program";
+	public static final String EXEC_CFG_NAMESPACE = "http://ode.apache.org/execution-config";
 
 	public static final String PLATFORM_NAMESPACE = "http://ode.apache.org/platform";
 	public static final QName PLATFORM = new QName(PLATFORM_NAMESPACE, "platform");
@@ -56,21 +56,21 @@ public interface Platform {
 	public static final QName EXEC_CTX_SET_NAME = new QName(EXEC_CTX_NAMESPACE, "ExecContext");
 	public static final QName EVENT_SET_NAME = new QName(EVENT_NAMESPACE, "Event");
 	public static final QName EVENT_EXEC_SET_NAME = new QName(EVENT_EXEC_NAMESPACE, "ExecutableEvent");
-	public static final QName EVENT_PROGRAM_SET_NAME = new QName(EVENT_PROGRAM_NAMESPACE, "ProgramEvent");
-	public static final QName PROGRAM_SET_NAME = new QName(PROGRAM_NAMESPACE, "Program");
+	public static final QName EVENT_JUNCTION_SET_NAME = new QName(EVENT_JUNCTION_NAMESPACE, "ProgramEvent");
+	public static final QName EXEC_CFG_SET_NAME = new QName(EXEC_CFG_NAMESPACE, "ExecConfig");
 	
 	public static final ExecutableSet EXEC_INSTRUCTION_SET = new ExecutableSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.executable.xml",
-			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_EXEC_SET_NAME,PROGRAM_SET_NAME);
+			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_EXEC_SET_NAME,EXEC_CFG_SET_NAME);
 	public static final ExecutionContextSet EXEC_CTX_SET = new ExecutionContextSet(EXEC_CTX_SET_NAME, "org.apache.ode.spi.exec.instruction.xml",
 			org.apache.ode.spi.exec.context.xml.ObjectFactory.class);
 	public static final EventSet EVENT_SET = new EventSet(EVENT_SET_NAME, "org.apache.ode.spi.event.xml",
 			org.apache.ode.spi.event.xml.ObjectFactory.class);
 	public static final EventSet EVENT_EXEC_SET = new EventSet(EVENT_EXEC_SET_NAME, "org.apache.ode.spi.event.executable.xml",
 			org.apache.ode.spi.event.executable.xml.ObjectFactory.class);
-	public static final EventSet EVENT_PROGRAM_SET = new EventSet(EVENT_PROGRAM_SET_NAME, "org.apache.ode.spi.event.program.xml",
-			org.apache.ode.spi.event.program.xml.ObjectFactory.class);
-	public static final ProgramSet PROGRAM_SET = new ProgramSet(PROGRAM_SET_NAME, "org.apache.ode.spi.exec.program.xml",
-			org.apache.ode.spi.exec.program.xml.ObjectFactory.class, EVENT_PROGRAM_SET_NAME);
+	public static final EventSet EVENT_JUNCTION_SET = new EventSet(EVENT_JUNCTION_SET_NAME, "org.apache.ode.spi.event.junction.xml",
+			org.apache.ode.spi.event.junction.xml.ObjectFactory.class);
+	public static final ExecutionConfigSet EXEC_CFG_SET = new ExecutionConfigSet(EXEC_CFG_SET_NAME, "org.apache.ode.spi.exec.config.xml",
+			org.apache.ode.spi.exec.config.xml.ObjectFactory.class, EVENT_JUNCTION_SET_NAME);
 
 	public enum PlatformTask {
 

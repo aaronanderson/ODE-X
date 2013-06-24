@@ -64,10 +64,6 @@
 				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.executable.xml']">
 					<!-- <xsl:variable name="xjc" select="document('executable.xjb')" /> <xsl:for-each select="$xjc//j:bindings[@node]"> <xsl:if test="j:class[@ref]"> <xsl:copy> 
 						<xsl:apply-templates select="@*|node()" /> </xsl:copy> </xsl:if> </xsl:for-each> -->
-					
-					<bindings scd="~tns:evtSetIDType">
-						<class ref="org.apache.ode.spi.exec.executable.xml.EventSetId" />
-					</bindings>
 		
 					<bindings scd="~tns:srcIdType">
 						<class ref="org.apache.ode.spi.exec.executable.xml.SrcId" />
@@ -125,30 +121,26 @@
 						<class ref="org.apache.ode.spi.exec.executable.xml.InsAddRef" />
 					</bindings>
 
-					<bindings scd="~tns:blcAddressType">
-						<class ref="org.apache.ode.spi.exec.executable.xml.BlcAdd" />
+					<bindings scd="~tns:setAddressType">
+						<class ref="org.apache.ode.spi.exec.executable.xml.SetAdd" />
 					</bindings>
 
-					<bindings scd="~tns:blcAddressRefType">
-						<class ref="org.apache.ode.spi.exec.executable.xml.BlcAddRef" />
+					<bindings scd="~tns:setAddressRefType">
+						<class ref="org.apache.ode.spi.exec.executable.xml.SetAddRef" />
 					</bindings>
 
 				</xsl:when>
-				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.program.xml']">
+				<xsl:when test="j:schemaBindings/j:package[@name='org.apache.ode.spi.exec.config.xml']">
 					<bindings scd="~tns:excAddressType">
-						<class ref="org.apache.ode.spi.exec.program.xml.ExcAdd" />
+						<class ref="org.apache.ode.spi.exec.config.xml.ExcAdd" />
 					</bindings>
 
 					<bindings scd="~tns:excAddressRefType">
-						<class ref="org.apache.ode.spi.exec.program.xml.ExcAddRef" />
+						<class ref="org.apache.ode.spi.exec.config.xml.ExcAddRef" />
 					</bindings>
 
-					<bindings scd="~tns:jntAddressType">
-						<class ref="org.apache.ode.spi.exec.program.xml.JntAdd" />
-					</bindings>
-
-					<bindings scd="~tns:jntAddressRefType">
-						<class ref="org.apache.ode.spi.exec.program.xml.JntAddRef" />
+					<bindings scd="~tns:bondURIType">
+						<class ref="org.apache.ode.spi.exec.config.xml.BondURI" />
 					</bindings>
 
 				</xsl:when>

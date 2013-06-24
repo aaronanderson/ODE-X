@@ -28,8 +28,8 @@
 	</parent>
 
 	<artifactId>ode-cli</artifactId>
-	<name>ODE Command Line Interface</name>
-	<description>ODE Command Line Interface.</description>
+	<name>ODE-X CLI</name>
+	<description>ODE-X Command Line Interface.</description>
 	<packaging>jar</packaging>
 
 	<dependencies>

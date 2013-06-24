@@ -20,16 +20,21 @@ package org.apache.ode.spi.compiler;
 
 import org.apache.ode.spi.repo.Artifact;
 
-public interface Source extends Artifact {
+public class Source extends Artifact {
 
-	org.apache.ode.spi.exec.executable.xml.Source srcRef();
-	
-	SourceType sourceType();
-                                          
-	
+	private org.apache.ode.spi.exec.executable.xml.Source srcRef;
+	private SourceType sourceType;
+
+	public org.apache.ode.spi.exec.executable.xml.Source srcRef() {
+		return srcRef;
+	}
+
+	public SourceType sourceType() {
+		return sourceType;
+	}
+
 	public static enum SourceType {
 		MAIN, INCLUDE, INLINE;
 	}
 
-	
 }
