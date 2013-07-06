@@ -24,8 +24,26 @@
 
 	<import namespace="http://ode.apache.org/executable" />
 	<import namespace="http://ode.apache.org/event" />
-	<import namespace="http://ode.apache.org/event-junction" />
-
+	
+	<element name="platform" substitutionGroup="exec:set">
+		<complexType>
+			<complexContent>
+				<extension base="exec:setType">
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	<element name="task" substitutionGroup="exec:set">
+		<complexType>
+			<complexContent>
+				<extension base="exec:setType">
+				<attribute name="name" type="string" use="required" />
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
 	<element name="emitEvent" substitutionGroup="exec:instruction">
 		<complexType>
 			<complexContent>

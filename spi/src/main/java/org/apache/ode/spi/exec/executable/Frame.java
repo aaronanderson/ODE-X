@@ -20,7 +20,6 @@ package org.apache.ode.spi.exec.executable;
 
 import javax.xml.bind.Unmarshaller;
 
-import org.apache.ode.spi.exec.ThreadScope;
 
 public class Frame  {
 	

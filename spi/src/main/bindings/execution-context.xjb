@@ -26,6 +26,14 @@
 		</jxb:schemaBindings>
 
 
+		<jxb:bindings node="//xs:simpleType[@name='eCtxIdType']">
+			<jxb:class ref="java.util.UUID" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='eCtxURIType']">
+			<jxb:class ref="java.net.URI" />
+		</jxb:bindings>
+
 		<jxb:bindings node="//xs:simpleType[@name='eCtxAxisType']">
 			<jxb:typesafeEnumClass name="Axis" />
 		</jxb:bindings>

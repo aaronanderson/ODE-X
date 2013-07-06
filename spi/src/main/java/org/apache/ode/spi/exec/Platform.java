@@ -18,8 +18,7 @@
  */
 package org.apache.ode.spi.exec;
 
-import java.util.Set;
-import java.util.concurrent.Future;
+import java.net.URI;
 
 import javax.activation.CommandObject;
 import javax.xml.namespace.QName;
@@ -28,11 +27,7 @@ import org.apache.ode.spi.exec.Component.EventSet;
 import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.Component.ExecutionConfigSet;
 import org.apache.ode.spi.exec.Component.ExecutionContextSet;
-import org.apache.ode.spi.exec.Message.LogLevel;
-import org.apache.ode.spi.exec.Message.MessageListener;
 import org.apache.ode.spi.exec.target.Target;
-import org.apache.ode.spi.exec.task.Task;
-import org.apache.ode.spi.exec.task.Task.TaskId;
 import org.apache.ode.spi.exec.task.TaskCallback;
 import org.apache.ode.spi.repo.Artifact;
 import org.w3c.dom.Document;
@@ -58,13 +53,12 @@ public interface Platform {
 	public static final QName EVENT_EXEC_SET_NAME = new QName(EVENT_EXEC_NAMESPACE, "ExecutableEvent");
 	public static final QName EVENT_JUNCTION_SET_NAME = new QName(EVENT_JUNCTION_NAMESPACE, "ProgramEvent");
 	public static final QName EXEC_CFG_SET_NAME = new QName(EXEC_CFG_NAMESPACE, "ExecConfig");
-	
+
 	public static final ExecutableSet EXEC_INSTRUCTION_SET = new ExecutableSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.executable.xml",
-			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_EXEC_SET_NAME,EXEC_CFG_SET_NAME);
+			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_EXEC_SET_NAME, EXEC_CFG_SET_NAME);
 	public static final ExecutionContextSet EXEC_CTX_SET = new ExecutionContextSet(EXEC_CTX_SET_NAME, "org.apache.ode.spi.exec.instruction.xml",
 			org.apache.ode.spi.exec.context.xml.ObjectFactory.class);
-	public static final EventSet EVENT_SET = new EventSet(EVENT_SET_NAME, "org.apache.ode.spi.event.xml",
-			org.apache.ode.spi.event.xml.ObjectFactory.class);
+	public static final EventSet EVENT_SET = new EventSet(EVENT_SET_NAME, "org.apache.ode.spi.event.xml", org.apache.ode.spi.event.xml.ObjectFactory.class);
 	public static final EventSet EVENT_EXEC_SET = new EventSet(EVENT_EXEC_SET_NAME, "org.apache.ode.spi.event.executable.xml",
 			org.apache.ode.spi.event.executable.xml.ObjectFactory.class);
 	public static final EventSet EVENT_JUNCTION_SET = new EventSet(EVENT_JUNCTION_SET_NAME, "org.apache.ode.spi.event.junction.xml",
@@ -74,9 +68,9 @@ public interface Platform {
 
 	public enum PlatformTask {
 
-		SETUP_TASK(new QName(PLATFORM_NAMESPACE, "setup")), INSTALL_TASK(new QName(PLATFORM_NAMESPACE, "install")), ONLINE_TASK(new QName(PLATFORM_NAMESPACE,
-				"online")), START_TASK(new QName(PLATFORM_NAMESPACE, "start")), STOP_TASK(new QName(PLATFORM_NAMESPACE, "stop")), OFFLINE_TASK(new QName(
-				PLATFORM_NAMESPACE, "offline")), UNINSTALL_TASK(new QName(PLATFORM_NAMESPACE, "uninstall"));
+		SETUP_TASK(new QName(PLATFORM_NAMESPACE, "setup")), INSTALL_TASK(new QName(PLATFORM_NAMESPACE, "install")), ONLINE_TASK(new QName(PLATFORM_NAMESPACE, "online")), START_TASK(
+				new QName(PLATFORM_NAMESPACE, "start")), STOP_TASK(new QName(PLATFORM_NAMESPACE, "stop")), OFFLINE_TASK(new QName(PLATFORM_NAMESPACE, "offline")), UNINSTALL_TASK(
+				new QName(PLATFORM_NAMESPACE, "uninstall"));
 
 		private PlatformTask(QName qname) {
 			this.qname = qname;
@@ -89,7 +83,7 @@ public interface Platform {
 		}
 	}
 
-	public interface PlatformTaskCommand extends CommandObject{
+	public interface PlatformTaskCommand extends CommandObject {
 		public static final String PLATFORM_TASK_CMD = "platformTasks";
 
 		public QName task(PlatformTask platformTask);
@@ -104,32 +98,48 @@ public interface Platform {
 
 	//public void registerComponent(Component component);
 
+	//authentication
+
 	public void login(AuthContext authContext) throws PlatformException;
 
 	public void logout() throws PlatformException;
 
-	public void registerListener(MessageListener listener);
+	//public void registerListener(MessageListener listener);
 
-	public void unregisterListener(MessageListener listener);
+	//public void unregisterListener(MessageListener listener);
 
-	public void setLogLevel(LogLevel level);
+	//platform actions
+	//public void setLogLevel(LogLevel level);
 
-	public Set<NodeStatus> status();
+	//public Set<NodeStatus> status();
+	public Execution execution(URI  uri) throws PlatformException;
+	//public <T extends Target> T createTarget(String id, Class<T> type) throws PlatformException;
 
-	public <T extends Target> T createTarget(String id, Class<T> type) throws PlatformException;
+	public void install(URI id, Artifact executionConfiguration, Target... targets) throws PlatformException;
 
-	public Document setup(Artifact... executables) throws PlatformException;
+	public void start(URI id, Target... targets) throws PlatformException;
 
-	public void install(QName id, Document programConfiguration, Target... targets) throws PlatformException;
+	public void stop(URI id, Target... targets) throws PlatformException;
 
-	public Program programInfo(QName id) throws PlatformException;
+	public void uninstall(URI id, Target... targets) throws PlatformException;
 
-	public void start(QName id, Target... targets) throws PlatformException;
+	//junction
+	//There are two ways external applications can interact with an Execution:
+	// 1)At the install time of an Execution external junctions are bonded with it. All external events are directed through the junction
+	// 2) The SPI call below is used to lookup the execution context, optionally override bonds with local instances, and then invoke events
+	//    on the context
+	//URIs must be absolute
+	//public <E> Channel<E> channel(URI url);
 
-	public void stop(QName id, Target... targets) throws PlatformException;
+	//public <E> Stream<E> stream(URI url, UUID context);
 
-	public void uninstall(QName id, Target... targets) throws PlatformException;
+	//public Junction junction(URI uri, UUID context);
 
+	//public <C> C proxy(Class<C> clazz, UUID context);
+	//public ExecutionRuntime executionRuntime(UUID contextId);
+
+	//task management
+	/*
 	public TaskId executeAsync(QName task, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws PlatformException;
 
 	public Future<Document> execute(QName task, Document taskInput, TaskCallback<?, ?> callback, Target... targets) throws PlatformException;
@@ -149,6 +159,6 @@ public interface Platform {
 		public static enum NodeState {
 			ONLINE, OFFLINE;
 		}
-	}
+	}*/
 
 }

@@ -21,23 +21,30 @@
 -->
 <schema targetNamespace="http://ode.apache.org/execution-config" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/execution-config">
 
-	<!-- This schema contains all the runtime installation/environment/instance specific configurations needed to execute an executable in a given execution context.
+	<!-- This schema contains all the runtime installation/environment/formula specific configurations needed to execute an executable in a given execution context.
 	For example, on a CDI architecture it would contain JAXWS specific deployment information such as web context path and endpoint address. for an SCA
 	architecture it may contain the excerpts from the composite so that the program can route messages appropriately. 
 	
 	Additionally BAM activities such as reporting, auditing can be mapped to the instruction level. Debugging information would be contained here as well.
-	Note it is important that any operation performed at the program level not change the behavior of the executable in any way. Executables are to be self
+	Note it is important that any operation performed at the execution level not change the behavior of the executable in any way. Executables are to be self
 	contained and exhibit fully deterministic behavior. For a program to interfere with an executables operation would break the contract. Debugging could be 
-	the one exception where someone is purposefully updating state. 
+	the one exception where someone purposefully updates state. 
 	 -->
 
 
-	<simpleType name="qnameType">
+	<simpleType name="eCfgQNameType">
 		<restriction base="string">
 			<pattern value="\{.+\}\c+" />
 		</restriction>
 	</simpleType>
 
+	<simpleType name="eCfgURIType">
+		<restriction base="anyURI" />
+	</simpleType>
+
+	<simpleType name="eCfgUUIDType">
+		<restriction base="string" />
+	</simpleType>
 
 	<simpleType name="archType">
 		<restriction base="string">
@@ -48,22 +55,190 @@
 	<complexType name="executionConfigType" abstract="true">
 		<sequence>
 			<element name="exec-config-sets" type="tns:execConfigSetsType" minOccurs="0" maxOccurs="1" />
-			<element name="executable" type="tns:executableType" minOccurs="1" maxOccurs="unbounded" />
+			<element name="executables" type="tns:executablesType" minOccurs="0" maxOccurs="1" />
+			<element ref="tns:formula" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 
-		<attribute name="name" type="tns:qnameType" use="required" />
+		<attribute name="uri" type="tns:eCfgURIType" use="required" />
 		<attribute name="version" type="string" use="required" />
 		<attribute name="architecture" type="tns:archType" use="required" />
 	</complexType>
 
+	<complexType name="execConfigSetsType">
+		<sequence>
+			<element name="exec-config-set" type="tns:execConfigSetType" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
+
 	<complexType name="execConfigSetType">
 		<attribute name="name" type="QName" use="required" />
-		<attribute name="eventName" type="tns:qnameType" use="optional" />
+		<attribute name="eventName" type="tns:eCfgQNameType" use="optional" />
 		<attribute name="eventId" type="integer" use="optional" />
 	</complexType>
 
-	<element name="ExecutionConfig" type="tns:executionConfigType" abstract="true" />
+	<complexType name="executablesType">
+		<sequence>
+			<element name="executable" type="tns:executableType" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
 
+	<simpleType name="excIdType">
+		<restriction base="ID">
+			<pattern value="e\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="excIdRefType">
+		<restriction base="IDREF">
+			<pattern value="e\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="excSetAddressType">
+		<restriction base="string">
+			<pattern value="s\d+" />
+		</restriction>
+	</simpleType>
+
+
+	<complexType name="executableType">
+		<attribute name="id" type="tns:excIdType" use="required" />
+		<attribute name="uri" type="tns:eCfgURIType" use="required" />
+		<attribute name="version" type="string" use="required" />
+		<attribute name="checksum" type="string" use="required" />
+	</complexType>
+
+
+	<element name="execution-config" type="tns:executionConfigType" />
+
+	<complexType name="platformExecutionConfigType">
+		<complexContent>
+			<extension base="tns:executionConfigType" />
+		</complexContent>
+	</complexType>
+
+	<element name="platform-config" type="tns:platformExecutionConfigType" substitutionGroup="tns:execution-config" />
+
+	<complexType name="programExecutionConfigType">
+		<complexContent>
+			<extension base="tns:executionConfigType" />
+		</complexContent>
+	</complexType>
+
+	<element name="program-config" type="tns:programExecutionConfigType" substitutionGroup="tns:execution-config" />
+
+
+
+	<simpleType name="formulaIdType">
+		<restriction base="ID">
+			<pattern value="i\d+" />
+		</restriction>
+	</simpleType>
+
+
+	<simpleType name="bondPointIdType">
+		<restriction base="ID">
+			<pattern value="b\d+" />
+		</restriction>
+	</simpleType>
+
+	<simpleType name="bondPointRefType">
+		<restriction base="IDREF">
+			<pattern value="b\d+" />
+		</restriction>
+	</simpleType>
+
+
+	<complexType name="bondPointType">
+		<attribute name="id" type="tns:bondPointIdType" use="required" />
+		<attribute name="bond" type="tns:bondPointRefType" use="optional" />
+		<attribute name="uri" type="tns:eCfgURIType" use="optional" />
+	</complexType>
+
+	<element name="bondPoint" type="tns:bondPointType" abstract="true" />
+
+
+	<!-- TODO consider naming this something more appropriate, like class,type, or definition -->
+	<complexType name="formulaType">
+		<sequence>
+			<!-- no bonds means it is for configuration only -->
+			<element ref="tns:bondPoint" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="id" type="tns:formulaIdType" use="required" />
+		<attribute name="uri" type="tns:eCfgURIType" use="optional" />
+	</complexType>
+
+	<element name="formula" type="tns:formulaType" abstract="true" />
+
+
+	<complexType name="executionBondPointType">
+		<complexContent>
+			<extension base="tns:bondPointType">
+				<attribute name="xpath" type="string" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="executionBond" type="tns:executionBondPointType" abstract="true" substitutionGroup="tns:bondPoint" />
+
+	<complexType name="executionFormulaType">
+		<complexContent>
+			<extension base="tns:formulaType">
+				<attribute name="exec" type="tns:excIdRefType" use="required" />
+				<attribute name="set" type="tns:excSetAddressType" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="execution" type="tns:executionFormulaType" abstract="true" substitutionGroup="tns:formula" />
+
+	<complexType name="endpointBondPointType">
+		<complexContent>
+			<extension base="tns:bondPointType">
+				<attribute name="name" type="string" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="endpointBond" type="tns:endpointBondPointType" abstract="true" substitutionGroup="tns:bondPoint" />
+
+	<complexType name="endpointFormulaType">
+		<complexContent>
+			<extension base="tns:formulaType">
+				<attribute name="class" type="string" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<element name="endpoint" type="tns:endpointFormulaType" abstract="true" substitutionGroup="tns:formula" />
+	
+	
+	
+	
+	<!-- Formulas  -->
+	
+	
+	<!--  Executions -->
+
+	<complexType name="platformExecutionType">
+		<complexContent>
+			<extension base="tns:executionFormulaType" />
+		</complexContent>
+	</complexType>
+
+	<element name="platform" type="tns:platformExecutionType" substitutionGroup="tns:formula" />
+	
+	
+	<!--  Endpoints -->
+
+	<complexType name="debugEndpointType">
+		<complexContent>
+			<extension base="tns:endpointFormulaType" />
+		</complexContent>
+	</complexType>
+
+	<element name="debug" type="tns:debugEndpointType" substitutionGroup="tns:formula" />
+<!-- 
 	<complexType name="platformType">
 		<complexContent>
 			<extension base="tns:executionConfigType" />
@@ -88,53 +263,35 @@
 
 	<element name="program" type="tns:programType" substitutionGroup="tns:ExecutionConfig" />
 
-	<complexType name="execConfigSetsType">
-		<sequence>
-			<element name="exec-config-set" type="tns:execConfigSetType" minOccurs="1" maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
+	
 
-
-	<simpleType name="excAddressType">
-		<restriction base="ID">
-			<pattern value="e\d+" />
-		</restriction>
-	</simpleType>
-
-	<simpleType name="excAddressRefType">
-		<restriction base="IDREF">
-			<pattern value="e\d+" />
-		</restriction>
-	</simpleType>
-
-	<simpleType name="bondURIType">
-		<restriction base="anyURI" />
-	</simpleType>
-
-
-	<complexType name="executableType">
-		<sequence>
-			<element name="channels" type="tns:channelsType" minOccurs="0" maxOccurs="unbounded" />
-			<element name="junctions" type="tns:junctionsType" minOccurs="0" maxOccurs="unbounded" />
-			<element name="insrumentations" type="tns:insrumentationsType" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
-		<attribute name="executable" type="tns:excAddressType" use="required" />
-		<attribute name="name" type="tns:qnameType" use="required" />
-		<attribute name="version" type="string" use="required" />
-		<attribute name="checksum" type="string" use="required" />
-	</complexType>
-
-	<complexType name="channelsType">
-		<sequence>
-			<element name="channel" type="tns:channelType" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
 
 
 	<complexType name="bondType" abstract="true">
 		<attribute name="uri" type="tns:bondURIType" use="required" />
 		<attribute name="path" type="string" use="required" />
 	</complexType>
+
+	<element name="Bond" type="tns:bondType" abstract="true" />
+
+	<group name="bondGroup">
+		<sequence>
+			<element ref="tns:Bond" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:SubExecutionConfig" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+	</group>
+
+
+	<complexType name="subExecutionConfigType" abstract="true">
+		<group ref="tns:bondGroup" />
+		<attribute name="uri" type="tns:bondURIType" use="required" />
+		<attribute name="path" type="string" use="required" />
+	</complexType>
+
+	<element name="SubExecutionConfig" type="tns:subExecutionConfigType" abstract="true" />
+
+
+	
 
 
 	<complexType name="channelType" abstract="true">
@@ -143,11 +300,7 @@
 		</complexContent>
 	</complexType>
 
-	<complexType name="junctionsType">
-		<sequence>
-			<element ref="tns:junction" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
-	</complexType>
+	<element name="channel" type="tns:channelType" abstract="true" substitutionGroup="tns:Bond" />
 
 	<complexType name="junctionType" abstract="true">
 		<complexContent>
@@ -155,16 +308,19 @@
 				<attribute name="group" type="tns:bondURIType" use="optional" />
 			</extension>
 		</complexContent>
-
 	</complexType>
 
-	<element name="junction" type="tns:junctionType" abstract="true" />
+	<element name="junction" type="tns:junctionType" abstract="true" substitutionGroup="tns:Bond" />
 
-	<complexType name="insrumentationsType">
-		<sequence>
-			<element name="insrumentationType" type="tns:insrumentationType" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
+	<complexType name="instrumentationType" abstract="true">
+		<complexContent>
+			<extension base="tns:bondType" />
+		</complexContent>
 	</complexType>
+
+	<element name="instrumentation" type="tns:instrumentationType" abstract="true" substitutionGroup="tns:Bond" />
+
+	 -->
 
 	
 
@@ -188,21 +344,17 @@
 	</simpleType>
 -->
 
-	<complexType name="insrumentationType" abstract="true">
-		<complexContent>
-			<extension base="tns:bondType" />
-		</complexContent>
-	</complexType>
+<!-- 
 
 	<complexType name="programInsrumentationType" abstract="true">
 		<complexContent>
-			<extension base="tns:insrumentationType" />
+			<extension base="tns:instrumentationType" />
 		</complexContent>
 	</complexType>
 
 	<complexType name="processInsrumentationType" abstract="true">
 		<complexContent>
-			<extension base="tns:insrumentationType">
+			<extension base="tns:instrumentationType">
 				<attribute name="processId" type="string" use="required" />
 			</extension>
 		</complexContent>
@@ -218,7 +370,7 @@
 
 	<complexType name="executableInsrumentationType" abstract="true">
 		<complexContent>
-			<extension base="tns:insrumentationType">
+			<extension base="tns:instrumentationType">
 				<attribute name="executableId" type="string" use="required" />
 			</extension>
 		</complexContent>
@@ -250,7 +402,7 @@
 
 	<complexType name="junctionInsrumentationType" abstract="true">
 		<complexContent>
-			<extension base="tns:insrumentationType">
+			<extension base="tns:instrumentationType">
 				<attribute name="exchangeId" type="string" use="required" />
 			</extension>
 		</complexContent>
@@ -264,7 +416,7 @@
 		</complexType>
 	</element>
 
-
+-->
 
 
 </schema>

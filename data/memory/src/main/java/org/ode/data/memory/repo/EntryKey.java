@@ -18,34 +18,36 @@
  */
 package org.ode.data.memory.repo;
 
+import java.net.URI;
+
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.repo.Artifact;
 
 public class EntryKey {
 
-	private QName qname;
+	private URI uri;
 	private String contentType;
 	private String version;
 
 	public EntryKey(Artifact artifact) {
-		this.qname = artifact.getQName();
+		this.uri = artifact.getURI();
 		this.contentType = artifact.getContentType();
 		this.version = artifact.getVersion();
 	}
 
-	public EntryKey(QName qname, String contentType, String version) {
-		this.qname = qname;
+	public EntryKey(URI uri, String contentType, String version) {
+		this.uri = uri;
 		this.contentType = contentType;
 		this.version = version;
 	}
 
-	public QName getQName() {
-		return qname;
+	public URI getURI() {
+		return uri;
 	}
 
-	public void setQName(QName qname) {
-		this.qname = qname;
+	public void setURI(URI uri) {
+		this.uri = uri;
 	}
 
 	public String getContentType() {

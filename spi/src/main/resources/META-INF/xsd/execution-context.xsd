@@ -29,6 +29,14 @@
 	http://en.wikipedia.org/wiki/Context_switch
 	http://en.wikipedia.org/wiki/Region-based_memory_management -->
 
+	<simpleType name="eCtxURIType">
+		<restriction base="string" />
+	</simpleType>
+
+	<simpleType name="eCtxIdType">
+		<restriction base="string" />
+	</simpleType>
+
 	<simpleType name="eCtxAddressType">
 		<restriction base="long" />
 	</simpleType>
@@ -55,10 +63,10 @@
 	</simpleType>
 
 	<complexType name="executionConfigType">
-		<attribute name="id" type="string" use="required" />
-		<attribute name="uri" type="string" use="required" />
+		<attribute name="uri" type="tns:eCtxURIType" use="required" />
+		<attribute name="version" type="string" use="required" />
 	</complexType>
-	
+
 	<element name="execution-config" type="tns:executionConfigType" />
 
 	<complexType name="executionContextLinkType">
@@ -79,7 +87,7 @@
 			<element ref="tns:out-link" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="eCtxAddr" type="tns:eCtxAddressType" use="required" />
-		<attribute name="id" type="string" use="required" />
+		<attribute name="id" type="tns:eCtxIdType" use="required" />
 		<attribute name="name" type="string" use="optional" />
 		<attribute name="state" type="tns:eCtxStateType" use="required" />
 	</complexType>

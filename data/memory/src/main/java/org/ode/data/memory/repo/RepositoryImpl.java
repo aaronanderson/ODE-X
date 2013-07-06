@@ -22,6 +22,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.net.URI;
 
 import javax.cache.Cache;
 import javax.inject.Inject;
@@ -42,14 +43,14 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 	@RepoCache
 	Cache<EntryKey, Artifact> repoCache;
 
-	protected Artifact loadArtifact(QName qname, String contentType, String version) throws RepositoryException {
-		EntryKey key = new EntryKey(qname, contentType, version);
+	protected Artifact loadArtifact(URI uri, String contentType, String version) throws RepositoryException {
+		EntryKey key = new EntryKey(uri, contentType, version);
 
 		Artifact artifact = repoCache.get(key);
 		if (artifact != null) {
 			return artifact;
 		}
-		throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s does not exists", qname, contentType, version));
+		throw new RepositoryException(String.format("Artifact URI %s contentType %s version %s does not exists", uri, contentType, version));
 	}
 
 	protected void createArtifact(Artifact artifact) throws RepositoryException {
@@ -65,18 +66,18 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 	}
 
 	@Override
-	public void delete(QName qname, String contentType, String version) throws RepositoryException {
-		EntryKey key = new EntryKey(qname, contentType, version);
+	public void delete(URI uri, String contentType, String version) throws RepositoryException {
+		EntryKey key = new EntryKey(uri, contentType, version);
 
 		if (!repoCache.remove(key)) {
-			throw new RepositoryException(String.format("Artifact qname %s contentType %s version %s does not exists", qname, contentType, version));
+			throw new RepositoryException(String.format("Artifact URI %s contentType %s version %s does not exists", uri, contentType, version));
 		}
 
 	}
 
 	@Override
-	public boolean exists(QName qname, String contentType, String version) throws RepositoryException {
-		EntryKey key = new EntryKey(qname, contentType, version);
+	public boolean exists(URI uri, String contentType, String version) throws RepositoryException {
+		EntryKey key = new EntryKey(uri, contentType, version);
 		return repoCache.containsKey(key);
 	}
 

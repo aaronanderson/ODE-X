@@ -78,6 +78,7 @@
 		<module>wsht</module>
 		<module>bpmn</module>-->
   		<module>di</module>
+		<module>test</module>
                 <module>arch</module>
 		<!--  <module>tests</module>
 		<module>distro</module> -->

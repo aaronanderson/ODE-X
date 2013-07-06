@@ -25,22 +25,5 @@
 
 	<import namespace="http://ode.apache.org/executable" />
 
-	<complexType name="endpointBindingType">
-		<complexContent>
-			<extension base="exec:installDataType">
-				<attribute name="name" type="string" use="required" />
-			</extension>
-		</complexContent>
-	</complexType>
 	
-	<complexType name="configurationType">
-		<complexContent>
-			<extension base="exec:installDataType">
-				<attribute name="base" type="string" use="required" />
-			</extension>
-		</complexContent>
-	</complexType>
-	
-	<element name="configuration" type="tns:configurationType" />
-	<element name="binding" type="tns:endpointBindingType" />
 </schema>

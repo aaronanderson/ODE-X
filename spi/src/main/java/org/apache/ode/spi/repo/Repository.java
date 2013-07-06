@@ -18,9 +18,10 @@
  */
 package org.apache.ode.spi.repo;
 
+import java.net.URI;
+
 import javax.activation.CommandObject;
 import javax.inject.Provider;
-import javax.xml.namespace.QName;
 
 public interface Repository {
 
@@ -36,16 +37,16 @@ public interface Repository {
 
 	<C> DataHandler getDataHandler(C content, String mimeType);
 
-	<C> void create(QName qname, String version, String type, C content) throws RepositoryException;
+	<C> void create(URI uri, String version, String type, C content) throws RepositoryException;
 
-	<C> C read(QName qname, String type, String version, Class<C> javaType) throws RepositoryException;
+	<C> C read(URI uri, String type, String version, Class<C> javaType) throws RepositoryException;
 
-	<C> void update(QName qname, String type, String version, C content) throws RepositoryException;
+	<C> void update(URI uri, String type, String version, C content) throws RepositoryException;
 
-	<C> void delete(QName qname, String type, String version) throws RepositoryException;
+	<C> void delete(URI uri, String type, String version) throws RepositoryException;
 
-	boolean exists(QName qname, String type, String version) throws RepositoryException;
+	boolean exists(URI uri, String type, String version) throws RepositoryException;
 
-	// void store(QName qname, String version, String type, XMLStreamReader
+	// void store(URI uri, String version, String type, XMLStreamReader
 
 }

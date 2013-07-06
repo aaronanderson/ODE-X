@@ -26,13 +26,13 @@ import java.lang.annotation.Target;
 import javax.annotation.PostConstruct;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.ThreadScope;
+//import org.apache.ode.spi.exec.ThreadScope;
 
 import static org.apache.ode.spi.exec.Platform.EXEC_CTX_NAMESPACE;
 
 
 //Model and default view of ExecutionState (MVC and Observer patterns)
-@ThreadScope
+//@ThreadScope
 public class ExecutionContext {
 	
 	public static final QName CALL_FRAME = new QName(EXEC_CTX_NAMESPACE, "CallFrame");

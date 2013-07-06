@@ -21,37 +21,40 @@
 -->
 <schema targetNamespace="http://ode.apache.org/data/memory/repository" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/data/memory/repository">
 
-	<simpleType name="qnameType">
-		<restriction base="string">
-			<pattern value="\{.+\}\c+" />
-		</restriction>
-	</simpleType>
 
-	<element name="Repository">
+	<element name="repository">
 		<complexType>
 			<sequence>
-				<element ref="tns:Artifacts" minOccurs="1" maxOccurs="1" />
+				<element name="directory" type="tns:directoryType" minOccurs="1" maxOccurs="unbounded" />
 			</sequence>
 		</complexType>
 	</element>
 
-<!--  need a container for mapping to a java.util.Map -->
-	<element name="Artifacts">
-	<complexType>
+	<simpleType name="repoURIType">
+		<restriction base="string" />
+	</simpleType>
+
+	<simpleType name="repoPatternType">
+		<restriction base="string" />
+	</simpleType>
+
+	<complexType name="directoryType">
 		<sequence>
-			<element ref="tns:Entry" minOccurs="0" maxOccurs="unbounded" />
+			<element name="includes" type="tns:includesType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="excludes" type="tns:excludesType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
+		<attribute name="base" type="anyURI" use="required" />
 	</complexType>
-</element>
 
+	<complexType name="includesType">
+		<attribute name="uri" type="tns:repoURIType" use="optional" />
+		<attribute name="version" type="string" use="optional" default="1.0" />
+		<attribute name="content-type" type="string" use="optional" />
+		<attribute name="include" type="tns:repoPatternType" use="required" />
+	</complexType>
 
-	<element name="Entry">
-		<complexType>
-			<attribute name="name" type="tns:qnameType" use="required" />
-			<attribute name="version" type="string" use="required" />
-			<attribute name="content-type" type="string" use="optional" />
-			<attribute name="location" type="string" use="required" />
-		</complexType>
-	</element>
+	<complexType name="excludesType">
+		<attribute name="exclude" type="tns:repoPatternType" use="required" />
+	</complexType>
 
 </schema>

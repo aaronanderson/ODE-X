@@ -19,10 +19,10 @@
 package org.apache.ode.spi.repo;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.util.UUID;
 
 import javax.xml.namespace.QName;
-
-import org.apache.ode.spi.repo.Artifact;
 
 /*@NamedQueries({
 		@NamedQuery(name="artifactExists", query="select count(a) from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version"),
@@ -39,7 +39,7 @@ public class Artifact implements Serializable {
 	private String id;
 
 	//@Column(name = "QNAME")
-	private String qname;
+	private String uri;
 
 	//@Column(name = "CONTENT_TYPE")
 	private String type;
@@ -62,24 +62,34 @@ public class Artifact implements Serializable {
 	//@Basic(fetch = FetchType.LAZY)
 	private byte[] content;
 
-	public void setId(String id) {
-		this.id = id;
+	public void setId(UUID id) {
+		this.id = id.toString();
 	}
 
-	public String getId() {
-		return id;
+	public UUID getId() {
+		return UUID.fromString(id);
 	}
 
-	public void setQName(QName qname) {
-		this.qname = qname.toString();
+	public void setURI(URI uri) {
+		this.uri = uri.toString();
 	}
 
-	public QName getQName() {
-		return QName.valueOf(qname);
+	public Artifact withURI(URI uri) {
+		this.uri = uri.toString();
+		return this;
+	}
+
+	public URI getURI() {
+		return URI.create(uri);
 	}
 
 	public void setContentType(String type) {
 		this.type = type;
+	}
+
+	public Artifact withContentType(String type) {
+		this.type = type;
+		return this;
 	}
 
 	public String getContentType() {
@@ -88,6 +98,11 @@ public class Artifact implements Serializable {
 
 	public void setVersion(String version) {
 		this.version = version;
+	}
+
+	public Artifact withVersion(String version) {
+		this.version = version;
+		return this;
 	}
 
 	public String getVersion() {
@@ -104,6 +119,11 @@ public class Artifact implements Serializable {
 
 	public void setContent(byte[] content) {
 		this.content = content;
+	}
+
+	public Artifact withContent(byte[] content) {
+		this.content = content;
+		return this;
 	}
 
 	@Override

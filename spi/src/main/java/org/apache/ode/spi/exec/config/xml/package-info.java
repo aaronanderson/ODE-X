@@ -19,12 +19,17 @@
 /*
  * Added to specify namespace prefix during unmarshall
  */
+@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(URIAdapter.class),@XmlJavaTypeAdapter(QNameStringAdapter.class) })
 @XmlSchema(namespace = Platform.EXEC_CFG_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Platform.EXEC_CFG_NAMESPACE, prefix = "ecfg") }, elementFormDefault = XmlNsForm.QUALIFIED)
 package org.apache.ode.spi.exec.config.xml;
 
 import javax.xml.bind.annotation.XmlNs;
 import javax.xml.bind.annotation.XmlNsForm;
 import javax.xml.bind.annotation.XmlSchema;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.exec.QNameStringAdapter;
+import org.apache.ode.spi.exec.URIAdapter;
 

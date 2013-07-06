@@ -20,13 +20,13 @@ package org.apache.ode.data.core.repo;
 
 import java.awt.datatransfer.DataFlavor;
 import java.io.IOException;
+import java.net.URI;
 
 import javax.activation.CommandObject;
 import javax.activation.MimeTypeParseException;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.ArtifactDataSource;
@@ -46,18 +46,18 @@ public abstract class RepositoryBaseImpl implements Repository {
 	protected Provider<ArtifactDataSourceImpl> dsProvider;
 
 	@Override
-	public <C> void create(QName qname, String contentType, String version, C content) throws RepositoryException {
+	public <C> void create(URI uri, String contentType, String version, C content) throws RepositoryException {
 		Artifact artifact = null;
 		if (content instanceof ArtifactDataSourceImpl) {
 			artifact = ((ArtifactDataSourceImpl) content).getArtifact();
-			if (exists(qname, contentType, version)) {
+			if (exists(uri, contentType, version)) {
 				throw new RepositoryException("ArtifactDataSource already attached to an existing artifact");
 			}
-			artifact.setQName(qname);
+			artifact.setURI(uri);
 			artifact.setVersion(version);
 		} else {
 			artifact = new Artifact();
-			artifact.setQName(qname);
+			artifact.setURI(uri);
 			artifact.setVersion(version);
 			artifact.setContentType(contentType);
 			if (content instanceof byte[]) {
@@ -74,15 +74,15 @@ public abstract class RepositoryBaseImpl implements Repository {
 		createArtifact(artifact);
 	}
 
-	protected abstract Artifact loadArtifact(QName qname, String contentType, String version) throws RepositoryException;
+	protected abstract Artifact loadArtifact(URI uri, String contentType, String version) throws RepositoryException;
 
 	protected abstract void createArtifact(Artifact artifact) throws RepositoryException;
 
 	protected abstract void storeArtifact(Artifact artifact) throws RepositoryException;
 
 	@Override
-	public <C> C read(QName qname, String contentType, String version, Class<C> javaType) throws RepositoryException {
-		Artifact artifact = loadArtifact(qname, contentType, version);
+	public <C> C read(URI uri, String contentType, String version, Class<C> javaType) throws RepositoryException {
+		Artifact artifact = loadArtifact(uri, contentType, version);
 
 		if (Artifact.class.isAssignableFrom(javaType)) {
 			return (C) artifact;
@@ -120,8 +120,8 @@ public abstract class RepositoryBaseImpl implements Repository {
 	}
 
 	@Override
-	public <C> void update(QName qname, String contentType, String version, C content) throws RepositoryException {
-		Artifact artifact = loadArtifact(qname, contentType, version);
+	public <C> void update(URI uri, String contentType, String version, C content) throws RepositoryException {
+		Artifact artifact = loadArtifact(uri, contentType, version);
 		if (content instanceof ArtifactDataSourceImpl) {
 			ArtifactDataSourceImpl ds = (ArtifactDataSourceImpl) content;
 			artifact.setContent(ds.getContent());

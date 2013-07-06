@@ -33,20 +33,20 @@
 			<artifactId>ode-spi</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.ode.data</groupId>
 			<artifactId>ode-data-memory</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.ode.runtime</groupId>
 			<artifactId>ode-runtime-memory</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
-		
+
+
 		<dependency>
 			<groupId>org.apache.ode.di</groupId>
 			<artifactId>ode-di-guice</artifactId>
@@ -66,9 +66,57 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.ode.test</groupId>
+			<artifactId>ode-test-data</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<artifactSet>
+								<includes>
+									<include>org.apache.ode*:*</include>
+								</includes>
+							</artifactSet>
+							<filters>
+								<filter>
+									<artifact>org.apache.ode*:*</artifact>
+									<excludes>
+										<!--  <exclude>org/apache/ode/runtime/core/compiler/*</exclude> -->
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.15</version>
+				<configuration>
+					<dependenciesToScan>
+						<dependency>org.apache.ode.test:ode-test-data</dependency>
+					</dependenciesToScan>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
 
 

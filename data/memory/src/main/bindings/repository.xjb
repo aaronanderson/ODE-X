@@ -26,25 +26,27 @@
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.data.memory.repo.xml" />
 		</jxb:schemaBindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='repoURIType']">
+			<jxb:class ref="java.net.URI" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='repoPatternType']">
+			<jxb:class ref="java.util.regex.Pattern" />
+		</jxb:bindings>
 
-		<jxb:bindings node="//xs:element[@name='Entry']/xs:complexType">
-			<jxb:class name="Entry" />
+		<jxb:bindings node="//xs:complexType[@name='directoryType']">
+			<jxb:class name="Directory" />
 		</jxb:bindings>
 
 
-		<jxb:bindings node="//xs:element[@name='Repository']/xs:complexType">
-			<jxb:class name="Repository" implClass="org.ode.data.memory.repo.FileRepository" />
+		<jxb:bindings node="//xs:complexType[@name='includesType']">
+			<jxb:class name="Includes" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:element[@name='Repository']/xs:complexType//xs:sequence//xs:element[@ref='tns:Artifacts']">
-
-			<jxb:property name="artifacts">
-				<jxb:baseType name="org.ode.data.memory.repo.FileRepository.EntryMap" />
-			</jxb:property>
-
+		<jxb:bindings node="//xs:complexType[@name='excludesType']">
+			<jxb:class name="Excludes" />
 		</jxb:bindings>
-
-
 
 
 	</jxb:bindings>

@@ -18,13 +18,14 @@
  */
 package org.apache.ode.spi.exec;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.exec.Component.ExecutableSet;
-import org.apache.ode.spi.exec.junction.ProgramNode;
+import org.apache.ode.spi.exec.bond.Reactor;
 import org.apache.ode.spi.exec.task.TaskActionDefinition;
 import org.apache.ode.spi.exec.task.TaskDefinition;
 
@@ -66,12 +67,12 @@ public interface Node {
 	public Map<QName, TaskDefinition<?, ?>> getTaskDefinitions();
 
 	public Map<QName, TaskActionDefinition<?, ?>> getTaskActionDefinitions();
-	
-	public Map<QName,ProgramNode> getProgramNodes();
 
 	public void online() throws PlatformException;
 
 	public void offline() throws PlatformException;
+	
+	public Reactor reactor(URI execution);
 	
 	
 }

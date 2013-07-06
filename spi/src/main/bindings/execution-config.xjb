@@ -25,44 +25,100 @@
 			<jxb:package name="org.apache.ode.spi.exec.config.xml" />
 		</jxb:schemaBindings>
 
-		<jxb:bindings node="//xs:complexType[@name='executionConfigType']">
-			<jxb:class name="ExecutionConfig" />
+		<jxb:bindings node="//xs:simpleType[@name='eCfgQNameType']">
+			<jxb:class ref="javax.xml.namespace.QName" />
 		</jxb:bindings>
 
-
-		<jxb:bindings node="//xs:complexType[@name='platformType']">
-			<jxb:class name="Platform" />
-		</jxb:bindings>
-
-		<jxb:bindings node="//xs:complexType[@name='programType']">
-			<jxb:class name="Program" />
-		</jxb:bindings>
-
-		
-		<!-- add simple type bindings so classes are defined in JAXB episode and hide XML ID references -->
-		<jxb:bindings node="//xs:simpleType[@name='excAddressType']">
-			<jxb:class ref="org.apache.ode.spi.exec.config.xml.ExcAdd" />
-		</jxb:bindings>
-
-		<jxb:bindings node="//xs:simpleType[@name='excAddressRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.config.xml.ExcAddRef" />
-		</jxb:bindings>
-
-		<jxb:bindings node="//xs:simpleType[@name='bondURIType']">
-			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondURI" />
+		<jxb:bindings node="//xs:simpleType[@name='eCfgURIType']">
+			<jxb:class ref="java.net.URI" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='executableType']">
 			<jxb:class name="Executable" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='junctionsType']">
-			<jxb:class name="Junctions" />
+		<jxb:bindings node="//xs:complexType[@name='execConfigSetsType']">
+			<jxb:class name="ExecConfigSets" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='junctionType']">
-			<jxb:class name="Junction" />
+		<jxb:bindings node="//xs:complexType[@name='execConfigSetType']">
+			<jxb:class name="ExecConfigSet" />
 		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='executionConfigType']">
+			<jxb:class name="ExecutionConfig" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='platformExecutionConfigType']">
+			<jxb:class name="PlatformConfig" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='programExecutionConfigType']">
+			<jxb:class name="ProgramConfig" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='executionConfigType']/xs:sequence/xs:element[@ref='tns:formula']">
+			<jxb:property name="Formulas" />
+		</jxb:bindings>
+
+
+		<jxb:bindings node="//xs:simpleType[@name='excIdType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.ExcId" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='excIdRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.ExcRef" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='excSetAddressType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.ExcSetAdd" />
+		</jxb:bindings>
+
+
+
+		<jxb:bindings node="//xs:simpleType[@name='bondPointIdType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondPointId" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:simpleType[@name='bondPointRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondPointRef" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='bondPointType']">
+			<jxb:class name="BondPoint" />
+		</jxb:bindings>
+
+
+		<jxb:bindings node="//xs:simpleType[@name='formulaIdType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.FormulaId" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='formulaType']">
+			<jxb:class name="Formula" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='formulaType']/xs:sequence/xs:element[@ref='tns:bondPoint']">
+			<jxb:property name="BondPoints" />
+		</jxb:bindings>
+
+
+		<jxb:bindings node="//xs:complexType[@name='executionBondPointType']">
+			<jxb:class name="ExecutionBond" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='executionFormulaType']">
+			<jxb:class name="ExecutionFormula" />
+		</jxb:bindings>
+
+
+		<jxb:bindings node="//xs:complexType[@name='endpointBondPointType']">
+			<jxb:class name="EndpointBond" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='endpointFormulaType']">
+			<jxb:class name="EndpointFormula" />
+		</jxb:bindings>
+
 
 	</jxb:bindings>
 </jxb:bindings>

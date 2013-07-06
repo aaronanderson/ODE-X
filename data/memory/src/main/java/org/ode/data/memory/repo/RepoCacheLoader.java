@@ -32,12 +32,12 @@ public class RepoCacheLoader implements CacheLoader<EntryKey, Artifact> {
 
 	@Inject
 	FileRepository fileRepo;
-
+	
 	public Entry<EntryKey, Artifact> load(EntryKey key) {
-		LocalArtifact lartifact = fileRepo.getArtifacts().get(key);
+		LocalArtifact lartifact = fileRepo.getArtifact(key);
 		//TODO load artifact
 		if (lartifact != null) {
-			return new RepoEntry(key, lartifact.getArtifact());
+			return new RepoEntry(key, lartifact);
 		}
 		return null;
 	}
@@ -45,10 +45,10 @@ public class RepoCacheLoader implements CacheLoader<EntryKey, Artifact> {
 	public Map<EntryKey, Artifact> loadAll(Iterable<? extends EntryKey> keys) {
 		Map<EntryKey, Artifact> entries = new HashMap<EntryKey, Artifact>();
 		for (EntryKey key : keys) {
-			LocalArtifact lartifact = fileRepo.getArtifacts().get(key);
+			LocalArtifact lartifact = fileRepo.getArtifact(key);
 			//TODO load artifact
 			if (lartifact != null) {
-				entries.put(key, lartifact.getArtifact());
+				entries.put(key, lartifact);
 			}
 		}
 		return entries;
