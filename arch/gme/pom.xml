@@ -66,7 +66,7 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.ode.test</groupId>
 			<artifactId>ode-test-data</artifactId>
@@ -105,15 +105,29 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- TODO for now run tests as unit tests instead of integration tests. Reconsider later -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.15</version>
 				<configuration>
-					<dependenciesToScan>
+					<!-- <dependenciesToScan>
 						<dependency>org.apache.ode.test:ode-test-data</dependency>
-					</dependenciesToScan>
+					</dependenciesToScan> -->
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.15</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

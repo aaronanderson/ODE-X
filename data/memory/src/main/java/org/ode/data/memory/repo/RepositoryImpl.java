@@ -23,15 +23,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.URI;
+import java.util.UUID;
 
 import javax.cache.Cache;
+import javax.cache.Cache.Entry;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
-import javax.xml.namespace.QName;
 
 import org.apache.ode.data.core.repo.RepositoryBaseImpl;
 import org.apache.ode.spi.repo.Artifact;
+import org.apache.ode.spi.repo.Criteria;
 import org.apache.ode.spi.repo.RepositoryException;
 
 @Singleton
@@ -41,44 +43,43 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 
 	@Inject
 	@RepoCache
-	Cache<EntryKey, Artifact> repoCache;
+	Cache<UUID, Artifact> repoCache;
 
-	protected Artifact loadArtifact(URI uri, String contentType, String version) throws RepositoryException {
-		EntryKey key = new EntryKey(uri, contentType, version);
+	@Override
+	protected <R> Artifact loadArtifact(R criteria) throws RepositoryException {
 
-		Artifact artifact = repoCache.get(key);
+		Artifact artifact = scan(criteria);
 		if (artifact != null) {
 			return artifact;
 		}
-		throw new RepositoryException(String.format("Artifact URI %s contentType %s version %s does not exists", uri, contentType, version));
+		throw new RepositoryException(String.format("Artifact %s does not exists", criteria));
 	}
 
 	protected void createArtifact(Artifact artifact) throws RepositoryException {
-		EntryKey key = new EntryKey(artifact);
-
-		repoCache.put(key, artifact);
+		repoCache.put(artifact.getId(), artifact);
 	}
 
 	protected void storeArtifact(Artifact artifact) throws RepositoryException {
-		EntryKey key = new EntryKey(artifact);
-
-		repoCache.put(key, artifact);
+		repoCache.put(artifact.getId(), artifact);
 	}
 
 	@Override
-	public void delete(URI uri, String contentType, String version) throws RepositoryException {
-		EntryKey key = new EntryKey(uri, contentType, version);
+	public <R> void delete(R criteria) throws RepositoryException {
+		Artifact artifact = scan(criteria);
 
-		if (!repoCache.remove(key)) {
-			throw new RepositoryException(String.format("Artifact URI %s contentType %s version %s does not exists", uri, contentType, version));
+		if (artifact == null || !repoCache.remove(artifact.getId())) {
+			throw new RepositoryException(String.format("Artifact %s does not exists", criteria));
 		}
 
 	}
 
 	@Override
-	public boolean exists(URI uri, String contentType, String version) throws RepositoryException {
-		EntryKey key = new EntryKey(uri, contentType, version);
-		return repoCache.containsKey(key);
+	public <R> boolean exists(R criteria) throws RepositoryException {
+		Artifact artifact = scan(criteria);
+		if (artifact != null) {
+			return true;
+		}
+		return false;
 	}
 
 	@Qualifier
@@ -88,6 +89,42 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 
 		public String value() default "";
 
+	}
+
+	protected <R> Artifact scan(R criteria) throws RepositoryException {
+		Artifact artifact = null;
+		if (criteria instanceof UUID) {
+			artifact = repoCache.get((UUID) criteria);
+		} else if (criteria instanceof URI) {
+			URI uri = (URI) criteria;
+			for (Entry<UUID, Artifact> entry : repoCache) {
+				if (entry.getValue().getURI().equals(uri)) {
+					if (artifact != null) {
+						throw new RepositoryException(String.format("duplicate entry for URI (%s,%s, narrow criteria", artifact.getId(), entry.getValue().getId()));
+					}
+					artifact = entry.getValue();
+				}
+			}
+		} else if (criteria instanceof Criteria) {
+			Criteria c = (Criteria) criteria;
+			if (c.getId() != null) {
+				artifact = repoCache.get((UUID) criteria);
+			} else {
+				for (Entry<UUID, Artifact> entry : repoCache) {
+					boolean uriMatches = c.getURI() != null ? entry.getValue().getURI().equals(c.getURI()) : true;
+					boolean versionMatches = c.getVersion() != null ? entry.getValue().getVersion().equals(c.getVersion()) : true;
+					boolean typeMatches = c.getContentType() != null ? entry.getValue().getContentType().equals(c.getContentType()) : true;
+					if (uriMatches && versionMatches && typeMatches) {
+						if (artifact != null) {
+							throw new RepositoryException(String.format("duplicate entry for Criteria (%s,%s, narrow criteria", artifact.getId(), entry.getValue().getId()));
+						}
+						artifact = entry.getValue();
+					}
+				}
+			}
+		}
+
+		return artifact;
 	}
 
 }

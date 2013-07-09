@@ -18,55 +18,47 @@
  */
 package org.apache.ode.spi.repo;
 
-import java.io.Serializable;
 import java.net.URI;
 import java.util.UUID;
 
-import javax.xml.namespace.QName;
+public class Criteria {
 
-/*@NamedQueries({
-		@NamedQuery(name="artifactExists", query="select count(a) from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version"),
-		@NamedQuery(name="lookupArtifact", query="select a from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version")
-})
-@Entity
-@Table(name = "ARTIFACT",  uniqueConstraints={@UniqueConstraint(name="ARTIFACT_UNIQUENESS", columnNames={"QNAME","CONTENT_TYPE", "VERSION"})})
-*/
-public class Artifact implements Serializable {
-
-	private static final long serialVersionUID = 1L;
-	//@Id
-	//@GeneratedValue(strategy = GenerationType.AUTO)
 	private UUID id;
 
-	//@Column(name = "QNAME")
 	private URI uri;
 
-	//@Column(name = "CONTENT_TYPE")
 	private String type;
 
-	//@Column(name = "VERSION")
 	private String version;
 
-	//@Column(name = "CHECKSUM")
-	private String checksum;
+	public Criteria() {
 
-	/*
-	 * @Column(name = "INDEX_ATTR1") private String indexAttr1;
-	 */
+	}
 
-	// @Column(name = "CONTENT_LENGTH")
-	// private long contentLength;
+	public Criteria(UUID id) {
+		this.id = id;
+	}
 
-	//@Column(name = "CONTENT")
-	//@Lob
-	//@Basic(fetch = FetchType.LAZY)
-	private byte[] content;
+	public Criteria(URI uri) {
+		this.uri = uri;
+	}
+
+	public Criteria(URI uri, String contentType) {
+		this.uri = uri;
+		this.type = contentType;
+	}
+
+	public Criteria(URI uri, String version, String contentType) {
+		this.uri = uri;
+		this.version = version;
+		this.type = contentType;
+	}
 
 	public void setId(UUID id) {
 		this.id = id;
 	}
 
-	public Artifact withUUID(UUID id) {
+	public Criteria withId(UUID id) {
 		this.id = id;
 		return this;
 	}
@@ -79,7 +71,7 @@ public class Artifact implements Serializable {
 		this.uri = uri;
 	}
 
-	public Artifact withURI(URI uri) {
+	public Criteria withURI(URI uri) {
 		this.uri = uri;
 		return this;
 	}
@@ -92,7 +84,7 @@ public class Artifact implements Serializable {
 		this.type = type;
 	}
 
-	public Artifact withContentType(String type) {
+	public Criteria withContentType(String type) {
 		this.type = type;
 		return this;
 	}
@@ -105,30 +97,13 @@ public class Artifact implements Serializable {
 		this.version = version;
 	}
 
-	public Artifact withVersion(String version) {
+	public Criteria withVersion(String version) {
 		this.version = version;
 		return this;
 	}
 
 	public String getVersion() {
 		return version;
-	}
-
-	public String getCheckSum() {
-		return checksum;
-	}
-
-	public byte[] getContent() {
-		return content;
-	}
-
-	public void setContent(byte[] content) {
-		this.content = content;
-	}
-
-	public Artifact withContent(byte[] content) {
-		this.content = content;
-		return this;
 	}
 
 	@Override
@@ -142,10 +117,10 @@ public class Artifact implements Serializable {
 	public boolean equals(Object object) {
 		// TODO: Warning - this method won't work in the case the id fields are
 		// not set
-		if (!(object instanceof Artifact)) {
+		if (!(object instanceof Criteria)) {
 			return false;
 		}
-		Artifact other = (Artifact) object;
+		Criteria other = (Criteria) object;
 		if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
 			return false;
 		}
@@ -154,7 +129,7 @@ public class Artifact implements Serializable {
 
 	@Override
 	public String toString() {
-		return "org.apache.ode.spi.repo.Artifact[id=" + id + "]";
+		return "org.apache.ode.spi.repo.Criteria[id=" + id + "]";
 	}
 
 }

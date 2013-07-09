@@ -21,6 +21,7 @@ package org.apache.ode.data.core.repo;
 import java.awt.datatransfer.DataFlavor;
 import java.io.IOException;
 import java.net.URI;
+import java.util.UUID;
 
 import javax.activation.CommandObject;
 import javax.activation.MimeTypeParseException;
@@ -30,6 +31,7 @@ import javax.inject.Singleton;
 
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.ArtifactDataSource;
+import org.apache.ode.spi.repo.Criteria;
 import org.apache.ode.spi.repo.DataContentHandler;
 import org.apache.ode.spi.repo.DataHandler;
 import org.apache.ode.spi.repo.Repository;
@@ -46,20 +48,25 @@ public abstract class RepositoryBaseImpl implements Repository {
 	protected Provider<ArtifactDataSourceImpl> dsProvider;
 
 	@Override
-	public <C> void create(URI uri, String contentType, String version, C content) throws RepositoryException {
+	public <C> UUID create(URI uri, String version, String contentType, C content) throws RepositoryException {
 		Artifact artifact = null;
-		if (content instanceof ArtifactDataSourceImpl) {
+
+		if (content instanceof Artifact) {
+			artifact = (Artifact) content;
+			if (exists(new Criteria(artifact.getURI(), artifact.getContentType(), artifact.getVersion()))) {
+				throw new RepositoryException("ArtifactDataSource already attached to an existing artifact");
+			}
+			artifact.setURI(uri);
+			artifact.setVersion(version);
+		} else if (content instanceof ArtifactDataSourceImpl) {
 			artifact = ((ArtifactDataSourceImpl) content).getArtifact();
-			if (exists(uri, contentType, version)) {
+			if (exists(new Criteria(uri, contentType, version))) {
 				throw new RepositoryException("ArtifactDataSource already attached to an existing artifact");
 			}
 			artifact.setURI(uri);
 			artifact.setVersion(version);
 		} else {
-			artifact = new Artifact();
-			artifact.setURI(uri);
-			artifact.setVersion(version);
-			artifact.setContentType(contentType);
+			artifact = new Artifact().withUUID(UUID.randomUUID()).withURI(uri).withVersion(version).withContentType(contentType);
 			if (content instanceof byte[]) {
 				artifact.setContent((byte[]) content);
 			} else {
@@ -71,18 +78,22 @@ public abstract class RepositoryBaseImpl implements Repository {
 				}
 			}
 		}
+		if (!artifact.getURI().isAbsolute()) {
+			throw new RepositoryException(String.format("Artifact URI must be absolute %s", artifact.getURI()));
+		}
 		createArtifact(artifact);
+		return artifact.getId();
 	}
 
-	protected abstract Artifact loadArtifact(URI uri, String contentType, String version) throws RepositoryException;
+	protected abstract <R> Artifact loadArtifact(R criteria) throws RepositoryException;
 
 	protected abstract void createArtifact(Artifact artifact) throws RepositoryException;
 
 	protected abstract void storeArtifact(Artifact artifact) throws RepositoryException;
 
 	@Override
-	public <C> C read(URI uri, String contentType, String version, Class<C> javaType) throws RepositoryException {
-		Artifact artifact = loadArtifact(uri, contentType, version);
+	public <R, C> C read(R criteria, Class<C> javaType) throws RepositoryException {
+		Artifact artifact = loadArtifact(criteria);
 
 		if (Artifact.class.isAssignableFrom(javaType)) {
 			return (C) artifact;
@@ -120,15 +131,17 @@ public abstract class RepositoryBaseImpl implements Repository {
 	}
 
 	@Override
-	public <C> void update(URI uri, String contentType, String version, C content) throws RepositoryException {
-		Artifact artifact = loadArtifact(uri, contentType, version);
-		if (content instanceof ArtifactDataSourceImpl) {
+	public <R, C> void update(R criteria, C content) throws RepositoryException {
+		Artifact artifact = loadArtifact(criteria);
+		if (content instanceof Artifact) {
+			artifact.setContent(((Artifact) content).getContent());
+		} else if (content instanceof ArtifactDataSourceImpl) {
 			ArtifactDataSourceImpl ds = (ArtifactDataSourceImpl) content;
 			artifact.setContent(ds.getContent());
 		} else if (content instanceof byte[]) {
 			artifact.setContent((byte[]) content);
 		} else {
-			DataHandler dh = getDataHandler(content, contentType);
+			DataHandler dh = getDataHandler(content, artifact.getContentType());
 			try {
 				artifact.setContent(dh.toContent());
 			} catch (IOException e) {

@@ -19,6 +19,7 @@
 package org.apache.ode.spi.repo;
 
 import java.net.URI;
+import java.util.UUID;
 
 import javax.activation.CommandObject;
 import javax.inject.Provider;
@@ -37,15 +38,15 @@ public interface Repository {
 
 	<C> DataHandler getDataHandler(C content, String mimeType);
 
-	<C> void create(URI uri, String version, String type, C content) throws RepositoryException;
+	<C> UUID create(URI uri, String version, String type, C content) throws RepositoryException;
 
-	<C> C read(URI uri, String type, String version, Class<C> javaType) throws RepositoryException;
+	<R,C> C read(R criteria, Class<C> javaType) throws RepositoryException;
 
-	<C> void update(URI uri, String type, String version, C content) throws RepositoryException;
+	<R,C> void update(R criteria, C content) throws RepositoryException;
 
-	<C> void delete(URI uri, String type, String version) throws RepositoryException;
+	<R> void delete(R criteria) throws RepositoryException;
 
-	boolean exists(URI uri, String type, String version) throws RepositoryException;
+	<R> boolean exists(R criteria) throws RepositoryException;
 
 	// void store(URI uri, String version, String type, XMLStreamReader
 

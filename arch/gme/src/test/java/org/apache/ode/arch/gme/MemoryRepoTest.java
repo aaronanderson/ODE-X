@@ -1,6 +1,7 @@
 package org.apache.ode.arch.gme;
 
 import org.apache.ode.di.guice.core.JSR250Module;
+import org.apache.ode.di.guice.jcache.JCacheModule;
 import org.apache.ode.di.guice.memory.MemoryRepoModule;
 import org.apache.ode.test.data.repo.RepoTest;
 import org.junit.ClassRule;
@@ -14,14 +15,14 @@ import com.google.inject.Guice;
 
 @RunWith(Suite.class)
 @SuiteClasses({ RepoTest.class })
-public class RepoJUnitResource {
+public class MemoryRepoTest {
 	public static GuiceDIContainer container;
 
 	@ClassRule
 	public static ExternalResource resource = new ExternalResource() {
 		@Override
 		protected void before() throws Throwable {
-			container = new GuiceDIContainer(Guice.createInjector(new MemoryRepoModule()));
+			container = new GuiceDIContainer(Guice.createInjector( new JSR250Module(), new JCacheModule(), new MemoryRepoModule()));
 		};
 
 		@Override

@@ -20,6 +20,7 @@ package org.ode.data.memory.repo;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.cache.Cache.Entry;
 import javax.cache.CacheLoader;
@@ -28,12 +29,12 @@ import javax.inject.Inject;
 import org.apache.ode.spi.repo.Artifact;
 import org.ode.data.memory.repo.FileRepository.LocalArtifact;
 
-public class RepoCacheLoader implements CacheLoader<EntryKey, Artifact> {
+public class RepoCacheLoader implements CacheLoader<UUID, Artifact> {
 
 	@Inject
 	FileRepository fileRepo;
-	
-	public Entry<EntryKey, Artifact> load(EntryKey key) {
+
+	public Entry<UUID, Artifact> load(UUID key) {
 		LocalArtifact lartifact = fileRepo.getArtifact(key);
 		//TODO load artifact
 		if (lartifact != null) {
@@ -42,9 +43,9 @@ public class RepoCacheLoader implements CacheLoader<EntryKey, Artifact> {
 		return null;
 	}
 
-	public Map<EntryKey, Artifact> loadAll(Iterable<? extends EntryKey> keys) {
-		Map<EntryKey, Artifact> entries = new HashMap<EntryKey, Artifact>();
-		for (EntryKey key : keys) {
+	public Map<UUID, Artifact> loadAll(Iterable<? extends UUID> keys) {
+		Map<UUID, Artifact> entries = new HashMap<UUID, Artifact>();
+		for (UUID key : keys) {
 			LocalArtifact lartifact = fileRepo.getArtifact(key);
 			//TODO load artifact
 			if (lartifact != null) {
@@ -54,16 +55,16 @@ public class RepoCacheLoader implements CacheLoader<EntryKey, Artifact> {
 		return entries;
 	}
 
-	public class RepoEntry implements Entry<EntryKey, Artifact> {
-		EntryKey storageKey;
+	public class RepoEntry implements Entry<UUID, Artifact> {
+		UUID storageKey;
 		Artifact storageValue;
 
-		public RepoEntry(EntryKey storageKey, Artifact storageValue) {
+		public RepoEntry(UUID storageKey, Artifact storageValue) {
 			this.storageKey = storageKey;
 			this.storageValue = storageValue;
 		}
 
-		public EntryKey getKey() {
+		public UUID getKey() {
 			return storageKey;
 		}
 

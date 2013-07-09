@@ -21,12 +21,12 @@ package org.ode.data.memory.repo;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
@@ -44,11 +44,11 @@ public class FileRepository extends Repository {
 
 	private static final Logger log = Logger.getLogger(FileRepository.class.getName());
 
-	ConcurrentHashMap<EntryKey, LocalArtifact> artifacts = new ConcurrentHashMap<>();
+	ConcurrentHashMap<UUID, LocalArtifact> artifacts = new ConcurrentHashMap<>();
 	boolean synced = false;
 	boolean updateable = false;
 
-	public LocalArtifact getArtifact(EntryKey key) {
+	public LocalArtifact getArtifact(UUID key) {
 		return artifacts.get(key);
 	}
 
@@ -94,6 +94,7 @@ public class FileRepository extends Repository {
 								LocalArtifact la = new LocalArtifact();
 								la.setBaseDirectory(d.getBase());
 								la.setPath(fileName);
+								la.setId(UUID.randomUUID());
 								la.setURI(include.getUri() != null ? include.getUri() : new URI(d.getBase() + "/" + fileName));
 								la.setContentType(include.getContentType() != null ? include.getContentType() : fileTypeMap.getContentType(fileName));
 								la.setVersion(include.getVersion() != null ? include.getVersion() : "1.0");
