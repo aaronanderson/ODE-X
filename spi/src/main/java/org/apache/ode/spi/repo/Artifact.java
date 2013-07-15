@@ -19,10 +19,13 @@
 package org.apache.ode.spi.repo;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
-
-import javax.xml.namespace.QName;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*@NamedQueries({
 		@NamedQuery(name="artifactExists", query="select count(a) from ArtifactImpl a where a.qname = :qname and a.type = :type and a.version = :version"),
@@ -33,6 +36,8 @@ import javax.xml.namespace.QName;
 */
 public class Artifact implements Serializable {
 
+	public static Logger log = Logger.getLogger(Artifact.class.getName());
+
 	private static final long serialVersionUID = 1L;
 	//@Id
 	//@GeneratedValue(strategy = GenerationType.AUTO)
@@ -40,6 +45,8 @@ public class Artifact implements Serializable {
 
 	//@Column(name = "QNAME")
 	private URI uri;
+
+	private URI collection;
 
 	//@Column(name = "CONTENT_TYPE")
 	private String type;
@@ -88,6 +95,19 @@ public class Artifact implements Serializable {
 		return uri;
 	}
 
+	public void setCollection(URI collection) {
+		this.collection = collection;
+	}
+
+	public Artifact withCollection(URI collection) {
+		this.collection = collection;
+		return this;
+	}
+
+	public URI getCollection() {
+		return collection;
+	}
+
 	public void setContentType(String type) {
 		this.type = type;
 	}
@@ -124,6 +144,11 @@ public class Artifact implements Serializable {
 
 	public void setContent(byte[] content) {
 		this.content = content;
+		try {
+			this.checksum = checkSumSHA1(content);
+		} catch (RepositoryException re) {
+			log.log(Level.SEVERE, "", re);
+		}
 	}
 
 	public Artifact withContent(byte[] content) {
@@ -136,6 +161,19 @@ public class Artifact implements Serializable {
 		int hash = 0;
 		hash += (id != null ? id.hashCode() : 0);
 		return hash;
+	}
+
+	public static String checkSumSHA1(byte[] bytes) throws RepositoryException {
+		if (bytes == null) {
+			return null;
+		}
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA1");
+			md.update(bytes);
+			return new BigInteger(1, md.digest()).toString(16);
+		} catch (NoSuchAlgorithmException nsae) {
+			throw new RepositoryException(nsae);
+		}
 	}
 
 	@Override

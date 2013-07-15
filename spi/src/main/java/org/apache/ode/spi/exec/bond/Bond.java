@@ -18,13 +18,13 @@
  */
 package org.apache.ode.spi.exec.bond;
 
-import org.apache.ode.spi.exec.config.xml.BondPointId;
-import org.apache.ode.spi.exec.config.xml.BondPointRef;
+import org.apache.ode.spi.exec.config.xml.BondId;
+import org.apache.ode.spi.exec.config.xml.BondRef;
 
 public interface Bond {
 
-	BondPointId id();
+	BondId id();
 
-	BondPointRef[] bonds();
+	BondRef[] bonds();
 
 }

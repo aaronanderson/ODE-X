@@ -53,14 +53,24 @@ public interface Node {
 	public static final String NODE_MQ_NAME_HEALTHCHECK = "ODE_HEALTHCHECK";
 	public static final String NODE_MQ_NAME_TASK = "ODE_TASK";
 	public static final String NODE_MQ_NAME_MESSAGE = "ODE_MESSAGE";
-
+	
+	public static final String PLATFORM_URI_VALUE = "http://ode.apache.org/runtime/platform";
+	public static final String NODE_URI_VALUE = "http://ode.apache.org/runtime/node";
+	
+	public static final String PLATFORM_URI = "http://ode.apache.org/runtime/platform";
+	public static final String NODE_URI = "http://ode.apache.org/runtime/node";
+	
+	public URI platformURI();
+	
+	public URI nodeURI();//local
+		
 	public QName architecture();
 
 	public Set<QName> getComponents();
 
-	public void registerComponent(Component component);
+	public <C> void registerComponent(C component);
 
-	public void unregisterComponent(Component component);
+	public <C> void unregisterComponent(C component);
 
 	public Map<QName, ExecutableSet> getInstructionSets();
 

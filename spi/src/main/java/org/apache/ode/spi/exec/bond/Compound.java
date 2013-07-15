@@ -21,14 +21,14 @@ package org.apache.ode.spi.exec.bond;
 import java.net.URI;
 import java.util.UUID;
 
-import org.apache.ode.spi.exec.config.xml.BondPointId;
+import org.apache.ode.spi.exec.config.xml.BondId;
 
 public interface Compound {
 	//all compounds implicitly are associated with with base Execution
 
 	UUID id();
 
-	<B extends Bond> B getBondPoint(BondPointId id);
+	<B extends Bond> B getBondPoint(BondId id);
 
 	<B extends Bond> B getBondPoint(URI relativeUri); //unique in Formula
 

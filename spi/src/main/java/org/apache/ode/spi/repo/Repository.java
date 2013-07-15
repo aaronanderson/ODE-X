@@ -19,6 +19,7 @@
 package org.apache.ode.spi.repo;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import javax.activation.CommandObject;
@@ -41,6 +42,8 @@ public interface Repository {
 	<C> UUID create(URI uri, String version, String type, C content) throws RepositoryException;
 
 	<R,C> C read(R criteria, Class<C> javaType) throws RepositoryException;
+	
+	<R,C> List<C> search(R criteria, Class<C> javaType, long limit) throws RepositoryException;
 
 	<R,C> void update(R criteria, C content) throws RepositoryException;
 

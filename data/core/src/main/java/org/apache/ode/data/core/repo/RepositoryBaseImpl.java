@@ -21,6 +21,8 @@ package org.apache.ode.data.core.repo;
 import java.awt.datatransfer.DataFlavor;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import javax.activation.CommandObject;
@@ -85,15 +87,38 @@ public abstract class RepositoryBaseImpl implements Repository {
 		return artifact.getId();
 	}
 
-	protected abstract <R> Artifact loadArtifact(R criteria) throws RepositoryException;
+	protected abstract <R> List<Artifact> loadArtifacts(R criteria, long limit) throws RepositoryException;
 
 	protected abstract void createArtifact(Artifact artifact) throws RepositoryException;
 
 	protected abstract void storeArtifact(Artifact artifact) throws RepositoryException;
 
+	protected <R> Artifact getSingle(R criteria) throws RepositoryException {
+		List<Artifact> artifacts = loadArtifacts(criteria, 2);
+		if (artifacts.size() == 0) {
+			throw new RepositoryException(String.format("Artifact %s does not exists", criteria));
+		}
+		if (artifacts.size() > 1) {
+			throw new RepositoryException(String.format("More than one Artifact exists for criteria %s", criteria));
+		}
+		return artifacts.get(0);
+	}
+
+	@Override
+	public <R> boolean exists(R criteria) throws RepositoryException {
+		List<Artifact> artifacts = loadArtifacts(criteria, 2);
+		if (artifacts.size() > 1) {
+			throw new RepositoryException(String.format("More than one Artifact exists for criteria %s", criteria));
+		}
+		if (artifacts.size() == 1) {
+			return true;
+		}
+		return false;
+	}
+
 	@Override
 	public <R, C> C read(R criteria, Class<C> javaType) throws RepositoryException {
-		Artifact artifact = loadArtifact(criteria);
+		Artifact artifact = getSingle(criteria);
 
 		if (Artifact.class.isAssignableFrom(javaType)) {
 			return (C) artifact;
@@ -131,8 +156,51 @@ public abstract class RepositoryBaseImpl implements Repository {
 	}
 
 	@Override
+	public <R, C> List<C> search(R criteria, Class<C> javaType, long limit) throws RepositoryException {
+		List<C> results = new ArrayList<C>();
+		List<Artifact> artifacts = loadArtifacts(criteria, limit);
+
+		for (Artifact artifact : artifacts) {
+			if (Artifact.class.isAssignableFrom(javaType)) {
+				results.add((C) artifact);
+			}
+			ArtifactDataSourceImpl ds = dsProvider.get();
+			try {
+				ds.configure(artifact);
+			} catch (MimeTypeParseException e) {
+				throw new RepositoryException(e);
+			}
+			if (ArtifactDataSource.class.isAssignableFrom(javaType)) {
+				results.add((C) ds);
+			}
+			if (byte[].class.isAssignableFrom(javaType)) {
+				results.add((C) ds.getContent());
+			}
+			DataHandler dh = getDataHandler(ds);
+			DataFlavor[] flavors = dh.getTransferDataFlavors();
+			C content = null;
+			for (DataFlavor df : flavors) {
+				if (df.getRepresentationClass().equals(javaType)) {
+					try {
+						content = (C) dh.getTransferData(df);
+						break;
+					} catch (Exception e) {
+						throw new RepositoryException(e);
+					}
+				}
+			}
+			if (content == null) {
+				throw new RepositoryException(String.format("Unable to create Java representation class %s", javaType));
+			} else {
+				results.add(content);
+			}
+		}
+		return results;
+	}
+
+	@Override
 	public <R, C> void update(R criteria, C content) throws RepositoryException {
-		Artifact artifact = loadArtifact(criteria);
+		Artifact artifact = getSingle(criteria);
 		if (content instanceof Artifact) {
 			artifact.setContent(((Artifact) content).getContent());
 		} else if (content instanceof ArtifactDataSourceImpl) {

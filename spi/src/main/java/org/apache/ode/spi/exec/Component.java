@@ -210,7 +210,7 @@ public @interface Component {
 
 	@Retention(RUNTIME)
 	@Target(METHOD)
-	public @interface ProgramSets {
+	public @interface ExecutionConfigSets {
 
 	}
 

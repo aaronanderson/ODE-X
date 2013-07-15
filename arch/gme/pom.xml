@@ -73,6 +73,12 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.ode.test</groupId>
+			<artifactId>ode-test-runtime</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -101,6 +107,51 @@
 									</excludes>
 								</filter>
 							</filters>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jvnet.jaxb2.maven2</groupId>
+				<artifactId>maven-jaxb2-plugin</artifactId>
+				<version>0.8.2</version>
+				<executions>
+					<execution>
+						<id>main</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<specVersion>2.2</specVersion>
+							<!-- fix for http://java.net/jira/browse/JAXB-611 -->
+
+							<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
+							<schemaIncludes>
+								<schemaInclude>gme.xsd</schemaInclude>
+							</schemaIncludes>
+							<bindingDirectory>src/main/bindings</bindingDirectory>
+							<bindingIncludes>
+								<bindingInclude>gme.xjb</bindingInclude>
+							</bindingIncludes>
+							<catalog>src/main/bindings/catalog.xml</catalog>
+							<catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>
+							<plugins>
+								<plugin>
+									<groupId>org.apache.ode.data</groupId>
+									<artifactId>ode-data-memory</artifactId>
+								</plugin>
+							</plugins>
+							<episodes>
+								<episode>
+									<groupId>org.apache.ode.data</groupId>
+									<artifactId>ode-data-memory</artifactId>
+								</episode>
+							</episodes>
+							<extension>true</extension>
+							<args>
+								<arg>-npa</arg>
+							</args>
 						</configuration>
 					</execution>
 				</executions>

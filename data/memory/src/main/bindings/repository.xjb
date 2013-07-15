@@ -20,19 +20,28 @@
 
 -->
 <jxb:bindings xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
-	jxb:extensionBindingPrefixes="xjc" version="2.1">
+	jxb:extensionBindingPrefixes="xjc" version="2.1" xmlns:repo="http://ode.apache.org/data/memory/repository">
 	<jxb:bindings schemaLocation="../resources/META-INF/xsd/repository.xsd">
-
+<!-- 
+		<jxb:globalBindings>
+			<xjc:javaType name="java.util.regex.Pattern" xmlType="repo:repoPatternType" adapter="org.apache.ode.spi.exec.PatternAdapter" />
+		</jxb:globalBindings>
+ -->
 		<jxb:schemaBindings>
 			<jxb:package name="org.apache.ode.data.memory.repo.xml" />
 		</jxb:schemaBindings>
-		
+
 		<jxb:bindings node="//xs:simpleType[@name='repoURIType']">
 			<jxb:class ref="java.net.URI" />
 		</jxb:bindings>
-		
+
+ 
 		<jxb:bindings node="//xs:simpleType[@name='repoPatternType']">
 			<jxb:class ref="java.util.regex.Pattern" />
+		</jxb:bindings>
+
+		<jxb:bindings node="//xs:complexType[@name='repositoryType']">
+			<jxb:class name="Repository"  />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='directoryType']">

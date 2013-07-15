@@ -76,16 +76,16 @@
 
 
 
-		<jxb:bindings node="//xs:simpleType[@name='bondPointIdType']">
-			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondPointId" />
+		<jxb:bindings node="//xs:simpleType[@name='bondIdType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondId" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:simpleType[@name='bondPointRefType']">
-			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondPointRef" />
+		<jxb:bindings node="//xs:simpleType[@name='bondRefType']">
+			<jxb:class ref="org.apache.ode.spi.exec.config.xml.BondRef" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='bondPointType']">
-			<jxb:class name="BondPoint" />
+		<jxb:bindings node="//xs:complexType[@name='elementType']">
+			<jxb:class name="Element" />
 		</jxb:bindings>
 
 
@@ -97,13 +97,13 @@
 			<jxb:class name="Formula" />
 		</jxb:bindings>
 
-		<jxb:bindings node="//xs:complexType[@name='formulaType']/xs:sequence/xs:element[@ref='tns:bondPoint']">
-			<jxb:property name="BondPoints" />
+		<jxb:bindings node="//xs:complexType[@name='formulaType']/xs:sequence/xs:element[@ref='tns:element']">
+			<jxb:property name="Elements" />
 		</jxb:bindings>
 
 
-		<jxb:bindings node="//xs:complexType[@name='executionBondPointType']">
-			<jxb:class name="ExecutionBond" />
+		<jxb:bindings node="//xs:complexType[@name='executionElementType']">
+			<jxb:class name="ExecutionElement" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='executionFormulaType']">
@@ -111,8 +111,8 @@
 		</jxb:bindings>
 
 
-		<jxb:bindings node="//xs:complexType[@name='endpointBondPointType']">
-			<jxb:class name="EndpointBond" />
+		<jxb:bindings node="//xs:complexType[@name='endpointElementType']">
+			<jxb:class name="EndpointElement" />
 		</jxb:bindings>
 
 		<jxb:bindings node="//xs:complexType[@name='endpointFormulaType']">

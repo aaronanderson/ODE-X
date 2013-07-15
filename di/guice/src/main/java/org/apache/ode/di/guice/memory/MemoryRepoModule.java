@@ -23,10 +23,9 @@ import java.util.logging.Logger;
 import org.apache.ode.data.core.repo.ArtifactDataSourceImpl;
 import org.apache.ode.data.core.repo.RepoCommandMap;
 import org.apache.ode.data.core.repo.RepoFileTypeMap;
+import org.apache.ode.data.memory.repo.RepositoryImpl;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.Repository;
-import org.ode.data.memory.repo.FileRepository;
-import org.ode.data.memory.repo.RepositoryImpl;
 
 import com.google.inject.AbstractModule;
 
@@ -39,7 +38,6 @@ public class MemoryRepoModule extends AbstractModule {
 		bind(Repository.class).to(RepositoryImpl.class);
 		bind(RepoCommandMap.class);
 		bind(RepoFileTypeMap.class);
-		bind(FileRepository.class);
 	}
 
 }

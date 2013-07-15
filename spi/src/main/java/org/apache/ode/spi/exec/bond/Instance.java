@@ -20,7 +20,7 @@ package org.apache.ode.spi.exec.bond;
 
 import java.net.URI;
 
-import org.apache.ode.spi.exec.config.xml.BondPointId;
+import org.apache.ode.spi.exec.config.xml.BondId;
 
 
 public interface Instance {

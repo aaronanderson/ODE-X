@@ -10,7 +10,7 @@ import java.util.UUID;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Criteria;
 import org.apache.ode.spi.repo.Repository;
-import org.apache.ode.test.core.DIContainer;
+import org.apache.ode.test.core.TestDIContainer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -20,8 +20,7 @@ public class RepoTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		System.out.println("Get thread" + Thread.currentThread());
-		DIContainer container = DIContainer.CONTAINER.get();
+		TestDIContainer container = TestDIContainer.CONTAINER.get();
 		assertNotNull(container);
 		//setupDIContainer(RepoTest.class);
 		repo = container.getInstance(org.apache.ode.spi.repo.Repository.class);

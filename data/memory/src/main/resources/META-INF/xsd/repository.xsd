@@ -22,13 +22,14 @@
 <schema targetNamespace="http://ode.apache.org/data/memory/repository" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/data/memory/repository">
 
 
-	<element name="repository">
-		<complexType>
-			<sequence>
-				<element name="directory" type="tns:directoryType" minOccurs="1" maxOccurs="unbounded" />
-			</sequence>
-		</complexType>
-	</element>
+
+	<complexType name="repositoryType">
+		<sequence>
+			<element name="directory" type="tns:directoryType" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
+
+	<element name="repository" type="tns:repositoryType" />
 
 	<simpleType name="repoURIType">
 		<restriction base="string" />
@@ -49,7 +50,10 @@
 	<complexType name="includesType">
 		<attribute name="uri" type="tns:repoURIType" use="optional" />
 		<attribute name="version" type="string" use="optional" default="1.0" />
+		<attribute name="collection" type="tns:repoURIType" use="optional" />
 		<attribute name="content-type" type="string" use="optional" />
+		<!-- use ArtifactDataSource command to read file header and configure accordingly -->
+		<attribute name="auto" type="boolean" use="optional" default="true" />
 		<attribute name="include" type="tns:repoPatternType" use="required" />
 	</complexType>
 

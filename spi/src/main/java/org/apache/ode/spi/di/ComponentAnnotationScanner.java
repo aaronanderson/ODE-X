@@ -1,100 +1,134 @@
 package org.apache.ode.spi.di;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.inject.Qualifier;
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.di.ComponentAnnotationScanner.OperationModel;
-import org.apache.ode.spi.exec.platform.Operation;
-import org.apache.ode.spi.exec.platform.Operation.OperationSet;
+import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
+import org.apache.ode.spi.exec.Component;
+import org.apache.ode.spi.exec.Component.EventSet;
+import org.apache.ode.spi.exec.Component.EventSets;
+import org.apache.ode.spi.exec.Component.ExecutableSet;
+import org.apache.ode.spi.exec.Component.ExecutableSets;
+import org.apache.ode.spi.exec.Component.ExecutionConfigSet;
+import org.apache.ode.spi.exec.Component.ExecutionConfigSets;
+import org.apache.ode.spi.exec.Component.ExecutionContextSet;
+import org.apache.ode.spi.exec.Component.ExecutionContextSets;
+import org.apache.ode.spi.exec.Component.Offline;
+import org.apache.ode.spi.exec.Component.Online;
+import org.apache.ode.spi.exec.executable.Instruction.Execute;
 
-public class ComponentAnnotationScanner implements AnnotationScanner<OperationModel> {
+public class ComponentAnnotationScanner implements AnnotationScanner<ComponentModel> {
 	protected static final Logger log = Logger.getLogger(ComponentAnnotationScanner.class.getName());
 
-	public OperationModel scan(Class<?> clazz) {
+	public ComponentModel scan(Class<?> clazz) {
 		log.fine(String.format("scanned class %s\n", clazz));
-		if (clazz.isAnnotationPresent(OperationSet.class)) {
-
-			OperationSet opset = clazz.getAnnotation(OperationSet.class);
-			Map<QName, QName> commands = new HashMap<QName, QName>();
-			Map<QName, MethodHandle> operations = new HashMap<QName, MethodHandle>();
-			for (Method m : clazz.getMethods()) {
-				if (m.isAnnotationPresent(Operation.class)) {
-					Operation op = m.getAnnotation(Operation.class);
-					String operationNamespace = op.namespace();
-					if (operationNamespace.length() == 0) {
-						operationNamespace = opset.namespace();
-					}
-					if (operationNamespace.length() == 0) {
-						log.severe(String.format("Unable to determine operation namespace for Class %s method %s, skipping", clazz.getName(), m.getName()));
-						continue;
-					}
-					String operationName = op.name();
-					if (operationName.length() == 0) {
-						operationName = m.getName();
-					}
-					QName operationQName = new QName(operationNamespace, operationName);
-					QName commandQName = null;
-					MethodHandle mHandle = null;
-					try {
-						mHandle = MethodHandles.lookup().unreflect(m);
-					} catch (IllegalAccessException iae) {
-						log.log(Level.SEVERE, "", iae);
-						continue;
-					}
-					if (op.command().name().length() > 0) {
-						String commandNamespace = op.command().namespace();
-						if (commandNamespace.length() == 0) {
-							commandNamespace = opset.commandNamespace();
-						}
-						if (commandNamespace.length() == 0) {
-							log.severe(String.format("Unable to determine command namespace for Class %s method %s, skipping", clazz.getName(), m.getName()));
-							continue;
-						}
-						commandQName = new QName(commandNamespace, op.command().name());
-					}
-					operations.put(operationQName, mHandle);
-					if (commandQName != null) {
-						commands.put(commandQName, operationQName);
-					}
-
+		if (clazz.isAnnotationPresent(Component.class)) {
+			ComponentModel cm = new ComponentModel();
+			cm.targetClass = clazz;
+			Component component = clazz.getAnnotation(Component.class);
+			if (!"".equals(component.value())) {
+				cm.name = component.value();
+			} else {
+				cm.name = clazz.getName();
+				if (cm.name.indexOf('.') > -1) {
+					cm.name = cm.name.substring(cm.name.lastIndexOf('.')+1);
+				}
+				if (cm.name.indexOf('$') > -1) {
+					cm.name = cm.name.substring(cm.name.lastIndexOf('$')+1);
 				}
 			}
-			return new OperationModel(clazz, commands, operations);
+			for (Method m : clazz.getMethods()) {
+				try {
+					if (m.isAnnotationPresent(ExecutableSets.class)) {
+						cm.executableSets = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(ExecutionContextSets.class)) {
+						cm.executionContextSets = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(EventSets.class)) {
+						cm.eventSets = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(ExecutionConfigSets.class)) {
+						cm.executionConfigSets = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(Online.class)) {
+						cm.online = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(Offline.class)) {
+						cm.offline = MethodHandles.lookup().unreflect(m);
+					}
+				} catch (IllegalAccessException iae) {
+					log.log(Level.SEVERE, "", iae);
+					continue;
+				}
+			}
+			return cm;
 		} else {
 			return null;
 		}
 	}
 
-	public static class OperationModel {
+	@Qualifier
+	@Retention(RUNTIME)
+	@Target(FIELD)
+	public @interface Components {
 
-		private Class<?> clazz;
-		private Map<QName, QName> commands;
-		private Map<QName, MethodHandle> operations;
+	}
 
-		public OperationModel(Class<?> clazz, Map<QName, QName> commands, Map<QName, MethodHandle> operations) {
-			this.clazz = clazz;
-			this.commands = commands;
-			this.operations = operations;
-		}
+	public static class ComponentModel {
+
+		Class<?> targetClass;
+		String name;
+		MethodHandle executableSets;
+		MethodHandle executionContextSets;
+
+		MethodHandle eventSets;
+		MethodHandle executionConfigSets;
+		MethodHandle online;
+		MethodHandle offline;
 
 		public Class<?> targetClass() {
-			return targetClass();
+			return targetClass;
 		}
 
-		public Map<QName, QName> commands() {
-			return commands;
+		public String getName() {
+			return name;
 		}
 
-		public Map<QName, MethodHandle> operations() {
-			return operations;
+		public MethodHandle getExecutableSets() {
+			return executableSets;
 		}
+
+		public MethodHandle getExecutionContextSets() {
+			return executionContextSets;
+		}
+
+		public MethodHandle getEventSets() {
+			return eventSets;
+		}
+
+		public MethodHandle getExecutionConfigSets() {
+			return executionConfigSets;
+		}
+
+		public MethodHandle getOnline() {
+			return online;
+		}
+
+		public MethodHandle getOffline() {
+			return offline;
+		}
+
 	}
 
 }

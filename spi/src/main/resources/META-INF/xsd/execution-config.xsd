@@ -131,38 +131,38 @@
 
 	<simpleType name="formulaIdType">
 		<restriction base="ID">
-			<pattern value="i\d+" />
+			<pattern value="f\d+" />
 		</restriction>
 	</simpleType>
 
 
-	<simpleType name="bondPointIdType">
+	<simpleType name="bondIdType">
 		<restriction base="ID">
-			<pattern value="b\d+" />
+			<pattern value="f\d+b\d+" />
 		</restriction>
 	</simpleType>
 
-	<simpleType name="bondPointRefType">
+	<simpleType name="bondRefType">
 		<restriction base="IDREF">
-			<pattern value="b\d+" />
+			<pattern value="f\d+b\d+" />
 		</restriction>
 	</simpleType>
 
 
-	<complexType name="bondPointType">
-		<attribute name="id" type="tns:bondPointIdType" use="required" />
-		<attribute name="bond" type="tns:bondPointRefType" use="optional" />
+	<complexType name="elementType">
+		<attribute name="id" type="tns:bondIdType" use="required" />
+		<attribute name="bond" type="tns:bondRefType" use="optional" />
 		<attribute name="uri" type="tns:eCfgURIType" use="optional" />
 	</complexType>
 
-	<element name="bondPoint" type="tns:bondPointType" abstract="true" />
+	<element name="element" type="tns:elementType" abstract="true" />
 
 
 	<!-- TODO consider naming this something more appropriate, like class,type, or definition -->
 	<complexType name="formulaType">
 		<sequence>
 			<!-- no bonds means it is for configuration only -->
-			<element ref="tns:bondPoint" minOccurs="0" maxOccurs="unbounded" />
+			<element ref="tns:element" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="id" type="tns:formulaIdType" use="required" />
 		<attribute name="uri" type="tns:eCfgURIType" use="optional" />
@@ -171,15 +171,15 @@
 	<element name="formula" type="tns:formulaType" abstract="true" />
 
 
-	<complexType name="executionBondPointType">
+	<complexType name="executionElementType">
 		<complexContent>
-			<extension base="tns:bondPointType">
+			<extension base="tns:elementType">
 				<attribute name="xpath" type="string" use="required" />
 			</extension>
 		</complexContent>
 	</complexType>
 
-	<element name="executionBond" type="tns:executionBondPointType" abstract="true" substitutionGroup="tns:bondPoint" />
+	<element name="executionBond" type="tns:executionElementType" abstract="true" substitutionGroup="tns:element" />
 
 	<complexType name="executionFormulaType">
 		<complexContent>
@@ -192,15 +192,15 @@
 
 	<element name="execution" type="tns:executionFormulaType" abstract="true" substitutionGroup="tns:formula" />
 
-	<complexType name="endpointBondPointType">
+	<complexType name="endpointElementType">
 		<complexContent>
-			<extension base="tns:bondPointType">
+			<extension base="tns:elementType">
 				<attribute name="name" type="string" use="required" />
 			</extension>
 		</complexContent>
 	</complexType>
 
-	<element name="endpointBond" type="tns:endpointBondPointType" abstract="true" substitutionGroup="tns:bondPoint" />
+	<element name="endpointBond" type="tns:endpointElementType" abstract="true" substitutionGroup="tns:element" />
 
 	<complexType name="endpointFormulaType">
 		<complexContent>

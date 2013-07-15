@@ -12,41 +12,41 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import org.apache.ode.spi.exec.config.xml.BondPoint;
-import org.apache.ode.spi.exec.config.xml.BondPointId;
+import org.apache.ode.spi.exec.config.xml.Element;
+import org.apache.ode.spi.exec.config.xml.BondId;
 import org.apache.ode.spi.exec.config.xml.Formula;
 
 public class CompoundBroker extends Formula {
 
 	private static final Logger log = Logger.getLogger(CompoundBroker.class.getName());
 
-	ConcurrentHashMap<BondPointId, JAXBElement<? extends BondPoint>> bondPointIdCache = new ConcurrentHashMap<>();
-	ConcurrentHashMap<URI, JAXBElement<? extends BondPoint>> bondPointURICache = new ConcurrentHashMap<>();
+	ConcurrentHashMap<BondId, JAXBElement<? extends Element>> ElementIdCache = new ConcurrentHashMap<>();
+	ConcurrentHashMap<URI, JAXBElement<? extends Element>> ElementURICache = new ConcurrentHashMap<>();
 
 	public boolean marshalling = true;
 
-	public <T extends BondPoint> T getBondPoint(BondPointId id) {
-		JAXBElement bondPoint = bondPointIdCache.get(id);
-		if (bondPoint != null) {
-			return (T) bondPoint.getValue();
+	public <T extends Element> T getElement(BondId id) {
+		JAXBElement Element = ElementIdCache.get(id);
+		if (Element != null) {
+			return (T) Element.getValue();
 		}
 		return null;
 	}
 
-	public <T extends BondPoint> T getBondPoint(URI uri) {
-		JAXBElement bondPoint = bondPointURICache.get(uri);
-		if (bondPoint != null) {
-			return (T) bondPoint.getValue();
+	public <T extends Element> T getElement(URI uri) {
+		JAXBElement Element = ElementURICache.get(uri);
+		if (Element != null) {
+			return (T) Element.getValue();
 		}
 		return null;
 	}
 
 	@Override
-	public List<JAXBElement<? extends BondPoint>> getBondPoints() {
+	public List<JAXBElement<? extends Element>> getElements() {
 		if (marshalling) {
-			return super.bondPoints;
+			return super.elements;
 		}
-		throw new IllegalAccessError("BondPoints should only be manipulated through ExecutionRuntime SPI");
+		throw new IllegalAccessError("Elements should only be manipulated through ExecutionRuntime SPI");
 	}
 
 	void beforeUnmarshal(Unmarshaller unmarshaller, Object parent) {
@@ -65,9 +65,9 @@ public class CompoundBroker extends Formula {
 	// Invoked by Marshaller after it has created an instance of this object.
 	boolean beforeMarshal(Marshaller marshaller) {
 		System.out.format("beforeMarshal called\n");
-		this.bondPoints = new ArrayList<>(bondPointIdCache.values());
-		Collections.sort(this.bondPoints, new Comparator<JAXBElement<? extends BondPoint>>() {
-			public int compare(JAXBElement<? extends BondPoint> a, JAXBElement<? extends BondPoint> b) {
+		this.elements = new ArrayList<>(ElementIdCache.values());
+		Collections.sort(this.elements, new Comparator<JAXBElement<? extends Element>>() {
+			public int compare(JAXBElement<? extends Element> a, JAXBElement<? extends Element> b) {
 				return a.getValue().getId().id().compareTo(b.getValue().getId().id());
 			}
 		});
@@ -78,12 +78,12 @@ public class CompoundBroker extends Formula {
 	// Invoked by Marshaller after it has marshalled all properties of this object.
 	void afterMarshal(Marshaller marshaller) {
 		System.out.format("afterMarshal called\n");
-		for (JAXBElement<? extends BondPoint> bondPoint : super.bondPoints) {
-			bondPointIdCache.put(bondPoint.getValue().getId(), bondPoint);
-			bondPointURICache.put(bondPoint.getValue().getUri(), bondPoint);
+		for (JAXBElement<? extends Element> Element : super.elements) {
+			ElementIdCache.put(Element.getValue().getId(), Element);
+			ElementURICache.put(Element.getValue().getUri(), Element);
 
 		}
-		this.bondPoints = null;
+		this.elements = null;
 		this.marshalling = false;
 	}
 

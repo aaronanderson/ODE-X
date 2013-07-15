@@ -35,6 +35,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.ode.test</groupId>
+			<artifactId>ode-test-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.apache.geronimo.specs</groupId>
 			<artifactId>geronimo-atinject_1.0_spec</artifactId>
 			<version>1.0</version>

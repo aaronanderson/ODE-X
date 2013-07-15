@@ -1,5 +1,10 @@
 package org.apache.ode.spi.di;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -8,6 +13,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.inject.Qualifier;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
@@ -71,21 +77,29 @@ public class OperationAnnotationScanner implements AnnotationScanner<OperationMo
 			return null;
 		}
 	}
+	
+	@Qualifier
+	@Retention(RUNTIME)
+	@Target(FIELD)
+	public @interface Operations {
+		
+	}
 
+	
 	public static class OperationModel {
 
-		private Class<?> clazz;
+		private Class<?> targetClass;
 		private Map<QName, QName> commands;
 		private Map<QName, MethodHandle> operations;
 
 		public OperationModel(Class<?> clazz, Map<QName, QName> commands, Map<QName, MethodHandle> operations) {
-			this.clazz = clazz;
+			this.targetClass = clazz;
 			this.commands = commands;
 			this.operations = operations;
 		}
 
 		public Class<?> targetClass() {
-			return targetClass();
+			return targetClass;
 		}
 
 		public Map<QName, QName> commands() {

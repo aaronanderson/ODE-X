@@ -27,6 +27,10 @@ public class Criteria {
 
 	private URI uri;
 
+	private URI collection;
+
+	private String uriPattern;
+
 	private String type;
 
 	private String version;
@@ -44,14 +48,13 @@ public class Criteria {
 	}
 
 	public Criteria(URI uri, String contentType) {
-		this.uri = uri;
+		this(uri);
 		this.type = contentType;
 	}
 
 	public Criteria(URI uri, String version, String contentType) {
-		this.uri = uri;
+		this(uri, contentType);
 		this.version = version;
-		this.type = contentType;
 	}
 
 	public void setId(UUID id) {
@@ -78,6 +81,32 @@ public class Criteria {
 
 	public URI getURI() {
 		return uri;
+	}
+
+	public void setCollection(URI collection) {
+		this.collection = collection;
+	}
+
+	public Criteria withCollection(URI collection) {
+		this.collection = collection;
+		return this;
+	}
+
+	public URI getCollection() {
+		return collection;
+	}
+
+	public void setURIPattern(String uriPattern) {
+		this.uriPattern = uriPattern;
+	}
+
+	public Criteria withURIPattern(String uriPattern) {
+		this.uriPattern = uriPattern;
+		return this;
+	}
+
+	public String getURIPattern() {
+		return uriPattern;
 	}
 
 	public void setContentType(String type) {

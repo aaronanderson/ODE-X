@@ -50,6 +50,42 @@
 
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.jvnet.jaxb2.maven2</groupId>
+				<artifactId>maven-jaxb2-plugin</artifactId>
+				<version>0.8.2</version>
+				<executions>
+					<execution>
+						<id>main</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<specVersion>2.2</specVersion>
+							<!-- fix for http://java.net/jira/browse/JAXB-611 -->
+
+							<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
+							<schemaIncludes>
+								<schemaInclude>catalyst.xsd</schemaInclude>
+							</schemaIncludes>
+							<bindingDirectory>src/main/bindings</bindingDirectory>
+							<bindingIncludes>
+								<bindingInclude>catalyst.xjb</bindingInclude>
+							</bindingIncludes>
+							<extension>true</extension>
+							<args>
+								<arg>-npa</arg>
+							</args>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
 </project>
 
 
