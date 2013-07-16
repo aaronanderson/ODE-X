@@ -19,7 +19,7 @@
 /*
  * Added to specify namespace prefix during unmarshall
  */
-@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(URIAdapter.class),@XmlJavaTypeAdapter(PatternAdapter.class) })
+@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(URIAdapter.class) })
 @XmlSchema(namespace = RuntimeConfigModule.GME_NAMESPACE, xmlns = { @XmlNs(namespaceURI = RuntimeConfigModule.GME_NAMESPACE, prefix = "gme") }, elementFormDefault = XmlNsForm.QUALIFIED)
 package org.apache.ode.arch.gme.xml;
 
@@ -30,6 +30,5 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.apache.ode.arch.gme.RuntimeConfigModule;
-import org.apache.ode.spi.exec.PatternAdapter;
 import org.apache.ode.spi.exec.URIAdapter;
 

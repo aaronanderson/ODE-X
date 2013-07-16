@@ -19,7 +19,7 @@
 /*
  * Added to specify namespace prefix during unmarshall
  */
-@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(URIAdapter.class),@XmlJavaTypeAdapter(PatternAdapter.class) })
+@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(URIAdapter.class) })
 @XmlSchema(namespace = Catalyst.CATALYST_NAMESPACE, xmlns = { @XmlNs(namespaceURI = Catalyst.CATALYST_NAMESPACE, prefix = "cty") }, elementFormDefault = XmlNsForm.QUALIFIED)
 package org.apache.ode.runtime.memory.catalyst.xml;
 
@@ -30,6 +30,5 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.apache.ode.runtime.memory.exec.platform.Catalyst;
-import org.apache.ode.spi.exec.PatternAdapter;
 import org.apache.ode.spi.exec.URIAdapter;
 

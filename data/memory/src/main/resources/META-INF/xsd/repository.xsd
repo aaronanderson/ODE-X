@@ -25,7 +25,9 @@
 
 	<complexType name="repositoryType">
 		<sequence>
-			<element name="directory" type="tns:directoryType" minOccurs="1" maxOccurs="unbounded" />
+			<element name="classpath" type="tns:classpathType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="resource" type="tns:resourceType" minOccurs="0" maxOccurs="unbounded" />
+			<element name="directory" type="tns:directoryType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 	</complexType>
 
@@ -39,25 +41,52 @@
 		<restriction base="string" />
 	</simpleType>
 
-	<complexType name="directoryType">
-		<sequence>
-			<element name="includes" type="tns:includesType" minOccurs="0" maxOccurs="unbounded" />
-			<element name="excludes" type="tns:excludesType" minOccurs="0" maxOccurs="unbounded" />
-		</sequence>
-		<attribute name="base" type="anyURI" use="required" />
-	</complexType>
-
-	<complexType name="includesType">
+	<complexType name="artifactReferenceType" abstract="true">
 		<attribute name="uri" type="tns:repoURIType" use="optional" />
 		<attribute name="version" type="string" use="optional" default="1.0" />
 		<attribute name="collection" type="tns:repoURIType" use="optional" />
 		<attribute name="content-type" type="string" use="optional" />
 		<!-- use ArtifactDataSource command to read file header and configure accordingly -->
 		<attribute name="auto" type="boolean" use="optional" default="true" />
-		<attribute name="include" type="tns:repoPatternType" use="required" />
 	</complexType>
 
-	<complexType name="excludesType">
+	<complexType name="resourceType">
+		<complexContent>
+			<extension base="tns:artifactReferenceType">
+				<attribute name="name" type="string" use="required" />
+			</extension>
+		</complexContent>
+
+	</complexType>
+
+	<complexType name="classpathType">
+		<sequence>
+			<element name="resource" type="tns:resourceType" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="base" type="string" use="required" />
+	</complexType>
+
+
+	<complexType name="directoryType">
+		<sequence>
+			<element name="include" type="tns:includeType" minOccurs="1" maxOccurs="unbounded" />
+			<element name="exclude" type="tns:excludeType" minOccurs="0" maxOccurs="unbounded" />
+		</sequence>
+		<attribute name="base" type="tns:repoURIType" use="required" />
+		<attribute name="read-only" type="boolean" use="optional" default="false" />
+		<attribute name="default" type="boolean" use="optional" default="false" />
+	</complexType>
+
+
+	<complexType name="includeType">
+		<complexContent>
+			<extension base="tns:artifactReferenceType">
+				<attribute name="include" type="tns:repoPatternType" use="required" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="excludeType">
 		<attribute name="exclude" type="tns:repoPatternType" use="required" />
 	</complexType>
 

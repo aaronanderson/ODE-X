@@ -2,6 +2,9 @@ package org.apache.ode.test.data.repo;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.net.URI;
+
+import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Repository;
 import org.apache.ode.test.core.TestDIContainer;
 import org.junit.BeforeClass;
@@ -22,6 +25,8 @@ public class FileRepoTest {
 	@Test
 	public void testFileRepo() throws Exception {
 		assertNotNull(repo);
+		Artifact a = repo.read(new URI("test/file-repo/testCP.foo"), Artifact.class);
+		assertNotNull(a);
 		//repo.registerFileExtension("bar", "application/bar");
 
 		

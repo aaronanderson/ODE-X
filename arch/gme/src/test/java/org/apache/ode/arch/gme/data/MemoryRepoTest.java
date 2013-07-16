@@ -1,5 +1,9 @@
 package org.apache.ode.arch.gme.data;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.apache.ode.arch.gme.GuiceExternalResource;
 import org.apache.ode.data.memory.repo.FileRepoManager;
 import org.apache.ode.di.guice.core.JSR250Module;
@@ -17,27 +21,27 @@ import com.google.inject.Module;
 @RunWith(Suite.class)
 @SuiteClasses({ RepoTest.class })
 public class MemoryRepoTest {
-	
 
 	@ClassRule
 	public static TestRepoGuiceExternalResource resource = new TestRepoGuiceExternalResource((new TestRepoModule()));
-	
-	
-	public static class TestRepoGuiceExternalResource extends GuiceExternalResource{
-		TestRepoGuiceExternalResource(Module ... modules){
+
+	public static class TestRepoGuiceExternalResource extends GuiceExternalResource {
+		TestRepoGuiceExternalResource(Module... modules) {
 			super(modules);
 		}
 
 		@Override
 		protected void before() throws Throwable {
 			super.before();
+			Path base = Files.createDirectories(Paths.get("target/test/file-repo"));
+			Files.copy(Thread.currentThread().getContextClassLoader().getResourceAsStream("test/file-repo/testFS.foo"), base.resolve("testFS.foo"));
 			FileRepoManager mgr = container.getInstance(FileRepoManager.class);
-			mgr.loadFileRepository("test/filerepo/test-repo.xml");
+			mgr.loadFileRepository("test/file-repo/file-repo.xml");
+			
 		}
-		
-		
+
 	}
-	
+
 	public static class TestRepoModule extends AbstractModule {
 
 		protected void configure() {

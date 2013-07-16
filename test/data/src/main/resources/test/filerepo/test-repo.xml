@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<repo:repository xmlns:repo="http://ode.apache.org/data/memory/repository">
-	<repo:directory base="classpath://test/filerepo">
-		<repo:includes include="*.xml" />
-		<repo:excludes exclude="test-repo.xml" />
-	</repo:directory>
-</repo:repository>

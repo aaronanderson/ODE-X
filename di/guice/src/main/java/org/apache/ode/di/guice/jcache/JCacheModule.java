@@ -25,6 +25,7 @@ import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 
 import org.apache.ode.data.memory.repo.FileRepoCacheLoaderFactory;
@@ -67,6 +68,8 @@ public class JCacheModule extends AbstractModule {
 					.setCacheWriterFactory(new FileRepoCacheWriterFactory(writeProvider))
 					//.setTypes(UUID.class, LocalArtifact.class)
 					//.setExpiryPolicyFactory()
+					//file repo is one-way mapping of files to cache. TODO perhaps create index directory which is actual store
+					.setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf())
 					.setStatisticsEnabled(true);
 		}
 

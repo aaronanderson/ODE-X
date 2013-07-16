@@ -36,6 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.apache.ode.data.memory.repo.FileRepoCacheWriterFactory.FileRepoCacheWriter;
+import org.apache.ode.data.memory.repo.FileRepository.FileArtifact;
 import org.apache.ode.data.memory.repo.FileRepository.LocalArtifact;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -106,36 +107,42 @@ public class FileRepoCacheWriterFactory implements Factory<FileRepoCacheWriter> 
 
 		@Override
 		public void write(Entry<? extends UUID, ? extends Artifact> entry) {
-			if (entry instanceof LocalArtifact) {
+			if (entry instanceof FileArtifact) {
 				if (fileRepo == null /*|| fileRepo.get() == null*/) {
 					log.warning(String.format("fileRepository not set, ignoring write %s", entry));
 					return;
 				}
 				fileRepo/*.get()*/.setArtifact(entry.getKey(), (LocalArtifact) entry.getValue());
-				LocalArtifact la = (LocalArtifact) entry;
-				if (!la.isTransient() && la.getContent() != null) {
-					Path file = Paths.get(la.baseDirectory, la.getPath());
+				FileArtifact la = (FileArtifact) entry;
+				if (!la.isReadOnly() && la.getContent() != null) {
+					if (la.getPath() == null) {
+						if (fileRepo.getDefaultDirectory() == null) {
+							log.warning(String.format("fileRepository default directory not set and file path is not set, ignoring write %s", entry));
+							return;
+						}
+						//a.setPath(fileRepo.getDefaultDirectory().resolve(la.getId().toString())) ;
+					}
 					try {
 						//see if contents have changed
-						if (Files.exists(file)) {
-							FileChannel channel = FileChannel.open(file);
+						if (Files.exists(la.getPath())) {
+							FileChannel channel = FileChannel.open(la.getPath());
 							ByteBuffer bb = ByteBuffer.allocate((int) channel.size());
 							channel.read(bb);
 							byte[] existingContents = bb.array();
 							channel.close();
 							String csum = Artifact.checkSumSHA1(existingContents);
 							if (la.getCheckSum().equals(csum)) {
-								log.fine(String.format("checksums match, no update needed. %s", file));
+								log.fine(String.format("checksums match, no update needed. %s", la.getPath()));
 							}
 
 						}
-						FileChannel channel = FileChannel.open(file);
+						FileChannel channel = FileChannel.open(la.getPath());
 						ByteBuffer bb = ByteBuffer.wrap(la.getContent());
 						channel.write(bb);
 						channel.close();
-						log.fine(String.format("Artifact written %s %s", la, file));
+						log.fine(String.format("Artifact written %s %s", la, la.getPath()));
 					} catch (IOException | RepositoryException e) {
-						log.log(Level.SEVERE, String.format("Error saving artifact %s %s", la, file, e));
+						log.log(Level.SEVERE, String.format("Error saving artifact %s %s", la, la.getPath(), e));
 					}
 				}
 			}
@@ -158,13 +165,21 @@ public class FileRepoCacheWriterFactory implements Factory<FileRepoCacheWriter> 
 					return;
 				}
 				LocalArtifact la = fileRepo/*.get()*/.removeArtifact((UUID) key);
-				if (la != null && !la.isTransient()) {
-					Path file = Paths.get(la.baseDirectory, la.getPath());
-					try {
-						Files.delete(file);
-						log.fine(String.format("Artifact deleted %s %s", la, file));
-					} catch (IOException ie) {
-						log.log(Level.SEVERE, String.format("Error saving artifact %s %s", la, file), ie);
+				if (la instanceof FileArtifact) {
+					FileArtifact fa = (FileArtifact) la;
+					if (fa.getPath() != null) {
+						if (((FileArtifact) la).isReadOnly()) {
+							try {
+								Files.delete(fa.getPath());
+								log.fine(String.format("Artifact deleted %s %s", la, fa.getPath()));
+							} catch (IOException ie) {
+								log.log(Level.SEVERE, String.format("Error deleting artifact %s %s", la, fa.getPath()), ie);
+							}
+						} else {
+							log.fine(String.format("artifact %s is read only", fa));
+						}
+					} else {
+						log.severe(String.format("artifact %s does not have path set, cannot delete", fa));
 					}
 				}
 			}

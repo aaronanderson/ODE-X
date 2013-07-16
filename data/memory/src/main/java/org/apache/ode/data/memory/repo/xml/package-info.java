@@ -19,7 +19,7 @@
 /*
  * Added to specify namespace prefix during unmarshall
  */
-@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(PatternAdapter.class), @XmlJavaTypeAdapter(URIAdapter.class) })
+@XmlJavaTypeAdapters({ @XmlJavaTypeAdapter(URIAdapter.class) })
 @XmlSchema(namespace = RepositoryImpl.REPOSITORY_NAMESPACE, xmlns = { @XmlNs(namespaceURI = RepositoryImpl.REPOSITORY_NAMESPACE, prefix = "repo") }, elementFormDefault = XmlNsForm.QUALIFIED)
 package org.apache.ode.data.memory.repo.xml;
 
@@ -30,6 +30,5 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.apache.ode.data.memory.repo.RepositoryImpl;
-import org.apache.ode.spi.exec.PatternAdapter;
 import org.apache.ode.spi.exec.URIAdapter;
 

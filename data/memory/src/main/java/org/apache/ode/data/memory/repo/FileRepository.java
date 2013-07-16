@@ -18,10 +18,15 @@
  */
 package org.apache.ode.data.memory.repo;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -33,9 +38,14 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.apache.ode.data.core.repo.RepoFileTypeMap;
+import org.apache.ode.data.memory.repo.xml.ClassPath;
 import org.apache.ode.data.memory.repo.xml.Directory;
+import org.apache.ode.data.memory.repo.xml.Exclude;
+import org.apache.ode.data.memory.repo.xml.Include;
 import org.apache.ode.data.memory.repo.xml.Repository;
+import org.apache.ode.data.memory.repo.xml.Resource;
 import org.apache.ode.spi.repo.Artifact;
+import org.apache.ode.spi.repo.DataContentHandler;
 
 //since the RepoCache is basically a singleton this registry will be one too. This
 //greatly simplifies DI of the CacheLoader/Writer
@@ -44,11 +54,17 @@ public class FileRepository extends Repository {
 	@Inject
 	RepoFileTypeMap fileTypeMap;
 
+	Path defaultDirectory = null;
+
 	private static final Logger log = Logger.getLogger(FileRepository.class.getName());
 
 	ConcurrentHashMap<UUID, LocalArtifact> artifacts = new ConcurrentHashMap<>();
 	boolean synced = false;
 	boolean updateable = false;
+
+	public Path getDefaultDirectory() {
+		return defaultDirectory;
+	}
 
 	public void setArtifact(UUID key, LocalArtifact la) {
 		artifacts.put(key, la);
@@ -82,75 +98,113 @@ public class FileRepository extends Repository {
 			//log.info(String.format("before Unmarshal called %s %s\n", target, parent));
 		}
 
+		public void addResource(Resource r, String path) throws IOException {
+			URL file = Thread.currentThread().getContextClassLoader().getResource(path);
+			if (file == null) {
+				log.severe(String.format("resource not found %s", path));
+			} else {
+				byte[] contents = DataContentHandler.readStream(file.openStream());
+
+				if (r.isAuto()) {
+					//TODO invoke introspect command to glean uuid,urn,etc info
+				}
+				ClasspathArtifact la = new ClasspathArtifact();
+				la.setPath(path);
+				la.setId(UUID.randomUUID());
+				try {
+					la.setURI(r.getUri() != null ? r.getUri() : new URI(path));
+				} catch (URISyntaxException e) {
+					throw new IOException(e);
+				}
+				la.setContentType(r.getContentType() != null ? r.getContentType() : fileTypeMap.getContentType(r.getName()));
+				la.setVersion(r.getVersion() != null ? r.getVersion() : "1.0");
+				la.setContent(contents);
+				log.fine(String.format("classpath resource %s included", path));
+			}
+		}
+
 		//This method is called after all the properties (except IDREF) are unmarshalled for this object, 
 		//but before this object is set to the parent object.
 		@Override
 		public void afterUnmarshal(Object target, Object parent) {
 			//public void afterUnmarshal(Unmarshaller unmarshaller, Object parent) {
 			//log.info(String.format("afterUnmarshal called %s %s\n", target, parent));
-			if (target instanceof Repository) {
-				for (Directory d : directory) {
-					//for (inc)
-					String base = d.getBase();
-					if (base.startsWith("classpath://")) {
-						try {
-							base = base.substring(12);
-							//base = !base.endsWith("/") ? base.concat("/") : base;
-							//Too cool!!! http://stackoverflow.com/questions/13848333/accessing-files-in-specific-folder-in-classpath-using-java
-							log.fine(String.format("attempting to process files in classpath directory %s", base));
-							//Enumeration<URL> files =Thread.currentThread().getContextClassLoader().getResources( base );
-							//List<URL> resources = CPScanner.scanResources(new PackageNameFilter(base), new ResourceNameFilter("*.xml"));
-							//if (url == null) {
-							//	log.severe(String.format("directory location %s not found in classpath", base));
-								//continue;
-						//	}
-							ClassLoader loader = getClass().getClassLoader();
-					        InputStream in = loader.getResourceAsStream(".");
-					        BufferedReader rdr = new BufferedReader(new InputStreamReader(in));
-					        String line;
-					        while ((line = rdr.readLine()) != null) {
-					            System.out.println("file: " + line);
-					        }
-					        rdr.close();
-							//while (files.hasMoreElements()){
-							//	System.out.println(files.nextElement());
-							//}
-							/*BufferedReader br = new BufferedReader(new InputStreamReader(is));
-							String fileName;
-							while ((fileName = br.readLine()) != null) {
-								log.severe(String.format("processing %s ", fileName));
-								for (Excludes exclude : d.getExcludes()) {
-									if (exclude.getExclude().matcher(fileName).matches()) {
-										log.fine(String.format("filename %s matches exclude pattern %s excluding", fileName, exclude.getExclude().pattern()));
-										continue;
-									}
-								}
-								for (Includes include : d.getIncludes()) {
-									if (include.getInclude().matcher(fileName).matches()) {
-										LocalArtifact la = new LocalArtifact();
-										la.setBaseDirectory(d.getBase());
-										la.setPath(fileName);
-										la.setId(UUID.randomUUID());
-										la.setURI(include.getUri() != null ? include.getUri() : new URI(d.getBase() + "/" + fileName));
-										la.setContentType(include.getContentType() != null ? include.getContentType() : fileTypeMap.getContentType(fileName));
-										la.setVersion(include.getVersion() != null ? include.getVersion() : "1.0");
-										la.setContent(DataContentHandler.readStream(Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)));
-										log.fine(String.format("filename %s matches include pattern %s including", fileName, include.getInclude().pattern()));
-									}
-								}
-								log.fine(String.format("filename %s didn't match any includes, skipping", fileName));
-							}*/
-						} catch (Exception e) {
-							log.log(Level.SEVERE, "", e);
+
+			//initially tried to setup classpath wildcard scanning but that was a fiasco. Explicitly reference classpath resources for now.
+			try {
+				if (target instanceof Repository) {
+					for (ClassPath c : getClasspath()) {
+						String baseLocation = c.getBase().endsWith("/") ? c.getBase().substring(0, c.getBase().length() - 1) : c.getBase();
+						for (Resource r : c.getResource()) {
+							log.fine(String.format("looking for resource  %s in base classpath directory %s", r.getName(), baseLocation));
+							//List<URL> includesMatches = CPScanner.scanResources(new ResourceFilter().directoryName(baseLocation).resourceName(include.getInclude()));
+							//todo sub in corn
+							String path = baseLocation + "/" + r.getName();
+							addResource(r, path);
+						}
+					}
+
+					for (Resource r : getResource()) {
+						log.fine(String.format("looking for resource  %s", r.getName()));
+						addResource(r, r.getName());
+					}
+
+					for (final Directory d : getDirectory()) {
+						Path basePath = null;
+						if (d.getBase().isAbsolute()) {
+							basePath = Paths.get(d.getBase());
+						} else {
+							basePath = Paths.get(d.getBase().getPath());
 						}
 
-					} else if (base.startsWith("file://")) {
-						//TODO
-						log.severe(String.format("Unsupported base format %s", base));
-					} else {
-						log.severe(String.format("Unsupported base format %s", base));
+						if (!Files.exists(basePath) || !Files.isDirectory((basePath))) {
+							log.severe(String.format("invalid directory %s", basePath.toAbsolutePath()));
+							continue;
+						}
+
+						if (d.isDefault()) {
+							defaultDirectory = basePath;
+						}
+
+						for (Include i : d.getInclude()) {
+							PathMatcher inc = FileSystems.getDefault().getPathMatcher(String.format("glob:%s", i.getInclude()));
+							boolean include = false;
+							for (Path file : Files.newDirectoryStream(basePath)) {			
+								if (inc != null && inc.matches(file)) {
+									include = true;
+
+									for (Exclude e : d.getExclude()) {
+										PathMatcher exc = FileSystems.getDefault().getPathMatcher(String.format("glob:%s", i.getInclude()));
+
+										if (exc.matches(file)) {
+											log.fine(String.format("filename %s matches exclude pattern %s excluding", file, e.getExclude()));
+											include = false;
+											break;
+										}
+									}
+								}
+								if (include) {
+									FileArtifact la = new FileArtifact();
+									la.setPath(file);
+									byte[] contents = DataContentHandler.readStream(Files.newInputStream(file));
+									if (i.isAuto()) {
+
+									}
+									la.setId(UUID.randomUUID());
+									la.setURI(i.getUri() != null ? i.getUri() : file.toUri());
+									la.setContentType(i.getContentType() != null ? i.getContentType() : fileTypeMap.getContentType(file.getFileName().toString()));
+									la.setVersion(i.getVersion() != null ? i.getVersion() : "1.0");
+									la.setContent(contents);
+									log.fine(String.format("filename %s matches include pattern %s including", file, i.getInclude()));
+
+								}
+							}
+						}
 					}
 				}
+
+			} catch (IOException ie) {
+				log.log(Level.SEVERE, "", ie);
 			}
 		}
 	}
@@ -175,31 +229,40 @@ public class FileRepository extends Repository {
 
 	public static class LocalArtifact extends Artifact {
 
-		boolean transientArtifact = true;
-		String baseDirectory;
+	}
+
+	public static class ClasspathArtifact extends LocalArtifact {
+
 		String path;
-
-		public boolean isTransient() {
-			return transientArtifact;
-		}
-
-		public void setTransient(boolean transientArtifact) {
-			this.transientArtifact = transientArtifact;
-		}
-
-		public String getBaseDirectory() {
-			return baseDirectory;
-		}
-
-		public void setBaseDirectory(String baseDirectory) {
-			this.baseDirectory = baseDirectory;
-		}
 
 		public String getPath() {
 			return path;
 		}
 
 		public void setPath(String path) {
+			this.path = path;
+		}
+
+	}
+
+	public static class FileArtifact extends LocalArtifact {
+
+		boolean readOnly = false;
+		Path path;
+
+		public boolean isReadOnly() {
+			return readOnly;
+		}
+
+		public void setReadOnly(boolean readOnly) {
+			this.readOnly = readOnly;
+		}
+
+		public Path getPath() {
+			return path;
+		}
+
+		public void setPath(Path path) {
 			this.path = path;
 		}
 
