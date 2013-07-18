@@ -50,7 +50,7 @@ public abstract class RepositoryBaseImpl implements Repository {
 	protected Provider<ArtifactDataSourceImpl> dsProvider;
 
 	@Override
-	public <C> UUID create(URI uri, String version, String contentType, C content) throws RepositoryException {
+	public <C> UUID create(URI uri, String version, String contentType, C content) throws RepositoryException {			
 		Artifact artifact = null;
 
 		if (content instanceof Artifact) {

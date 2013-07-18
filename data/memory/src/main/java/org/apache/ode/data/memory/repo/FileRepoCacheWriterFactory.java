@@ -57,29 +57,19 @@ public class FileRepoCacheWriterFactory implements Factory<FileRepoCacheWriter> 
 	private static final Logger log = Logger.getLogger(FileRepoCacheWriterFactory.class.getName());
 	/*	di - automatic
 		Repository -> cache
-		cache reader-> file Repository, but file repository is from xml and may be in different formats, needs to be configured post setup
-		potential cache writer-> file Repository
+		cache writer-> file Repository index if it exists, and if the file was originally read in from a filesystem and is writeable it can be updated. Note the cache reader would be
+		unable to read the updated entry back in (the repository.xml load is one way)
+	 */
 
-		catalyst -manual online
-		file repository is parsed from xml, reference established, and provided to the caches
-		*/
-	//AtomicReference<FileRepository> fileRepo = new AtomicReference<FileRepository>();
 	Provider<FileRepoCacheWriter> writeProvider;
 
 	public FileRepoCacheWriterFactory(Provider<FileRepoCacheWriter> writeProvider) {
 		this.writeProvider = writeProvider;
 	}
 
-	/*
-	public void setFileRepository(FileRepository fileRepo) {
-		this.fileRepo.set(fileRepo);
-	}*/
-
 	@Override
 	public FileRepoCacheWriter create() {
 		FileRepoCacheWriter writer = writeProvider.get();
-		//pass by reference
-		//writer.setFileRepository(fileRepo);
 		return writer;
 
 	}
@@ -87,63 +77,41 @@ public class FileRepoCacheWriterFactory implements Factory<FileRepoCacheWriter> 
 	public static class FileRepoCacheWriter implements CacheWriter<UUID, Artifact> {
 
 		private static final Logger log = Logger.getLogger(FileRepoCacheWriter.class.getName());
-		/*	di - automatic
-			Repository -> cache
-			cache reader-> file Repository, but file repository is from xml and may be in different formats, needs to be configured post setup
-			potential cache writer-> file Repository
-
-			catalyst -manual online
-			file repository is parsed from xml, reference established, and provided to the caches
-			*/
-		//
 		@Inject
 		FileRepository fileRepo;
 
-		//AtomicReference<FileRepository> fileRepo;
-
-		/*public void setFileRepository(AtomicReference<FileRepository> fileRepo) {
-			this.fileRepo = fileRepo;
-		}*/
-
 		@Override
-		public void write(Entry<? extends UUID, ? extends Artifact> entry) {
-			if (entry instanceof FileArtifact) {
-				if (fileRepo == null /*|| fileRepo.get() == null*/) {
-					log.warning(String.format("fileRepository not set, ignoring write %s", entry));
-					return;
-				}
-				fileRepo/*.get()*/.setArtifact(entry.getKey(), (LocalArtifact) entry.getValue());
-				FileArtifact la = (FileArtifact) entry;
-				if (!la.isReadOnly() && la.getContent() != null) {
-					if (la.getPath() == null) {
-						if (fileRepo.getDefaultDirectory() == null) {
-							log.warning(String.format("fileRepository default directory not set and file path is not set, ignoring write %s", entry));
-							return;
-						}
-						//a.setPath(fileRepo.getDefaultDirectory().resolve(la.getId().toString())) ;
-					}
-					try {
-						//see if contents have changed
-						if (Files.exists(la.getPath())) {
-							FileChannel channel = FileChannel.open(la.getPath());
-							ByteBuffer bb = ByteBuffer.allocate((int) channel.size());
-							channel.read(bb);
-							byte[] existingContents = bb.array();
-							channel.close();
-							String csum = Artifact.checkSumSHA1(existingContents);
-							if (la.getCheckSum().equals(csum)) {
-								log.fine(String.format("checksums match, no update needed. %s", la.getPath()));
-							}
+		public void write(Entry<? extends UUID, ? extends Artifact> entry) {			
+			fileRepo.getIndex().storeArtifactInIndex(entry.getKey(), entry.getValue());
+			if (entry.getValue() instanceof FileArtifact) {
+				FileArtifact la = (FileArtifact) entry.getValue();
+				if (!la.isReadOnly()) {
+					if (la.getPath() != null) {
 
+						if (la.getContent() != null) {
+							try {
+								//see if contents have changed
+								if (Files.exists(la.getPath())) {
+									byte[] existingContents = Files.readAllBytes(la.getPath());
+									String csum = Artifact.checkSumSHA1(existingContents);
+									if (la.getCheckSum().equals(csum)) {
+										log.fine(String.format("checksums match, no update needed. %s", la.getPath()));
+										return;
+									}
+								}
+								Files.write(la.getPath(), la.getContent());
+								log.fine(String.format("Artifact written %s %s", la, la.getPath()));
+							} catch (IOException | RepositoryException e) {
+								log.log(Level.SEVERE, String.format("Error saving artifact %s %s", la, la.getPath(), e));
+							}
+						} else {
+							log.fine(String.format("Did not save file artifact %s, is read only", la));
 						}
-						FileChannel channel = FileChannel.open(la.getPath());
-						ByteBuffer bb = ByteBuffer.wrap(la.getContent());
-						channel.write(bb);
-						channel.close();
-						log.fine(String.format("Artifact written %s %s", la, la.getPath()));
-					} catch (IOException | RepositoryException e) {
-						log.log(Level.SEVERE, String.format("Error saving artifact %s %s", la, la.getPath(), e));
+					} else {
+						log.fine(String.format("Did not save file artifact %s, path is null", la));
 					}
+				} else {
+					log.fine(String.format("Did not save file artifact %s, content is null", la));
 				}
 			}
 
@@ -159,12 +127,12 @@ public class FileRepoCacheWriterFactory implements Factory<FileRepoCacheWriter> 
 
 		@Override
 		public void delete(Object key) {
-			if (key instanceof UUID) {
-				if (fileRepo == null /*|| fileRepo.get() == null*/) {
-					log.warning(String.format("fileRepository not set, ignoring delete %s", key));
+			if (key instanceof UUID) {				
+				if (fileRepo.getIndex() == null) {
+					log.fine(String.format("index not set, ignoring delete %s", key));
 					return;
 				}
-				LocalArtifact la = fileRepo/*.get()*/.removeArtifact((UUID) key);
+				Artifact la = fileRepo.getIndex().removeArtifactFromIndex((UUID) key);
 				if (la instanceof FileArtifact) {
 					FileArtifact fa = (FileArtifact) la;
 					if (fa.getPath() != null) {

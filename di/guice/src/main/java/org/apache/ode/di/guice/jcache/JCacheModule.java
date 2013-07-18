@@ -25,6 +25,8 @@ import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 
@@ -32,9 +34,9 @@ import org.apache.ode.data.memory.repo.FileRepoCacheLoaderFactory;
 import org.apache.ode.data.memory.repo.FileRepoCacheLoaderFactory.FileRepoCacheLoader;
 import org.apache.ode.data.memory.repo.FileRepoCacheWriterFactory;
 import org.apache.ode.data.memory.repo.FileRepoCacheWriterFactory.FileRepoCacheWriter;
-import org.apache.ode.data.memory.repo.FileRepoManager;
 import org.apache.ode.data.memory.repo.FileRepository;
 import org.apache.ode.data.memory.repo.RepositoryImpl.RepoCache;
+import org.apache.ode.data.memory.repo.xml.IndexMode;
 import org.apache.ode.spi.repo.Artifact;
 
 import com.google.inject.AbstractModule;
@@ -44,19 +46,33 @@ import com.google.inject.TypeLiteral;
 public class JCacheModule extends AbstractModule {
 
 	public static Logger log = Logger.getLogger(JCacheModule.class.getName());
+	IndexMode fileRepoMode = IndexMode.NONE;
+	Duration duration = Duration.FIVE_MINUTES;
+
+	public JCacheModule() {
+	}
+
+	public JCacheModule withFileRepoMode(IndexMode mode) {
+		this.fileRepoMode = mode;
+		return this;
+	}
+
+	public JCacheModule withDuration(Duration duration) {
+		this.duration = duration;
+		return this;
+	}
 
 	protected void configure() {
 		bind(FileRepository.class);
 		bind(FileRepoCacheLoader.class);
 		bind(FileRepoCacheWriter.class);
-		bind(FileRepoManager.class);
 
 		bind(new TypeLiteral<Cache<UUID, Artifact>>() {
 		}).annotatedWith(RepoCache.class).toProvider(new RepoCacheProvider(getProvider(FileRepoCacheLoader.class), getProvider(FileRepoCacheWriter.class)));
 
 	}
 
-	public static class RepoCacheProvider implements Provider<Cache<UUID, Artifact>> {
+	public class RepoCacheProvider implements Provider<Cache<UUID, Artifact>> {
 		CacheManager cacheManager;
 		MutableConfiguration<UUID, Artifact> config;
 
@@ -64,13 +80,20 @@ public class JCacheModule extends AbstractModule {
 			CachingProvider cachingProvider = Caching.getCachingProvider();
 			cacheManager = cachingProvider.getCacheManager();
 			config = new MutableConfiguration<>();
-			config.setStoreByValue(false).setReadThrough(true).setCacheLoaderFactory(new FileRepoCacheLoaderFactory(loadProvider)).setWriteThrough(true)
-					.setCacheWriterFactory(new FileRepoCacheWriterFactory(writeProvider))
-					//.setTypes(UUID.class, LocalArtifact.class)
-					//.setExpiryPolicyFactory()
-					//file repo is one-way mapping of files to cache. TODO perhaps create index directory which is actual store
-					.setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf())
-					.setStatisticsEnabled(true);
+			config.setStoreByValue(false);
+			config.setStatisticsEnabled(true);
+			if (fileRepoMode == IndexMode.NONE) {
+				config.setWriteThrough(true).setCacheWriterFactory(new FileRepoCacheWriterFactory(writeProvider));
+			} else {
+				config.setReadThrough(true).setCacheLoaderFactory(new FileRepoCacheLoaderFactory(loadProvider));
+				config.setWriteThrough(true).setCacheWriterFactory(new FileRepoCacheWriterFactory(writeProvider));;
+			}
+			if (duration != null) {
+				config.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(duration));
+			} else {
+				config.setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf());
+			}
+
 		}
 
 		@Override

@@ -21,7 +21,16 @@
 -->
 <schema targetNamespace="http://ode.apache.org/data/memory/repository" elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ode.apache.org/data/memory/repository">
 
-
+	
+	<!--  related to enabling index and cache load only -->
+	<simpleType name="repoIndexModeType">
+		<restriction base="string">
+		 	<enumeration value="NONE"/>
+		 	<enumeration value="TRANSIENT"/>
+		 	<enumeration value="UPDATE"/>
+		 	<enumeration value="INIT"/>
+		</restriction>
+	</simpleType>
 
 	<complexType name="repositoryType">
 		<sequence>
@@ -29,6 +38,8 @@
 			<element name="resource" type="tns:resourceType" minOccurs="0" maxOccurs="unbounded" />
 			<element name="directory" type="tns:directoryType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
+		<attribute name="index" type="tns:repoIndexModeType" use="optional" default="NONE" />
+		<attribute name="indexPath" type="tns:repoURIType" use="optional" default="ode-file-repo-index" />
 	</complexType>
 
 	<element name="repository" type="tns:repositoryType" />
@@ -37,11 +48,16 @@
 		<restriction base="string" />
 	</simpleType>
 
+	<simpleType name="repoIDType">
+		<restriction base="string" />
+	</simpleType>
+
 	<simpleType name="repoPatternType">
 		<restriction base="string" />
 	</simpleType>
 
 	<complexType name="artifactReferenceType" abstract="true">
+		<attribute name="id" type="tns:repoIDType" use="optional" />
 		<attribute name="uri" type="tns:repoURIType" use="optional" />
 		<attribute name="version" type="string" use="optional" default="1.0" />
 		<attribute name="collection" type="tns:repoURIType" use="optional" />
@@ -50,13 +66,28 @@
 		<attribute name="auto" type="boolean" use="optional" default="true" />
 	</complexType>
 
+	<complexType name="indexEntryType">
+		<complexContent>
+			<extension base="tns:artifactReferenceType">
+				<attribute name="path" type="tns:repoURIType" use="optional" />
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="indexType">
+		<sequence>
+			<element name="entry" type="tns:indexEntryType" minOccurs="1" maxOccurs="unbounded" />
+		</sequence>
+	</complexType>
+
+	<element name="index" type="tns:indexType" />
+
 	<complexType name="resourceType">
 		<complexContent>
 			<extension base="tns:artifactReferenceType">
 				<attribute name="name" type="string" use="required" />
 			</extension>
 		</complexContent>
-
 	</complexType>
 
 	<complexType name="classpathType">
@@ -73,8 +104,7 @@
 			<element name="exclude" type="tns:excludeType" minOccurs="0" maxOccurs="unbounded" />
 		</sequence>
 		<attribute name="base" type="tns:repoURIType" use="required" />
-		<attribute name="read-only" type="boolean" use="optional" default="false" />
-		<attribute name="default" type="boolean" use="optional" default="false" />
+		<attribute name="read-only" type="boolean" use="optional" default="true" />
 	</complexType>
 
 

@@ -53,24 +53,17 @@ public class FileRepoCacheLoaderFactory implements Factory<FileRepoCacheLoader> 
 		potential cache writer-> file Repository
 
 		catalyst -manual online
-		file repository is parsed from xml, reference established, and provided to the caches
+		file repository is registered as a unmarshaller listener, initializes cache 
 		*/
-	//AtomicReference<FileRepository> fileRepo = new AtomicReference<FileRepository>();
 	Provider<FileRepoCacheLoader> loadProvider;
 
 	public FileRepoCacheLoaderFactory(Provider<FileRepoCacheLoader> loadProvider) {
 		this.loadProvider = loadProvider;
 	}
 
-	/*public void setFileRepository(FileRepository fileRepo) {
-		this.fileRepo.set(fileRepo);
-	}*/
-
 	@Override
 	public FileRepoCacheLoader create() {
 		FileRepoCacheLoader loader = loadProvider.get();
-		//pass by reference
-		//loader.setFileRepository(fileRepo);
 		return loader;
 
 	}
@@ -78,28 +71,17 @@ public class FileRepoCacheLoaderFactory implements Factory<FileRepoCacheLoader> 
 	public static class FileRepoCacheLoader implements CacheLoader<UUID, Artifact> {
 
 		private static final Logger log = Logger.getLogger(FileRepoCacheLoader.class.getName());
-		/*	di - automatic
-			Repository -> cache
-			cache reader-> file Repository, but file repository is from xml and may be in different formats, needs to be configured post setup
-			potential cache writer-> file Repository
-
-			catalyst -manual online
-			file repository is parsed from xml, reference established, and provided to the caches
-			*/
-		/*AtomicReference<FileRepository> fileRepo;
-		
-		public void setFileRepository(AtomicReference<FileRepository> fileRepo) {
-			this.fileRepo = fileRepo;
-		}*/
 		@Inject
 		FileRepository fileRepo;
 
+		//if a filerepository index exists try to read the entry from it. Otherwise, nothing can be done.
+		//Even if the entry exists and was one time loaded into the cache there is only a one way mapping
 		public Entry<UUID, Artifact> load(UUID key) {
-			if (fileRepo == null /*|| fileRepo.get() == null*/) {
-				log.warning(String.format("fileRepository not set, ignoring load %s", key));
+			if (fileRepo.getIndex() == null) {
+				log.fine(String.format("index not set, ignoring load %s", key));
 				return null;
 			}
-			LocalArtifact lartifact = fileRepo./*.get()*/getArtifact(key);
+			Artifact lartifact = fileRepo.getIndex().loadArtifactFromIndex(key);
 			//TODO load artifact
 			if (lartifact != null) {
 				return new RepoEntry(key, lartifact);
@@ -108,13 +90,13 @@ public class FileRepoCacheLoaderFactory implements Factory<FileRepoCacheLoader> 
 		}
 
 		public Map<UUID, Artifact> loadAll(Iterable<? extends UUID> keys) {
-			if (fileRepo == null /* || fileRepo.get() == null*/) {
-				log.warning(String.format("fileRepository not set, ignoring loadAll %s", keys));
+			if (fileRepo.getIndex() == null) {
+				log.fine(String.format("index not set, ignoring load %s", keys));
 				return null;
 			}
 			Map<UUID, Artifact> entries = new HashMap<UUID, Artifact>();
 			for (UUID key : keys) {
-				LocalArtifact lartifact = fileRepo./*.get()*/getArtifact(key);
+				Artifact lartifact = fileRepo.getIndex().loadArtifactFromIndex(key);
 				//TODO load artifact
 				if (lartifact != null) {
 					entries.put(key, lartifact);

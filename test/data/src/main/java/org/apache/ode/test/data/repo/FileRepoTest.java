@@ -27,6 +27,9 @@ public class FileRepoTest {
 		assertNotNull(repo);
 		Artifact a = repo.read(new URI("test/file-repo/testCP.foo"), Artifact.class);
 		assertNotNull(a);
+		a = repo.read(new URI("test/file-repo/testFS.foo"), Artifact.class);
+		assertNotNull(a);
+		
 		//repo.registerFileExtension("bar", "application/bar");
 
 		

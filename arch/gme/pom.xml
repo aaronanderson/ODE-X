@@ -140,12 +140,14 @@
 								<plugin>
 									<groupId>org.apache.ode.data</groupId>
 									<artifactId>ode-data-memory</artifactId>
+									<version>${project.version}</version>
 								</plugin>
 							</plugins>
 							<episodes>
 								<episode>
 									<groupId>org.apache.ode.data</groupId>
 									<artifactId>ode-data-memory</artifactId>
+									<version>${project.version}</version>
 								</episode>
 							</episodes>
 							<extension>true</extension>
@@ -153,6 +155,30 @@
 								<arg>-npa</arg>
 							</args>
 						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+				<!-- not sure why JAXB re-generated an ObjectFactory just for the substitution
+group element when an ObjectFactory already existed. I have given up trying
+to prevent JAXB from creating it so just delete it after generation.  -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.7</version>
+				<executions>
+					<execution>
+						<id>fix-objectfactory</id>
+						<phase>process-sources</phase>
+						<configuration>
+							<target>
+								<delete includeEmptyDirs="true">
+									<fileset dir="target/generated-sources/xjc/org/apache/ode/data" />
+								</delete>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>

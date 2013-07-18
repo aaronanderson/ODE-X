@@ -34,6 +34,7 @@ import javax.inject.Qualifier;
 import javax.inject.Singleton;
 
 import org.apache.ode.data.core.repo.RepositoryBaseImpl;
+import org.apache.ode.data.memory.repo.xml.IndexEntry;
 import org.apache.ode.spi.repo.Artifact;
 import org.apache.ode.spi.repo.Criteria;
 import org.apache.ode.spi.repo.RepositoryException;
@@ -47,8 +48,16 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 	@RepoCache
 	Cache<UUID, Artifact> repoCache;
 
+	@Inject
+	FileRepository fileRepo;
+
 	@Override
 	protected void createArtifact(Artifact artifact) throws RepositoryException {
+		if (artifact.getId() == null || artifact.getURI() == null || artifact.getContentType() == null) {
+			throw new RepositoryException(String.format("Missing mandatory artifact attributes: id: %s uri: %s contentType: %s ", artifact.getId(), artifact.getURI(),
+					artifact.getContentType()));
+		}
+
 		repoCache.put(artifact.getId(), artifact);
 	}
 
@@ -86,18 +95,29 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 	protected <R> List<Artifact> loadArtifacts(R criteria, long limit) throws RepositoryException {
 		List<Artifact> artifacts = new ArrayList<Artifact>();
 		if (criteria instanceof UUID) {
-			Artifact artifact = repoCache.get((UUID) criteria);
+			Artifact artifact = repoCache.get((UUID) criteria);//will read through to index if present
 			if (artifact != null) {
 				artifacts.add(artifact);
 			}
 		} else if (criteria instanceof URI) {
 			URI uri = (URI) criteria;
-			for (Entry<UUID, Artifact> entry : repoCache) {
-				if (entry.getValue().getURI().equals(uri)) {
-					artifacts.add(entry.getValue());
-					break;
+			//read from index if present as it is complete
+			if (fileRepo.getIndex() != null) {
+				for (IndexEntry entry : fileRepo.getIndex().entries.values()) {
+					if (entry.getUri().equals(uri)) {
+						artifacts.add(repoCache.get(entry.getId()));
+						break;
+					}
+				}
+			} else {
+				for (Entry<UUID, Artifact> entry : repoCache) {
+					if (entry.getValue().getURI().equals(uri)) {
+						artifacts.add(entry.getValue());
+						break;
+					}
 				}
 			}
+
 		} else if (criteria instanceof Criteria) {
 			Criteria c = (Criteria) criteria;
 			if (c.getId() != null) {
@@ -106,17 +126,35 @@ public class RepositoryImpl extends RepositoryBaseImpl {
 					artifacts.add(artifact);
 				}
 			} else {
-				for (Entry<UUID, Artifact> entry : repoCache) {
-					boolean uriMatches = c.getURI() != null ? entry.getValue().getURI().equals(c.getURI()) : false;
-					//TODO enhance
-					boolean uriPatternMatches = c.getURIPattern() != null ? entry.getValue().getURI().toString().startsWith(c.getURIPattern()) : false;
-					boolean collectionMatches = c.getCollection() != null ? entry.getValue().getCollection().equals(c.getCollection()) : false;
-					boolean versionMatches = c.getVersion() != null ? entry.getValue().getVersion().equals(c.getVersion()) : false;
-					boolean typeMatches = c.getContentType() != null ? entry.getValue().getContentType().equals(c.getContentType()) : false;
-					if (uriMatches || uriPatternMatches || versionMatches || typeMatches || collectionMatches) {
-						artifacts.add(entry.getValue());
-						if (uriMatches) {
+
+				if (fileRepo.getIndex() != null) {
+					for (IndexEntry entry : fileRepo.getIndex().entries.values()) {
+						if (c.getURI() != null ? entry.getUri().equals(c.getURI()) : false) {
+							artifacts.add(repoCache.get(entry.getId()));
 							break;
+						}
+						boolean matches = true;
+						matches &= c.getURIPattern() != null ? entry.getUri().toString().startsWith(c.getURIPattern()) : true;
+						matches &= c.getCollection() != null ? entry.getCollection().equals(c.getCollection()) : true;
+						matches &= c.getVersion() != null ? entry.getVersion().equals(c.getVersion()) : true;
+						matches &= c.getContentType() != null ? entry.getContentType().equals(c.getContentType()) : true;
+						if (matches) {
+							artifacts.add(repoCache.get(entry.getId()));
+						}
+					}
+				} else {
+					for (Entry<UUID, Artifact> entry : repoCache) {
+						if (c.getURI() != null ? entry.getValue().getURI().equals(c.getURI()) : false) {
+							artifacts.add(repoCache.get(entry.getValue().getId()));
+							break;
+						}
+						boolean matches = true;
+						matches &= c.getURIPattern() != null ? entry.getValue().getURI().toString().startsWith(c.getURIPattern()) : true;
+						matches &= c.getCollection() != null ? entry.getValue().getCollection().equals(c.getCollection()) : true;
+						matches &= c.getVersion() != null ? entry.getValue().getVersion().equals(c.getVersion()) : true;
+						matches &= c.getContentType() != null ? entry.getValue().getContentType().equals(c.getContentType()) : true;
+						if (matches) {
+							artifacts.add(repoCache.get(entry.getValue().getId()));
 						}
 					}
 				}

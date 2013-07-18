@@ -194,7 +194,9 @@
 
 	<element name="instruction" type="tns:instructionType" abstract="true" />
 
-	<!-- Need at least one instruction defined in this schema so that JAXB generates a JAXBElement<? extends Instruction> wrapper for the substitution group see http://java.net/jira/browse/JAXB-893 -->
+	<!-- Need at least one instruction defined in this schema so that JAXB generates a JAXBElement<? extends Instruction> wrapper for the substitution group see http://java.net/jira/browse/JAXB-893
+	http://stackoverflow.com/a/12920020 can get the JAXB wrapper, and <jxb:baseType name="javax.xml.bind.JAXBElement"/> can make it opaque enough but now way to narrow it to ? extends without real substitution in group
+	 -->
 
 	<element name="snapshot" substitutionGroup="tns:instruction">
 		<complexType>

@@ -35,10 +35,25 @@
 			<jxb:class ref="java.net.URI" />
 		</jxb:bindings>
 		
+		<jxb:bindings node="//xs:simpleType[@name='repoIDType']">
+			<jxb:class ref="java.util.UUID" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='repoIndexModeType']">
+			<jxb:typesafeEnumClass name="IndexMode" />
+		</jxb:bindings>
+		
 		<jxb:bindings node="//xs:complexType[@name='artifactReferenceType']">
 			<jxb:class name="ArtifactReference"  />
 		</jxb:bindings>
 		
+		<jxb:bindings node="//xs:complexType[@name='indexEntryType']">
+			<jxb:class name="IndexEntry"  />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:complexType[@name='indexType']">
+			<jxb:class name="Index"  />
+		</jxb:bindings>
 		
 		<jxb:bindings node="//xs:complexType[@name='repositoryType']">
 			<jxb:class name="Repository"  />
