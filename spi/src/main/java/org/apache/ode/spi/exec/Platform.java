@@ -55,7 +55,7 @@ public interface Platform {
 	public static final QName EXEC_CFG_SET_NAME = new QName(EXEC_CFG_NAMESPACE, "ExecConfig");
 
 	public static final ExecutableSet EXEC_INSTRUCTION_SET = new ExecutableSet(EXEC_INSTRUCTION_SET_NAME, "org.apache.ode.spi.exec.executable.xml",
-			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class, EXEC_CTX_SET_NAME, EVENT_EXEC_SET_NAME, EXEC_CFG_SET_NAME);
+			org.apache.ode.spi.exec.executable.xml.ObjectFactory.class);
 	public static final ExecutionContextSet EXEC_CTX_SET = new ExecutionContextSet(EXEC_CTX_SET_NAME, "org.apache.ode.spi.exec.instruction.xml",
 			org.apache.ode.spi.exec.context.xml.ObjectFactory.class);
 	public static final EventSet EVENT_SET = new EventSet(EVENT_SET_NAME, "org.apache.ode.spi.event.xml", org.apache.ode.spi.event.xml.ObjectFactory.class);
@@ -64,7 +64,7 @@ public interface Platform {
 	public static final EventSet EVENT_JUNCTION_SET = new EventSet(EVENT_JUNCTION_SET_NAME, "org.apache.ode.spi.event.junction.xml",
 			org.apache.ode.spi.event.junction.xml.ObjectFactory.class);
 	public static final ExecutionConfigSet EXEC_CFG_SET = new ExecutionConfigSet(EXEC_CFG_SET_NAME, "org.apache.ode.spi.exec.config.xml",
-			org.apache.ode.spi.exec.config.xml.ObjectFactory.class, EVENT_JUNCTION_SET_NAME);
+			org.apache.ode.spi.exec.config.xml.ObjectFactory.class);
 
 	public enum PlatformTask {
 
@@ -112,7 +112,8 @@ public interface Platform {
 	//public void setLogLevel(LogLevel level);
 
 	//public Set<NodeStatus> status();
-	public Execution execution(URI  uri) throws PlatformException;
+	public Execution execution(URI uri) throws PlatformException;
+
 	//public <T extends Target> T createTarget(String id, Class<T> type) throws PlatformException;
 
 	public void install(URI id, Artifact executionConfiguration, Target... targets) throws PlatformException;

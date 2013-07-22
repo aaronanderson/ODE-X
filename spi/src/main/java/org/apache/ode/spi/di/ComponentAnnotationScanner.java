@@ -8,29 +8,19 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Qualifier;
-import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
 import org.apache.ode.spi.exec.Component;
-import org.apache.ode.spi.exec.Component.EventSet;
 import org.apache.ode.spi.exec.Component.EventSets;
-import org.apache.ode.spi.exec.Component.ExecutableSet;
 import org.apache.ode.spi.exec.Component.ExecutableSets;
-import org.apache.ode.spi.exec.Component.ExecutionConfigSet;
 import org.apache.ode.spi.exec.Component.ExecutionConfigSets;
-import org.apache.ode.spi.exec.Component.ExecutionContextSet;
 import org.apache.ode.spi.exec.Component.ExecutionContextSets;
 import org.apache.ode.spi.exec.Component.Offline;
 import org.apache.ode.spi.exec.Component.Online;
-import org.apache.ode.spi.exec.executable.Instruction.Execute;
 
 public class ComponentAnnotationScanner implements AnnotationScanner<ComponentModel> {
 	protected static final Logger log = Logger.getLogger(ComponentAnnotationScanner.class.getName());
@@ -46,12 +36,13 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 			} else {
 				cm.name = clazz.getName();
 				if (cm.name.indexOf('.') > -1) {
-					cm.name = cm.name.substring(cm.name.lastIndexOf('.')+1);
+					cm.name = cm.name.substring(cm.name.lastIndexOf('.') + 1);
 				}
 				if (cm.name.indexOf('$') > -1) {
-					cm.name = cm.name.substring(cm.name.lastIndexOf('$')+1);
+					cm.name = cm.name.substring(cm.name.lastIndexOf('$') + 1);
 				}
 			}
+			//TODO scan super class
 			for (Method m : clazz.getMethods()) {
 				try {
 					if (m.isAnnotationPresent(ExecutableSets.class)) {
@@ -97,7 +88,7 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 		MethodHandle online;
 		MethodHandle offline;
 
-		public Class<?> targetClass() {
+		public Class<?> getTargetClass() {
 			return targetClass;
 		}
 

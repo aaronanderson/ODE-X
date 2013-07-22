@@ -29,6 +29,9 @@ import org.apache.ode.spi.di.ComponentAnnotationScanner.Components;
 import org.apache.ode.spi.di.InstructionAnnotationScanner;
 import org.apache.ode.spi.di.InstructionAnnotationScanner.InstructionModel;
 import org.apache.ode.spi.di.InstructionAnnotationScanner.Instructions;
+import org.apache.ode.spi.di.NodeStatusAnnotationScanner;
+import org.apache.ode.spi.di.NodeStatusAnnotationScanner.NodeStatusModel;
+import org.apache.ode.spi.di.NodeStatusAnnotationScanner.NodeStatuses;
 import org.apache.ode.spi.di.OperationAnnotationScanner;
 import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
 import org.apache.ode.spi.di.OperationAnnotationScanner.Operations;
@@ -41,6 +44,8 @@ public class DIDiscoveryModule extends AbstractModule {
 	public static Logger log = Logger.getLogger(DIDiscoveryModule.class.getName());
 
 	protected void configure() {
+		GuiceAnnotationProcessor<NodeStatusModel> nsap = new GuiceAnnotationProcessor<NodeStatusModel>(new NodeStatusAnnotationScanner());
+		bind(new TypeLiteral<Map<Class<?>, NodeStatusModel>>(){}).annotatedWith(NodeStatuses.class).toInstance(nsap.getModels());
 		GuiceAnnotationProcessor<ComponentModel> cap = new GuiceAnnotationProcessor<ComponentModel>(new ComponentAnnotationScanner());
 		bind(new TypeLiteral<Map<Class<?>, ComponentModel>>(){}).annotatedWith(Components.class).toInstance(cap.getModels());
 		GuiceAnnotationProcessor<InstructionModel> iap = new GuiceAnnotationProcessor<InstructionModel>(new InstructionAnnotationScanner());
@@ -48,7 +53,7 @@ public class DIDiscoveryModule extends AbstractModule {
 		GuiceAnnotationProcessor<OperationModel> oap = new GuiceAnnotationProcessor<OperationModel>(new OperationAnnotationScanner());
 		bind(new TypeLiteral<Map<Class<?>, OperationModel>>(){}).annotatedWith(Operations.class).toInstance(oap.getModels());
 		
-		install(new DIScannerModule(cap,iap,oap));
+		install(new DIScannerModule(nsap,cap,iap,oap));
 		
 	}
 

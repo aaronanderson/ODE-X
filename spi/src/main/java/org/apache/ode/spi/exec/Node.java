@@ -18,20 +18,31 @@
  */
 package org.apache.ode.spi.exec;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Qualifier;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.exec.Component.EventSet;
 import org.apache.ode.spi.exec.Component.ExecutableSet;
+import org.apache.ode.spi.exec.Component.ExecutionConfigSet;
+import org.apache.ode.spi.exec.Component.ExecutionContextSet;
 import org.apache.ode.spi.exec.bond.Reactor;
-import org.apache.ode.spi.exec.task.TaskActionDefinition;
-import org.apache.ode.spi.exec.task.TaskDefinition;
 
 public interface Node {
 
-	public static final String CLUSTER_MIMETYPE = "application/ode-cluster";
+	/*public static final String CLUSTER_MIMETYPE = "application/ode-cluster";
 	public static final String CLUSTER_NAMESPACE = "http://ode.apache.org/cluster";
 
 	public static final String NODE_MQ_PROP_CLUSTER = "ODE_CLUSTER";
@@ -54,35 +65,79 @@ public interface Node {
 	public static final String NODE_MQ_NAME_TASK = "ODE_TASK";
 	public static final String NODE_MQ_NAME_MESSAGE = "ODE_MESSAGE";
 	
-	public static final String PLATFORM_URI_VALUE = "http://ode.apache.org/runtime/platform";
-	public static final String NODE_URI_VALUE = "http://ode.apache.org/runtime/node";
-	
+	*/
 	public static final String PLATFORM_URI = "http://ode.apache.org/runtime/platform";
 	public static final String NODE_URI = "http://ode.apache.org/runtime/node";
-	
-	public URI platformURI();
-	
-	public URI nodeURI();//local
-		
+
+	@Qualifier
+	@Retention(RUNTIME)
+	@Target(FIELD)
+	public @interface PlatformURI {
+
+	}
+
+	//public URI platformURI();
+
+	@Qualifier
+	@Retention(RUNTIME)
+	@Target(FIELD)
+	public @interface NodeURI {
+
+	}
+
+	//public URI nodeURI();//local
+
 	public QName architecture();
 
-	public Set<QName> getComponents();
+	public Set<QName> getComponentNames() throws PlatformException;
 
-	public <C> void registerComponent(C component);
+	//public <C> void registerComponent(C component);
 
-	public <C> void unregisterComponent(C component);
+	//public <C> void unregisterComponent(C component);
 
-	public Map<QName, ExecutableSet> getInstructionSets();
+	public Map<QName, EventSet> eventSets() throws PlatformException;
 
-	public Map<QName, TaskDefinition<?, ?>> getTaskDefinitions();
+	public Map<QName, ExecutableSet> executableSets() throws PlatformException;
 
-	public Map<QName, TaskActionDefinition<?, ?>> getTaskActionDefinitions();
+	public Map<QName, ExecutionConfigSet> executionConfigSets() throws PlatformException;
+
+	public Map<QName, ExecutionContextSet> executionContextSets() throws PlatformException;
+
+	//public Map<QName, TaskDefinition<?, ?>> getTaskDefinitions();
+
+	//public Map<QName, TaskActionDefinition<?, ?>> getTaskActionDefinitions();
+
+	//public List<TaskActionDefinition> actions();
+
+	@Retention(RUNTIME)
+	@Target(TYPE)
+	public @interface NodeStatus {
+
+	}
+
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Online {
+
+	}
+
+	//public void online() throws PlatformException;
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Offline {
+
+	}
+
+	public static enum Status {
+		ONLINE, OFFLINE;
+	}
+
+	public Status status();
 
 	public void online() throws PlatformException;
 
 	public void offline() throws PlatformException;
-	
-	public Reactor reactor(URI execution);
-	
-	
+
+	public Reactor reactor(URI execution) throws PlatformException;
+
 }

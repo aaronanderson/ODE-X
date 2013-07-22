@@ -1,4 +1,4 @@
-package org.apache.ode.test.data.repo;
+package org.apache.ode.test.data.memory.repo;
 
 import static org.junit.Assert.assertNotNull;
 

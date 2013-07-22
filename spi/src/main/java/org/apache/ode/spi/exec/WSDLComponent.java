@@ -31,8 +31,8 @@ public class WSDLComponent {
 
 	public static final String WSDL_INSTRUCTION_SET_NS = "http://ode.apache.org/wsdl";
 	public static final QName WSDL_INSTRUCTION_SET_NAME = new QName(WSDL_INSTRUCTION_SET_NS, "WSDL");
-	public static final ExecutableSet WSDL_INSTRUCTION_SET = new ExecutableSet(WSDL_INSTRUCTION_SET_NAME, null,null,null,null, null);
-	
+	public static final ExecutableSet WSDL_INSTRUCTION_SET = new ExecutableSet(WSDL_INSTRUCTION_SET_NAME, null, null);
+
 	@ExecutableSets
 	public List<ExecutableSet> executableSets() {
 		List<ExecutableSet> instructions = new ArrayList<ExecutableSet>();

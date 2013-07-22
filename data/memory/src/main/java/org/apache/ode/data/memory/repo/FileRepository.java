@@ -137,9 +137,25 @@ public class FileRepository {
 		public void clearIndex() throws IOException {
 			Lock wlock = lock.writeLock();
 			wlock.lock();
-			try {
-				for (Path file : Files.newDirectoryStream(indexDirectory)) {
+			try (DirectoryStream<Path> ds = Files.newDirectoryStream(indexDirectory)) {
+				for (Path file : ds) {
 					Files.delete(file);
+				}
+				entries.clear();
+			} finally {
+				wlock.unlock();
+			}
+		}
+
+		public void cleanIndex() throws IOException {
+			Lock wlock = lock.writeLock();
+			wlock.lock();
+			try (DirectoryStream<Path> ds = Files.newDirectoryStream(indexDirectory)) {
+				for (Path file : ds) {
+					String fileName = file.getFileName().toString();
+					if (entries.get(fileName.substring(0, fileName.lastIndexOf('.'))) == null) {
+						Files.delete(file);
+					}
 				}
 				entries.clear();
 			} finally {
@@ -303,7 +319,11 @@ public class FileRepository {
 				la.setContentType(contentType);
 				la.setVersion(r.getVersion() != null ? r.getVersion() : "1.0");
 				la.setContent(contents);
-				repoCache.put(la.getId(), la);
+				if (fileIndex.mode == IndexMode.NONE) { //if there is no index and no read through then store in cache
+					repoCache.put(la.getId(), la);
+				} else {
+					fileIndex.storeArtifactInIndex(la.getId(), la);
+				}
 				log.fine(String.format("classpath resource %s included", path));
 			}
 		}
@@ -407,7 +427,11 @@ public class FileRepository {
 										la.setContentType(contentType);
 										la.setVersion(i.getVersion() != null ? i.getVersion() : "1.0");
 										la.setContent(contents);
-										repoCache.put(la.getId(), la);
+										if (fileIndex.mode == IndexMode.NONE) { //if there is no index and no read through then store in cache
+											repoCache.put(la.getId(), la);
+										} else {
+											fileIndex.storeArtifactInIndex(la.getId(), la);
+										}
 										log.fine(String.format("filename %s matches include pattern %s including", file, i.getInclude()));
 
 									}

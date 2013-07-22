@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.core.exec.platform;
+package org.apache.ode.runtime.core.exec.config;
 
 import java.lang.invoke.MethodHandle;
 import java.util.Map;

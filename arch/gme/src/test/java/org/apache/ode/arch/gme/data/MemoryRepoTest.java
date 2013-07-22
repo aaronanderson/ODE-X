@@ -11,8 +11,7 @@ import org.apache.ode.data.core.repo.RepoFileTypeMap;
 import org.apache.ode.data.memory.repo.FileRepository;
 import org.apache.ode.data.memory.repo.xml.IndexMode;
 import org.apache.ode.di.guice.core.JSR250Module;
-import org.apache.ode.di.guice.jcache.JCacheModule;
-import org.apache.ode.di.guice.memory.MemoryRepoModule;
+import org.apache.ode.di.guice.memory.data.RepoModule;
 import org.apache.ode.test.data.repo.RepoTest;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
@@ -52,8 +51,7 @@ public class MemoryRepoTest {
 
 		protected void configure() {
 			install(new JSR250Module());
-			install(new JCacheModule().withFileRepoMode(IndexMode.TRANSIENT).withDuration(Duration.ONE_MINUTE));
-			install(new MemoryRepoModule());
+			install(new RepoModule().withFileRepoMode(IndexMode.TRANSIENT).withDuration(Duration.ONE_MINUTE));
 			//install(new DIModule(new OperationAnnotationProcessor()));
 
 		}

@@ -48,7 +48,7 @@ public class ComponentTest {
 		assertNull(cas.scan(NonComponent.class));
 		ComponentModel cm = cas.scan(TestComponent.class);
 		assertNotNull(cm);
-		assertNotNull(cm.targetClass());
+		assertNotNull(cm.getTargetClass());
 		assertEquals("TestComponent",cm.getName());
 		assertNotNull(cm.getEventSets());
 		assertNotNull(cm.getExecutableSets());

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.di.guice.memory;
+package org.apache.ode.di.guice.memory.runtime;
 
 import java.util.logging.Logger;
 

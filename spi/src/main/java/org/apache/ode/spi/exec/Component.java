@@ -53,49 +53,39 @@ public @interface Component {
 
 	//public List<ExecutableSet> executableSets();
 
-	public class ExecutableSet {
+	public class JAXBSet {
 		final QName name;
-		final String jaxbExecPath;
-		final Class<?> jaxbExecFactory;
-		final QName execContextSetName;
-		final QName eventSetName;
-		final QName programSetName;
+		final String jaxbPath;
+		final Class<?> jaxbFactory;
 
-		public ExecutableSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory, QName execContextSetName, QName eventSetName, QName programSetName) {
-			if (name == null || ((jaxbExecPath == null && jaxbExecFactory == null))) {
+		public JAXBSet(QName name, String jaxbPath, Class<?> jaxbFactory) {
+			if (name == null || ((jaxbPath == null && jaxbFactory == null))) {
 				throw new NullPointerException("name and path or class required");
 			}
 			this.name = name;
-			this.jaxbExecPath = jaxbExecPath;
-			this.jaxbExecFactory = jaxbExecFactory;
-			this.execContextSetName = execContextSetName;
-			this.eventSetName = eventSetName;
-			this.programSetName = programSetName;
-
+			this.jaxbPath = jaxbPath;
+			this.jaxbFactory = jaxbFactory;
 		}
 
 		public QName getName() {
 			return name;
 		}
 
-		public String getJAXBExecPath() {
-			return jaxbExecPath;
+		public String getJAXBPath() {
+			return jaxbPath;
 		}
 
-		public Class<?> getJAXBExecFactory() {
-			return jaxbExecFactory;
+		public Class<?> getJAXBFactory() {
+			return jaxbFactory;
 		}
 
-		public QName getExecContextSetName() {
-			return execContextSetName;
-		}
+	}
 
-		public QName getEventSetName() {
-			return eventSetName;
-		}
+	public class ExecutableSet extends JAXBSet {
 
-		public QName getProgramSetName() {
-			return programSetName;
+		public ExecutableSet(QName name, String jaxbExecPath, Class<?> jaxbExecFactory) {
+			super(name, jaxbExecPath, jaxbExecFactory);
+
 		}
 
 	}
@@ -108,30 +98,10 @@ public @interface Component {
 
 	//public List<ExecutionContextSet> executionContextSets();
 
-	public class ExecutionContextSet {
-		final QName name;
-		final String jaxbExecContextPath;
-		final Class<?> jaxbExecContextFactory;
+	public class ExecutionContextSet extends JAXBSet {
 
 		public ExecutionContextSet(QName name, String jaxbExecContextPath, Class<?> jaxbExecContextFactory) {
-			if (name == null || ((jaxbExecContextPath == null && jaxbExecContextFactory == null))) {
-				throw new NullPointerException("name and path or class required");
-			}
-			this.name = name;
-			this.jaxbExecContextPath = jaxbExecContextPath;
-			this.jaxbExecContextFactory = jaxbExecContextFactory;
-		}
-
-		public QName getName() {
-			return name;
-		}
-
-		public String getJAXBExecContextPath() {
-			return jaxbExecContextPath;
-		}
-
-		public Class<?> getJAXBExecContextFactory() {
-			return jaxbExecContextFactory;
+			super(name, jaxbExecContextPath, jaxbExecContextFactory);
 		}
 	}
 
@@ -143,38 +113,12 @@ public @interface Component {
 
 	//public List<EventSet> eventSets();
 
-	public class EventSet {
-		final QName name;
-		final String jaxbEventPath;
-		final Class<?> jaxbEventFactory;
-		final Map<String, Class<? extends Event>> eventTypes;
+	public class EventSet extends JAXBSet {
 
 		private static final Logger log = Logger.getLogger(EventSet.class.getName());
 
 		public EventSet(QName name, String jaxbEventPath, Class<?> jaxbEventFactory) {
-			if (name == null || ((jaxbEventPath == null && jaxbEventFactory == null))) {
-				throw new NullPointerException("name and path or class required");
-			}
-			this.name = name;
-			this.jaxbEventPath = jaxbEventPath;
-			this.jaxbEventFactory = jaxbEventFactory;
-			this.eventTypes = buildEvents(jaxbEventPath, jaxbEventFactory);
-		}
-
-		public QName getName() {
-			return name;
-		}
-
-		public String getJAXBEventPath() {
-			return jaxbEventPath;
-		}
-
-		public Class<?> getJAXBEventFactory() {
-			return jaxbEventFactory;
-		}
-
-		public Map<String, Class<? extends Event>> getEventTypes() {
-			return eventTypes;
+			super(name, jaxbEventPath, jaxbEventFactory);
 		}
 
 		public static Map<String, Class<? extends Event>> buildEvents(String jaxbEventPath, Class<?> jaxbEventFactory) {
@@ -216,37 +160,15 @@ public @interface Component {
 
 	//public List<ProgramSet> programSets();
 
-	public class ExecutionConfigSet {
-		final QName name;
-		final String jaxbProgramPath;
-		final Class<?> jaxbProgramFactory;
-		final QName eventSetName;
+	public class ExecutionConfigSet extends JAXBSet {
 
-		public ExecutionConfigSet(QName name, String jaxbProgramPath, Class<?> jaxbProgramFactory, QName eventSetName) {
+		public ExecutionConfigSet(QName name, String jaxbExecConfigPath, Class<?> jaxbExecConfigFactory) {
 
-			if (name == null || ((jaxbProgramPath == null && jaxbProgramFactory == null))) {
-				throw new NullPointerException("name and path or class required");
-			}
-			this.name = name;
-			this.jaxbProgramPath = jaxbProgramPath;
-			this.jaxbProgramFactory = jaxbProgramFactory;
-			this.eventSetName = eventSetName;
+			super(name, jaxbExecConfigPath, jaxbExecConfigFactory);
 		}
 
 		public QName getName() {
 			return name;
-		}
-
-		public QName getEventSetName() {
-			return eventSetName;
-		}
-
-		public String getJAXBProgramPath() {
-			return jaxbProgramPath;
-		}
-
-		public Class<?> getJAXBProgramFactory() {
-			return jaxbProgramFactory;
 		}
 
 	}

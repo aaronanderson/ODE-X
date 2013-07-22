@@ -18,12 +18,13 @@
  */
 package org.apache.ode.spi.exec;
 
-public class PlatformException extends Exception{
-	public PlatformException(Throwable t){
+public class PlatformException extends Exception {
+
+	public PlatformException(Throwable t) {
 		super(t);
 	}
-	
-	public PlatformException(String msg){
+
+	public PlatformException(String msg) {
 		super(msg);
 	}
 }

@@ -71,13 +71,13 @@ public class JAXBRuntimeUtil {
 
 	public static Class<?>[] executableClasses(Set<ExecutableSet> instructionSets) throws ClassNotFoundException {
 		Set<Class<?>> factoryClasses = new HashSet<Class<?>>();
-		factoryClasses.add(EXEC_INSTRUCTION_SET.getJAXBExecFactory());
-		factoryClasses.add(EVENT_SET.getJAXBEventFactory());
+		factoryClasses.add(EXEC_INSTRUCTION_SET.getJAXBFactory());
+		factoryClasses.add(EVENT_SET.getJAXBFactory());
 		for (ExecutableSet is : instructionSets) {
-			if (is.getJAXBExecFactory() != null) {
-				factoryClasses.add(is.getJAXBExecFactory());
+			if (is.getJAXBFactory() != null) {
+				factoryClasses.add(is.getJAXBFactory());
 			} else {
-				factoryClasses.add(Class.forName(is.getJAXBExecPath() + ".ObjectFactory"));
+				factoryClasses.add(Class.forName(is.getJAXBPath() + ".ObjectFactory"));
 			}
 		}
 		return (Class<?>[]) factoryClasses.toArray(new Class<?>[factoryClasses.size()]);
@@ -86,12 +86,12 @@ public class JAXBRuntimeUtil {
 
 	public static String executablePath(Set<ExecutableSet> instructionSets) throws ClassNotFoundException {
 		StringBuilder paths = new StringBuilder();
-		paths.append(EXEC_INSTRUCTION_SET.getJAXBExecPath());
+		paths.append(EXEC_INSTRUCTION_SET.getJAXBPath());
 		paths.append(":");
-		paths.append(EVENT_SET.getJAXBEventPath());
+		paths.append(EVENT_SET.getJAXBPath());
 		for (ExecutableSet is : instructionSets) {
 			paths.append(":");
-			paths.append(is.getJAXBExecPath());
+			paths.append(is.getJAXBPath());
 		}
 		return paths.toString();
 	}
@@ -114,19 +114,19 @@ public class JAXBRuntimeUtil {
 
 	public static Class<?>[] executionContextClasses(Set<ExecutableSet> instructionSets, Map<QName, ExecutionContextSet> execContextSets) throws ClassNotFoundException {
 		Set<Class<?>> factoryClasses = new HashSet<Class<?>>();
-		factoryClasses.add(EXEC_CTX_SET.getJAXBExecContextFactory());
+		factoryClasses.add(EXEC_CTX_SET.getJAXBFactory());
 		for (ExecutableSet is : instructionSets) {
-			QName execContextSetName = is.getExecContextSetName();
+			QName execContextSetName = is.getName();
 			if (execContextSetName != null) {
 				ExecutionContextSet ecs = execContextSets.get(execContextSetName);
 				if (ecs == null) {
 					throw new ClassNotFoundException(String.format("unable to located ExecutionContextSet %s", execContextSetName));
 				}
 
-				if (ecs.getJAXBExecContextFactory() != null) {
-					factoryClasses.add(ecs.getJAXBExecContextFactory());
+				if (ecs.getJAXBFactory() != null) {
+					factoryClasses.add(ecs.getJAXBFactory());
 				} else {
-					factoryClasses.add(Class.forName(ecs.getJAXBExecContextPath() + ".ObjectFactory"));
+					factoryClasses.add(Class.forName(ecs.getJAXBPath() + ".ObjectFactory"));
 				}
 			}
 
@@ -136,16 +136,16 @@ public class JAXBRuntimeUtil {
 
 	public static String executionContextPath(Set<ExecutableSet> execInstructionSets, Map<QName, ExecutionContextSet> execContextSets) throws ClassNotFoundException {
 		StringBuilder paths = new StringBuilder();
-		paths.append(EXEC_CTX_SET.getJAXBExecContextPath());
+		paths.append(EXEC_CTX_SET.getJAXBPath());
 		for (ExecutableSet is : execInstructionSets) {
-			QName execContextSetName = is.getExecContextSetName();
+			QName execContextSetName = is.getName();
 			if (execContextSetName != null) {
 				paths.append(":");
 				ExecutionContextSet ecs = execContextSets.get(execContextSetName);
 				if (ecs == null) {
 					throw new ClassNotFoundException(String.format("unable to located ExecutionContextSet %s", execContextSetName));
 				}
-				paths.append(ecs.getJAXBExecContextPath());
+				paths.append(ecs.getJAXBPath());
 			}
 		}
 		return paths.toString();
@@ -169,19 +169,19 @@ public class JAXBRuntimeUtil {
 
 	public static Class<?>[] eventClasses(Set<ExecutableSet> instructionSets, Map<QName, EventSet> eventSets) throws ClassNotFoundException {
 		Set<Class<?>> factoryClasses = new HashSet<Class<?>>();
-		factoryClasses.add(EVENT_SET.getJAXBEventFactory());
+		factoryClasses.add(EVENT_SET.getJAXBFactory());
 		for (ExecutableSet is : instructionSets) {
-			QName eventSetName = is.getExecContextSetName();
+			QName eventSetName = is.getName();
 			if (eventSetName != null) {
 				EventSet evt = eventSets.get(eventSetName);
 				if (evt == null) {
 					throw new ClassNotFoundException(String.format("unable to located EventSet %s", eventSetName));
 				}
 
-				if (evt.getJAXBEventFactory() != null) {
-					factoryClasses.add(evt.getJAXBEventFactory());
+				if (evt.getJAXBFactory() != null) {
+					factoryClasses.add(evt.getJAXBFactory());
 				} else {
-					factoryClasses.add(Class.forName(evt.getJAXBEventPath() + ".ObjectFactory"));
+					factoryClasses.add(Class.forName(evt.getJAXBPath() + ".ObjectFactory"));
 				}
 			}
 
@@ -191,16 +191,16 @@ public class JAXBRuntimeUtil {
 
 	public static String eventPath(Set<ExecutableSet> execInstructionSets, Map<QName, EventSet> eventSets) throws ClassNotFoundException {
 		StringBuilder paths = new StringBuilder();
-		paths.append(EVENT_SET.getJAXBEventPath());
+		paths.append(EVENT_SET.getJAXBPath());
 		for (ExecutableSet is : execInstructionSets) {
-			QName eventSetName = is.getExecContextSetName();
+			QName eventSetName = is.getName();
 			if (eventSetName != null) {
 				paths.append(":");
 				EventSet evt = eventSets.get(eventSetName);
 				if (evt == null) {
 					throw new ClassNotFoundException(String.format("unable to located EventSet %s", eventSetName));
 				}
-				paths.append(evt.getJAXBEventPath());
+				paths.append(evt.getJAXBPath());
 			}
 		}
 		return paths.toString();
@@ -224,20 +224,20 @@ public class JAXBRuntimeUtil {
 
 	public static Class<?>[] programClasses(Set<ExecutableSet> instructionSets, Map<QName, ExecutionConfigSet> programSets) throws ClassNotFoundException {
 		Set<Class<?>> factoryClasses = new HashSet<Class<?>>();
-		factoryClasses.add(EXEC_CFG_SET.getJAXBProgramFactory());
-		factoryClasses.add(EVENT_SET.getJAXBEventFactory());
+		factoryClasses.add(EXEC_CFG_SET.getJAXBFactory());
+		factoryClasses.add(EVENT_SET.getJAXBFactory());
 		for (ExecutableSet is : instructionSets) {
-			QName programSetName = is.getExecContextSetName();
+			QName programSetName = is.getName();
 			if (programSetName != null) {
 				ExecutionConfigSet prg = programSets.get(programSetName);
 				if (prg == null) {
 					throw new ClassNotFoundException(String.format("unable to located ProgramSet %s", programSetName));
 				}
 
-				if (prg.getJAXBProgramFactory() != null) {
-					factoryClasses.add(prg.getJAXBProgramFactory());
+				if (prg.getJAXBFactory() != null) {
+					factoryClasses.add(prg.getJAXBFactory());
 				} else {
-					factoryClasses.add(Class.forName(prg.getJAXBProgramPath() + ".ObjectFactory"));
+					factoryClasses.add(Class.forName(prg.getJAXBPath() + ".ObjectFactory"));
 				}
 			}
 
@@ -247,18 +247,18 @@ public class JAXBRuntimeUtil {
 
 	public static String programPath(Set<ExecutableSet> execInstructionSets, Map<QName, ExecutionConfigSet> programSets) throws ClassNotFoundException {
 		StringBuilder paths = new StringBuilder();
-		paths.append(EXEC_CFG_SET.getJAXBProgramPath());
+		paths.append(EXEC_CFG_SET.getJAXBPath());
 		paths.append(":");
-		paths.append(EVENT_SET.getJAXBEventPath());
+		paths.append(EVENT_SET.getJAXBPath());
 		for (ExecutableSet is : execInstructionSets) {
-			QName programSetName = is.getExecContextSetName();
+			QName programSetName = is.getName();
 			if (programSetName != null) {
 				paths.append(":");
 				ExecutionConfigSet prg = programSets.get(programSetName);
 				if (prg == null) {
 					throw new ClassNotFoundException(String.format("unable to located ProgramSet %s", programSetName));
 				}
-				paths.append(prg.getJAXBProgramPath());
+				paths.append(prg.getJAXBPath());
 			}
 		}
 		return paths.toString();
