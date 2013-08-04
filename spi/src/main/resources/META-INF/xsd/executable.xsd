@@ -30,7 +30,7 @@
 	<complexType name="executableType">
 		<sequence>
 			<element name="executable-sets" type="tns:executableSetsType" minOccurs="0" maxOccurs="1" />
-			<element name="event-sets" type="tns:executableSetsType" minOccurs="0" maxOccurs="1" />
+			<element name="event-sets" type="tns:eventSetsType" minOccurs="0" maxOccurs="1" />
 			<element name="sources" type="tns:sourcesType" minOccurs="1" maxOccurs="1" />
 			<!--<element name="type" type="tns:typeType" minOccurs="0" maxOccurs="unbounded" /> <element name="operation" type="tns:operationType" minOccurs="0" maxOccurs="unbounded" 
 				/> -->
@@ -54,7 +54,7 @@
 	</complexType>
 
 	<complexType name="eventSetType">
-		<attribute name="eventNS" type="tns:qnameType" use="required" />
+		<attribute name="eventName" type="tns:qnameType" use="required" />
 		<attribute name="eventId" type="integer" use="required" />
 	</complexType>
 

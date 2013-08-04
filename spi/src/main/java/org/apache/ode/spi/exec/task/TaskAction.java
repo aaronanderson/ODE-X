@@ -23,7 +23,6 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.task.TaskAction.TaskActionId;
 import org.apache.ode.spi.exec.task.TaskAction.TaskActionState;
 import org.w3c.dom.Document;

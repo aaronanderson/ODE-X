@@ -16,18 +16,18 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
+import org.apache.ode.spi.bond.Reactor;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.Components;
 import org.apache.ode.spi.di.DIContainer;
 import org.apache.ode.spi.di.NodeStatusAnnotationScanner.NodeStatusModel;
 import org.apache.ode.spi.di.NodeStatusAnnotationScanner.NodeStatuses;
-import org.apache.ode.spi.exec.Component.EventSet;
-import org.apache.ode.spi.exec.Component.ExecutableSet;
-import org.apache.ode.spi.exec.Component.ExecutionConfigSet;
-import org.apache.ode.spi.exec.Component.ExecutionContextSet;
-import org.apache.ode.spi.exec.Node;
-import org.apache.ode.spi.exec.PlatformException;
-import org.apache.ode.spi.exec.bond.Reactor;
+import org.apache.ode.spi.runtime.Node;
+import org.apache.ode.spi.runtime.PlatformException;
+import org.apache.ode.spi.runtime.Component.EventSet;
+import org.apache.ode.spi.runtime.Component.ExecutableSet;
+import org.apache.ode.spi.runtime.Component.ExecutionConfigSet;
+import org.apache.ode.spi.runtime.Component.ExecutionContextSet;
 
 @Singleton
 public abstract class NodeBase implements Node {

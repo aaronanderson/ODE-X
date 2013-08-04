@@ -17,8 +17,8 @@ import javax.inject.Qualifier;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
-import org.apache.ode.spi.exec.platform.Operation;
-import org.apache.ode.spi.exec.platform.Operation.OperationSet;
+import org.apache.ode.spi.work.Operation;
+import org.apache.ode.spi.work.Operation.OperationSet;
 
 public class OperationAnnotationScanner implements AnnotationScanner<OperationModel> {
 	protected static final Logger log = Logger.getLogger(OperationAnnotationScanner.class.getName());

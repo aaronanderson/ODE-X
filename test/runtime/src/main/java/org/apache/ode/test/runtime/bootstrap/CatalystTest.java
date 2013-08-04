@@ -2,8 +2,8 @@ package org.apache.ode.test.runtime.bootstrap;
 
 import static org.junit.Assert.assertNotNull;
 
-import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.runtime.Node;
 import org.apache.ode.test.core.TestDIContainer;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -29,7 +29,7 @@ import javax.xml.bind.annotation.XmlSchema;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
-import org.apache.ode.spi.exec.Platform;
-import org.apache.ode.spi.exec.QNameStringAdapter;
-import org.apache.ode.spi.exec.URIAdapter;
+import org.apache.ode.spi.jaxb.QNameStringAdapter;
+import org.apache.ode.spi.jaxb.URIAdapter;
+import org.apache.ode.spi.runtime.Platform;
 

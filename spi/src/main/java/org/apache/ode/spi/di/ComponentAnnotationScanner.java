@@ -14,13 +14,13 @@ import java.util.logging.Logger;
 import javax.inject.Qualifier;
 
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
-import org.apache.ode.spi.exec.Component;
-import org.apache.ode.spi.exec.Component.EventSets;
-import org.apache.ode.spi.exec.Component.ExecutableSets;
-import org.apache.ode.spi.exec.Component.ExecutionConfigSets;
-import org.apache.ode.spi.exec.Component.ExecutionContextSets;
-import org.apache.ode.spi.exec.Component.Offline;
-import org.apache.ode.spi.exec.Component.Online;
+import org.apache.ode.spi.runtime.Component;
+import org.apache.ode.spi.runtime.Component.EventSets;
+import org.apache.ode.spi.runtime.Component.ExecutableSets;
+import org.apache.ode.spi.runtime.Component.ExecutionConfigSets;
+import org.apache.ode.spi.runtime.Component.ExecutionContextSets;
+import org.apache.ode.spi.runtime.Component.Offline;
+import org.apache.ode.spi.runtime.Component.Online;
 
 public class ComponentAnnotationScanner implements AnnotationScanner<ComponentModel> {
 	protected static final Logger log = Logger.getLogger(ComponentAnnotationScanner.class.getName());

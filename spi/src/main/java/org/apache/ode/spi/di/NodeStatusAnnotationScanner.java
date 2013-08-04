@@ -14,9 +14,9 @@ import java.util.logging.Logger;
 import javax.inject.Qualifier;
 
 import org.apache.ode.spi.di.NodeStatusAnnotationScanner.NodeStatusModel;
-import org.apache.ode.spi.exec.Node.NodeStatus;
-import org.apache.ode.spi.exec.Node.Offline;
-import org.apache.ode.spi.exec.Node.Online;
+import org.apache.ode.spi.runtime.Node.NodeStatus;
+import org.apache.ode.spi.runtime.Node.Offline;
+import org.apache.ode.spi.runtime.Node.Online;
 
 public class NodeStatusAnnotationScanner implements AnnotationScanner<NodeStatusModel> {
 	protected static final Logger log = Logger.getLogger(NodeStatusAnnotationScanner.class.getName());

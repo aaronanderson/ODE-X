@@ -20,7 +20,7 @@ package org.apache.ode.spi.exec.task;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Message.MessageEvent;
+import org.apache.ode.spi.exec.task.Message.MessageEvent;
 
 public interface TaskMessageEvent extends MessageEvent {
 

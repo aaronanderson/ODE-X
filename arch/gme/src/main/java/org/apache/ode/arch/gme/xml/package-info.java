@@ -30,5 +30,5 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.apache.ode.arch.gme.RuntimeConfigModule;
-import org.apache.ode.spi.exec.URIAdapter;
+import org.apache.ode.spi.jaxb.URIAdapter;
 

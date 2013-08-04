@@ -20,7 +20,7 @@ package org.apache.ode.spi.exec.task;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Message.LogLevel;
+import org.apache.ode.spi.exec.task.Message.LogLevel;
 
 public interface TaskContext {
 

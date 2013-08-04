@@ -26,5 +26,5 @@ import javax.xml.bind.annotation.XmlNs;
 import javax.xml.bind.annotation.XmlNsForm;
 import javax.xml.bind.annotation.XmlSchema;
 
-import org.apache.ode.spi.exec.Platform;
+import org.apache.ode.spi.runtime.Platform;
 

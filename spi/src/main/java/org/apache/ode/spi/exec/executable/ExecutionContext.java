@@ -28,7 +28,9 @@ import javax.xml.namespace.QName;
 
 //import org.apache.ode.spi.exec.ThreadScope;
 
-import static org.apache.ode.spi.exec.Platform.EXEC_CTX_NAMESPACE;
+
+
+import static org.apache.ode.spi.runtime.Platform.EXEC_CTX_NAMESPACE;
 
 
 //Model and default view of ExecutionState (MVC and Observer patterns)

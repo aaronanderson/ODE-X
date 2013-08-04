@@ -18,7 +18,7 @@
  */
 package org.apache.ode.spi.exec.task;
 
-import org.apache.ode.spi.exec.PlatformException;
+import org.apache.ode.spi.runtime.PlatformException;
 
 
 public class TaskException extends PlatformException{

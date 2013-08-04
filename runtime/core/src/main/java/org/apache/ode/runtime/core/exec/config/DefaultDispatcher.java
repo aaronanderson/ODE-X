@@ -24,11 +24,11 @@ import java.util.Queue;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.platform.Dispatch;
-import org.apache.ode.spi.exec.platform.Dispatch.CommandMap;
-import org.apache.ode.spi.exec.platform.Dispatch.Dispatcher;
-import org.apache.ode.spi.exec.platform.Dispatch.OperationMap;
-import org.apache.ode.spi.exec.platform.Dispatch.Token;
+import org.apache.ode.spi.work.Dispatch;
+import org.apache.ode.spi.work.Dispatch.CommandMap;
+import org.apache.ode.spi.work.Dispatch.Dispatcher;
+import org.apache.ode.spi.work.Dispatch.OperationMap;
+import org.apache.ode.spi.work.Dispatch.Token;
 
 @Dispatcher
 public class DefaultDispatcher {

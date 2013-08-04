@@ -24,7 +24,6 @@ import java.util.Set;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.exec.Message;
 import org.apache.ode.spi.exec.target.Target;
 import org.w3c.dom.Document;
 

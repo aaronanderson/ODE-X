@@ -24,8 +24,8 @@ import org.apache.ode.data.core.repo.RepoCommandMap;
 import org.apache.ode.data.core.repo.RepoFileTypeMap;
 import org.apache.ode.data.memory.repo.RepositoryImpl;
 import org.apache.ode.runtime.memory.node.NodeImpl;
-import org.apache.ode.spi.exec.Node;
 import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.spi.runtime.Node;
 
 import com.google.inject.AbstractModule;
 

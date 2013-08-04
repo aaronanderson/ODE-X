@@ -18,7 +18,7 @@
  */
 package org.apache.ode.spi.exec.task;
 
-import org.apache.ode.spi.exec.Message.MessageListener;
+import org.apache.ode.spi.exec.task.Message.MessageListener;
 
 public interface TaskMessageListener extends MessageListener {
 
