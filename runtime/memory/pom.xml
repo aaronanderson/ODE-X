@@ -70,13 +70,23 @@
 							<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
 							<schemaIncludes>
 								<schemaInclude>catalyst.xsd</schemaInclude>
+								<schemaInclude>work.xsd</schemaInclude>
 							</schemaIncludes>
 							<bindingDirectory>src/main/bindings</bindingDirectory>
 							<bindingIncludes>
 								<bindingInclude>catalyst.xjb</bindingInclude>
+								<bindingInclude>work.xjb</bindingInclude>
 							</bindingIncludes>
 							<extension>true</extension>
+							<plugins>
+								<plugin>
+									<groupId>org.jvnet.jaxb2_commons</groupId>
+									<artifactId>jaxb2-fluent-api</artifactId>
+									<version>3.0</version>
+								</plugin>
+							</plugins>
 							<args>
+								<arg>-Xfluent-api</arg>
 								<arg>-npa</arg>
 							</args>
 						</configuration>

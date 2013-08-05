@@ -44,9 +44,9 @@ public interface ExecutionUnit {
 
 	public InOutExecution run(InOut<?, ?> inout);
 
-	public <I extends InStream> I inStream(Class<I> struct);
+	public <I extends InStream> I inStream(Class<I> struct) throws ExecutionUnitException;
 
-	public <O extends OutStream> O outStream(Class<O> struct);
+	public <O extends OutStream> O outStream(Class<O> struct) throws ExecutionUnitException;
 
 	public <V> ExecutionUnit setEnvironment(QName name, V value);
 
@@ -125,6 +125,16 @@ public interface ExecutionUnit {
 	}
 
 	public static class ExecutionUnitException extends Exception {
+		public ExecutionUnitException() {
+		}
+
+		public ExecutionUnitException(String msg) {
+			super(msg);
+		}
+
+		public ExecutionUnitException(Throwable t) {
+			super(t);
+		}
 
 	}
 

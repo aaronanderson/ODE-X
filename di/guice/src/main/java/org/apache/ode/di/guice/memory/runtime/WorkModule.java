@@ -16,19 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.memory.operation;
+package org.apache.ode.di.guice.memory.runtime;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-public class WorkThreadPoolExecutor extends ThreadPoolExecutor {
+import org.apache.ode.runtime.memory.work.WorkManager;
+import org.apache.ode.runtime.memory.work.WorkManager.WorkProvider;
+import org.apache.ode.spi.work.ExecutionUnit.Work;
 
-	public WorkThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
-			RejectedExecutionHandler handler) {
-		super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+import com.google.inject.AbstractModule;
+
+public class WorkModule extends AbstractModule {
+
+	public static Logger log = Logger.getLogger(WorkModule.class.getName());
+
+	protected void configure() {
+		bind(WorkManager.class);
+		bind(Work.class).toProvider(WorkProvider.class);
 	}
 
 }

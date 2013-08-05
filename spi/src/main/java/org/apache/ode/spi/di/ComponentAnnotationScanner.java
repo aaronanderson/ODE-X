@@ -21,6 +21,8 @@ import org.apache.ode.spi.runtime.Component.ExecutionConfigSets;
 import org.apache.ode.spi.runtime.Component.ExecutionContextSets;
 import org.apache.ode.spi.runtime.Component.Offline;
 import org.apache.ode.spi.runtime.Component.Online;
+import org.apache.ode.spi.runtime.Component.Start;
+import org.apache.ode.spi.runtime.Component.Stop;
 
 public class ComponentAnnotationScanner implements AnnotationScanner<ComponentModel> {
 	protected static final Logger log = Logger.getLogger(ComponentAnnotationScanner.class.getName());
@@ -53,8 +55,12 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 						cm.eventSets = MethodHandles.lookup().unreflect(m);
 					} else if (m.isAnnotationPresent(ExecutionConfigSets.class)) {
 						cm.executionConfigSets = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(Start.class)) {
+						cm.start = MethodHandles.lookup().unreflect(m);
 					} else if (m.isAnnotationPresent(Online.class)) {
 						cm.online = MethodHandles.lookup().unreflect(m);
+					} else if (m.isAnnotationPresent(Stop.class)) {
+						cm.stop = MethodHandles.lookup().unreflect(m);
 					} else if (m.isAnnotationPresent(Offline.class)) {
 						cm.offline = MethodHandles.lookup().unreflect(m);
 					}
@@ -85,7 +91,9 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 
 		MethodHandle eventSets;
 		MethodHandle executionConfigSets;
+		MethodHandle start;
 		MethodHandle online;
+		MethodHandle stop;
 		MethodHandle offline;
 
 		public Class<?> getTargetClass() {
@@ -111,11 +119,19 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 		public MethodHandle getExecutionConfigSets() {
 			return executionConfigSets;
 		}
+		
+		public MethodHandle getStart() {
+			return start;
+		}
 
 		public MethodHandle getOnline() {
 			return online;
 		}
 
+		public MethodHandle getStop() {
+			return stop;
+		}
+		
 		public MethodHandle getOffline() {
 			return offline;
 		}

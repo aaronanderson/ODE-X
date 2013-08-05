@@ -17,6 +17,8 @@ import org.apache.ode.spi.di.NodeStatusAnnotationScanner.NodeStatusModel;
 import org.apache.ode.spi.runtime.Node.NodeStatus;
 import org.apache.ode.spi.runtime.Node.Offline;
 import org.apache.ode.spi.runtime.Node.Online;
+import org.apache.ode.spi.runtime.Node.Start;
+import org.apache.ode.spi.runtime.Node.Stop;
 
 public class NodeStatusAnnotationScanner implements AnnotationScanner<NodeStatusModel> {
 	protected static final Logger log = Logger.getLogger(NodeStatusAnnotationScanner.class.getName());
@@ -24,12 +26,18 @@ public class NodeStatusAnnotationScanner implements AnnotationScanner<NodeStatus
 	public NodeStatusModel scan(Class<?> clazz) {
 		log.fine(String.format("scanned class %s\n", clazz));
 		if (clazz.isAnnotationPresent(NodeStatus.class)) {
-			//TODO must be singleton, check throws only PlatformException
+			//TODO must be singleton, methods must be public, check throws only PlatformException
 			NodeStatusModel ns = new NodeStatusModel(clazz);
 			for (Method m : clazz.getMethods()) {
 				try {
+					if (m.isAnnotationPresent(Start.class)) {
+						ns.start = MethodHandles.lookup().unreflect(m);
+					}
 					if (m.isAnnotationPresent(Online.class)) {
 						ns.online = MethodHandles.lookup().unreflect(m);
+					}
+					if (m.isAnnotationPresent(Stop.class)) {
+						ns.stop = MethodHandles.lookup().unreflect(m);
 					}
 					if (m.isAnnotationPresent(Offline.class)) {
 						ns.offline = MethodHandles.lookup().unreflect(m);
@@ -55,7 +63,9 @@ public class NodeStatusAnnotationScanner implements AnnotationScanner<NodeStatus
 	public static class NodeStatusModel {
 
 		Class<?> targetClass;
+		MethodHandle start;
 		MethodHandle online;
+		MethodHandle stop;
 		MethodHandle offline;
 
 		public NodeStatusModel(Class<?> clazz) {
@@ -66,8 +76,16 @@ public class NodeStatusAnnotationScanner implements AnnotationScanner<NodeStatus
 			return targetClass;
 		}
 
+		public MethodHandle getStart() {
+			return start;
+		}
+
 		public MethodHandle getOnline() {
 			return online;
+		}
+
+		public MethodHandle getStop() {
+			return stop;
 		}
 
 		public MethodHandle getOffline() {

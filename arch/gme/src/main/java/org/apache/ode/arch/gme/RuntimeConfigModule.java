@@ -9,11 +9,13 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.namespace.QName;
 
 import com.google.inject.AbstractModule;
 
 public class RuntimeConfigModule extends AbstractModule {
 	public static final String GME_NAMESPACE = "http://ode.apache.org/architecture/gme";
+	public static final QName GME_ARCHITECTURE = new QName(GME_NAMESPACE,"GME");
 	public static Logger log = Logger.getLogger(RuntimeConfigModule.class.getName());
 
 	String configLocation = null;

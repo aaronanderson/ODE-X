@@ -12,8 +12,6 @@ import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.runtime.Component;
-import org.apache.ode.spi.runtime.Node;
-import org.apache.ode.spi.runtime.PlatformException;
 import org.apache.ode.spi.runtime.Component.EventSet;
 import org.apache.ode.spi.runtime.Component.EventSets;
 import org.apache.ode.spi.runtime.Component.ExecutableSet;
@@ -24,8 +22,13 @@ import org.apache.ode.spi.runtime.Component.ExecutionContextSet;
 import org.apache.ode.spi.runtime.Component.ExecutionContextSets;
 import org.apache.ode.spi.runtime.Component.Offline;
 import org.apache.ode.spi.runtime.Component.Online;
+import org.apache.ode.spi.runtime.Component.Start;
+import org.apache.ode.spi.runtime.Component.Stop;
+import org.apache.ode.spi.runtime.Node;
 import org.apache.ode.spi.runtime.Node.NodeStatus;
+import org.apache.ode.spi.runtime.PlatformException;
 import org.apache.ode.test.core.TestDIContainer;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,15 +52,11 @@ public class NodeTest {
 
 	}
 
-	//@AfterClass
-	//public static void tearDownAfterClass() throws Exception {
-
-	//}
-
 	@Test
 	public void testComponent() throws Exception {
 		assertFalse(tc.online);
 		node.online();
+		assertTrue(tc.start);
 		assertTrue(tc.online);
 		assertEquals(1, node.eventSets().size());
 		assertEquals("Event", node.eventSets().entrySet().iterator().next().getKey().getLocalPart());
@@ -68,6 +67,7 @@ public class NodeTest {
 		assertEquals(1, node.executionContextSets().size());
 		assertEquals("ExecutionContext", node.executionContextSets().entrySet().iterator().next().getKey().getLocalPart());
 		node.offline();
+		assertFalse(tc.start);
 		assertFalse(tc.online);
 
 	}
@@ -76,8 +76,10 @@ public class NodeTest {
 	public void testNodeListener() throws Exception {
 		assertFalse(nl.online);
 		node.online();
+		assertTrue(nl.start);
 		assertTrue(nl.online);
 		node.offline();
+		assertFalse(nl.start);
 		assertFalse(nl.online);
 
 	}
@@ -86,7 +88,9 @@ public class NodeTest {
 	@Singleton
 	public static class TestComponent {
 
+		public boolean start = false;
 		public boolean online = false;
+
 		public static final ThreadLocal<Boolean> throwOnlineError = new ThreadLocal<Boolean>();
 		public static final ThreadLocal<Boolean> throwOfflineError = new ThreadLocal<Boolean>();
 
@@ -118,12 +122,28 @@ public class NodeTest {
 			return set;
 		}
 
+		@Start
+		public void start() throws PlatformException {
+			if (throwOnlineError.get() != null && throwOnlineError.get()) {
+				throw new PlatformException("Online Error");
+			}
+			start = true;
+		}
+
 		@Online
 		public void online() throws PlatformException {
 			if (throwOnlineError.get() != null && throwOnlineError.get()) {
 				throw new PlatformException("Online Error");
 			}
 			online = true;
+		}
+
+		@Stop
+		public void stop() throws PlatformException {
+			if (throwOnlineError.get() != null && throwOnlineError.get()) {
+				throw new PlatformException("Online Error");
+			}
+			start = false;
 		}
 
 		@Offline
@@ -139,10 +159,20 @@ public class NodeTest {
 	@Singleton
 	public static class TestNodeListener {
 
+		public boolean start = false;
 		public boolean online = false;
+		
 		public static final ThreadLocal<Boolean> throwOnlineError = new ThreadLocal<Boolean>();
 		public static final ThreadLocal<Boolean> throwOfflineError = new ThreadLocal<Boolean>();
 
+		@org.apache.ode.spi.runtime.Node.Start
+		public void start() throws PlatformException {
+			if (throwOnlineError.get() != null && throwOnlineError.get()) {
+				throw new PlatformException("Start Error");
+			}
+			start = true;
+		}
+		
 		@org.apache.ode.spi.runtime.Node.Online
 		public void online() throws PlatformException {
 			if (throwOnlineError.get() != null && throwOnlineError.get()) {
@@ -150,7 +180,15 @@ public class NodeTest {
 			}
 			online = true;
 		}
-
+		
+		@org.apache.ode.spi.runtime.Node.Stop
+		public void stop() throws PlatformException {
+			if (throwOnlineError.get() != null && throwOnlineError.get()) {
+				throw new PlatformException("Stop Error");
+			}
+			start = false;
+		}
+		
 		@org.apache.ode.spi.runtime.Node.Offline
 		public void offline() throws PlatformException {
 			if (throwOfflineError.get() != null && throwOfflineError.get()) {

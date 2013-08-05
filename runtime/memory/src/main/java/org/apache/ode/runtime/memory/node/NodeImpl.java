@@ -17,6 +17,8 @@ import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.core.node.NodeBase;
+import org.apache.ode.runtime.memory.work.WorkManager;
+import org.apache.ode.runtime.memory.work.xml.WorkConfig;
 import org.apache.ode.spi.bond.Reactor;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.Components;
@@ -33,11 +35,18 @@ public class NodeImpl extends NodeBase {
 
 	private static final Logger log = Logger.getLogger(NodeImpl.class.getName());
 
+	
+
+	@Inject
+	@Architecture
+	QName architecture;
+
+
 	@Override
 	public QName architecture() {
-		// TODO Auto-generated method stub
-		return null;
+		return architecture;
 	}
 
+	
 
 }

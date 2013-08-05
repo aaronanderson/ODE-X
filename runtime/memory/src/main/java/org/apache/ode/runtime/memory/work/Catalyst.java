@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.memory.operation;
+package org.apache.ode.runtime.memory.work;
 
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;

@@ -1,10 +1,7 @@
-package org.apache.ode.runtime.memory.operation;
+package org.apache.ode.runtime.memory.work;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.namespace.QName;
-
-import org.apache.ode.spi.work.ExecutionUnit;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.InExecution;
@@ -12,17 +9,22 @@ import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InStream;
 import org.apache.ode.spi.work.ExecutionUnit.OutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.OutStream;
+import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 
-public class ExecutionBase implements InExecution, OutExecution, InOutExecution {
+public abstract class ExecutionBase implements InExecution, OutExecution, InOutExecution, Runnable {
 
-	Mode mode;
+	protected ExecutionUnitBase parent;
+	protected WorkItem workItem;
+	protected Mode mode;
 
-	public ExecutionBase(Mode mode) {
+	public ExecutionBase(ExecutionUnitBase parent, Mode mode) {
+		this.parent = parent;
 		this.mode = mode;
+		this.workItem = new WorkItemImpl(parent);
 	}
 
 	public static enum Mode {
-		IN, OUT, INOUT;
+		JOB, IN, OUT, INOUT;
 	}
 
 	@Override
@@ -66,7 +68,5 @@ public class ExecutionBase implements InExecution, OutExecution, InOutExecution 
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-	
 
 }

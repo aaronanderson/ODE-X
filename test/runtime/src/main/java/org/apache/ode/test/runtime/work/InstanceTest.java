@@ -1,4 +1,4 @@
-package org.apache.ode.test.runtime.operation;
+package org.apache.ode.test.runtime.work;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Provider;
 
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
+import org.apache.ode.spi.runtime.Node;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
@@ -35,7 +36,8 @@ import org.junit.Test;
 
 public class InstanceTest {
 
-	static Provider<Work> workProvider;
+	protected static Node node;
+	protected static Provider<Work> workProvider;
 
 	//static TestOperationInstanceSet operationInstance;
 
@@ -43,6 +45,9 @@ public class InstanceTest {
 	public static void setUpBeforeClass() throws Exception {
 		TestDIContainer container = TestDIContainer.CONTAINER.get();
 		assertNotNull(container);
+		node = container.getInstance(Node.class);
+		assertNotNull(node);
+		node.online();
 		workProvider = container.getInstance(new TypeLiteral<Provider<Work>>() {
 		});
 		assertNotNull(workProvider);
@@ -128,6 +133,7 @@ public class InstanceTest {
 		@Override
 		public void run(WorkItem execUnit) {
 			ran = true;
+			System.out.println("******************************* JobTest ran");
 		}
 
 	}

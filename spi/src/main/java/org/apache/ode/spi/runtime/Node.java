@@ -114,7 +114,19 @@ public interface Node {
 	public @interface NodeStatus {
 
 	}
+	
+	//Two phase online/offline; 
+	//Start - startup runtime infrastructure but do not start servicing requests
+	//Online - bring infrastructure completely online and begin to service requests
+	//Stop - stop processing new requests but attempt to defer or complete existing requests
+	//Offline - bring infrastructure completely offline and stop servicing requests
+		
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Start {
 
+	}
+	
 	@Retention(RUNTIME)
 	@Target(METHOD)
 	public @interface Online {
@@ -124,12 +136,19 @@ public interface Node {
 	//public void online() throws PlatformException;
 	@Retention(RUNTIME)
 	@Target(METHOD)
+	public @interface Stop {
+
+	}
+
+	
+	@Retention(RUNTIME)
+	@Target(METHOD)
 	public @interface Offline {
 
 	}
 
 	public static enum Status {
-		ONLINE, OFFLINE;
+		START, ONLINE, STOP, OFFLINE;
 	}
 
 	public Status status();

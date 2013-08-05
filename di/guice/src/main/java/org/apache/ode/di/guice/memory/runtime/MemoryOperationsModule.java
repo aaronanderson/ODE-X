@@ -25,7 +25,7 @@ import org.apache.ode.data.core.repo.RepoCommandMap;
 import org.apache.ode.data.core.repo.RepoFileTypeMap;
 import org.apache.ode.data.memory.repo.FileRepository;
 import org.apache.ode.data.memory.repo.RepositoryImpl;
-import org.apache.ode.runtime.memory.operation.ContextOperations;
+import org.apache.ode.runtime.memory.work.ContextOperations;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.Repository;
 

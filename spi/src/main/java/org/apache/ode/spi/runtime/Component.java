@@ -191,10 +191,22 @@ public @interface Component {
 
 	@Retention(RUNTIME)
 	@Target(METHOD)
+	public @interface Start {
+
+	}
+	
+	@Retention(RUNTIME)
+	@Target(METHOD)
 	public @interface Online {
 
 	}
 
+	@Retention(RUNTIME)
+	@Target(METHOD)
+	public @interface Stop {
+
+	}
+	
 	//public void online() throws PlatformException;
 	@Retention(RUNTIME)
 	@Target(METHOD)

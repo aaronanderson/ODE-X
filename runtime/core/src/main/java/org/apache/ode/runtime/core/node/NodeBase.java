@@ -1,5 +1,10 @@
 package org.apache.ode.runtime.core.node;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
@@ -44,6 +50,13 @@ public abstract class NodeBase implements Node {
 
 	@Inject
 	private DIContainer container;
+
+	@Qualifier
+	@Retention(RUNTIME)
+	@Target(FIELD)
+	public @interface Architecture {
+
+	}
 
 	private Status status = Status.OFFLINE;
 	private List<Object> components = new ArrayList<>();
@@ -101,24 +114,8 @@ public abstract class NodeBase implements Node {
 		return status;
 	}
 
-	protected void clear() {
-		components.clear();
-		listeners.clear();
-		eventSets.clear();
-		execSets.clear();
-		execCtxSets.clear();
-		execCfgSets.clear();
-	}
-
-	@Override
-	public void online() throws PlatformException {
-		stateLock.lock();
-		try {
-			if (Status.ONLINE == status) {
-				throw new PlatformException("Node is allready online");
-			}
-			clear();
-			PlatformException se = new PlatformException("Online Exceptions");
+	protected void notifyComponents(Status status, PlatformException se) throws PlatformException {
+		if (status == Status.START) {
 			for (ComponentModel componentModel : componentModels.values()) {
 				Object component = container.getInstance(componentModel.getTargetClass());
 				if (component == null) {
@@ -146,8 +143,8 @@ public abstract class NodeBase implements Node {
 							}
 						}
 						try {
-							if (componentModel.getOnline() != null) {
-								componentModel.getOnline().invoke(component);
+							if (componentModel.getStart() != null) {
+								componentModel.getStart().invoke(component);
 							}
 						} catch (PlatformException pe) {
 							se.addSuppressed(pe);
@@ -159,6 +156,45 @@ public abstract class NodeBase implements Node {
 					}
 				}
 			}
+		} else {
+			for (Object component : components) {
+				ComponentModel componentModel = componentModels.get(component.getClass());
+				try {
+					try {
+						switch (status) {
+						case START:
+							break;
+						case ONLINE:
+							if (componentModel.getOnline() != null) {
+								componentModel.getOnline().invoke(component);
+							}
+							break;
+						case STOP:
+							if (componentModel.getStop() != null) {
+								componentModel.getStop().invoke(component);
+							}
+							break;
+						case OFFLINE:
+							if (componentModel.getOffline() != null) {
+								componentModel.getOffline().invoke(component);
+							}
+							break;
+						}
+					} catch (PlatformException pe) {
+						se.addSuppressed(pe);
+					}
+				} catch (Throwable e) {
+					throw new PlatformException(e);
+				}
+			}
+
+		}
+
+	}
+
+	protected void notifyNodeStatusListeners(Status status, PlatformException se) throws PlatformException {
+
+		if (status == Status.START) {
 			for (NodeStatusModel statusModel : nodeStatusModels.values()) {
 				Object listener = container.getInstance(statusModel.getTargetClass());
 				if (listener == null) {
@@ -166,8 +202,8 @@ public abstract class NodeBase implements Node {
 				} else {
 					try {
 						try {
-							if (statusModel.getOnline() != null) {
-								statusModel.getOnline().invoke(listener);
+							if (statusModel.getStart() != null) {
+								statusModel.getStart().invoke(listener);
 							}
 						} catch (PlatformException pe) {
 							se.addSuppressed(pe);
@@ -178,8 +214,89 @@ public abstract class NodeBase implements Node {
 						throw new PlatformException(e);
 					}
 				}
-			}			
+			}
+		} else {
+			for (Object listener : listeners) {
+				NodeStatusModel statusModel = nodeStatusModels.get(listener.getClass());
+				try {
+					try {
+						switch (status) {
+						case START:
+							break;
+						case ONLINE:
+							if (statusModel.getOnline() != null) {
+								statusModel.getOnline().invoke(listener);
+							}
+							break;
+						case STOP:
+							if (statusModel.getStop() != null) {
+								statusModel.getStop().invoke(listener);
+							}
+							break;
+						case OFFLINE:
+							if (statusModel.getOffline() != null) {
+								statusModel.getOffline().invoke(listener);
+							}
+							break;
+						}
+					} catch (PlatformException pe) {
+						se.addSuppressed(pe);
+					}
+				} catch (Throwable e) {
+					throw new PlatformException(e);
+				}
+			}
+
+		}
+
+	}
+
+	protected void clear() {
+		components.clear();
+		listeners.clear();
+		eventSets.clear();
+		execSets.clear();
+		execCtxSets.clear();
+		execCfgSets.clear();
+	}
+
+	//protected abstract void implStart() throws PlatformException;
+
+	//protected abstract void implOnline() throws PlatformException;
+
+	@Override
+	public void online() throws PlatformException {
+		stateLock.lock();
+		try {
+			if (Status.START == status || Status.ONLINE == status) {
+				throw new PlatformException("Node is allready " + status);
+			}
+			clear();
+
+			status = Status.START;
+			PlatformException se = new PlatformException("Start Exceptions");
+			/*try {
+				implStart();
+			} catch (PlatformException pe) {
+				se.addSuppressed(pe);
+			}*/
+			notifyComponents(Status.START, se);
+			notifyNodeStatusListeners(Status.START, se);
 			if (se.getSuppressed().length > 0) {
+				status = Status.OFFLINE;
+				throw se;
+			}
+
+			se = new PlatformException("Online Exceptions");
+			/*try {
+				implOnline();
+			} catch (PlatformException pe) {
+				se.addSuppressed(pe);
+			}*/
+			notifyComponents(Status.ONLINE, se);
+			notifyNodeStatusListeners(Status.ONLINE, se);
+			if (se.getSuppressed().length > 0) {
+				status = Status.OFFLINE;
 				throw se;
 			}
 		} finally {
@@ -189,44 +306,43 @@ public abstract class NodeBase implements Node {
 
 	}
 
+	//protected abstract void implStop() throws PlatformException;
+
+	//protected abstract void implOffline() throws PlatformException;
+
 	@Override
 	public void offline() throws PlatformException {
 		stateLock.lock();
 		try {
-			if (Status.OFFLINE == status) {
-				throw new PlatformException("Node is allready offline");
-			}			
-			PlatformException se = new PlatformException("Online Exceptions");
-			for (Object component : components) {
-				ComponentModel componentModel = componentModels.get(component.getClass());
-				try {
-					try {
-						if (componentModel.getOffline() != null) {
-							componentModel.getOffline().invoke(component);
-						}
-					} catch (PlatformException pe) {
-						se.addSuppressed(pe);
-					}
-				} catch (Throwable e) {
-					throw new PlatformException(e);
-				}
+			if (Status.STOP == status || Status.OFFLINE == status) {
+				throw new PlatformException("Node is allready " + status);
+			}
 
-			}
-			for (Object listener : listeners) {
-				NodeStatusModel statusModel = nodeStatusModels.get(listener.getClass());
-				try {
-					try {
-						if (statusModel.getOffline() != null) {
-							statusModel.getOffline().invoke(listener);
-						}
-					} catch (PlatformException pe) {
-						se.addSuppressed(pe);
-					}
-				} catch (Throwable e) {
-					throw new PlatformException(e);
-				}
-			}
+			status = Status.STOP;
+			PlatformException se = new PlatformException("Stop Exceptions");
+
+			notifyNodeStatusListeners(Status.STOP, se);
+			notifyComponents(Status.STOP, se);
+			/*try {
+				implStop();
+			} catch (PlatformException pe) {
+				se.addSuppressed(pe);
+			}*/
 			if (se.getSuppressed().length > 0) {
+				status = Status.ONLINE;
+				throw se;
+			}
+
+			se = new PlatformException("Offline Exceptions");
+			notifyNodeStatusListeners(Status.OFFLINE, se);
+			notifyComponents(Status.OFFLINE, se);
+			/*try {
+				implOffline();
+			} catch (PlatformException pe) {
+				se.addSuppressed(pe);
+			}*/
+			if (se.getSuppressed().length > 0) {
+				status = Status.OFFLINE;
 				throw se;
 			}
 		} finally {

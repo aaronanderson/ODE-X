@@ -1,7 +1,7 @@
-package org.apache.ode.test.runtime.operation;
+package org.apache.ode.test.runtime.work;
 
-import static org.apache.ode.test.runtime.operation.OperationTest.TestCommandSet.COMMAND_NAMESPACE;
-import static org.apache.ode.test.runtime.operation.OperationTest.TestOperationSet.OPERATION_NAMESPACE;
+import static org.apache.ode.test.runtime.work.OperationTest.TestCommandSet.COMMAND_NAMESPACE;
+import static org.apache.ode.test.runtime.work.OperationTest.TestOperationSet.OPERATION_NAMESPACE;
 import static org.junit.Assert.assertNotNull;
 
 import javax.inject.Provider;
@@ -17,7 +17,7 @@ import org.apache.ode.spi.work.ExecutionUnit.O;
 import org.apache.ode.spi.work.ExecutionUnit.OutStream;
 import org.apache.ode.spi.work.Operation;
 import org.apache.ode.test.core.TestDIContainer;
-import org.apache.ode.test.runtime.operation.OperationTest.TestCommandSet.StreamCmd;
+import org.apache.ode.test.runtime.work.OperationTest.TestCommandSet.StreamCmd;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
