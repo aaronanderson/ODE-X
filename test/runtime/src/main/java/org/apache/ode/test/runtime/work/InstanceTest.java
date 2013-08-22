@@ -14,23 +14,21 @@ import javax.inject.Provider;
 
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.runtime.Node;
+import org.apache.ode.spi.work.ExecutionUnit.Buffer;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
-import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
+import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 import org.apache.ode.spi.work.ExecutionUnit.In;
 import org.apache.ode.spi.work.ExecutionUnit.InExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InOut;
 import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
-import org.apache.ode.spi.work.ExecutionUnit.InStream;
 import org.apache.ode.spi.work.ExecutionUnit.Job;
 import org.apache.ode.spi.work.ExecutionUnit.Out;
 import org.apache.ode.spi.work.ExecutionUnit.OutExecution;
-import org.apache.ode.spi.work.ExecutionUnit.OutStream;
-import org.apache.ode.spi.work.ExecutionUnit.ParallelExecutionUnit;
-import org.apache.ode.spi.work.ExecutionUnit.SequentialExecutionUnit;
 import org.apache.ode.spi.work.ExecutionUnit.Work;
 import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 import org.apache.ode.test.core.TestDIContainer;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,6 +54,11 @@ public class InstanceTest {
 
 	}
 
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		node.offline();
+	}
+
 	@Test
 	public void testJob() throws Exception {
 		Work e = workProvider.get();
@@ -63,7 +66,8 @@ public class InstanceTest {
 		assertFalse(jt.ran);
 		Execution ex = e.run(jt);
 		e.submit();
-		ex.state(3000, TimeUnit.MILLISECONDS,ExecutionState.COMPLETE);
+		ExecutionUnitState state = e.state(200000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
 		assertTrue(jt.ran);
 
 	}
@@ -89,41 +93,44 @@ public class InstanceTest {
 	//@Test
 	public void testSequence() throws Exception {
 		Work e = workProvider.get();
-		SequentialExecutionUnit seu = e.sequential();
-		OutExecution oeu1 = seu.run(new OutSequence(1));
-		OutExecution oeu2 = seu.run(new OutSequence(2));
-		InOutExecution ioe = seu.run(new InOutSequence());
+		e.beginSequential();
+		OutExecution oeu1 = e.run(new OutSequence(1));
+		OutExecution oeu2 = e.run(new OutSequence(2));
+		InOutExecution ioe = e.run(new InOutSequence());
 		oeu1.pipeOut(ioe);
 		oeu2.pipeOut(ioe);
+		e.endSequential();
 		StringBuilder sb = new StringBuilder();
-		ioe.pipeOut(seu.run(new InSequence(sb)));
+		ioe.pipeOut(e.run(new InSequence(sb)));
 		e.submit();
 	}
 
 	//@Test
 	public void testParallel() throws Exception {
 		Work e = workProvider.get();
-		ParallelExecutionUnit peu = e.parallel();
+		e.beginParallel();
 		CountDownLatch cdl = new CountDownLatch(2);
-		OutExecution oeu1 = peu.run(new OutParallel(1, cdl));
-		OutExecution oeu2 = peu.run(new OutParallel(2, cdl));
-		InOutExecution ioe = peu.run(new InOutParallel());
+		OutExecution oeu1 = e.run(new OutParallel(1, cdl));
+		OutExecution oeu2 = e.run(new OutParallel(2, cdl));
+		InOutExecution ioe = e.run(new InOutParallel());
 		oeu1.pipeOut(ioe);
 		oeu2.pipeOut(ioe);
+		e.endParallel();
 		StringBuilder sb = new StringBuilder();
-		ioe.pipeOut(peu.run(new InParallel(sb)));
+		ioe.pipeOut(e.run(new InParallel(sb)));
 		e.submit();
 	}
 
 	//@Test
 	public void testSharedParallel() throws Exception {
 		Work e = workProvider.get();
-		ParallelExecutionUnit peu = e.parallel();
-		OutExecution oeu1 = peu.run(new OutSharedParallel(1));
-		OutExecution oeu2 = peu.run(new OutSharedParallel(2));
-		InExecution ie = peu.run(new InSharedParallel());
+		e.beginParallel();
+		OutExecution oeu1 = e.run(new OutSharedParallel(1));
+		OutExecution oeu2 = e.run(new OutSharedParallel(2));
+		InExecution ie = e.run(new InSharedParallel());
 		oeu1.pipeOut(ie);
 		oeu2.pipeOut(ie);
+		e.endParallel();
 		e.submit();
 	}
 
@@ -138,23 +145,23 @@ public class InstanceTest {
 
 	}
 
-	public static class StringIS implements InStream {
+	public static class StringIS implements Buffer {
 		public String in;
 	}
 
-	public static class StringOS implements OutStream {
+	public static class StringOS implements Buffer {
 		public String out;
 	}
 
-	public static class IntIS implements InStream {
+	public static class IntIS implements Buffer {
 		public int in;
 	}
 
-	public static class IntOS implements OutStream {
+	public static class IntOS implements Buffer {
 		public int out;
 	}
 
-	public static class IntQIS implements InStream {
+	public static class IntQIS implements Buffer {
 		public Queue<Integer> in;
 	}
 

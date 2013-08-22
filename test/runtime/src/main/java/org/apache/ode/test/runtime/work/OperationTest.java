@@ -9,12 +9,10 @@ import javax.inject.Provider;
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.work.Command;
 import org.apache.ode.spi.work.ExecutionUnit;
+import org.apache.ode.spi.work.ExecutionUnit.Buffer;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
-import org.apache.ode.spi.work.ExecutionUnit.H;
 import org.apache.ode.spi.work.ExecutionUnit.I;
-import org.apache.ode.spi.work.ExecutionUnit.InStream;
 import org.apache.ode.spi.work.ExecutionUnit.O;
-import org.apache.ode.spi.work.ExecutionUnit.OutStream;
 import org.apache.ode.spi.work.Operation;
 import org.apache.ode.test.core.TestDIContainer;
 import org.apache.ode.test.runtime.work.OperationTest.TestCommandSet.StreamCmd;
@@ -60,13 +58,13 @@ public class OperationTest {
 
 	}
 
-	public static class StreamOpIS implements InStream {
+	public static class StreamOpIS implements Buffer {
 
 		public int in;
 
 	}
 
-	public static class StreamOpOS implements OutStream {
+	public static class StreamOpOS implements Buffer {
 
 		public int out;
 
@@ -95,7 +93,7 @@ public class OperationTest {
 
 		@Operation(name = "HolderOperation")
 		public static class HolderOp {
-			public void operation(@I H<Integer> in, @O H<Integer> out) {
+			public void operation(@I int[] in, @O int[] out) {
 
 			}
 

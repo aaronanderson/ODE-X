@@ -19,6 +19,7 @@
 package org.apache.ode.runtime.memory.work;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,36 +28,42 @@ import java.util.logging.Logger;
 
 import org.apache.ode.runtime.memory.work.WorkManager.WorkThreadPoolExecutor;
 import org.apache.ode.runtime.memory.work.xml.WorkScheduler;
+import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
+import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 
 public class Scheduler implements Runnable {
 
 	public static Logger log = Logger.getLogger(Scheduler.class.getName());
 
 	volatile boolean running = true;
-	
+
 	WorkThreadPoolExecutor wtp;
-	PriorityBlockingQueue<? super ExecutionUnitBase> executionUnitQueue;
+	PriorityBlockingQueue<WorkImpl> workQueue;
 	long scanTime;
 
 	public Scheduler(WorkScheduler config, WorkThreadPoolExecutor wtp) {
 		scanTime = config.getScan() > 0 ? config.getScan() : 500;
-		executionUnitQueue = new PriorityBlockingQueue<>(config.getQueueSize(), new ExecutionUnitBaseComparator());
-		this.wtp=wtp;
+		workQueue = new PriorityBlockingQueue<>(config.getQueueSize(), new ExecutionUnitBaseComparator());
+		this.wtp = wtp;
 	}
 
 	@Override
 	public void run() {
+		String originalName = Thread.currentThread().getName();
 		try {
 			Thread.currentThread().setName("ODE-X Work Scheduler");
 			while (running) {
 				try {
 					long start = System.currentTimeMillis();
-					ExecutionUnitBase eu = null;
-					while ((eu = (ExecutionUnitBase) executionUnitQueue.poll()) != null) {
-						scan(eu);
+					for (Iterator<WorkImpl> i = workQueue.iterator(); i.hasNext();) {
+						WorkImpl wi = i.next();
+						if (wi.execState.get() == ExecutionUnitState.READY) {
+							wi.execState.set(ExecutionUnitState.RUN);
+						}
+						scan(wi, i);
 					}
 					long sleep = scanTime - (System.currentTimeMillis() - start);
-					if (scanTime > 0) {
+					if (sleep > 0) {
 						Thread.currentThread().sleep(sleep);
 					}
 				} catch (SchedulerException ie) {
@@ -66,7 +73,7 @@ public class Scheduler implements Runnable {
 				}
 			}
 		} finally {
-			Thread.currentThread().setName(null);
+			Thread.currentThread().setName(originalName);
 		}
 	}
 
@@ -86,33 +93,95 @@ public class Scheduler implements Runnable {
 
 	}*/
 
-	private void scan(ExecutionUnitBase work) throws SchedulerException {
+	private void scan(WorkImpl work, Iterator<WorkImpl> w) throws SchedulerException {
 		//throw new SchedulerException(String.format("unexpected ExecutionUnitBase class %s ", work.getClass()));
-		if (work.executionQueue.peek() instanceof InstanceExec) {
-			wtp.execute((InstanceExec) work.executionQueue.peek());
+
+		for (Iterator<ExecutionStage> i = work.executionQueue.iterator(); i.hasNext();) {
+			ExecutionStage ex = i.next();
+			//if (ex.active.get()) { //already executing in threadpool
+			//	continue;
+			//	}
+			ExecutionState current = ex.execState.get();
+			switch (current) {
+			case COMPLETE:
+				i.remove();
+				continue;
+
+			case ABORT:
+				i.remove();
+				work.hasCancels.compareAndSet(false, true);
+				continue;
+
+			case CANCEL:
+				i.remove();
+				work.hasCancels.compareAndSet(false, true);
+				continue;
+			case RUN:
+				//wtp.execute(ex);
+				continue;
+			case BLOCK_OUT:
+				if (ex.outPipesFinished()) {
+					if (ex.execState.compareAndSet(current, ExecutionState.COMPLETE)) {
+						i.remove();
+					}
+				}
+				continue;
+			}
+			if (/*ex.seqDependency.active.get() ||*/!ex.checkInDependency(ex.seqDependency)) {
+				continue;
+			}
+			if (ex.inPipesReady()) {
+				if (ex.execState.compareAndSet(current, ExecutionState.RUN)) {
+					//ex.active.set(true);
+					wtp.execute(ex);
+					continue;
+				}
+			}
+		}
+
+		if (work.executionQueue.isEmpty() && work.execState.get() == ExecutionUnitState.RUN) {
+			if (work.hasCancels.get()) {
+				work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.CANCEL);
+			} else {
+				work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.COMPLETE);
+			}
+			w.remove();
+		}
+
+	}
+
+	public void schedule(WorkImpl eu) throws SchedulerException {
+		if (!eu.stateChange(ExecutionUnitState.BUILD, ExecutionUnitState.READY)) {
+			throw new SchedulerException("Unexpected State");
+		}
+		if (!workQueue.add(eu)) {
+			throw new SchedulerException("Unable to schedule ExecutionUnit");
+		} else {
+
 		}
 	}
 
-	public void schedule(ExecutionUnitBase eu) throws SchedulerException {
-		if (!executionUnitQueue.add(eu)) {
-			throw new SchedulerException("Unable to schedule ExecutionUnit");
+	public boolean cancel(WorkImpl eu) throws SchedulerException {
+		if (!eu.stateChange(eu.execState.get(), ExecutionUnitState.CANCEL)) {
+			return false;
 		}
+		return true;
 	}
 
 	public class SchedulerRejectedExecHandler implements RejectedExecutionHandler {
 
 		@Override
 		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-			log.warning(String.format("Rejected execution %s", (ExecutionBase) r));
+			log.warning(String.format("Rejected execution %s", (ExecutionStage) r));
 
 		}
 
 	}
 
-	public static class ExecutionUnitBaseComparator implements Comparator<ExecutionUnitBase> {
+	public static class ExecutionUnitBaseComparator implements Comparator<ExecutionUnitBuilder> {
 
 		@Override
-		public int compare(ExecutionUnitBase e1, ExecutionUnitBase e2) {
+		public int compare(ExecutionUnitBuilder e1, ExecutionUnitBuilder e2) {
 			// TODO Auto-generated method stub
 			return 0;
 		}
@@ -122,6 +191,10 @@ public class Scheduler implements Runnable {
 	public static class SchedulerException extends Exception {
 		public SchedulerException(String msg) {
 			super(msg);
+		}
+
+		public SchedulerException(Throwable e) {
+			super(e);
 		}
 	}
 

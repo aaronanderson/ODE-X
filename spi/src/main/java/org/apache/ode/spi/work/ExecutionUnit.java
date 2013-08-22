@@ -16,79 +16,104 @@ public interface ExecutionUnit {
 
 	//New ExecutionUnits
 
-	public ParallelExecutionUnit parallel();
+	public ExecutionUnit beginParallel() throws ExecutionUnitException;
 
-	public SequentialExecutionUnit sequential();
+	public ExecutionUnit endParallel() throws ExecutionUnitException;
 
-	public Execution jobCmd(QName commandName);
+	public ExecutionUnit beginSequential() throws ExecutionUnitException;
 
-	public InExecution inCmd(QName commandName);
+	public ExecutionUnit endSequential() throws ExecutionUnitException;
 
-	public OutExecution outCmd(QName commandName);
+	public Execution jobCmd(QName commandName) throws ExecutionUnitException;
 
-	public InOutExecution inOutCmd(QName commandName);
+	public InExecution inCmd(QName commandName) throws ExecutionUnitException;
 
-	public Execution jobOp(QName operationName);
+	public OutExecution outCmd(QName commandName) throws ExecutionUnitException;
 
-	public InExecution inOp(QName operationName);
+	public InOutExecution inOutCmd(QName commandName) throws ExecutionUnitException;
 
-	public OutExecution outOp(QName operationName);
+	public Execution jobOp(QName operationName) throws ExecutionUnitException;
 
-	public InOutExecution inOutOp(QName operationName);
+	public InExecution inOp(QName operationName) throws ExecutionUnitException;
 
-	public Execution run(Job job);
+	public OutExecution outOp(QName operationName) throws ExecutionUnitException;
 
-	public InExecution run(In<?> in);
+	public InOutExecution inOutOp(QName operationName) throws ExecutionUnitException;
 
-	public OutExecution run(Out<?> out);
+	public Execution run(Job job) throws ExecutionUnitException;
 
-	public InOutExecution run(InOut<?, ?> inout);
+	public InExecution run(In<?> in) throws ExecutionUnitException;
 
-	public <I extends InStream> I inStream(Class<I> struct) throws ExecutionUnitException;
+	public OutExecution run(Out<?> out) throws ExecutionUnitException;
 
-	public <O extends OutStream> O outStream(Class<O> struct) throws ExecutionUnitException;
+	public InOutExecution run(InOut<?, ?> inout) throws ExecutionUnitException;
 
-	public <V> ExecutionUnit setEnvironment(QName name, V value);
+	public <I extends Buffer> I newBuffer(Class<I> struct) throws ExecutionUnitException;
 
-	public <V> V getEnvironment(QName name);
+	public <V> ExecutionUnit setEnvironment(QName name, V value) throws ExecutionUnitException;;
 
-	public ExecutionUnit unsetEnvironment(QName name);
+	public <V> V getEnvironment(QName name) throws ExecutionUnitException;;
 
-	public <E extends Throwable> void handle(E e, QName handlerOperationName);
+	public ExecutionUnit unsetEnvironment(QName name) throws ExecutionUnitException;;
 
-	public <E extends Throwable> void handle(E e, Aborted aborted);
+	public <E extends Throwable> void handle(Class<E> e, QName handlerOperationName) throws ExecutionUnitException;;
+
+	public <E extends Throwable> void handle(Class<E> e, Aborted aborted) throws ExecutionUnitException;
+
+	public static interface Transform {
+
+	}
+
+	public static interface OneToOne extends Transform {
+
+		public void transform(Object[] from, Object[] to);
+	}
+
+	public static interface OneToMany extends Transform {
+
+		public void transform(Object[] from, Object[][] to);
+	}
+
+	public static interface ManyToOne extends Transform {
+
+		public void transform(Object[][] from, Object[] to);
+	}
 
 	public static enum ExecutionState {
-		BUILD, SUBMIT, READY, RUN, BLOCK, ABORT, CANCEL, COMPLETE;
+		READY, BLOCK_IN, RUN, BLOCK_RUN, BLOCK_OUT, CANCEL, ABORT, COMPLETE;
 	}
 
 	public static interface Execution {
 
-		public ExecutionState state(long timeout, TimeUnit unit, ExecutionState... expected) throws ExecutionUnitException;
+		public void initializer();
+
+		public void finalizer();
+
+		public ExecutionState state() throws ExecutionUnitException;
 
 	}
 
-	public static interface InExecution extends Execution {
+	public static interface InExecution {
 
-		//public void finalize();
+		public <O extends Buffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException;
 
-		public <O extends OutStream> InExecution pipeIn(O stream);
+		public OutExecution pipeIn(OutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
-		public OutExecution pipeIn(OutExecution execUnit, int... map);
+		public InOutExecution pipeIn(InOutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
-		public InOutExecution pipeIn(InOutExecution execUnit, int... map);
+		public ExecutionState state() throws ExecutionUnitException;
 
 	}
 
-	public static interface OutExecution extends Execution {
+	public static interface OutExecution {
 
-		//public void initialize();
+		public <I extends Buffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException;
 
-		public <I extends InStream> OutExecution pipeOut(I stream);
+		public InExecution pipeOut(InExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
-		public InExecution pipeOut(InExecution execUnit, int... map);
+		public InOutExecution pipeOut(InOutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
-		public InOutExecution pipeOut(InOutExecution execUnit, int... map);
+		public ExecutionState state() throws ExecutionUnitException;
 	}
 
 	public static interface InOutExecution extends InExecution, OutExecution {
@@ -96,7 +121,7 @@ public interface ExecutionUnit {
 	}
 
 	public static enum ExecutionUnitState {
-		BUILD, SUBMIT, RUN, BLOCK, ABORT, CANCEL, COMPLETE;
+		BUILD, SUBMIT, READY, RUN, BLOCK, CANCEL, COMPLETE;
 	}
 
 	public interface Work extends ExecutionUnit {
@@ -104,7 +129,7 @@ public interface ExecutionUnit {
 		//termination methods
 		public void submit() throws ExecutionUnitException;
 
-		ExecutionState state(long timeout, TimeUnit unit, ExecutionUnitState... expected) throws ExecutionUnitException;
+		ExecutionUnitState state(long timeout, TimeUnit unit, ExecutionUnitState... expected) throws ExecutionUnitException;
 
 		public void cancel() throws ExecutionUnitException;
 
@@ -118,9 +143,9 @@ public interface ExecutionUnit {
 
 		public void abort(Throwable t) throws ExecutionUnitException;
 
-		//public <I extends InStream> I inStream();
+		public <I extends Buffer> I inBuffer();
 
-		//public <O extends OutStream> O outStream();
+		public <O extends Buffer> O outBuffer();
 
 	}
 
@@ -138,31 +163,18 @@ public interface ExecutionUnit {
 
 	}
 
-	public static interface SequentialExecutionUnit extends ExecutionUnit {
-
-	}
-
-	public static interface ParallelExecutionUnit extends ExecutionUnit {
-
-	}
-
 	public static interface Aborted {
 
 		public void abort(Throwable t);
 
 	}
 
-	//Using a stream pattern data is passed by order in the stream
+	//Using a buffer pattern data is passed by order in the buffer
 	//implements InStream or OutStream
 	//no methods, only fields
 
 	//read data in
-	public static interface InStream {
-
-	}
-
-	//write data out
-	public static interface OutStream {
+	public static interface Buffer {
 
 	}
 
@@ -174,21 +186,23 @@ public interface ExecutionUnit {
 
 	}
 
-	public static interface In<I extends InStream> {
+	public static interface In<I extends Buffer> {
 
 		public void in(WorkItem execUnit, I in);
 	}
 
-	public static interface Out<O extends OutStream> {
+	public static interface Out<O extends Buffer> {
 
 		public void out(WorkItem execUnit, O out);
 	}
 
-	public static interface InOut<I extends InStream, O extends OutStream> {
+	public static interface InOut<I extends Buffer, O extends Buffer> {
 
 		public void inOut(WorkItem execUnit, I in, O out);
 	}
 
+	/*
+	 zero arg constructor or single element array instead
 	public static final class H<T> {
 
 		public final T value;
@@ -197,7 +211,7 @@ public interface ExecutionUnit {
 			this.value = value;
 		}
 
-	}
+	}*/
 
 	@Retention(RUNTIME)
 	@Target(PARAMETER)

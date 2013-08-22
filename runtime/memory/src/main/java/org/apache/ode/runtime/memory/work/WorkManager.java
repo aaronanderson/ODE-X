@@ -105,7 +105,7 @@ public class WorkManager {
 		public Work get() {
 
 			try {
-				return new WorkImpl(null, wm.scheduler());
+				return new WorkImpl(wm.scheduler());
 			} catch (PlatformException e) {
 				log.log(Level.SEVERE, "", e);
 				return null;

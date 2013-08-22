@@ -1,39 +1,60 @@
 package org.apache.ode.runtime.memory.work;
 
+import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
-import javax.xml.namespace.QName;
-
-import org.apache.ode.runtime.memory.work.Scheduler.SchedulerException;
-import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 
-public class WorkItemImpl extends ExecutionUnitBase implements WorkItem {
+public class WorkItemImpl extends ExecutionUnitBuilder implements WorkItem {
 
-	public WorkItemImpl(ExecutionUnitBase parent) {
-		super(parent, parent.scheduler);
-	}
+	Queue<ExecutionStage> executionQueue;
 
-	@Override
-	public void submit() throws ExecutionUnitException {
-		try {
-			scheduler.schedule(this);
-		} catch (SchedulerException e) {
-			throw new ExecutionUnitException(e);
+	public WorkItemImpl(Frame parent) {
+		super(parent);
+		Frame f = frame;
+		while (f != null) {
+			if (f instanceof RootFrame) {
+				this.executionQueue = ((RootFrame) f).executionQueue;
+			}
+			f = f.parentFrame;
 		}
 
 	}
 
 	@Override
+	public void submit() throws ExecutionUnitException {
+		if (executionQueue == null) {
+			throw new ExecutionUnitException("RootFrame not found");
+		}
+		executionQueue.addAll(executionBuildQueue);
+		executionBuildQueue.clear();
+
+	}
+
+	@Override
 	public Semaphore block() throws ExecutionUnitException {
-		// TODO Auto-generated method stub
-		return null;
+		if (frame.block == null) {
+			frame.block = new Semaphore(1);
+		}
+		return frame.block;
 	}
 
 	@Override
 	public void abort(Throwable t) throws ExecutionUnitException {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public <I extends Buffer> I inBuffer() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public <O extends Buffer> O outBuffer() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
