@@ -57,9 +57,6 @@ public class Scheduler implements Runnable {
 					long start = System.currentTimeMillis();
 					for (Iterator<WorkImpl> i = workQueue.iterator(); i.hasNext();) {
 						WorkImpl wi = i.next();
-						if (wi.execState.get() == ExecutionUnitState.READY) {
-							wi.execState.set(ExecutionUnitState.RUN);
-						}
 						scan(wi, i);
 					}
 					long sleep = scanTime - (System.currentTimeMillis() - start);
@@ -105,46 +102,48 @@ public class Scheduler implements Runnable {
 			switch (current) {
 			case COMPLETE:
 				i.remove();
-				continue;
+				break;
 
 			case ABORT:
 				i.remove();
 				work.hasCancels.compareAndSet(false, true);
-				continue;
+				break;
 
 			case CANCEL:
 				i.remove();
 				work.hasCancels.compareAndSet(false, true);
-				continue;
-			case RUN:
-				//wtp.execute(ex);
-				continue;
-			case BLOCK_OUT:
-				if (ex.outPipesFinished()) {
-					if (ex.execState.compareAndSet(current, ExecutionState.COMPLETE)) {
-						i.remove();
+				break;
+			case READY:
+			case BLOCK_IN:
+				if (ex.inPipesReady()) {
+					if (ex.execState.compareAndSet(current, ExecutionState.RUN)) {
+						wtp.execute(ex);
 					}
 				}
-				continue;
-			}
-			if (/*ex.seqDependency.active.get() ||*/!ex.checkInDependency(ex.seqDependency)) {
-				continue;
-			}
-			if (ex.inPipesReady()) {
-				if (ex.execState.compareAndSet(current, ExecutionState.RUN)) {
-					//ex.active.set(true);
+				break;
+			case BLOCK_SEQ:
+				if (ex.checkInDependency(ex.seqDependency)) {
 					wtp.execute(ex);
-					continue;
+				}
+				break;
+			case BLOCK_RUN:
+				if (ex.frame.block.tryAcquire()) {
+					ex.frame.block.release();
+					wtp.execute(ex);
+				}
+				break;
+				
+			case RUN:
+				break;
+			case BLOCK_OUT:
+				if (ex.outPipesFinished()) {
+					wtp.execute(ex);
 				}
 			}
+			break;
 		}
 
-		if (work.executionQueue.isEmpty() && work.execState.get() == ExecutionUnitState.RUN) {
-			if (work.hasCancels.get()) {
-				work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.CANCEL);
-			} else {
-				work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.COMPLETE);
-			}
+		if (work.executionQueue.isEmpty() && work.execState.get() != ExecutionUnitState.RUN) {
 			w.remove();
 		}
 

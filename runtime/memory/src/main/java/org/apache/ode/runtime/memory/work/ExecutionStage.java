@@ -7,10 +7,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.runtime.memory.work.WorkImpl.RootFrame;
 import org.apache.ode.spi.work.ExecutionUnit.Buffer;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
+import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 import org.apache.ode.spi.work.ExecutionUnit.InExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.ManyToOne;
@@ -22,6 +24,7 @@ import org.apache.ode.spi.work.ExecutionUnit.Transform;
 public abstract class ExecutionStage extends Stage implements Execution, InExecution, OutExecution, InOutExecution, Runnable {
 	protected Mode mode;
 	protected Frame frame;
+	protected WorkImpl work;
 	protected ExecutionStage seqDependency;
 
 	protected boolean initializer = false;
@@ -33,8 +36,15 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	//protected AtomicBoolean active = new AtomicBoolean(false);
 
 	public ExecutionStage(Frame frame, Mode mode) {
-		this.frame=frame;
+		this.frame = frame;
 		this.mode = mode;
+		Frame f = frame;
+		while (f != null) {
+			if (f instanceof RootFrame) {
+				this.work = ((RootFrame) f).work;
+			}
+			f = f.parentFrame;
+		}
 	}
 
 	public static enum Mode {
@@ -63,24 +73,38 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		ExecutionStage target = this;
 		boolean finished = false;
 		while (!finished) {
-			switch (target.execState.get()) {
+			ExecutionState current = target.execState.get();
+			switch (current) {
 			case READY:
-				target.execState.compareAndSet(ExecutionState.READY, ExecutionState.BLOCK_IN);
+				target.execState.compareAndSet(current, ExecutionState.BLOCK_IN);
 				break;
 			case COMPLETE:
 			case CANCEL:
 			case ABORT:
+				if (work.executionCount.decrementAndGet() == 0) {
+					if (work.hasCancels.get()) {
+						work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.CANCEL);
+					} else {
+						work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.COMPLETE);
+					}
+				}
 				finished = true;
 				break;
 			case BLOCK_IN:
 				if (target.inPipesReady()) {
-					target.execState.compareAndSet(ExecutionState.BLOCK_IN, ExecutionState.RUN);
+					target.execState.compareAndSet(current, ExecutionState.RUN);
 				} else {
 					finished = true;
 				}
 				break;
+			case BLOCK_SEQ:
+				finished = true;
+				break;
 			case RUN:
 				try {
+					if (work.execState.get() == ExecutionUnitState.READY) {
+						work.execState.compareAndSet(ExecutionUnitState.READY, ExecutionUnitState.RUN);
+					}
 					if (!target.inPipesProcessed) {
 						target.transformInPipes();
 					}
@@ -93,11 +117,11 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 					if (!target.outPipesProcessed) {
 						es = target.transformOutAndSteal();
 					}
-					if (es != null) {
-						ExecutionStage current = target;
+					if (es != null && es.checkInDependency(es.seqDependency)) {
+						ExecutionStage currentExec = target;
 						target = es;
-						target.execState.set(ExecutionState.RUN);
-						current.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
+						currentExec.execState.set(ExecutionState.RUN);
+						currentExec.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
 					} else {
 						target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
 					}

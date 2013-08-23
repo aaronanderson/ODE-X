@@ -1,22 +1,21 @@
 package org.apache.ode.runtime.memory.work;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.memory.work.ExecutionStage.Mode;
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.EnvironmentAction.EnvMode;
+import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.spi.work.ExecutionUnit;
 
-public class ExecutionUnitBuilder implements ExecutionUnit {
+public class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
 
-	final protected Frame frame;
+	final protected F frame;
 
 	final protected Queue<ExecutionStage> executionBuildQueue = new LinkedList<>();
 	protected Queue<BuildMode> mode = new LinkedList<>();
@@ -24,6 +23,7 @@ public class ExecutionUnitBuilder implements ExecutionUnit {
 	public static class Frame {
 
 		final protected Frame parentFrame;
+
 		final protected Map<QName, EnvironmentAction<?>> environment = new HashMap<>();
 		final protected Map<Class<? extends Throwable>, ? extends HandlerExecution> handlers = new HashMap<>();
 		protected Map<? super Buffer, BufferStage> buffers = new HashMap<>();
@@ -34,21 +34,8 @@ public class ExecutionUnitBuilder implements ExecutionUnit {
 		}
 	}
 
-	public static class RootFrame extends Frame {
-
-		final protected Queue<ExecutionStage> executionQueue = new ConcurrentLinkedQueue<>();
-
-		public RootFrame() {
-			super(null);
-		}
-	}
-
-	public ExecutionUnitBuilder() {
-		this.frame = new RootFrame();
-	}
-
-	public ExecutionUnitBuilder(Frame parentFrame) {
-		this.frame = new Frame(parentFrame);
+	public ExecutionUnitBuilder(F frame) {
+		this.frame = frame;
 	}
 
 	public static enum BuildMode {

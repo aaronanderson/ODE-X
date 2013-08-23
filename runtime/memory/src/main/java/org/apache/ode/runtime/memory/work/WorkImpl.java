@@ -5,35 +5,49 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.runtime.memory.work.Scheduler.SchedulerException;
+import org.apache.ode.runtime.memory.work.WorkImpl.RootFrame;
 import org.apache.ode.spi.work.ExecutionUnit.Work;
 
-public class WorkImpl extends ExecutionUnitBuilder implements Work {
+public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 
 	protected AtomicReference<ExecutionUnitState> execState = new AtomicReference<>(ExecutionUnitState.BUILD);
 	public AtomicBoolean hasCancels = new AtomicBoolean(false);
-	protected ReentrantLock stateLock = new ReentrantLock();
-	protected Condition changeState = stateLock.newCondition();
-	protected Map<ExecutionUnitState, Set<Condition>> specificStateListeners = new HashMap<>();
+	final protected AtomicInteger executionCount = new AtomicInteger();
+	final protected Queue<ExecutionStage> executionQueue = new ConcurrentLinkedQueue<>();
+	final protected ReentrantLock stateLock = new ReentrantLock();
+	final protected Condition changeState = stateLock.newCondition();
+	final protected Map<ExecutionUnitState, Set<Condition>> specificStateListeners = new HashMap<>();
 
-	protected Queue<ExecutionStage> executionQueue;
 	protected Scheduler scheduler;
 
-	public WorkImpl(Scheduler scheduler) {
-		super();
-		this.scheduler = scheduler;
-		executionQueue = ((RootFrame) frame).executionQueue;
+	public static class RootFrame extends Frame {
+		protected WorkImpl work;
 
+		public RootFrame() {
+			super(null);
+
+		}
+	}
+
+	public WorkImpl(Scheduler scheduler) {
+		super(new RootFrame());
+		frame.work = this;
+		this.scheduler = scheduler;
 	}
 
 	@Override
 	public void submit() throws ExecutionUnitException {
+		executionCount.addAndGet(executionBuildQueue.size());
 		executionQueue.addAll(executionBuildQueue);
 		executionBuildQueue.clear();
 		try {

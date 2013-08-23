@@ -1,20 +1,21 @@
 package org.apache.ode.runtime.memory.work;
 
-import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
+import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.runtime.memory.work.WorkImpl.RootFrame;
 import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 
-public class WorkItemImpl extends ExecutionUnitBuilder implements WorkItem {
+public class WorkItemImpl extends ExecutionUnitBuilder<Frame> implements WorkItem {
 
-	Queue<ExecutionStage> executionQueue;
+	WorkImpl work;
 
 	public WorkItemImpl(Frame parent) {
 		super(parent);
 		Frame f = frame;
 		while (f != null) {
 			if (f instanceof RootFrame) {
-				this.executionQueue = ((RootFrame) f).executionQueue;
+				this.work = ((RootFrame) f).work;
 			}
 			f = f.parentFrame;
 		}
@@ -23,10 +24,11 @@ public class WorkItemImpl extends ExecutionUnitBuilder implements WorkItem {
 
 	@Override
 	public void submit() throws ExecutionUnitException {
-		if (executionQueue == null) {
+		if (work == null) {
 			throw new ExecutionUnitException("RootFrame not found");
 		}
-		executionQueue.addAll(executionBuildQueue);
+		work.executionCount.addAndGet(executionBuildQueue.size());
+		work.executionQueue.addAll(executionBuildQueue);
 		executionBuildQueue.clear();
 
 	}

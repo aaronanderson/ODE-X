@@ -80,7 +80,7 @@ public interface ExecutionUnit {
 	}
 
 	public static enum ExecutionState {
-		READY, BLOCK_IN, RUN, BLOCK_RUN, BLOCK_OUT, CANCEL, ABORT, COMPLETE;
+		READY, BLOCK_IN, BLOCK_SEQ, RUN, BLOCK_RUN, BLOCK_OUT, CANCEL, ABORT, COMPLETE;
 	}
 
 	public static interface Execution {
