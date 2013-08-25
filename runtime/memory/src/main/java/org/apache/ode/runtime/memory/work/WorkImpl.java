@@ -26,7 +26,6 @@ public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 	final protected Queue<ExecutionStage> executionQueue = new ConcurrentLinkedQueue<>();
 	final protected ReentrantLock stateLock = new ReentrantLock();
 	final protected Condition changeState = stateLock.newCondition();
-	final protected Map<ExecutionUnitState, Set<Condition>> specificStateListeners = new HashMap<>();
 
 	protected Scheduler scheduler;
 
@@ -63,12 +62,6 @@ public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 		try {
 			if (execState.compareAndSet(currentState, newState)) {
 				changeState.signalAll();
-				Set<Condition> conds = specificStateListeners.get(newState);
-				if (conds != null) {
-					for (Condition c : conds) {
-						c.signalAll();
-					}
-				}
 				return true;
 			}
 			return false;
@@ -81,32 +74,22 @@ public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 	public ExecutionUnitState state(long timeout, TimeUnit unit, ExecutionUnitState... expected) throws ExecutionUnitException {
 		stateLock.lock();
 		try {
-			if (expected != null) {
-				Condition cond = stateLock.newCondition();
-				for (ExecutionUnitState state : expected) {
-					synchronized (specificStateListeners) {
-						Set<Condition> conds = specificStateListeners.get(state);
-						if (conds == null) {
-							conds = new HashSet<>();
-							specificStateListeners.put(state, conds);
+			if (changeState.await(timeout, unit)) {
+				ExecutionUnitState newState = execState.get();
+				if (expected != null) {
+					for (ExecutionUnitState s : expected) {
+						if (s == newState) {
+							return newState;
 						}
-						conds.add(cond);
 					}
-
-				}
-				if (cond.await(timeout, unit)) {
-					return execState.get();
+					throw new ExecutionUnitException(String.format("Unexpected state %s", newState));
 				} else {
-					return null;
+					return newState;
 				}
 			} else {
-				if (changeState.await(timeout, unit)) {
-					return execState.get();
-				} else {
-					return null;
-				}
-
+				return null;
 			}
+
 		} catch (InterruptedException ie) {
 			throw new ExecutionUnitException(ie);
 		} finally {

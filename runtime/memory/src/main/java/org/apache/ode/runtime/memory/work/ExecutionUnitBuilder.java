@@ -8,7 +8,6 @@ import java.util.concurrent.Semaphore;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.runtime.memory.work.ExecutionStage.Mode;
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.EnvironmentAction.EnvMode;
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.spi.work.ExecutionUnit;
@@ -26,7 +25,8 @@ public class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
 
 		final protected Map<QName, EnvironmentAction<?>> environment = new HashMap<>();
 		final protected Map<Class<? extends Throwable>, ? extends HandlerExecution> handlers = new HashMap<>();
-		protected Map<? super Buffer, BufferStage> buffers = new HashMap<>();
+		protected Map<OutBuffer, BufferStage> inBuffers = new HashMap<>();
+		protected Map<InBuffer, BufferStage> outBuffers = new HashMap<>();
 		protected Semaphore block;
 
 		public Frame(Frame parentFrame) {
@@ -126,38 +126,51 @@ public class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
 
 	@Override
 	public Execution run(Job job) throws ExecutionUnitException {
-		InstanceExec ie = new InstanceExec(frame, Mode.JOB, job);
+		InstanceExec ie = new InstanceExec(frame, job);
 		executionBuildQueue.offer(ie);
 		return ie;
 	}
 
 	@Override
 	public InExecution run(In<?> in) throws ExecutionUnitException {
-		InstanceExec ie = new InstanceExec(frame, Mode.IN, in);
+		InstanceExec ie = new InstanceExec(frame, in);
 		executionBuildQueue.offer(ie);
 		return ie;
 	}
 
 	@Override
 	public OutExecution run(Out<?> out) throws ExecutionUnitException {
-		InstanceExec ie = new InstanceExec(frame, Mode.OUT, out);
+		InstanceExec ie = new InstanceExec(frame, out);
 		executionBuildQueue.offer(ie);
 		return ie;
 	}
 
 	@Override
 	public InOutExecution run(InOut<?, ?> inout) throws ExecutionUnitException {
-		InstanceExec ie = new InstanceExec(frame, Mode.INOUT, inout);
+		InstanceExec ie = new InstanceExec(frame, inout);
 		executionBuildQueue.offer(ie);
 		return ie;
 	}
 
 	@Override
-	public <I extends Buffer> I newBuffer(Class<I> struct) throws ExecutionUnitException {
+	public <I extends InBuffer> I newInBuffer(Class<I> struct) throws ExecutionUnitException {
 		try {
 			I ins = struct.newInstance();
 			BufferStage bs = new BufferStage(ins);
-			frame.buffers.put(ins, bs);
+			frame.outBuffers.put((InBuffer)ins, bs);
+			return ins;
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new ExecutionUnitException(e);
+		}
+
+	}
+
+	@Override
+	public <O extends OutBuffer> O newOutBuffer(Class<O> struct) throws ExecutionUnitException {
+		try {
+			O ins = struct.newInstance();
+			BufferStage bs = new BufferStage(ins);
+			frame.inBuffers.put(ins, bs);
 			return ins;
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new ExecutionUnitException(e);

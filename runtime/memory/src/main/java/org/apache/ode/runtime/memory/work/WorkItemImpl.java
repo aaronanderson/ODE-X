@@ -48,13 +48,13 @@ public class WorkItemImpl extends ExecutionUnitBuilder<Frame> implements WorkIte
 	}
 
 	@Override
-	public <I extends Buffer> I inBuffer() {
+	public <I extends InBuffer> I inBuffer() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public <O extends Buffer> O outBuffer() {
+	public <O extends OutBuffer> O outBuffer() {
 		// TODO Auto-generated method stub
 		return null;
 	}

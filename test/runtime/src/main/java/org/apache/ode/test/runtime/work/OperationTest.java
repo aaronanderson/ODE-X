@@ -9,10 +9,11 @@ import javax.inject.Provider;
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.work.Command;
 import org.apache.ode.spi.work.ExecutionUnit;
-import org.apache.ode.spi.work.ExecutionUnit.Buffer;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.I;
+import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.O;
+import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
 import org.apache.ode.spi.work.Operation;
 import org.apache.ode.test.core.TestDIContainer;
 import org.apache.ode.test.runtime.work.OperationTest.TestCommandSet.StreamCmd;
@@ -58,13 +59,13 @@ public class OperationTest {
 
 	}
 
-	public static class StreamOpIS implements Buffer {
+	public static class StreamOpIS implements InBuffer {
 
 		public int in;
 
 	}
 
-	public static class StreamOpOS implements Buffer {
+	public static class StreamOpOS implements OutBuffer {
 
 		public int out;
 

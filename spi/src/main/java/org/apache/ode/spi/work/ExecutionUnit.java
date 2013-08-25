@@ -48,7 +48,9 @@ public interface ExecutionUnit {
 
 	public InOutExecution run(InOut<?, ?> inout) throws ExecutionUnitException;
 
-	public <I extends Buffer> I newBuffer(Class<I> struct) throws ExecutionUnitException;
+	public <I extends InBuffer> I newInBuffer(Class<I> struct) throws ExecutionUnitException;
+
+	public <O extends OutBuffer> O newOutBuffer(Class<O> struct) throws ExecutionUnitException;
 
 	public <V> ExecutionUnit setEnvironment(QName name, V value) throws ExecutionUnitException;;
 
@@ -95,7 +97,7 @@ public interface ExecutionUnit {
 
 	public static interface InExecution {
 
-		public <O extends Buffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException;
+		public <O extends OutBuffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException;
 
 		public OutExecution pipeIn(OutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
@@ -107,7 +109,7 @@ public interface ExecutionUnit {
 
 	public static interface OutExecution {
 
-		public <I extends Buffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException;
+		public <I extends InBuffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException;
 
 		public InExecution pipeOut(InExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
@@ -143,9 +145,9 @@ public interface ExecutionUnit {
 
 		public void abort(Throwable t) throws ExecutionUnitException;
 
-		public <I extends Buffer> I inBuffer();
+		public <I extends InBuffer> I inBuffer();
 
-		public <O extends Buffer> O outBuffer();
+		public <O extends OutBuffer> O outBuffer();
 
 	}
 
@@ -174,7 +176,11 @@ public interface ExecutionUnit {
 	//no methods, only fields
 
 	//read data in
-	public static interface Buffer {
+	public static interface InBuffer {
+
+	}
+
+	public static interface OutBuffer {
 
 	}
 
@@ -186,17 +192,17 @@ public interface ExecutionUnit {
 
 	}
 
-	public static interface In<I extends Buffer> {
+	public static interface In<I extends InBuffer> {
 
 		public void in(WorkItem execUnit, I in);
 	}
 
-	public static interface Out<O extends Buffer> {
+	public static interface Out<O extends OutBuffer> {
 
 		public void out(WorkItem execUnit, O out);
 	}
 
-	public static interface InOut<I extends Buffer, O extends Buffer> {
+	public static interface InOut<I extends InBuffer, O extends OutBuffer> {
 
 		public void inOut(WorkItem execUnit, I in, O out);
 	}

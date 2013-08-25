@@ -14,16 +14,17 @@ import javax.inject.Provider;
 
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.runtime.Node;
-import org.apache.ode.spi.work.ExecutionUnit.Buffer;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 import org.apache.ode.spi.work.ExecutionUnit.In;
+import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.InExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InOut;
 import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.Job;
 import org.apache.ode.spi.work.ExecutionUnit.Out;
+import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.OutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.Work;
 import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
@@ -66,7 +67,7 @@ public class InstanceTest {
 		assertFalse(jt.ran);
 		Execution ex = e.run(jt);
 		e.submit();
-		ExecutionUnitState state = e.state(200000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
 		assertEquals(ExecutionUnitState.COMPLETE, state);
 		assertTrue(jt.ran);
 
@@ -87,6 +88,22 @@ public class InstanceTest {
 		} catch (ExecutionUnitException ee) {
 
 		}
+
+	}
+
+	@Test
+	public void testBuffer() throws Exception {
+		Work e = workProvider.get();
+		StringOS sos = e.newOutBuffer(StringOS.class);
+		sos.out = "First";
+		StringIS sis = e.newInBuffer(StringIS.class);
+
+		InOutExecution ioe = e.run(new InOutEcho());
+		ioe.pipeIn(sos);
+		ioe.pipeOut(sis);
+		e.submit();
+		e.state(30000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals("FirstMiddleLast", sis.in + "Last");
 
 	}
 
@@ -140,28 +157,28 @@ public class InstanceTest {
 		@Override
 		public void run(WorkItem execUnit) {
 			ran = true;
-			System.out.println("******************************* JobTest ran");
+			//System.out.println("******************************* JobTest ran");
 		}
 
 	}
 
-	public static class StringIS implements Buffer {
+	public static class StringIS implements InBuffer {
 		public String in;
 	}
 
-	public static class StringOS implements Buffer {
+	public static class StringOS implements OutBuffer {
 		public String out;
 	}
 
-	public static class IntIS implements Buffer {
+	public static class IntIS implements InBuffer {
 		public int in;
 	}
 
-	public static class IntOS implements Buffer {
+	public static class IntOS implements OutBuffer {
 		public int out;
 	}
 
-	public static class IntQIS implements Buffer {
+	public static class IntQIS implements InBuffer {
 		public Queue<Integer> in;
 	}
 

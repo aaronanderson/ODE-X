@@ -5,23 +5,29 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.runtime.memory.work.WorkImpl.RootFrame;
-import org.apache.ode.spi.work.ExecutionUnit.Buffer;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
+import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.InExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.ManyToOne;
 import org.apache.ode.spi.work.ExecutionUnit.OneToMany;
 import org.apache.ode.spi.work.ExecutionUnit.OneToOne;
+import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.OutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.Transform;
 
 public abstract class ExecutionStage extends Stage implements Execution, InExecution, OutExecution, InOutExecution, Runnable {
+
+	private static final Logger log = Logger.getLogger(ExecutionStage.class.getName());
+
 	protected Mode mode;
 	protected Frame frame;
 	protected WorkImpl work;
@@ -35,7 +41,8 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	//protected AtomicBoolean active = new AtomicBoolean(false);
 
-	public ExecutionStage(Frame frame, Mode mode) {
+	public ExecutionStage(Object[] input, Object[] output, Frame frame, Mode mode) {
+		super(input, output);
 		this.frame = frame;
 		this.mode = mode;
 		Frame f = frame;
@@ -127,13 +134,18 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 					}
 				} catch (Throwable t) {
 					Frame f = frame;
+					boolean handled = false;
 					while (f != null) {
 						for (Map.Entry<Class<? extends Throwable>, ? extends HandlerExecution> e : f.handlers.entrySet()) {
 							if (e.getKey().isAssignableFrom(t.getClass())) {
 								e.getValue().exec();
+								handled = true;
 							}
 						}
 						f = f.parentFrame;
+					}
+					if (!handled) {
+						log.log(Level.SEVERE, "", t);
 					}
 					target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.ABORT);
 				}
@@ -188,7 +200,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		boolean finished = true;
 
 		if (outPipes != null) {
-			for (Pipe p : inPipes) {
+			for (Pipe p : outPipes) {
 				if (p.to instanceof ExecutionStage) {
 					finished &= checkOutDependency((ExecutionStage) p.to);
 				}
@@ -243,7 +255,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		inPipesProcessed = true;
 		if (inPipes != null) {
 			for (Pipe p : inPipes) {
-				if (p.from instanceof BufferStage) {
+				if (p.from instanceof BufferStage) { //read in buffers
 					BufferStage bs = (BufferStage) p.from;
 					if (!bs.read) {
 						bs.read();
@@ -257,63 +269,69 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 							}
 						}
 					}
-				} else if (p.from != null && p.to != null) {//one to one
-					if (p.transform != null) {
-						if (p.transform instanceof OneToOne) {
-							((OneToOne) p.transform).transform(p.from.value, p.to.value);
-						} else {
-							throw new StageException(String.format("Expected OneToOne transform but found type %s", p.transform.getClass()));
-						}
-					} else {
-						for (int i = 0; i < p.from.value.length && i < p.to.value.length; i++) {
-							p.to.value[i] = p.from.value[i];
-						}
-					}
-				} else if (p.from != null && p.tos != null) {//one to many
-					Object[][] values = new Object[p.tos.size()][];
-					int i = 0;
-					for (Stage s : (List<Stage>) p.tos) {
-						values[i++] = s.value;
-					}
-					if (p.transform != null) {
-						if (p.transform instanceof OneToMany) {
-							((OneToMany) p.transform).transform(p.from.value, values);
-						} else {
-							throw new StageException(String.format("Expected OneToMany transform but found type %s", p.transform.getClass()));
-						}
-					} else {
-						for (Object[] val : values) {
-							for (int j = 0; j < p.from.value.length && j < val.length; j++) {
-								val[j] = p.from.value[j];
-							}
-						}
-					}
-				} else if (p.froms != null && p.to != null) {//many to one
-					Object[][] values = new Object[p.froms.size()][];
-					int i = 0;
-					for (Stage s : (List<Stage>) p.froms) {
-						values[i++] = s.value;
-					}
-					if (p.transform != null) {
-						if (p.transform instanceof ManyToOne) {
+				}
 
-							((ManyToOne) p.transform).transform(values, p.to.value);
-						} else {
-							throw new StageException(String.format("Expected ManyToOne transform but found type %s", p.transform.getClass()));
+				transformPipe(p);
+			}
+		}
+	}
+
+	protected void transformPipe(Pipe p) throws StageException {
+		if (p.from != null && p.to != null) {//one to one
+			if (p.transform != null) {
+				if (p.transform instanceof OneToOne) {
+					((OneToOne) p.transform).transform(p.from.output, p.to.input);
+				} else {
+					throw new StageException(String.format("Expected OneToOne transform but found type %s", p.transform.getClass()));
+				}
+			} else {
+				for (int i = 0; i < p.from.output.length && i < p.to.input.length; i++) {
+					p.to.input[i] = p.from.output[i];
+				}
+			}
+		} else if (p.from != null && p.tos != null) {//one to many
+			Object[][] inputs = new Object[p.tos.size()][];
+			int i = 0;
+			for (Stage s : (List<Stage>) p.tos) {
+				inputs[i++] = s.input;
+			}
+			if (p.transform != null) {
+				if (p.transform instanceof OneToMany) {
+					((OneToMany) p.transform).transform(p.from.output, inputs);
+				} else {
+					throw new StageException(String.format("Expected OneToMany transform but found type %s", p.transform.getClass()));
+				}
+			} else {
+				for (Object[] val : inputs) {
+					for (int j = 0; j < p.from.output.length && j < val.length; j++) {
+						val[j] = p.from.output[j];
+					}
+				}
+			}
+		} else if (p.froms != null && p.to != null) {//many to one
+			Object[][] outputs = new Object[p.froms.size()][];
+			int i = 0;
+			for (Stage s : (List<Stage>) p.froms) {
+				outputs[i++] = s.output;
+			}
+			if (p.transform != null) {
+				if (p.transform instanceof ManyToOne) {
+
+					((ManyToOne) p.transform).transform(outputs, p.to.input);
+				} else {
+					throw new StageException(String.format("Expected ManyToOne transform but found type %s", p.transform.getClass()));
+				}
+			} else {
+				int k = 0;
+				for (Object[] val : outputs) {
+					for (int j = 0; j < p.to.input.length && j < val.length; j++) {
+						if (p.to.input[j] instanceof Object[]) {
+							((Object[]) p.to.input[j])[k++] = val[j];
 						}
-					} else {
-						int k = 0;
-						for (Object[] val : values) {
-							for (int j = 0; j < p.to.value.length && j < val.length; j++) {
-								if (p.to.value[j] instanceof Object[]) {
-									((Object[]) p.to.value[j])[k++] = val[j];
-								}
-								if (p.to.value[j] instanceof Collection) {
-									((Collection) p.to.value[j]).add(val[j]);
-								} else {
-									p.to.value[j] = val[j];
-								}
-							}
+						if (p.to.input[j] instanceof Collection) {
+							((Collection) p.to.input[j]).add(val[j]);
+						} else {
+							p.to.input[j] = val[j];
 						}
 					}
 				}
@@ -323,19 +341,24 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	protected void transformOutPipes() throws StageException {//only write out buffers (sink nodes); executions will always transform their input first
 		outPipesProcessed = true;
-		for (Pipe p : outPipes) {
-			if (p.to instanceof BufferStage) {
-				BufferStage bs = (BufferStage) p.to;
-				if (!bs.write) {
-					bs.write();
+		if (outPipes != null) {
+			for (Pipe p : outPipes) {
+
+				transformPipe(p);
+
+				if (p.to instanceof BufferStage) {
+					BufferStage bs = (BufferStage) p.to;
+					if (!bs.write) {
+						bs.write();
+					}
 				}
-			}
-			if (p.tos != null) {
-				for (Stage s : (List<Stage>) p.tos) {
-					if (s instanceof BufferStage) {
-						BufferStage bs = (BufferStage) s;
-						if (!bs.write) {
-							bs.write();
+				if (p.tos != null) {
+					for (Stage s : (List<Stage>) p.tos) {
+						if (s instanceof BufferStage) {
+							BufferStage bs = (BufferStage) s;
+							if (!bs.write) {
+								bs.write();
+							}
 						}
 					}
 				}
@@ -347,6 +370,9 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		ExecutionStage canidate = null;
 		if (outPipes != null) {
 			for (Pipe p : outPipes) {
+				
+				transformPipe(p);
+				
 				if (p.to instanceof BufferStage) {
 					BufferStage bs = (BufferStage) p.to;
 					if (!bs.write) {
@@ -382,8 +408,8 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	}
 
 	@Override
-	public <I extends Buffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException {
-		BufferStage bs = frame.buffers.get(buffer);
+	public <I extends InBuffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException {
+		BufferStage bs = frame.outBuffers.get(buffer);
 		if (bs == null) {
 			throw new ExecutionUnitException("unknown buffer");
 		}
@@ -408,8 +434,8 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	}
 
 	@Override
-	public <O extends Buffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException {
-		BufferStage bs = frame.buffers.get(buffer);
+	public <O extends OutBuffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException {
+		BufferStage bs = frame.inBuffers.get(buffer);
 		if (bs == null) {
 			throw new ExecutionUnitException("unknown buffer");
 		}

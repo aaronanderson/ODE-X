@@ -9,8 +9,14 @@ public abstract class Stage {
 
 	protected LinkedList<Pipe<?, ?>> inPipes = null;
 	protected LinkedList<Pipe<?, ?>> outPipes = null;
-	protected Object[] value;
-	
+	//made final for performance reasons and to avoid NPEs
+	final protected Object[] input;
+	final protected Object[] output;
+
+	public Stage(Object[] input, Object[] output) {
+		this.input = input;
+		this.output = output;
+	}
 
 	public void addInPipe(Stage stage, Transform[] transforms) {
 		if (inPipes == null) {
@@ -38,21 +44,21 @@ public abstract class Stage {
 			}
 		}
 		Pipe p2 = new Pipe(stage, this);
-		appendFrom(p2, stage);
 		inPipes.add(p2);
 		stage.outPipes.add(p2);
 
 	}
 
 	public void appendFrom(Pipe pipe, Stage stage) {
-		if (pipe.froms == null) {
+		if (pipe.froms != null) {
+			pipe.froms.add(stage);
+		} else if (pipe.from != null) {
 			pipe.froms = new LinkedList<>();
-			if (pipe.from != null) {
-				pipe.froms.add(pipe.from);
-				pipe.from = null;
-			}
+			pipe.froms.add(pipe.from);
+			pipe.from = null;
+		} else {
+			pipe.from = stage;
 		}
-		pipe.froms.add(stage);
 	}
 
 	public boolean isFromAppendable(Pipe pipe, Stage stage) {
@@ -68,11 +74,11 @@ public abstract class Stage {
 	}
 
 	public void addOutPipe(Stage stage, Transform[] transforms) {
-		if (inPipes == null) {
-			inPipes = new LinkedList<>();
+		if (stage.inPipes == null) {
+			stage.inPipes = new LinkedList<>();
 		}
-		if (stage.outPipes == null) {
-			stage.outPipes = new LinkedList<>();
+		if (outPipes == null) {
+			outPipes = new LinkedList<>();
 		}
 		for (Pipe p : outPipes) {
 			if (transforms != null) {
@@ -92,22 +98,22 @@ public abstract class Stage {
 				return;
 			}
 		}
-		Pipe p2 = new Pipe(stage, this);
-		appendFrom(p2, stage);
+		Pipe p2 = new Pipe(this, stage);
 		outPipes.add(p2);
 		stage.inPipes.add(p2);
 
 	}
 
 	public void appendTo(Pipe pipe, Stage stage) {
-		if (pipe.tos == null) {
+		if (pipe.tos != null) {
+			pipe.tos.add(stage);
+		} else if (pipe.to != null) {
 			pipe.tos = new LinkedList<>();
-			if (pipe.to != null) {
-				pipe.tos.add(pipe.to);
-				pipe.to = null;
-			}
+			pipe.tos.add(pipe.to);
+			pipe.to = null;
+		} else {
+			pipe.to = stage;
 		}
-		pipe.froms.add(stage);
 	}
 
 	public boolean isToAppendable(Pipe pipe, Stage stage) {
