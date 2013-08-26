@@ -46,6 +46,7 @@ public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 
 	@Override
 	public void submit() throws ExecutionUnitException {
+		
 		executionCount.addAndGet(executionBuildQueue.size());
 		executionQueue.addAll(executionBuildQueue);
 		executionBuildQueue.clear();

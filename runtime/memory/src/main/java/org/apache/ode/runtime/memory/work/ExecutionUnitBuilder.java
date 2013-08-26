@@ -17,7 +17,6 @@ public class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
 	final protected F frame;
 
 	final protected Queue<ExecutionStage> executionBuildQueue = new LinkedList<>();
-	protected Queue<BuildMode> mode = new LinkedList<>();
 
 	public static class Frame {
 
@@ -38,41 +37,19 @@ public class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
 		this.frame = frame;
 	}
 
-	public static enum BuildMode {
-		CHAIN, SEQUENTIAL, PARALLEL;
-	}
-
 	@Override
-	public ExecutionUnit beginParallel() throws ExecutionUnitException {
-		if (mode.peek() == BuildMode.CHAIN) {
-			throw new ExecutionUnitException("Invalid combination");
+	public <S extends Execution, D extends Execution> ExecutionUnit sequential(S supExecUnit, D depExecUnit) throws ExecutionUnitException {
+		ExecutionStage supExecUnitStage = (ExecutionStage) supExecUnit;
+		ExecutionStage depExecUnitStage = (ExecutionStage) depExecUnit;
+		if (depExecUnitStage.supDependency != null) {
+			throw new ExecutionUnitException("Dependency execution unit already has sequential dependency");
 		}
-		mode.offer(BuildMode.PARALLEL);
-		return this;
-	}
+		if (supExecUnitStage.infDependency == null) {
+			supExecUnitStage.infDependency = new LinkedList<>();
+		}
+		supExecUnitStage.infDependency.add(depExecUnitStage);
+		depExecUnitStage.supDependency = supExecUnitStage;
 
-	@Override
-	public ExecutionUnit endParallel() throws ExecutionUnitException {
-		if (mode.poll() != BuildMode.PARALLEL) {
-			throw new ExecutionUnitException("Invalid combination");
-		}
-		return this;
-	}
-
-	@Override
-	public ExecutionUnit beginSequential() throws ExecutionUnitException {
-		if (mode.peek() == BuildMode.CHAIN) {
-			throw new ExecutionUnitException("Invalid combination");
-		}
-		mode.offer(BuildMode.SEQUENTIAL);
-		return this;
-	}
-
-	@Override
-	public ExecutionUnit endSequential() throws ExecutionUnitException {
-		if (mode.poll() != BuildMode.SEQUENTIAL) {
-			throw new ExecutionUnitException("Invalid combination");
-		}
 		return this;
 	}
 
@@ -157,7 +134,7 @@ public class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
 		try {
 			I ins = struct.newInstance();
 			BufferStage bs = new BufferStage(ins);
-			frame.outBuffers.put((InBuffer)ins, bs);
+			frame.outBuffers.put((InBuffer) ins, bs);
 			return ins;
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new ExecutionUnitException(e);

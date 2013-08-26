@@ -16,13 +16,7 @@ public interface ExecutionUnit {
 
 	//New ExecutionUnits
 
-	public ExecutionUnit beginParallel() throws ExecutionUnitException;
-
-	public ExecutionUnit endParallel() throws ExecutionUnitException;
-
-	public ExecutionUnit beginSequential() throws ExecutionUnitException;
-
-	public ExecutionUnit endSequential() throws ExecutionUnitException;
+	public <S extends Execution, D extends Execution> ExecutionUnit sequential(S supExecUnit, D depExecUnit) throws ExecutionUnitException;
 
 	public Execution jobCmd(QName commandName) throws ExecutionUnitException;
 
@@ -87,15 +81,15 @@ public interface ExecutionUnit {
 
 	public static interface Execution {
 
-		public void initializer();
+		//public void initializer();
 
-		public void finalizer();
+		//public void finalizer();
 
 		public ExecutionState state() throws ExecutionUnitException;
 
 	}
 
-	public static interface InExecution {
+	public static interface InExecution extends Execution {
 
 		public <O extends OutBuffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException;
 
@@ -103,11 +97,9 @@ public interface ExecutionUnit {
 
 		public InOutExecution pipeIn(InOutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
-		public ExecutionState state() throws ExecutionUnitException;
-
 	}
 
-	public static interface OutExecution {
+	public static interface OutExecution extends Execution {
 
 		public <I extends InBuffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException;
 
@@ -115,7 +107,6 @@ public interface ExecutionUnit {
 
 		public InOutExecution pipeOut(InOutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
-		public ExecutionState state() throws ExecutionUnitException;
 	}
 
 	public static interface InOutExecution extends InExecution, OutExecution {

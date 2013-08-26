@@ -3,6 +3,7 @@ package org.apache.ode.runtime.memory.work;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -31,7 +32,8 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	protected Mode mode;
 	protected Frame frame;
 	protected WorkImpl work;
-	protected ExecutionStage seqDependency;
+	protected ExecutionStage supDependency;
+	protected LinkedList<ExecutionStage> infDependency;
 
 	protected boolean initializer = false;
 	protected boolean finalizer = false;
@@ -58,7 +60,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		JOB, IN, OUT, INOUT;
 	}
 
-	@Override
+	/*@Override
 	public void initializer() {
 		initializer = true;
 	}
@@ -66,7 +68,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	@Override
 	public void finalizer() {
 		finalizer = true;
-	}
+	}*/
 
 	@Override
 	public ExecutionState state() throws ExecutionUnitException {
@@ -120,18 +122,27 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 						target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_RUN);
 						continue;
 					}
-					ExecutionStage es = null;
+
 					if (!target.outPipesProcessed) {
-						es = target.transformOutAndSteal();
-					}
-					if (es != null && es.checkInDependency(es.seqDependency)) {
-						ExecutionStage currentExec = target;
-						target = es;
-						currentExec.execState.set(ExecutionState.RUN);
-						currentExec.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
-					} else {
+						ExecutionStageResult res = target.transformOutAndSteal();
+						if (res.isFinished) {
+							if (res.canidate != null) {
+								ExecutionStage currentExec = target;
+								target = res.canidate;
+								target.execState.set(ExecutionState.RUN);
+								if (currentExec.execState.compareAndSet(ExecutionState.RUN, ExecutionState.COMPLETE)) {
+									work.executionCount.decrementAndGet();
+								}
+							} else {
+								target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.COMPLETE);
+							}
+						} else {
+							target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
+						}
+					} else {//probably should never reach this state
 						target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
 					}
+
 				} catch (Throwable t) {
 					Frame f = frame;
 					boolean handled = false;
@@ -194,6 +205,20 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 			}
 		}
 		return ready;
+	}
+
+	boolean superiorDependencyReady() {
+		if (supDependency != null) {
+			switch (supDependency.execState.get()) {
+			case COMPLETE:
+			case ABORT:
+			case CANCEL:
+				return true;
+			default:
+				return false;
+			}
+		}
+		return true;
 	}
 
 	boolean outPipesFinished() {
@@ -366,13 +391,18 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		}
 	}
 
-	protected ExecutionStage transformOutAndSteal() throws StageException {//only write out buffers (sink nodes); executions will always transform their input first
+	protected static class ExecutionStageResult {
+		boolean isFinished = true;
 		ExecutionStage canidate = null;
+	}
+
+	protected ExecutionStageResult transformOutAndSteal() throws StageException {//only write out buffers (sink nodes); executions will always transform their input first
+		ExecutionStageResult res = new ExecutionStageResult();
 		if (outPipes != null) {
 			for (Pipe p : outPipes) {
-				
+
 				transformPipe(p);
-				
+
 				if (p.to instanceof BufferStage) {
 					BufferStage bs = (BufferStage) p.to;
 					if (!bs.write) {
@@ -380,8 +410,10 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 					}
 				} else if (p.to instanceof ExecutionStage) {
 					ExecutionStage es = (ExecutionStage) p.to;
-					if (canidate == null && es.inPipesReady(this)) {
-						canidate = es;
+					if (res.canidate == null && es.inPipesReady(this)) {
+						res.canidate = es;
+					} else {
+						res.isFinished = false;
 					}
 				}
 				if (p.tos != null) {
@@ -393,18 +425,37 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 							}
 						} else if (s instanceof ExecutionStage) {
 							ExecutionStage es = (ExecutionStage) s;
-							if (canidate == null && es.inPipesReady(this)) {
-								canidate = es;
+							if (res.canidate == null && es.inPipesReady(this)) {
+								res.canidate = es;
+							} else {
+								res.isFinished = false;
 							}
 						}
 					}
 				}
 			}
 		}
-		if (canidate == null && seqDependency != null && seqDependency.inPipesReady()) {
-			canidate = seqDependency;
+		if (infDependency != null) {
+			ListIterator<ExecutionStage> i = infDependency.listIterator();
+			while (i.hasNext()) {
+				ExecutionStage ex = i.next();
+				ExecutionState current = ex.execState.get();
+				if (current == ExecutionState.READY || current == ExecutionState.BLOCK_SEQ) {
+					if (res.canidate == null && ex.inPipesReady()) {
+						res.canidate = ex;
+						if (i.hasNext()) {
+							res.isFinished = false;
+						}
+						break;
+					} else {
+						res.isFinished = false;
+						break;
+					}
+				}
+			}
 		}
-		return canidate;
+
+		return res;
 	}
 
 	@Override
@@ -429,7 +480,8 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	@Override
 	public InOutExecution pipeOut(InOutExecution execUnit, Transform... transforms) throws ExecutionUnitException {
-		//TODO
+		ExecutionStage inOutExec = (ExecutionStage) execUnit;
+		this.addOutPipe(inOutExec, transforms);
 		return execUnit;
 	}
 
@@ -445,13 +497,15 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	@Override
 	public OutExecution pipeIn(OutExecution execUnit, Transform... transforms) {
-		//TODO
+		ExecutionStage outExec = (ExecutionStage) execUnit;
+		this.addInPipe(outExec, transforms);
 		return execUnit;
 	}
 
 	@Override
 	public InOutExecution pipeIn(InOutExecution execUnit, Transform... transforms) throws ExecutionUnitException {
-		//TODO
+		ExecutionStage inOutExec = (ExecutionStage) execUnit;
+		this.addInPipe(inOutExec, transforms);
 		return execUnit;
 	}
 

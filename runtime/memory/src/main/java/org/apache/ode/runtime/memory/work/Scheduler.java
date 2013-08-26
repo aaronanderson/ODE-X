@@ -23,6 +23,9 @@ import java.util.Iterator;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,6 +37,9 @@ import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 public class Scheduler implements Runnable {
 
 	public static Logger log = Logger.getLogger(Scheduler.class.getName());
+
+	final protected ReentrantLock schedulerLock = new ReentrantLock();
+	final protected Condition execReady = schedulerLock.newCondition();
 
 	volatile boolean running = true;
 
@@ -61,7 +67,12 @@ public class Scheduler implements Runnable {
 					}
 					long sleep = scanTime - (System.currentTimeMillis() - start);
 					if (sleep > 0) {
-						Thread.currentThread().sleep(sleep);
+						schedulerLock.lock();
+						try {
+							execReady.await(sleep, TimeUnit.MILLISECONDS);
+						} finally {
+							schedulerLock.unlock();
+						}
 					}
 				} catch (SchedulerException ie) {
 					log.log(Level.SEVERE, "", ie);
@@ -92,8 +103,8 @@ public class Scheduler implements Runnable {
 
 	private void scan(WorkImpl work, Iterator<WorkImpl> w) throws SchedulerException {
 		//throw new SchedulerException(String.format("unexpected ExecutionUnitBase class %s ", work.getClass()));
-
-		for (Iterator<ExecutionStage> i = work.executionQueue.iterator(); i.hasNext();) {
+		Iterator<ExecutionStage> i = work.executionQueue.iterator();
+		while (i.hasNext()) {
 			ExecutionStage ex = i.next();
 			//if (ex.active.get()) { //already executing in threadpool
 			//	continue;
@@ -116,13 +127,15 @@ public class Scheduler implements Runnable {
 			case READY:
 			case BLOCK_IN:
 				if (ex.inPipesReady()) {
-					if (ex.execState.compareAndSet(current, ExecutionState.RUN)) {
+					if (!ex.superiorDependencyReady()) {
+						ex.execState.compareAndSet(current, ExecutionState.BLOCK_SEQ);
+					} else if (ex.execState.compareAndSet(current, ExecutionState.RUN)) {
 						wtp.execute(ex);
 					}
 				}
 				break;
 			case BLOCK_SEQ:
-				if (ex.checkInDependency(ex.seqDependency)) {
+				if (ex.superiorDependencyReady()) {
 					wtp.execute(ex);
 				}
 				break;
@@ -132,15 +145,16 @@ public class Scheduler implements Runnable {
 					wtp.execute(ex);
 				}
 				break;
-				
+
 			case RUN:
 				break;
 			case BLOCK_OUT:
 				if (ex.outPipesFinished()) {
 					wtp.execute(ex);
 				}
+				break;
 			}
-			break;
+
 		}
 
 		if (work.executionQueue.isEmpty() && work.execState.get() != ExecutionUnitState.RUN) {
@@ -155,8 +169,12 @@ public class Scheduler implements Runnable {
 		}
 		if (!workQueue.add(eu)) {
 			throw new SchedulerException("Unable to schedule ExecutionUnit");
-		} else {
-
+		}
+		schedulerLock.lock();
+		try {
+			execReady.signal();
+		} finally {
+			schedulerLock.unlock();
 		}
 	}
 
