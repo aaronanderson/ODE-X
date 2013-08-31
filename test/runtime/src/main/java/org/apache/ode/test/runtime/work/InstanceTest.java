@@ -6,8 +6,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,7 +19,6 @@ import javax.inject.Provider;
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.runtime.Node;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
-import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 import org.apache.ode.spi.work.ExecutionUnit.In;
 import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
@@ -140,39 +142,50 @@ public class InstanceTest {
 		e.sequential(oeu1, oeu2);
 		oeu2.pipeOut(iis);
 		e.submit();
-		e.state(300000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
 		assertEquals(3, iis.in);
 	}
 
-	//@Test
+	@Test
 	public void testParallel() throws Exception {
 		Work e = workProvider.get();
-		CountDownLatch cdl = new CountDownLatch(2);
-		//OutExecution oeu1 = e.run(new OutParallel(1, cdl));
-		//OutExecution oeu2 = e.run(new OutParallel(2, cdl));
+		CyclicBarrier barrier = new CyclicBarrier(2);
+		AtomicInteger integer = new AtomicInteger(1);
+		e.run(new ParaOutTest(barrier, integer));
+		e.run(new ParaOutTest(barrier, integer));
 		e.submit();
+		e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(3, integer.get());
 	}
 
-	//@Test
+	@Test
 	public void testOneToMany() throws Exception {
 		Work e = workProvider.get();
-		//OutExecution oeu1 = e.run(new OutSharedParallel(1));
-		//OutExecution oeu2 = e.run(new OutSharedParallel(2));
-		//InExecution ie = e.run(new InSharedParallel());
-		//oeu1.pipeOut(ie);
-		//oeu2.pipeOut(ie);
+
+		AtomicInteger integer = new AtomicInteger(1);
+		OutExecution oe = e.run(new OneToManyOutTest());
+		InExecution ie1 = e.run(new OneToManyInTest(integer));
+		InExecution ie2 = e.run(new OneToManyInTest(integer));
+		oe.pipeOut(ie1);
+		oe.pipeOut(ie2);
 		e.submit();
+		e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(3, integer.get());
+
 	}
 
-	//@Test
+	@Test
 	public void testManyToOne() throws Exception {
 		Work e = workProvider.get();
-		//OutExecution oeu1 = e.run(new OutSharedParallel(1));
-		//OutExecution oeu2 = e.run(new OutSharedParallel(2));
-		//InExecution ie = e.run(new InSharedParallel());
-		//oeu1.pipeOut(ie);
-		//oeu2.pipeOut(ie);
-		//e.submit();
+
+		OutExecution oe1 = e.run(new ManyToOneOutTest(1));
+		OutExecution oe2 = e.run(new ManyToOneOutTest(2));
+		InExecution ie = e.run(new ManyToOneInTest());
+
+		oe1.pipeOut(ie);
+		oe2.pipeOut(ie);
+		e.submit();
+		e.state(300000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
 	}
 
 	public static class JobTest implements Job {
@@ -188,6 +201,10 @@ public class InstanceTest {
 
 	public static class StringIS implements InBuffer {
 		public String in;
+	}
+
+	public static class StringCIS implements InBuffer {
+		public List<String> in = new LinkedList<>();
 	}
 
 	public static class StringOS implements OutBuffer {
@@ -284,6 +301,82 @@ public class InstanceTest {
 			out.out = integer.incrementAndGet();
 		}
 
+	}
+
+	public static class ParaOutTest implements Job {
+		CyclicBarrier barrier;
+		AtomicInteger integer;
+
+		public ParaOutTest(CyclicBarrier barrier, AtomicInteger integer) {
+			this.barrier = barrier;
+			this.integer = integer;
+		}
+
+		@Override
+		public void run(WorkItem execUnit) {
+			try {
+				barrier.await();
+				integer.incrementAndGet();
+			} catch (InterruptedException | BrokenBarrierException e) {
+				e.printStackTrace();
+			}
+
+		}
+
+	}
+
+	public static class OneToManyOutTest implements Out<StringOS> {
+
+		@Override
+		public void out(WorkItem execUnit, StringOS out) {
+			out.out = "One";
+		}
+
+	}
+
+	public static class OneToManyInTest implements In<StringIS> {
+		AtomicInteger integer;
+
+		public OneToManyInTest(AtomicInteger integer) {
+			this.integer = integer;
+		}
+
+		@Override
+		public void in(WorkItem execUnit, StringIS in) {
+			String msg = in.in;
+			assertNotNull(msg);
+			assertEquals("OneMany", msg + "Many");
+			integer.incrementAndGet();
+		}
+	}
+
+	public static class ManyToOneOutTest implements Out<StringOS> {
+		int num;
+
+		ManyToOneOutTest(int num) {
+			this.num = num;
+		}
+
+		@Override
+		public void out(WorkItem execUnit, StringOS out) {
+			out.out = "Entry" + num;
+		}
+
+	}
+
+	public static class ManyToOneInTest implements In<StringCIS> {
+
+		@Override
+		public void in(WorkItem execUnit, StringCIS in) {
+			List<String> msg = in.in;
+			assertNotNull(msg);
+			assertEquals(2, msg.size());
+			for (String s : msg) {
+				if (!"Entry1".equals(s) && !"Entry2".equals(s)) {
+					fail();
+				}
+			}
+		}
 	}
 
 }

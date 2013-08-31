@@ -56,6 +56,7 @@ public interface ExecutionUnit {
 
 	public <E extends Throwable> void handle(Class<E> e, Aborted aborted) throws ExecutionUnitException;
 
+	//Transforms should be associative, i.e. order of the transform does not matter
 	public static interface Transform {
 
 	}

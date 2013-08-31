@@ -170,6 +170,10 @@ public class Scheduler implements Runnable {
 		if (!workQueue.add(eu)) {
 			throw new SchedulerException("Unable to schedule ExecutionUnit");
 		}
+		signalScheduler();
+	}
+
+	public void signalScheduler() {
 		schedulerLock.lock();
 		try {
 			execReady.signal();

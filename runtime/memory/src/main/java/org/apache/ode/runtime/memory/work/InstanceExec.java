@@ -4,6 +4,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.runtime.memory.work.Stage.StageException;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.In;
 import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
@@ -114,6 +115,48 @@ public class InstanceExec extends ExecutionStage {
 		}
 	}
 
+
+
+	//If the instance has a buffer input then we want to read that into input object array in case it contains a collection object or some other aggregate holder that a transform can act on
+	@Override
+	protected void preInput() throws StageException {
+		switch (mode) {
+		case IN:
+		case INOUT:
+			try {
+				BufferStage.read(inputBuffer, input);
+			} catch (Throwable e) {
+				throw new StageException(e);
+			}
+		}
+	}
+
+	@Override
+	protected void postInput() throws StageException {
+		switch (mode) {
+		case IN:
+		case INOUT:
+			try {
+				BufferStage.write(input, inputBuffer);
+			} catch (Throwable e) {
+				throw new StageException(e);
+			}
+		}
+	}
+
+	@Override
+	protected void preOutput() throws StageException {
+		switch (mode) {
+		case OUT:
+		case INOUT:
+			try {
+				BufferStage.read(outputBuffer, output);
+			} catch (Throwable e) {
+				throw new StageException(e);
+			}
+		}
+	}
+
 	@Override
 	public void exec() throws Throwable {
 
@@ -122,23 +165,18 @@ public class InstanceExec extends ExecutionStage {
 			((Job) instance).run(new WorkItemImpl(frame));
 			break;
 		case IN:
-			BufferStage.write(input, inputBuffer);
 			((In) instance).in(new WorkItemImpl(frame), (InBuffer) inputBuffer);
 			break;
 		case INOUT:
-			BufferStage.write(input, inputBuffer);
 			((InOut) instance).inOut(new WorkItemImpl(frame), (InBuffer) inputBuffer, (OutBuffer) outputBuffer);
-			BufferStage.read(outputBuffer, output);
 			break;
 		case OUT:
 			((Out) instance).out(new WorkItemImpl(frame), (OutBuffer) outputBuffer);
-			BufferStage.read(outputBuffer, output);
 			break;
 		default:
 			break;
 
 		}
-		//TODO check outpipes
 
 	}
 

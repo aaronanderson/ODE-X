@@ -46,7 +46,7 @@ public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 
 	@Override
 	public void submit() throws ExecutionUnitException {
-		
+
 		executionCount.addAndGet(executionBuildQueue.size());
 		executionQueue.addAll(executionBuildQueue);
 		executionBuildQueue.clear();
@@ -56,6 +56,10 @@ public class WorkImpl extends ExecutionUnitBuilder<RootFrame> implements Work {
 			throw new ExecutionUnitException(e);
 		}
 
+	}
+
+	public void signalExecWaiting() throws ExecutionUnitException {
+		scheduler.signalScheduler();
 	}
 
 	final public boolean stateChange(ExecutionUnitState currentState, ExecutionUnitState newState) {

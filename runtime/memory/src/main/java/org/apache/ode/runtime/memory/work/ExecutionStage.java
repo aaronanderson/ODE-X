@@ -5,11 +5,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.runtime.memory.work.Stage.Pipe;
+import org.apache.ode.runtime.memory.work.Stage.StageException;
 import org.apache.ode.runtime.memory.work.WorkImpl.RootFrame;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
@@ -35,11 +38,12 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	protected ExecutionStage supDependency;
 	protected LinkedList<ExecutionStage> infDependency;
 
+	volatile protected boolean inPipesProcessed = false;
+	volatile protected boolean outPipesProcessed = false;
+
 	protected boolean initializer = false;
 	protected boolean finalizer = false;
 	protected AtomicReference<ExecutionState> execState = new AtomicReference<>(ExecutionState.READY);
-	protected boolean inPipesProcessed = false;
-	protected boolean outPipesProcessed = false;
 
 	//protected AtomicBoolean active = new AtomicBoolean(false);
 
@@ -80,6 +84,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	@Override
 	public void run() {
 		ExecutionStage target = this;
+		ExecutionStage next = null;
 		boolean finished = false;
 		while (!finished) {
 			ExecutionState current = target.execState.get();
@@ -97,7 +102,12 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 						work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.COMPLETE);
 					}
 				}
-				finished = true;
+				if (next != null) {
+					target = next;
+					next = null;
+				} else {
+					finished = true;
+				}
 				break;
 			case BLOCK_IN:
 				if (target.inPipesReady()) {
@@ -127,17 +137,13 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 						ExecutionStageResult res = target.transformOutAndSteal();
 						if (res.isFinished) {
 							if (res.canidate != null) {
-								ExecutionStage currentExec = target;
-								target = res.canidate;
-								target.execState.set(ExecutionState.RUN);
-								if (currentExec.execState.compareAndSet(ExecutionState.RUN, ExecutionState.COMPLETE)) {
-									work.executionCount.decrementAndGet();
-								}
-							} else {
-								target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.COMPLETE);
+								next = res.canidate;
+								next.execState.set(ExecutionState.RUN);
 							}
+							target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.COMPLETE);
 						} else {
 							target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
+							work.signalExecWaiting();
 						}
 					} else {//probably should never reach this state
 						target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
@@ -196,7 +202,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 				}
 
 				if (p.froms != null) {
-					for (Stage s : (LinkedList<Stage>) p.froms) {
+					for (Stage s : (Set<Stage>) p.froms) {
 						if (s instanceof ExecutionStage && s != except) {
 							ready &= checkInDependency((ExecutionStage) s);
 						}
@@ -231,7 +237,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 				}
 
 				if (p.tos != null) {
-					for (Stage s : (LinkedList<Stage>) p.tos) {
+					for (Stage s : (Set<Stage>) p.tos) {
 						if (s instanceof ExecutionStage) {
 							finished &= checkOutDependency((ExecutionStage) s);
 						}
@@ -245,6 +251,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	public boolean checkInDependency(ExecutionStage dependency) {
 		if (dependency != null) {
 			switch (dependency.execState.get()) {
+			case BLOCK_OUT:
 			case COMPLETE:
 				return true;
 			case ABORT:
@@ -276,17 +283,24 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		return true;
 	}
 
+	protected static class ExecutionStageResult {
+		boolean isFinished = true;
+		ExecutionStage canidate = null;
+	}
+
 	protected void transformInPipes() throws StageException {
 		inPipesProcessed = true;
 		if (inPipes != null) {
+
 			for (Pipe p : inPipes) {
-				if (p.from instanceof BufferStage) { //read in buffers
+
+				/*if (p.from instanceof BufferStage) { //read in buffers
 					BufferStage bs = (BufferStage) p.from;
 					if (!bs.read) {
 						bs.read();
 					}
 				} else if (p.froms != null) {
-					for (Stage s : (List<Stage>) p.froms) {
+					for (Stage s : (Set<Stage>) p.froms) {
 						if (s instanceof BufferStage) {
 							BufferStage bs = (BufferStage) s;
 							if (!bs.read) {
@@ -294,121 +308,62 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 							}
 						}
 					}
+				}*/
+				//for ManyToOne we only want to execute the transform once all executions have completed
+				if (p.fromsCompleted != null && p.fromsCompleted.incrementAndGet() != p.froms.size()) {
+					continue;
 				}
+				transformInPipe(p);
 
-				transformPipe(p);
 			}
 		}
 	}
 
-	protected void transformPipe(Pipe p) throws StageException {
-		if (p.from != null && p.to != null) {//one to one
-			if (p.transform != null) {
-				if (p.transform instanceof OneToOne) {
-					((OneToOne) p.transform).transform(p.from.output, p.to.input);
-				} else {
-					throw new StageException(String.format("Expected OneToOne transform but found type %s", p.transform.getClass()));
-				}
-			} else {
-				for (int i = 0; i < p.from.output.length && i < p.to.input.length; i++) {
-					p.to.input[i] = p.from.output[i];
-				}
-			}
-		} else if (p.from != null && p.tos != null) {//one to many
-			Object[][] inputs = new Object[p.tos.size()][];
-			int i = 0;
-			for (Stage s : (List<Stage>) p.tos) {
-				inputs[i++] = s.input;
-			}
-			if (p.transform != null) {
-				if (p.transform instanceof OneToMany) {
-					((OneToMany) p.transform).transform(p.from.output, inputs);
-				} else {
-					throw new StageException(String.format("Expected OneToMany transform but found type %s", p.transform.getClass()));
-				}
-			} else {
-				for (Object[] val : inputs) {
-					for (int j = 0; j < p.from.output.length && j < val.length; j++) {
-						val[j] = p.from.output[j];
-					}
-				}
-			}
-		} else if (p.froms != null && p.to != null) {//many to one
-			Object[][] outputs = new Object[p.froms.size()][];
-			int i = 0;
-			for (Stage s : (List<Stage>) p.froms) {
-				outputs[i++] = s.output;
-			}
-			if (p.transform != null) {
-				if (p.transform instanceof ManyToOne) {
-
-					((ManyToOne) p.transform).transform(outputs, p.to.input);
-				} else {
-					throw new StageException(String.format("Expected ManyToOne transform but found type %s", p.transform.getClass()));
-				}
-			} else {
-				int k = 0;
-				for (Object[] val : outputs) {
-					for (int j = 0; j < p.to.input.length && j < val.length; j++) {
-						if (p.to.input[j] instanceof Object[]) {
-							((Object[]) p.to.input[j])[k++] = val[j];
-						}
-						if (p.to.input[j] instanceof Collection) {
-							((Collection) p.to.input[j]).add(val[j]);
-						} else {
-							p.to.input[j] = val[j];
-						}
-					}
-				}
-			}
-		}
-	}
-
-	protected void transformOutPipes() throws StageException {//only write out buffers (sink nodes); executions will always transform their input first
+	protected void transformOutPipes() throws StageException {
 		outPipesProcessed = true;
 		if (outPipes != null) {
 			for (Pipe p : outPipes) {
 
-				transformPipe(p);
+				//for OneToMany we only want to execute the transform once all executions have completed
+				if (p.tosCompleted != null && p.tosCompleted.incrementAndGet() != p.tos.size()) {
+					continue;
+				}
 
-				if (p.to instanceof BufferStage) {
-					BufferStage bs = (BufferStage) p.to;
-					if (!bs.write) {
-						bs.write();
-					}
-				}
-				if (p.tos != null) {
-					for (Stage s : (List<Stage>) p.tos) {
-						if (s instanceof BufferStage) {
-							BufferStage bs = (BufferStage) s;
-							if (!bs.write) {
-								bs.write();
-							}
-						}
-					}
-				}
+				transformOutPipe(p);
+				/*
+								if (p.to instanceof BufferStage) {
+									BufferStage bs = (BufferStage) p.to;
+									if (!bs.write) {
+										bs.write();
+									}
+								}
+								if (p.tos != null) {
+									for (Stage s : (Set<Stage>) p.tos) {
+										if (s instanceof BufferStage) {
+											BufferStage bs = (BufferStage) s;
+											if (!bs.write) {
+												bs.write();
+											}
+										}
+									}
+								}*/
 			}
 		}
 	}
 
-	protected static class ExecutionStageResult {
-		boolean isFinished = true;
-		ExecutionStage canidate = null;
-	}
-
-	protected ExecutionStageResult transformOutAndSteal() throws StageException {//only write out buffers (sink nodes); executions will always transform their input first
+	protected ExecutionStageResult transformOutAndSteal() throws StageException {
 		ExecutionStageResult res = new ExecutionStageResult();
 		if (outPipes != null) {
 			for (Pipe p : outPipes) {
 
-				transformPipe(p);
+				if (p.tosCompleted != null && p.tosCompleted.incrementAndGet() != p.tos.size() - 1) {
+					res.isFinished = false;
+					break;
+				}
 
-				if (p.to instanceof BufferStage) {
-					BufferStage bs = (BufferStage) p.to;
-					if (!bs.write) {
-						bs.write();
-					}
-				} else if (p.to instanceof ExecutionStage) {
+				transformOutPipe(p);
+
+				if (p.to instanceof ExecutionStage) {
 					ExecutionStage es = (ExecutionStage) p.to;
 					if (res.canidate == null && es.inPipesReady(this)) {
 						res.canidate = es;
@@ -417,13 +372,8 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 					}
 				}
 				if (p.tos != null) {
-					for (Stage s : (List<Stage>) p.tos) {
-						if (s instanceof BufferStage) {
-							BufferStage bs = (BufferStage) s;
-							if (!bs.write) {
-								bs.write();
-							}
-						} else if (s instanceof ExecutionStage) {
+					for (Stage s : (Set<Stage>) p.tos) {
+						if (s instanceof ExecutionStage) {
 							ExecutionStage es = (ExecutionStage) s;
 							if (res.canidate == null && es.inPipesReady(this)) {
 								res.canidate = es;
