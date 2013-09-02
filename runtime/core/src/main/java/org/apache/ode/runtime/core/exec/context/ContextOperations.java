@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.memory.work;
+package org.apache.ode.runtime.core.exec.context;
 
 import org.apache.ode.spi.work.Operation;
 import org.apache.ode.spi.work.Operation.Command;
@@ -28,31 +28,23 @@ public class ContextOperations {
 	public static final String OPERATION_NAMESPACE = "http://ode.apache.org/operations/context";
 
 	@Operation(command = @Command(name = "CreateContext"))
-	public static class CreateContext {
-		public void createContext() {
+	public void createContext() {
 
-		}
 	}
 
 	@Operation(command = @Command(name = "LinkContext"))
-	public static class LinkContext {
-		public void linkContext() {
+	public void linkContext() {
 
-		}
 	}
 
 	@Operation(command = @Command(name = "UnLinkContext"))
-	public static class UnLinkContext {
-		public void unLinkContext() {
+	public void unLinkContext() {
 
-		}
 	}
 
 	@Operation(command = @Command(name = "DestroyContext"))
-	public static class DestroyContext {
-		public void destroyContext() {
+	public void destroyContext() {
 
-		}
 	}
 
 }

@@ -18,6 +18,8 @@ import javax.inject.Provider;
 
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.runtime.Node;
+import org.apache.ode.spi.work.ExecutionUnit.BufferInput;
+import org.apache.ode.spi.work.ExecutionUnit.BufferOutput;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 import org.apache.ode.spi.work.ExecutionUnit.In;
@@ -79,8 +81,8 @@ public class InstanceTest {
 	@Test
 	public void testIn() throws Exception {
 		Work e = workProvider.get();
-		StringOS sos = e.newOutBuffer(StringOS.class);
-		sos.out = "BeginMiddle";
+		BufferOutput<StringOS> sos = e.newOutput(new StringOS());
+		sos.buffer().out = "BeginMiddle";
 		InExecution ie = e.run(new InTest());
 		ie.pipeIn(sos);
 		e.submit();
@@ -90,37 +92,37 @@ public class InstanceTest {
 	@Test
 	public void testOut() throws Exception {
 		Work e = workProvider.get();
-		StringIS sis = e.newInBuffer(StringIS.class);
+		BufferInput<StringIS> sis = e.newInput(new StringIS());
 
 		OutExecution ioe = e.run(new OutTest());
 		ioe.pipeOut(sis);
 		e.submit();
 		e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
-		assertEquals("Begin", sis.in);
+		assertEquals("Begin", sis.buffer().in);
 
 	}
 
 	@Test
 	public void testInOut() throws Exception {
 		Work e = workProvider.get();
-		StringOS sos = e.newOutBuffer(StringOS.class);
-		sos.out = "First";
-		StringIS sis = e.newInBuffer(StringIS.class);
+		BufferOutput<StringOS> sos = e.newOutput(new StringOS());
+		sos.buffer().out = "First";
+		BufferInput<StringIS> sis = e.newInput(new StringIS());
 
 		InOutExecution ioe = e.run(new InOutTest());
 		ioe.pipeIn(sos);
 		ioe.pipeOut(sis);
 		e.submit();
 		e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
-		assertEquals("FirstMiddleLast", sis.in + "Last");
+		assertEquals("FirstMiddleLast", sis.buffer().in + "Last");
 
 	}
 
 	@Test
 	public void testChain() throws Exception {
 		Work e = workProvider.get();
-		StringOS sos = e.newOutBuffer(StringOS.class);
-		sos.out = "First";
+		BufferOutput<StringOS> sos = e.newOutput(new StringOS());
+		sos.buffer().out = "First";
 
 		OutExecution oe = e.run(new ChainOutTest());
 		InOutExecution ioe = e.run(new ChainInOutTest());
@@ -135,7 +137,7 @@ public class InstanceTest {
 	@Test
 	public void testSequence() throws Exception {
 		Work e = workProvider.get();
-		IntIS iis = e.newInBuffer(IntIS.class);
+		BufferInput<IntIS> iis = e.newInput(new IntIS());
 		AtomicInteger integer = new AtomicInteger(1);
 		OutExecution oeu1 = e.run(new SeqOutTest(1, integer));
 		OutExecution oeu2 = e.run(new SeqOutTest(2, integer));
@@ -143,7 +145,7 @@ public class InstanceTest {
 		oeu2.pipeOut(iis);
 		e.submit();
 		e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
-		assertEquals(3, iis.in);
+		assertEquals(3, iis.buffer().in);
 	}
 
 	@Test

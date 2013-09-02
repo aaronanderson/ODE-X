@@ -1,31 +1,24 @@
-package org.apache.ode.runtime.memory.work;
+package org.apache.ode.runtime.core.work;
 
-import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
-import org.apache.ode.runtime.memory.work.Stage.Pipe;
-import org.apache.ode.runtime.memory.work.Stage.StageException;
-import org.apache.ode.runtime.memory.work.WorkImpl.RootFrame;
+import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
-import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.InExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
-import org.apache.ode.spi.work.ExecutionUnit.ManyToOne;
-import org.apache.ode.spi.work.ExecutionUnit.OneToMany;
-import org.apache.ode.spi.work.ExecutionUnit.OneToOne;
-import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
+import org.apache.ode.spi.work.ExecutionUnit.Input;
 import org.apache.ode.spi.work.ExecutionUnit.OutExecution;
+import org.apache.ode.spi.work.ExecutionUnit.Output;
 import org.apache.ode.spi.work.ExecutionUnit.Transform;
 
 public abstract class ExecutionStage extends Stage implements Execution, InExecution, OutExecution, InOutExecution, Runnable {
@@ -34,12 +27,14 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	protected Mode mode;
 	protected Frame frame;
-	protected WorkImpl work;
+	//protected WorkImpl work;
 	protected ExecutionStage supDependency;
 	protected LinkedList<ExecutionStage> infDependency;
 
 	volatile protected boolean inPipesProcessed = false;
 	volatile protected boolean outPipesProcessed = false;
+
+	protected Semaphore block;
 
 	protected boolean initializer = false;
 	protected boolean finalizer = false;
@@ -51,13 +46,6 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		super(input, output);
 		this.frame = frame;
 		this.mode = mode;
-		Frame f = frame;
-		while (f != null) {
-			if (f instanceof RootFrame) {
-				this.work = ((RootFrame) f).work;
-			}
-			f = f.parentFrame;
-		}
 	}
 
 	public static enum Mode {
@@ -95,11 +83,11 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 			case COMPLETE:
 			case CANCEL:
 			case ABORT:
-				if (work.executionCount.decrementAndGet() == 0) {
-					if (work.hasCancels.get()) {
-						work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.CANCEL);
+				if (frame.workCtx.executionCount.decrementAndGet() == 0) {
+					if (frame.workCtx.hasCancels.get()) {
+						frame.workCtx.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.CANCEL);
 					} else {
-						work.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.COMPLETE);
+						frame.workCtx.stateChange(ExecutionUnitState.RUN, ExecutionUnitState.COMPLETE);
 					}
 				}
 				if (next != null) {
@@ -121,14 +109,14 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 				break;
 			case RUN:
 				try {
-					if (work.execState.get() == ExecutionUnitState.READY) {
-						work.execState.compareAndSet(ExecutionUnitState.READY, ExecutionUnitState.RUN);
+					if (frame.workCtx.execState.get() == ExecutionUnitState.READY) {
+						frame.workCtx.execState.compareAndSet(ExecutionUnitState.READY, ExecutionUnitState.RUN);
 					}
 					if (!target.inPipesProcessed) {
 						target.transformInPipes();
 					}
 					target.exec();
-					if (target.frame.block != null && target.frame.block.availablePermits() == 0) {
+					if (target.block != null && target.block.availablePermits() == 0) {
 						target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_RUN);
 						continue;
 					}
@@ -143,7 +131,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 							target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.COMPLETE);
 						} else {
 							target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
-							work.signalExecWaiting();
+							frame.workCtx.scheduler.signalScheduler();
 						}
 					} else {//probably should never reach this state
 						target.execState.compareAndSet(ExecutionState.RUN, ExecutionState.BLOCK_OUT);
@@ -409,15 +397,9 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	}
 
 	@Override
-	public <I extends InBuffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException {
-		BufferStage bs = frame.outBuffers.get(buffer);
-		if (bs == null) {
-			throw new ExecutionUnitException("unknown buffer");
-		}
-		this.addOutPipe(bs, transforms);
-		//} else {
-		//	this.outPipes.add(new OneToOneBufferPipe(bs, this));
-		//}
+	public OutExecution pipeOut(Input input, Transform... transforms) throws ExecutionUnitException {
+		Stage s = (Stage) input;
+		this.addOutPipe(s, transforms);
 		return this;
 	}
 
@@ -436,12 +418,9 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 	}
 
 	@Override
-	public <O extends OutBuffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException {
-		BufferStage bs = frame.inBuffers.get(buffer);
-		if (bs == null) {
-			throw new ExecutionUnitException("unknown buffer");
-		}
-		this.addInPipe(bs, transforms);
+	public InExecution pipeIn(Output output, Transform... transforms) throws ExecutionUnitException {
+		Stage s = (Stage) output;
+		this.addInPipe(s, transforms);
 		return this;
 	}
 

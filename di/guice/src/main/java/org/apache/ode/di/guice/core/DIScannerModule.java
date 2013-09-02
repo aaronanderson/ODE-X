@@ -34,9 +34,9 @@ public class DIScannerModule extends AbstractModule {
 
 	public static Logger log = Logger.getLogger(DIScannerModule.class.getName());
 
-	protected GuiceAnnotationProcessor<?>[] annotationProcessors;
+	protected GuiceAnnotationProcessor[] annotationProcessors;
 
-	public DIScannerModule(GuiceAnnotationProcessor<?>... annotationProcessors) {
+	public DIScannerModule(GuiceAnnotationProcessor... annotationProcessors) {
 		this.annotationProcessors = annotationProcessors;
 	}
 
@@ -101,11 +101,16 @@ public class DIScannerModule extends AbstractModule {
 			}
 		}
 	}*/
+	public static interface GuiceAnnotationProcessor {
 
-	public static class GuiceAnnotationProcessor<M> {
+		public <T> void process(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter);
+
+	}
+
+	public static class GuiceAnnotationClassProcessor<M> implements GuiceAnnotationProcessor {
 		AnnotationScanner<M> scanner;
 
-		public GuiceAnnotationProcessor(AnnotationScanner<M> scanner) {
+		public GuiceAnnotationClassProcessor(AnnotationScanner<M> scanner) {
 			this.scanner = scanner;
 		}
 
@@ -115,10 +120,34 @@ public class DIScannerModule extends AbstractModule {
 			return models;
 		}
 
+		@Override
 		public <T> void process(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
 			M model = scanner.scan(typeLiteral.getRawType());
 			if (model != null) {
 				models.put(typeLiteral.getRawType(), model);
+			}
+		}
+
+	}
+
+	public static class GuiceAnnotationMapProcessor<K, M> implements GuiceAnnotationProcessor {
+		AnnotationScanner<Map<K, M>> scanner;
+
+		public GuiceAnnotationMapProcessor(AnnotationScanner<Map<K, M>> scanner) {
+			this.scanner = scanner;
+		}
+
+		protected Map<K, M> models = new HashMap<K, M>();
+
+		public Map<K, M> getModels() {
+			return models;
+		}
+
+		@Override
+		public <T> void process(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
+			Map<K, M> model = (Map<K, M>) scanner.scan(typeLiteral.getRawType());
+			if (model != null) {
+				models.putAll(model);
 			}
 		}
 

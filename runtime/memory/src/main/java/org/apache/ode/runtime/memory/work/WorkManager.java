@@ -18,6 +18,7 @@
  */
 package org.apache.ode.runtime.memory.work;
 
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -29,8 +30,14 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.xml.namespace.QName;
 
+import org.apache.ode.runtime.core.work.WorkImpl;
+import org.apache.ode.runtime.core.work.WorkScheduler;
 import org.apache.ode.runtime.memory.work.xml.WorkConfig;
+import org.apache.ode.spi.di.DIContainer;
+import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
+import org.apache.ode.spi.di.OperationAnnotationScanner.Operations;
 import org.apache.ode.spi.runtime.Node.NodeStatus;
 import org.apache.ode.spi.runtime.Node.Offline;
 import org.apache.ode.spi.runtime.Node.Start;
@@ -48,9 +55,9 @@ public class WorkManager {
 
 	WorkThreadPoolExecutor wtp;
 
-	Scheduler scheduler;
+	WorkSchedulerImpl scheduler;
 
-	public Scheduler scheduler() throws PlatformException {
+	public WorkScheduler scheduler() throws PlatformException {
 		if (scheduler == null) {
 			throw new PlatformException("Scheduler unavailable, perhaps node offline ");
 		}
@@ -67,7 +74,7 @@ public class WorkManager {
 		}
 		wtp = new WorkThreadPoolExecutor(workConfig.getWorkExec().getCorePool(), workConfig.getWorkExec().getMaxPool(), workConfig.getWorkExec().getKeepAlive(), TimeUnit.SECONDS,
 				queue, new ODEWorkThreadFactory());
-		scheduler = new Scheduler(workConfig.getWorkScheduler(), wtp);
+		scheduler = new WorkSchedulerImpl(workConfig.getWorkScheduler(), wtp);
 		wtp.setRejectedExecutionHandler(scheduler.new SchedulerRejectedExecHandler());
 		wtp.execute(scheduler);
 
@@ -80,7 +87,7 @@ public class WorkManager {
 	@Offline
 	public void offline() throws PlatformException {
 		try {
-			scheduler.running = false;
+			scheduler.stop();
 			wtp.shutdown();
 			wtp.awaitTermination(workConfig.getWorkExec().getShutdownTimeout(), TimeUnit.SECONDS);
 			if (!wtp.isTerminated()) {
@@ -101,11 +108,18 @@ public class WorkManager {
 		@Inject
 		WorkManager wm;
 
+		@Inject
+		DIContainer dic;
+		
+		@Inject
+		@Operations
+		Map<QName, OperationModel> operations;
+
 		@Override
 		public Work get() {
 
 			try {
-				return new WorkImpl(wm.scheduler());
+				return new WorkImpl(wm.scheduler(),operations, dic);
 			} catch (PlatformException e) {
 				log.log(Level.SEVERE, "", e);
 				return null;

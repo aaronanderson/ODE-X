@@ -1,4 +1,4 @@
-package org.apache.ode.runtime.memory.work;
+package org.apache.ode.runtime.core.work;
 
 
 public abstract class HandlerExecution  {

@@ -3,14 +3,14 @@ package org.apache.ode.spi.work;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 @Retention(RUNTIME)
-@Target(TYPE)
+@Target(METHOD)
 public @interface Operation {
 	//static methods that can be represented using MethodHandlers. This should make them more compatible with lambda expression when they become available with JDK 8
 	//Operations are discovered during dependency injection and static models are generated for them.
@@ -65,7 +65,7 @@ public @interface Operation {
 	}
 
 	@Retention(RUNTIME)
-	@Target(TYPE)
+	@Target(METHOD)
 	public @interface Command {
 
 		String namespace() default "";
@@ -91,11 +91,47 @@ public @interface Operation {
 	//List<?>
 	//Object (single value)
 
-	@Retention(RUNTIME)
+	/*@Retention(RUNTIME)
 	@Target(PARAMETER)
 	public @interface Env {
 
 		public String value();
+	}*/
+
+	@Retention(RUNTIME)
+	@Target(PARAMETER)
+	public @interface I {
+
+	}
+
+	@Retention(RUNTIME)
+	@Target(PARAMETER)
+	public @interface O {
+
+	}
+
+	@Retention(RUNTIME)
+	@Target(PARAMETER)
+	public @interface IO {
+
+	}
+
+	//Provided. In addition to annotation below if a qualifier annotation is present it will be used for DI lookup
+	@Retention(RUNTIME)
+	@Target(PARAMETER)
+	public @interface IP {
+	}
+
+	@Retention(RUNTIME)
+	@Target(PARAMETER)
+	public @interface OP {
+
+	}
+
+	@Retention(RUNTIME)
+	@Target(PARAMETER)
+	public @interface IOP {
+
 	}
 
 }

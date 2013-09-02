@@ -21,8 +21,11 @@ package org.apache.ode.di.guice.runtime;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import javax.xml.namespace.QName;
+
 import org.apache.ode.di.guice.core.DIScannerModule;
-import org.apache.ode.di.guice.core.DIScannerModule.GuiceAnnotationProcessor;
+import org.apache.ode.di.guice.core.DIScannerModule.GuiceAnnotationClassProcessor;
+import org.apache.ode.di.guice.core.DIScannerModule.GuiceAnnotationMapProcessor;
 import org.apache.ode.spi.di.ComponentAnnotationScanner;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.Components;
@@ -44,14 +47,15 @@ public class DIDiscoveryModule extends AbstractModule {
 	public static Logger log = Logger.getLogger(DIDiscoveryModule.class.getName());
 
 	protected void configure() {
-		GuiceAnnotationProcessor<NodeStatusModel> nsap = new GuiceAnnotationProcessor<NodeStatusModel>(new NodeStatusAnnotationScanner());
+		GuiceAnnotationClassProcessor<NodeStatusModel> nsap = new GuiceAnnotationClassProcessor<NodeStatusModel>(new NodeStatusAnnotationScanner());
 		bind(new TypeLiteral<Map<Class<?>, NodeStatusModel>>(){}).annotatedWith(NodeStatuses.class).toInstance(nsap.getModels());
-		GuiceAnnotationProcessor<ComponentModel> cap = new GuiceAnnotationProcessor<ComponentModel>(new ComponentAnnotationScanner());
+		GuiceAnnotationClassProcessor<ComponentModel> cap = new GuiceAnnotationClassProcessor<ComponentModel>(new ComponentAnnotationScanner());
 		bind(new TypeLiteral<Map<Class<?>, ComponentModel>>(){}).annotatedWith(Components.class).toInstance(cap.getModels());
-		GuiceAnnotationProcessor<InstructionModel> iap = new GuiceAnnotationProcessor<InstructionModel>(new InstructionAnnotationScanner());
+		GuiceAnnotationClassProcessor<InstructionModel> iap = new GuiceAnnotationClassProcessor<InstructionModel>(new InstructionAnnotationScanner());
 		bind(new TypeLiteral<Map<Class<?>, InstructionModel>>(){}).annotatedWith(Instructions.class).toInstance(iap.getModels());
-		GuiceAnnotationProcessor<OperationModel> oap = new GuiceAnnotationProcessor<OperationModel>(new OperationAnnotationScanner());
-		bind(new TypeLiteral<Map<Class<?>, OperationModel>>(){}).annotatedWith(Operations.class).toInstance(oap.getModels());
+		
+		GuiceAnnotationMapProcessor<QName, OperationModel> oap = new GuiceAnnotationMapProcessor<QName, OperationModel>(new OperationAnnotationScanner());		
+		bind(new TypeLiteral<Map<QName, OperationModel>>(){}).annotatedWith(Operations.class).toInstance(oap.getModels());
 		
 		install(new DIScannerModule(nsap,cap,iap,oap));
 		

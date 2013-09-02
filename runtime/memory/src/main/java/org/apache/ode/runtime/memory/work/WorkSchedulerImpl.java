@@ -16,27 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.di.guice.memory.runtime;
+package org.apache.ode.runtime.memory.work;
 
-import java.util.logging.Logger;
+import java.util.concurrent.PriorityBlockingQueue;
 
-import org.apache.ode.data.core.repo.ArtifactDataSourceImpl;
-import org.apache.ode.data.core.repo.RepoCommandMap;
-import org.apache.ode.data.core.repo.RepoFileTypeMap;
-import org.apache.ode.data.memory.repo.FileRepository;
-import org.apache.ode.data.memory.repo.RepositoryImpl;
-import org.apache.ode.runtime.core.exec.context.ContextOperations;
-import org.apache.ode.spi.repo.ArtifactDataSource;
-import org.apache.ode.spi.repo.Repository;
+import org.apache.ode.runtime.core.work.WorkScheduler;
+import org.apache.ode.runtime.memory.work.WorkManager.WorkThreadPoolExecutor;
 
-import com.google.inject.AbstractModule;
+public class WorkSchedulerImpl extends WorkScheduler {
 
-public class MemoryOperationsModule extends AbstractModule {
-
-	public static Logger log = Logger.getLogger(MemoryOperationsModule.class.getName());
-
-	protected void configure() {
-		bind(ContextOperations.class);
+	public WorkSchedulerImpl(org.apache.ode.runtime.memory.work.xml.WorkScheduler config, WorkThreadPoolExecutor wtp) {
+		scanTime = config.getScan() > 0 ? config.getScan() : 500;
+		workQueue = new PriorityBlockingQueue<>(config.getQueueSize(), new ExecutionUnitBaseComparator());
+		this.wtp = wtp;
 	}
 
 }

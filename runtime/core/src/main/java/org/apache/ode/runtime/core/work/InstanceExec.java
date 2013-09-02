@@ -1,10 +1,9 @@
-package org.apache.ode.runtime.memory.work;
+package org.apache.ode.runtime.core.work;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
-import org.apache.ode.runtime.memory.work.ExecutionUnitBuilder.Frame;
-import org.apache.ode.runtime.memory.work.Stage.StageException;
+import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.In;
 import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
@@ -115,8 +114,6 @@ public class InstanceExec extends ExecutionStage {
 		}
 	}
 
-
-
 	//If the instance has a buffer input then we want to read that into input object array in case it contains a collection object or some other aggregate holder that a transform can act on
 	@Override
 	protected void preInput() throws StageException {
@@ -124,7 +121,7 @@ public class InstanceExec extends ExecutionStage {
 		case IN:
 		case INOUT:
 			try {
-				BufferStage.read(inputBuffer, input);
+				OutBufferStage.read(inputBuffer, input);
 			} catch (Throwable e) {
 				throw new StageException(e);
 			}
@@ -137,7 +134,7 @@ public class InstanceExec extends ExecutionStage {
 		case IN:
 		case INOUT:
 			try {
-				BufferStage.write(input, inputBuffer);
+				InBufferStage.write(input, inputBuffer);
 			} catch (Throwable e) {
 				throw new StageException(e);
 			}
@@ -150,7 +147,7 @@ public class InstanceExec extends ExecutionStage {
 		case OUT:
 		case INOUT:
 			try {
-				BufferStage.read(outputBuffer, output);
+				OutBufferStage.read(outputBuffer, output);
 			} catch (Throwable e) {
 				throw new StageException(e);
 			}

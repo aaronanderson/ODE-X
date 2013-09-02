@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.memory.work;
+package org.apache.ode.runtime.core.work;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -29,29 +29,21 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.ode.runtime.memory.work.WorkManager.WorkThreadPoolExecutor;
-import org.apache.ode.runtime.memory.work.xml.WorkScheduler;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 
-public class Scheduler implements Runnable {
+public abstract class WorkScheduler implements Runnable {
 
-	public static Logger log = Logger.getLogger(Scheduler.class.getName());
+	public static Logger log = Logger.getLogger(WorkScheduler.class.getName());
 
 	final protected ReentrantLock schedulerLock = new ReentrantLock();
 	final protected Condition execReady = schedulerLock.newCondition();
 
-	volatile boolean running = true;
+	protected volatile boolean running = true;
 
-	WorkThreadPoolExecutor wtp;
-	PriorityBlockingQueue<WorkImpl> workQueue;
-	long scanTime;
-
-	public Scheduler(WorkScheduler config, WorkThreadPoolExecutor wtp) {
-		scanTime = config.getScan() > 0 ? config.getScan() : 500;
-		workQueue = new PriorityBlockingQueue<>(config.getQueueSize(), new ExecutionUnitBaseComparator());
-		this.wtp = wtp;
-	}
+	protected ThreadPoolExecutor wtp;
+	protected PriorityBlockingQueue<WorkImpl> workQueue;
+	protected long scanTime;
 
 	@Override
 	public void run() {
@@ -103,7 +95,7 @@ public class Scheduler implements Runnable {
 
 	private void scan(WorkImpl work, Iterator<WorkImpl> w) throws SchedulerException {
 		//throw new SchedulerException(String.format("unexpected ExecutionUnitBase class %s ", work.getClass()));
-		Iterator<ExecutionStage> i = work.executionQueue.iterator();
+		Iterator<ExecutionStage> i = work.workCtx.executionQueue.iterator();
 		while (i.hasNext()) {
 			ExecutionStage ex = i.next();
 			//if (ex.active.get()) { //already executing in threadpool
@@ -117,12 +109,12 @@ public class Scheduler implements Runnable {
 
 			case ABORT:
 				i.remove();
-				work.hasCancels.compareAndSet(false, true);
+				work.workCtx.hasCancels.compareAndSet(false, true);
 				break;
 
 			case CANCEL:
 				i.remove();
-				work.hasCancels.compareAndSet(false, true);
+				work.workCtx.hasCancels.compareAndSet(false, true);
 				break;
 			case READY:
 			case BLOCK_IN:
@@ -140,8 +132,8 @@ public class Scheduler implements Runnable {
 				}
 				break;
 			case BLOCK_RUN:
-				if (ex.frame.block.tryAcquire()) {
-					ex.frame.block.release();
+				if (ex.block.tryAcquire()) {
+					ex.block.release();
 					wtp.execute(ex);
 				}
 				break;
@@ -157,14 +149,18 @@ public class Scheduler implements Runnable {
 
 		}
 
-		if (work.executionQueue.isEmpty() && work.execState.get() != ExecutionUnitState.RUN) {
+		if (work.workCtx.executionQueue.isEmpty() && work.workCtx.execState.get() != ExecutionUnitState.RUN) {
 			w.remove();
 		}
 
 	}
 
+	public void stop() {
+		running = false;
+	}
+
 	public void schedule(WorkImpl eu) throws SchedulerException {
-		if (!eu.stateChange(ExecutionUnitState.BUILD, ExecutionUnitState.READY)) {
+		if (!eu.workCtx.stateChange(ExecutionUnitState.BUILD, ExecutionUnitState.READY)) {
 			throw new SchedulerException("Unexpected State");
 		}
 		if (!workQueue.add(eu)) {
@@ -183,7 +179,7 @@ public class Scheduler implements Runnable {
 	}
 
 	public boolean cancel(WorkImpl eu) throws SchedulerException {
-		if (!eu.stateChange(eu.execState.get(), ExecutionUnitState.CANCEL)) {
+		if (!eu.workCtx.stateChange(eu.workCtx.execState.get(), ExecutionUnitState.CANCEL)) {
 			return false;
 		}
 		return true;

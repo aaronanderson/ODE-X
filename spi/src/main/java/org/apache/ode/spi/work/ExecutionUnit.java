@@ -42,15 +42,19 @@ public interface ExecutionUnit {
 
 	public InOutExecution run(InOut<?, ?> inout) throws ExecutionUnitException;
 
-	public <I extends InBuffer> I newInBuffer(Class<I> struct) throws ExecutionUnitException;
+	public <I extends InBuffer> BufferInput<I> newInput(I struct) throws ExecutionUnitException;
 
-	public <O extends OutBuffer> O newOutBuffer(Class<O> struct) throws ExecutionUnitException;
+	public <O extends OutBuffer> BufferOutput<O> newOutput(O struct) throws ExecutionUnitException;
 
-	public <V> ExecutionUnit setEnvironment(QName name, V value) throws ExecutionUnitException;;
+	public ArrayInput newInput(Object... input) throws ExecutionUnitException;
 
-	public <V> V getEnvironment(QName name) throws ExecutionUnitException;;
+	public ArrayOutput newOutput(Object... output) throws ExecutionUnitException;
 
-	public ExecutionUnit unsetEnvironment(QName name) throws ExecutionUnitException;;
+	//public <V> ExecutionUnit setEnvironment(QName name, V value) throws ExecutionUnitException;;
+
+	//public <V> V getEnvironment(QName name) throws ExecutionUnitException;;
+
+	//public ExecutionUnit unsetEnvironment(QName name) throws ExecutionUnitException;;
 
 	public <E extends Throwable> void handle(Class<E> e, QName handlerOperationName) throws ExecutionUnitException;;
 
@@ -92,7 +96,7 @@ public interface ExecutionUnit {
 
 	public static interface InExecution extends Execution {
 
-		public <O extends OutBuffer> InExecution pipeIn(O buffer, Transform... transforms) throws ExecutionUnitException;
+		public InExecution pipeIn(Output output, Transform... transforms) throws ExecutionUnitException;
 
 		public OutExecution pipeIn(OutExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
@@ -102,7 +106,7 @@ public interface ExecutionUnit {
 
 	public static interface OutExecution extends Execution {
 
-		public <I extends InBuffer> OutExecution pipeOut(I buffer, Transform... transforms) throws ExecutionUnitException;
+		public OutExecution pipeOut(Input input, Transform... transforms) throws ExecutionUnitException;
 
 		public InExecution pipeOut(InExecution execUnit, Transform... transforms) throws ExecutionUnitException;
 
@@ -137,9 +141,9 @@ public interface ExecutionUnit {
 
 		public void abort(Throwable t) throws ExecutionUnitException;
 
-		public <I extends InBuffer> I inBuffer();
+		public <I extends InBuffer> I inBuffer() throws ExecutionUnitException;
 
-		public <O extends OutBuffer> O outBuffer();
+		public <O extends OutBuffer> O outBuffer() throws ExecutionUnitException;
 
 	}
 
@@ -163,6 +167,14 @@ public interface ExecutionUnit {
 
 	}
 
+	public static interface Input {
+
+	}
+
+	public static interface Output {
+
+	}
+
 	//Using a buffer pattern data is passed by order in the buffer
 	//implements InStream or OutStream
 	//no methods, only fields
@@ -174,6 +186,22 @@ public interface ExecutionUnit {
 
 	public static interface OutBuffer {
 
+	}
+
+	public static interface BufferInput<I extends InBuffer> extends Input {
+		I buffer();
+	}
+
+	public static interface BufferOutput<O extends OutBuffer> extends Output {
+		O buffer();
+	}
+
+	public static interface ArrayInput extends Input {
+		Object[] array();
+	}
+
+	public static interface ArrayOutput extends Output {
+		Object[] array();
 	}
 
 	//While operations are static and modeled at DI discovery time  these interfaces allow any instance to participate in execution. 
@@ -210,17 +238,5 @@ public interface ExecutionUnit {
 		}
 
 	}*/
-
-	@Retention(RUNTIME)
-	@Target(PARAMETER)
-	public @interface I {
-		int size() default 0;
-	}
-
-	@Retention(RUNTIME)
-	@Target(PARAMETER)
-	public @interface O {
-		int size() default 0;
-	}
 
 }
