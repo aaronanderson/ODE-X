@@ -17,10 +17,28 @@ public class InArrayStage extends Stage implements ArrayInput {
 		if (src != null && dst != null) {
 			//deep copy
 			for (int i = 0; i < src.length; i++) {
-				if (src[i] != null && dst[i] != null && src[i].getClass().isArray() /*&& dst[i].getClass().isArray()*/) {
-					System.arraycopy(src[i], 0, dst[i], 0,  Array.getLength(src[i]));
-				} else {
-					dst[i] = src[i];
+				if (src[i] != null) {
+					if (dst[i] != null) {
+						if (dst[i].getClass().isArray()) {
+							if (src[i].getClass().isArray()) {
+								System.arraycopy(src[i], 0, dst[i], 0, Array.getLength(src[i]));
+							} else {
+								Array.set(dst[i], 0, src[i]);
+							}
+						} else {
+							if (src[i].getClass().isArray()) {
+								dst[i] = Array.get(src[i], 0);
+							} else {
+								dst[i] = src[i];
+							}
+						}
+					} else {
+						if (src[i].getClass().isArray()) {
+							dst[i] = Array.get(src[i], 0);
+						} else {
+							dst[i] = src[i];
+						}
+					}
 				}
 			}
 			//System.arraycopy(src, 0, dst, 0, src.length);

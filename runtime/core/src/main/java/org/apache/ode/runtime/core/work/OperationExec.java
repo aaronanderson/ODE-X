@@ -20,7 +20,8 @@ public class OperationExec extends ExecutionStage {
 	OutBuffer outputBuffer;
 
 	public OperationExec(Frame parent, OperationModel model) {
-		super(model.inputCount() > 0 ? new Object[model.inputCount()] : null, model.outputCount() > 0 ? new Object[model.outputCount()] : null, parent, mode(model));
+		super(model.inputCount() > 0 ? new Object[model.inputCount()] : null, model.outputCount() > 0 ? new Object[model.outputCount()] : model.hasReturn() ? new Object[1] : null,
+				parent, mode(model));
 		this.model = model;
 	}
 
@@ -65,6 +66,9 @@ public class OperationExec extends ExecutionStage {
 				}
 			}
 		}
+		if (model.outBuffer() != null) {
+			outputBuffer = (OutBuffer) newInstance("OutBuffer", model.outBuffer());
+		}
 	}
 
 	@Override
@@ -97,6 +101,7 @@ public class OperationExec extends ExecutionStage {
 		}
 	}
 
+	//Since Java does not have pointers use Arrays of size one as substitute
 	@Override
 	public void exec() throws Throwable {
 		ParameterInfo[] pis = model.parameterInfo();
@@ -115,6 +120,12 @@ public class OperationExec extends ExecutionStage {
 				} else {
 					invokeParams[i] = input[pInput.index];
 				}
+				//Array Coerce if necessary
+				if (pInput.paramType.isArray() && invokeParams[i] != null && !invokeParams[i].getClass().isArray()) {
+					Object newArray = Array.newInstance(pInput.paramType.getComponentType(), 1);
+					Array.set(newArray, 0, invokeParams[i]);
+					invokeParams[i] = newArray;
+				}
 
 			} else if (pis[i] instanceof Output) {
 				Output pOutput = (Output) pis[i];
@@ -132,6 +143,12 @@ public class OperationExec extends ExecutionStage {
 						invokeParams[i] = pOutput.paramType.newInstance();
 					}
 				}
+				//Array Coerce if necessary
+				if (pOutput.paramType.isArray() && invokeParams[i] != null && !invokeParams[i].getClass().isArray()) {
+					Object newArray = Array.newInstance(pOutput.paramType.getComponentType(), 1);
+					Array.set(newArray, 0, invokeParams[i]);
+					invokeParams[i] = newArray;
+				}
 				output[outputIndex++] = invokeParams[i];
 			} else if (pis[i] instanceof InputOutput) {
 				InputOutput pInput = (InputOutput) pis[i];
@@ -144,11 +161,17 @@ public class OperationExec extends ExecutionStage {
 				} else {
 					invokeParams[i] = input[pInput.index];
 				}
+				//Array Coerce if necessary
+				if (pInput.paramType.isArray() && invokeParams[i] != null && !invokeParams[i].getClass().isArray()) {
+					Object newArray = Array.newInstance(pInput.paramType.getComponentType(), 1);
+					Array.set(newArray, 0, invokeParams[i]);
+					invokeParams[i] = newArray;
+				}
 				output[outputIndex++] = invokeParams[i];
 			} else if (pis[i] instanceof BufferInput) {
-				invokeParams[i] = ((BufferInput) pis[i]).buffer;
+				invokeParams[i] = inputBuffer;
 			} else if (pis[i] instanceof BufferOutput) {
-				invokeParams[i] = ((BufferOutput) pis[i]).buffer;
+				invokeParams[i] = outputBuffer;
 
 			}
 		}

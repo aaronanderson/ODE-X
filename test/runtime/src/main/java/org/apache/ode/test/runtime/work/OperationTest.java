@@ -57,7 +57,7 @@ public class OperationTest {
 	}
 
 	@Test
-	public void testParameters() throws Exception {
+	public void testHolderParameters() throws Exception {
 		Work e = workProvider.get();
 		int[] in = new int[1];
 		int[] out = new int[1];
@@ -68,13 +68,64 @@ public class OperationTest {
 		ex.pipeIn(e.newOutput(out));
 		ex.pipeOut(e.newInput(in));
 		e.submit();
-		ExecutionUnitState state = e.state(300000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
 		assertEquals(ExecutionUnitState.COMPLETE, state);
 		assertEquals(1, in[0]);
 
 	}
 
-	//@Test
+	@Test
+	public void testArrayCoerceParameters() throws Exception {
+		Work e = workProvider.get();
+		Object[] in = new Object[1];
+		Object[] out = new Object[1];
+		out[0] = 1;
+
+		InOutExecution ex = e.inOutOp(new QName(OPERATION_NAMESPACE, "ParameterOperation"));
+		assertNotNull(ex);
+		ex.pipeIn(e.newOutput(out));
+		ex.pipeOut(e.newInput(in));
+		e.submit();
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
+		assertEquals(1, in[0]);
+
+	}
+
+	@Test
+	public void testInOut() throws Exception {
+		Work e = workProvider.get();
+		Object[] inout = new Object[1];
+		inout[0] = 1;
+
+		InOutExecution ex = e.inOutOp(new QName(OPERATION_NAMESPACE, "InOutOperation"));
+		assertNotNull(ex);
+		ex.pipeIn(e.newOutput(inout));
+		ex.pipeOut(e.newInput(inout));
+		e.submit();
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
+		assertEquals(2, inout[0]);
+
+	}
+
+	@Test
+	public void testReturn() throws Exception {
+		Work e = workProvider.get();
+		int[] in = new int[1];
+
+		InOutExecution ex = e.inOutOp(new QName(OPERATION_NAMESPACE, "ReturnOperation"));
+		assertNotNull(ex);
+		ex.pipeIn(e.newOutput(1));
+		ex.pipeOut(e.newInput(in));
+		e.submit();
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
+		assertEquals(2, in[0]);
+
+	}
+
+	@Test
 	public void testBuffer() throws Exception {
 		Work e = workProvider.get();
 		BufferOpOS bos = new BufferOpOS();
@@ -152,7 +203,7 @@ public class OperationTest {
 		@Operation(name = "ReturnOperation")
 		public static int returnOp(@I int in) throws ExecutionUnitException {
 			assertEquals(1, in);
-			return in;
+			return in + 1;
 		}
 
 		@Operation(name = "BufferOperation")

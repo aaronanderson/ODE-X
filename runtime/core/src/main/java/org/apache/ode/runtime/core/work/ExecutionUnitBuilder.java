@@ -126,7 +126,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
-		if (model.inputCount() != 0 || model.outputCount() != 0) {
+		if (model.inputCount() != 0 || model.hasReturn() || model.outputCount() != 0) {
 			throw new ExecutionUnitException(String.format("Not Job operation %s", operationName));
 		}
 		OperationExec oe = new OperationExec(frame, model);
@@ -140,7 +140,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
-		if (model.inputCount() == 0 || model.outputCount() > 0) {
+		if (model.inputCount() == 0 || model.hasReturn() || model.outputCount() > 0) {
 			throw new ExecutionUnitException(String.format("Not Out operation %s", operationName));
 		}
 		OperationExec oe = new OperationExec(frame, model);
@@ -154,7 +154,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
-		if (model.outputCount() == 0 || model.inputCount() > 0) {
+		if ((model.outputCount() == 0 && !model.hasReturn()) || model.inputCount() > 0) {
 			throw new ExecutionUnitException(String.format("Not Out operation %s", operationName));
 		}
 		OperationExec oe = new OperationExec(frame, model);
@@ -168,7 +168,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
-		if (model.inputCount() == 0 || model.outputCount() == 0) {
+		if (model.inputCount() == 0 || (model.outputCount() == 0 && !model.hasReturn())) {
 			throw new ExecutionUnitException(String.format("Not InOut operation %s", operationName));
 		}
 		OperationExec oe = new OperationExec(frame, model);
