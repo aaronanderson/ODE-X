@@ -141,10 +141,9 @@ public interface ExecutionUnit {
 
 		public void abort(Throwable t) throws ExecutionUnitException;
 
-		public <I extends InBuffer> I inBuffer() throws ExecutionUnitException;
-
-		public <O extends OutBuffer> O outBuffer() throws ExecutionUnitException;
-
+		public <O extends Output> O input() throws ExecutionUnitException;
+		
+		public <I extends Input> I output() throws ExecutionUnitException;
 	}
 
 	public static class ExecutionUnitException extends Exception {

@@ -20,7 +20,7 @@ public abstract class Stage {
 
 	protected AtomicInteger inCount;
 	protected AtomicInteger outCount;
-	protected AtomicReference<IOState> ioState = new AtomicReference<>(IOState.READY);
+	protected AtomicReference<IOState> ioState = new AtomicReference<>(IOState.BLOCK_INPUT);
 
 	//made final for performance reasons and to avoid NPEs
 	final protected Object[] input;
@@ -32,7 +32,7 @@ public abstract class Stage {
 	}
 
 	public static enum IOState {
-		READY, PRE_INPUT, TRANSFORM_INPUT, POST_INPUT, RUN, PRE_OUTPUT, TRANSFORM_OUTPUT, POST_OUTPUT, COMPLETE;
+		BLOCK_INPUT, READY, PRE_INPUT, TRANSFORM_INPUT, POST_INPUT, RUN, PRE_OUTPUT, TRANSFORM_OUTPUT, POST_OUTPUT, BLOCK_OUTPUT, COMPLETE;
 	}
 
 	protected void preInput() throws StageException {
@@ -49,6 +49,30 @@ public abstract class Stage {
 
 	protected void postOutput() throws StageException {
 
+	}
+
+	public boolean inPipesReady() {
+		IOState current = ioState.get();
+		if (current.ordinal() > IOState.BLOCK_INPUT.ordinal()) {
+			return true;
+		}
+		boolean ready = true;
+
+		if (inPipes != null) {
+			for (Pipe p : inPipes) {
+				if (p.from != null) {
+					ready &= p.from.ioState.get().ordinal() > IOState.BLOCK_INPUT.ordinal();
+				} else {
+					for (Stage s : (Set<Stage>) p.froms.get()) {
+						ready &= s.ioState.get().ordinal() > IOState.BLOCK_INPUT.ordinal();
+					}
+				}
+			}
+		}
+		if (ready && current == IOState.BLOCK_INPUT) {
+			ioState.compareAndSet(current, IOState.READY);
+		}
+		return ready;
 	}
 
 	public void addInPipe(Stage stage, Transform[] transforms) {
@@ -96,13 +120,39 @@ public abstract class Stage {
 		return null;
 	}
 
+	public boolean outPipesFinished() {
+		IOState current = ioState.get();
+
+		if (current == IOState.COMPLETE) {
+			return true;
+		}
+
+		boolean finished = true;
+
+		if (outPipes != null) {
+			for (Pipe p : outPipes) {
+				if (p.to != null) {
+					finished &= p.to.ioState.get().ordinal() >= IOState.RUN.ordinal();
+				} else {
+					for (Stage s : (Set<Stage>) p.tos.get()) {
+						finished &= s.ioState.get().ordinal() >= IOState.RUN.ordinal();
+					}
+				}
+			}
+		}
+		if (finished && current == IOState.BLOCK_OUTPUT) {
+			ioState.compareAndSet(current, IOState.COMPLETE);
+		}
+		return finished;
+	}
+
 	public void appendFrom(Pipe pipe, Stage stage) {
 		if (pipe.froms != null) {
-			pipe.froms.add(stage);
+			((Set) pipe.froms.get()).add(stage);
 		} else if (pipe.from != null) {
-			pipe.froms = new HashSet<>();
-			pipe.froms.add(pipe.from);
-			pipe.froms.add(stage);
+			pipe.froms = new AtomicReference<>(new HashSet<>());
+			((Set) pipe.froms.get()).add(pipe.from);
+			((Set) pipe.froms.get()).add(stage);
 			pipe.fromsCompleted = new AtomicInteger();
 			pipe.from = null;
 		} else {
@@ -114,7 +164,7 @@ public abstract class Stage {
 		if (pipe.from != null && pipe.from.getClass().isAssignableFrom(stage.getClass())) {
 			return true;
 		}
-		if (pipe.froms != null && !pipe.froms.isEmpty() && pipe.froms.iterator().next().getClass().isAssignableFrom(stage.getClass())) {
+		if (pipe.froms != null && !((Set) pipe.froms.get()).isEmpty() && ((Set) pipe.froms.get()).iterator().next().getClass().isAssignableFrom(stage.getClass())) {
 			return true;
 		}
 
@@ -171,11 +221,11 @@ public abstract class Stage {
 
 	public void appendTo(Pipe pipe, Stage stage) {
 		if (pipe.tos != null) {
-			pipe.tos.add(stage);
+			((Set) pipe.tos.get()).add(stage);
 		} else if (pipe.to != null) {
-			pipe.tos = new HashSet<>();
-			pipe.tos.add(pipe.to);
-			pipe.tos.add(stage);
+			pipe.tos = new AtomicReference<>(new HashSet<>());
+			((Set) pipe.tos.get()).add(pipe.to);
+			((Set) pipe.tos.get()).add(stage);
 			pipe.to = null;
 		} else {
 			pipe.to = stage;
@@ -186,7 +236,7 @@ public abstract class Stage {
 		if (pipe.to != null && pipe.to.getClass().isAssignableFrom(stage.getClass())) {
 			return true;
 		}
-		if (pipe.tos != null && !pipe.tos.isEmpty() && pipe.tos.iterator().next().getClass().isAssignableFrom(stage.getClass())) {
+		if (pipe.tos != null && !((Set) pipe.tos.get()).isEmpty() && ((Set) pipe.tos.get()).iterator().next().getClass().isAssignableFrom(stage.getClass())) {
 			return true;
 		}
 
@@ -265,7 +315,7 @@ public abstract class Stage {
 			case TRANSFORM_OUTPUT:
 				if (s.ioState.compareAndSet(current, IOState.POST_OUTPUT)) {
 					s.postOutput();
-					s.ioState.set(IOState.COMPLETE);
+					s.ioState.set(IOState.BLOCK_OUTPUT);
 				}
 			case POST_OUTPUT:
 				break;
@@ -298,7 +348,7 @@ public abstract class Stage {
 				doPreOutput(p.from);
 			}
 		} else if (p.froms != null) {
-			for (Stage s : (Set<Stage>) p.froms) {
+			for (Stage s : (Set<Stage>) p.froms.get()) {
 				if (s.outCount.get() == 0) {
 					doPreOutput(s);
 				}
@@ -309,7 +359,7 @@ public abstract class Stage {
 				doPreInput(p.to);
 			}
 		} else if (p.tos != null) {
-			for (Stage s : (Set<Stage>) p.tos) {
+			for (Stage s : (Set<Stage>) p.tos.get()) {
 				if (s.inCount.get() == 0) {
 					doPreInput(s);
 				}
@@ -318,13 +368,13 @@ public abstract class Stage {
 
 	}
 
-	protected static void postTransformOutPipe(Pipe p) throws StageException {
+protected static void postTransformOutPipe(Pipe p) throws StageException {
 		if (p.to != null) {
 			if (p.to.inCount.get() == 1) {
 				doPostInput(p.to);
 			}
 		} else if (p.tos != null) {
-			for (Stage s : (Set<Stage>) p.tos) {
+			for (Stage s : (Set<Stage>) p.tos.get()) {
 				if (s.inCount.get() == s.inPipes.size()) {
 					doPostInput(s);
 				}
@@ -335,7 +385,7 @@ public abstract class Stage {
 				doPostOutput(p.from);
 			}
 		} else if (p.froms != null) {
-			for (Stage s : (Set<Stage>) p.froms) {
+			for (Stage s : (Set<Stage>) p.froms.get()) {
 				if (s.outCount.get() == s.outPipes.size()) {
 					doPostOutput(s);
 				}
@@ -348,14 +398,14 @@ public abstract class Stage {
 		if (p.to != null) {
 			doPreInput(p.to);
 		} else if (p.tos != null) {
-			for (Stage s : (Set<Stage>) p.tos) {
+			for (Stage s : (Set<Stage>) p.tos.get()) {
 				doPreInput(s);
 			}
 		}
 		if (p.from != null) {
 			doPreOutput(p.from);
 		} else if (p.froms != null) {
-			for (Stage s : (Set<Stage>) p.froms) {
+			for (Stage s : (Set<Stage>) p.froms.get()) {
 				doPreOutput(s);
 			}
 		}
@@ -366,14 +416,14 @@ public abstract class Stage {
 		if (p.from != null) {
 			doPostOutput(p.from);
 		} else if (p.froms != null) {
-			for (Stage s : (Set<Stage>) p.froms) {
+			for (Stage s : (Set<Stage>) p.froms.get()) {
 				doPostOutput(s);
 			}
 		}
 		if (p.to != null) {
 			doPostInput(p.to);
 		} else if (p.tos != null) {
-			for (Stage s : (Set<Stage>) p.tos) {
+			for (Stage s : (Set<Stage>) p.tos.get()) {
 				doPostInput(s);
 			}
 		}
@@ -397,10 +447,10 @@ public abstract class Stage {
 	}
 
 	protected static void transformOneToManyPipe(Pipe p) throws StageException {
-		Object[][] inputs = new Object[p.tos.size()][];
+		Object[][] inputs = new Object[((Set) p.tos.get()).size()][];
 		int i = 0;
 		p.from.outCount.incrementAndGet();
-		for (Stage s : (Set<Stage>) p.tos) {
+		for (Stage s : (Set<Stage>) p.tos.get()) {
 			s.inCount.incrementAndGet();
 			inputs[i++] = s.input;
 		}
@@ -420,10 +470,10 @@ public abstract class Stage {
 	}
 
 	protected static void transformManyToOnePipe(Pipe p) throws StageException {
-		Object[][] outputs = new Object[p.froms.size()][];
+		Object[][] outputs = new Object[((Set) p.froms.get()).size()][];
 		int i = 0;
 		p.to.inCount.incrementAndGet();
-		for (Stage s : (Set<Stage>) p.froms) {
+		for (Stage s : (Set<Stage>) p.froms.get()) {
 			s.outCount.incrementAndGet();
 			outputs[i++] = s.output;
 		}
@@ -455,10 +505,10 @@ public abstract class Stage {
 		final AtomicBoolean processed = new AtomicBoolean(false);
 
 		F from;
-		HashSet<F> froms;
+		AtomicReference<Set<F>> froms;
 		AtomicInteger fromsCompleted;
 		T to;
-		HashSet<T> tos;
+		AtomicReference<Set<T>> tos;
 		AtomicInteger tosCompleted;
 
 		Transform transform;
@@ -471,18 +521,6 @@ public abstract class Stage {
 		public Pipe(F from, T to, Transform transform) {
 			this.from = from;
 			this.to = to;
-			this.transform = transform;
-		}
-
-		public Pipe(HashSet<F> froms, T to, Transform transform) {
-			this.froms = froms;
-			this.to = to;
-			this.transform = transform;
-		}
-
-		public Pipe(F from, HashSet<T> tos, Transform transform) {
-			this.from = from;
-			this.tos = tos;
 			this.transform = transform;
 		}
 

@@ -23,6 +23,7 @@ import javax.xml.namespace.QName;
 import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
 import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
+import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 import org.apache.ode.spi.work.Operation;
 import org.apache.ode.spi.work.Operation.I;
 import org.apache.ode.spi.work.Operation.IO;
@@ -41,7 +42,7 @@ public class OperationAnnotationScanner implements AnnotationScanner<Map<QName, 
 
 			OperationSet opset = clazz.getAnnotation(OperationSet.class);
 			Map<QName, OperationModel> operations = new HashMap<>();
-			methodScan: for (Method m : clazz.getMethods()) {
+			for (Method m : clazz.getMethods()) {
 				if (m.isAnnotationPresent(Operation.class)) {
 					if (!Modifier.isStatic(m.getModifiers())) {
 						log.severe(String.format("Operation in Class %s method %s, is not static, skipping", clazz.getName(), m.getName()));
@@ -83,99 +84,9 @@ public class OperationAnnotationScanner implements AnnotationScanner<Map<QName, 
 						continue;
 					}
 
-					if (m.getReturnType() != void.class) {
-						om.hasReturn = true;
+					if (inspect(clazz, true, m, om)) {
+						operations.put(operationQName, om);
 					}
-					List<ParameterInfo> params = new ArrayList<>(m.getParameterTypes().length);
-					Annotation[][] paramAnnotations = m.getParameterAnnotations();
-					Class[] parameters = m.getParameterTypes();
-
-					for (int i = 0; i < parameters.length; i++) {
-						if (paramAnnotations[i].length == 0) {
-							if (InBuffer.class.isAssignableFrom(parameters[i])) {
-								om.inBuffer = parameters[i];
-								om.inputCount = parameters[i].getFields().length;
-								params.add(new BufferInput(parameters[i]));
-								continue;
-							} else if (OutBuffer.class.isAssignableFrom(parameters[i])) {
-								om.outBuffer = parameters[i];
-								om.outputCount = parameters[i].getFields().length;
-								params.add(new BufferOutput(parameters[i]));
-								continue;
-							} else {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is missing mandatory annotation, skipping", clazz.getName(), m.getName(),
-										i));
-								continue methodScan;
-							}
-						}
-						Annotation a = paramAnnotations[i][0];
-						if (a instanceof I || a instanceof IP) {
-							if (om.inBuffer != null) {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is input but method has InBuffer, skipping", clazz.getName(), m.getName(),
-										i));
-								continue methodScan;
-							}
-							if (a instanceof IP) {
-								if (paramAnnotations[i].length == 2 && paramAnnotations[i][1].annotationType().isAnnotationPresent(Qualifier.class)) {
-									params.add(new Input(om.inputCount++, parameters[i], true, paramAnnotations[i][1]));
-								} else {
-									params.add(new Input(om.inputCount++, parameters[i], true, null));
-								}
-							} else {
-								params.add(new Input(om.inputCount++, parameters[i], false, null));
-							}
-						} else if (a instanceof O || a instanceof OP) {
-							if (om.hasReturn) {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is output but method has return value, skipping", clazz.getName(),
-										m.getName(), i));
-								continue methodScan;
-							}
-							if (om.outBuffer != null) {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is output but method has OutBuffer, skipping", clazz.getName(),
-										m.getName(), i));
-								continue methodScan;
-							}
-							if (a instanceof OP) {
-								if (paramAnnotations[i].length == 2 && paramAnnotations[i][1].annotationType().isAnnotationPresent(Qualifier.class)) {
-									params.add(new Output(om.outputCount++, parameters[i], true, paramAnnotations[i][1]));
-								} else {
-									params.add(new Output(om.outputCount++, parameters[i], true, null));
-								}
-							} else {
-								params.add(new Output(om.outputCount++, parameters[i], false, null));
-							}
-						} else if (a instanceof IO || a instanceof IOP) {
-							if (om.inBuffer != null) {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is inputoutput but method has InBuffer, skipping", clazz.getName(),
-										m.getName(), i));
-								continue methodScan;
-							}
-							if (om.hasReturn) {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is inputoutput but method has return value, skipping", clazz.getName(),
-										m.getName(), i));
-								continue methodScan;
-							}
-							if (om.outBuffer != null) {
-								log.severe(String.format("Parameter for Class %s method %s parameter %d, is inputoutput but method has OutBuffer, skipping", clazz.getName(),
-										m.getName(), i));
-								continue methodScan;
-							}
-							if (a instanceof IOP) {
-								if (paramAnnotations[i].length == 2 && paramAnnotations[i][1].annotationType().isAnnotationPresent(Qualifier.class)) {
-									params.add(new InputOutput(om.inputCount++, om.outputCount++, parameters[i], true, paramAnnotations[i][1]));
-								} else {
-									params.add(new InputOutput(om.inputCount++, om.outputCount++, parameters[i], true, null));
-								}
-							} else {
-								params.add(new InputOutput(om.inputCount++, om.outputCount++, parameters[i], false, null));
-							}
-						} else {
-							log.severe(String.format("Parameter for Class %s method %s parameter %d, is unknown, skipping", clazz.getName(), m.getName(), i));
-							continue methodScan;
-						}
-					}
-					om.parameterInfo = params.toArray(new ParameterInfo[params.size()]);
-					operations.put(operationQName, om);
 
 				}
 			}
@@ -192,33 +103,14 @@ public class OperationAnnotationScanner implements AnnotationScanner<Map<QName, 
 
 	}
 
-	public static class OperationModel {
+	public static class BaseModel {
 
-		private final QName operationName;
-		private QName commandName;
-		private MethodHandle handle;
-		private ParameterInfo[] parameterInfo;
-		private int inputCount = 0;
-		private int outputCount = 0;
-		private boolean hasReturn = false;
-		private Class<InBuffer> inBuffer = null;
-		private Class<OutBuffer> outBuffer = null;
-
-		public OperationModel(QName operationName) {
-			this.operationName = operationName;
-		}
-
-		public QName commandName() {
-			return commandName;
-		}
-
-		public QName operationName() {
-			return operationName;
-		}
-
-		public MethodHandle handle() {
-			return handle;
-		}
+		protected ParameterInfo[] parameterInfo;
+		protected int inputCount = 0;
+		protected int outputCount = 0;
+		protected boolean hasReturn = false;
+		protected Class<InBuffer> inBuffer = null;
+		protected Class<OutBuffer> outBuffer = null;
 
 		public ParameterInfo[] parameterInfo() {
 			return parameterInfo;
@@ -246,6 +138,30 @@ public class OperationAnnotationScanner implements AnnotationScanner<Map<QName, 
 
 	}
 
+	public static class OperationModel extends BaseModel {
+
+		private final QName operationName;
+		private QName commandName;
+		private MethodHandle handle;
+
+		public OperationModel(QName operationName) {
+			this.operationName = operationName;
+		}
+
+		public QName commandName() {
+			return commandName;
+		}
+
+		public QName operationName() {
+			return operationName;
+		}
+
+		public MethodHandle handle() {
+			return handle;
+		}
+
+	}
+
 	public static interface ParameterInfo {
 
 	}
@@ -262,6 +178,10 @@ public class OperationAnnotationScanner implements AnnotationScanner<Map<QName, 
 			this.inject = inject;
 			this.qualifier = qualifier;
 		}
+
+	}
+
+	public static class WorkItemInput implements ParameterInfo {
 
 	}
 
@@ -305,6 +225,113 @@ public class OperationAnnotationScanner implements AnnotationScanner<Map<QName, 
 		public BufferOutput(Class<? extends OutBuffer> buffer) {
 			this.buffer = buffer;
 		}
+	}
+
+	public static boolean inspect(Class<?> clazz, boolean injectionAllowed, Method m, BaseModel om) {
+		if (m.getReturnType() != void.class) {
+			om.hasReturn = true;
+		}
+		List<ParameterInfo> params = new ArrayList<>(m.getParameterTypes().length);
+		Annotation[][] paramAnnotations = m.getParameterAnnotations();
+		Class[] parameters = m.getParameterTypes();
+
+		for (int i = 0; i < parameters.length; i++) {
+			if (paramAnnotations[i].length == 0) {
+				if (InBuffer.class.isAssignableFrom(parameters[i])) {
+					om.inBuffer = parameters[i];
+					om.inputCount = parameters[i].getFields().length;
+					params.add(new BufferInput(parameters[i]));
+					continue;
+				} else if (OutBuffer.class.isAssignableFrom(parameters[i])) {
+					om.outBuffer = parameters[i];
+					om.outputCount = parameters[i].getFields().length;
+					params.add(new BufferOutput(parameters[i]));
+					continue;
+				} else if (WorkItem.class.isAssignableFrom(parameters[i])) {
+					params.add(new WorkItemInput());
+					continue;
+				} else {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is missing mandatory annotation, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+			}
+			Annotation a = paramAnnotations[i][0];
+			if (a instanceof I || a instanceof IP) {
+				if (om.inBuffer != null) {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is input but method has InBuffer, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+				if (a instanceof IP) {
+					if (!injectionAllowed) {
+						log.severe(String.format("Parameter for Class %s method %s parameter %d, requesting injection but is not allowed, skipping", clazz.getName(), m.getName(),
+								i));
+						return false;
+					}
+					if (paramAnnotations[i].length == 2 && paramAnnotations[i][1].annotationType().isAnnotationPresent(Qualifier.class)) {
+						params.add(new Input(om.inputCount++, parameters[i], true, paramAnnotations[i][1]));
+					} else {
+						params.add(new Input(om.inputCount++, parameters[i], true, null));
+					}
+				} else {
+					params.add(new Input(om.inputCount++, parameters[i], false, null));
+				}
+			} else if (a instanceof O || a instanceof OP) {
+				if (om.hasReturn) {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is output but method has return value, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+				if (om.outBuffer != null) {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is output but method has OutBuffer, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+				if (a instanceof OP) {
+					if (!injectionAllowed) {
+						log.severe(String.format("Parameter for Class %s method %s parameter %d, requesting injection but is not allowed, skipping", clazz.getName(), m.getName(),
+								i));
+						return false;
+					}
+					if (paramAnnotations[i].length == 2 && paramAnnotations[i][1].annotationType().isAnnotationPresent(Qualifier.class)) {
+						params.add(new Output(om.outputCount++, parameters[i], true, paramAnnotations[i][1]));
+					} else {
+						params.add(new Output(om.outputCount++, parameters[i], true, null));
+					}
+				} else {
+					params.add(new Output(om.outputCount++, parameters[i], false, null));
+				}
+			} else if (a instanceof IO || a instanceof IOP) {
+				if (om.inBuffer != null) {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is inputoutput but method has InBuffer, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+				if (om.hasReturn) {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is inputoutput but method has return value, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+				if (om.outBuffer != null) {
+					log.severe(String.format("Parameter for Class %s method %s parameter %d, is inputoutput but method has OutBuffer, skipping", clazz.getName(), m.getName(), i));
+					return false;
+				}
+				if (a instanceof IOP) {
+					if (!injectionAllowed) {
+						log.severe(String.format("Parameter for Class %s method %s parameter %d, requesting injection but is not allowed, skipping", clazz.getName(), m.getName(),
+								i));
+						return false;
+					}
+					if (paramAnnotations[i].length == 2 && paramAnnotations[i][1].annotationType().isAnnotationPresent(Qualifier.class)) {
+						params.add(new InputOutput(om.inputCount++, om.outputCount++, parameters[i], true, paramAnnotations[i][1]));
+					} else {
+						params.add(new InputOutput(om.inputCount++, om.outputCount++, parameters[i], true, null));
+					}
+				} else {
+					params.add(new InputOutput(om.inputCount++, om.outputCount++, parameters[i], false, null));
+				}
+			} else {
+				log.severe(String.format("Parameter for Class %s method %s parameter %d, is unknown, skipping", clazz.getName(), m.getName(), i));
+				return false;
+			}
+		}
+		om.parameterInfo = params.toArray(new ParameterInfo[params.size()]);
+		return true;
 	}
 
 }

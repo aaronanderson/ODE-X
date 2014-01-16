@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 
 import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.spi.di.OperationAnnotationScanner.BaseModel;
 import org.apache.ode.spi.di.OperationAnnotationScanner.BufferInput;
 import org.apache.ode.spi.di.OperationAnnotationScanner.BufferOutput;
 import org.apache.ode.spi.di.OperationAnnotationScanner.Input;
@@ -11,21 +12,23 @@ import org.apache.ode.spi.di.OperationAnnotationScanner.InputOutput;
 import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
 import org.apache.ode.spi.di.OperationAnnotationScanner.Output;
 import org.apache.ode.spi.di.OperationAnnotationScanner.ParameterInfo;
+import org.apache.ode.spi.di.OperationAnnotationScanner.WorkItemInput;
+import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
 
 public class OperationExec extends ExecutionStage {
-	OperationModel model;
+	BaseModel model;
 	InBuffer inputBuffer;
 	OutBuffer outputBuffer;
 
-	public OperationExec(Frame parent, OperationModel model) {
+	public OperationExec(Frame parent, BaseModel model) {
 		super(model.inputCount() > 0 ? new Object[model.inputCount()] : null, model.outputCount() > 0 ? new Object[model.outputCount()] : model.hasReturn() ? new Object[1] : null,
 				parent, mode(model));
 		this.model = model;
 	}
 
-	public static Mode mode(OperationModel model) {
+	public static Mode mode(BaseModel model) {
 		if (model.inputCount() > 0) {
 			if (model.outputCount() > 0) {
 				return Mode.INOUT;
@@ -111,7 +114,7 @@ public class OperationExec extends ExecutionStage {
 		for (int i = 0; i < pis.length; i++) {
 			if (pis[i] instanceof Input) {
 				Input pInput = (Input) pis[i];
-				if (pInput.inject) {
+				if (pInput.inject && input[pInput.index] == null) {
 					if (pInput.qualifier != null) {
 						invokeParams[i] = frame.workCtx.dic.getInstance(pInput.paramType, pInput.qualifier);
 					} else {
@@ -173,12 +176,20 @@ public class OperationExec extends ExecutionStage {
 			} else if (pis[i] instanceof BufferOutput) {
 				invokeParams[i] = outputBuffer;
 
+			} else if (pis[i] instanceof WorkItemInput) {
+				invokeParams[i] = new WorkItemImpl(frame, this);
+
 			}
 		}
-		Object returnVal = model.handle().invokeWithArguments(invokeParams);
-		if (model.hasReturn()) {
-			output[0] = returnVal;
+		if (model instanceof OperationModel) {
+			Object returnVal = ((OperationModel) model).handle().invokeWithArguments(invokeParams);
+			if (model.hasReturn()) {
+				output[0] = returnVal;
+			}
+		} else {
+			throw new ExecutionUnitException(String.format("Invalid model class %s is not OperationModel"));
 		}
+
 	}
 
 }

@@ -1,21 +1,17 @@
 package org.apache.ode.runtime.core.work;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import javax.xml.namespace.QName;
 
 import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.runtime.core.work.WorkScheduler.SchedulerException;
 import org.apache.ode.spi.di.DIContainer;
-import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
 import org.apache.ode.spi.work.ExecutionUnit.Work;
 
-public class WorkImpl extends ExecutionUnitBuilder<Frame> implements Work {
+public class WorkImpl extends ExecutionUnitBuilder implements Work {
 	WorkContext workCtx;
 
-	public WorkImpl(WorkScheduler scheduler, Map<QName, OperationModel> operations, DIContainer dic) {
-		super(new Frame(new WorkContext(scheduler, dic, operations)));
+	public WorkImpl(WorkScheduler scheduler, OperationRegistry registry, DIContainer dic) {
+		super(new Frame(new WorkContext(scheduler, dic, registry)));
 		this.workCtx = frame.workCtx;
 	}
 

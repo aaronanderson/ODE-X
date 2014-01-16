@@ -3,8 +3,7 @@ package org.apache.ode.test.runtime.work;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static org.apache.ode.test.runtime.work.OperationTest.TestCommandSet.COMMAND_NAMESPACE;
-import static org.apache.ode.test.runtime.work.OperationTest.TestOperationSet.OPERATION_NAMESPACE;
+import static org.apache.ode.test.runtime.work.CommandTest.TestOperationSet.OPERATION_NAMESPACE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -18,19 +17,21 @@ import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.di.DIContainer.TypeLiteral;
 import org.apache.ode.spi.runtime.Node;
-import org.apache.ode.spi.work.Command;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitState;
 import org.apache.ode.spi.work.ExecutionUnit.InBuffer;
+import org.apache.ode.spi.work.ExecutionUnit.InExecution;
 import org.apache.ode.spi.work.ExecutionUnit.InOutExecution;
 import org.apache.ode.spi.work.ExecutionUnit.OutBuffer;
 import org.apache.ode.spi.work.ExecutionUnit.Work;
+import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 import org.apache.ode.spi.work.Operation;
 import org.apache.ode.spi.work.Operation.I;
 import org.apache.ode.spi.work.Operation.IO;
 import org.apache.ode.spi.work.Operation.IP;
 import org.apache.ode.spi.work.Operation.O;
 import org.apache.ode.test.core.TestDIContainer;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -54,6 +55,11 @@ public class OperationTest {
 		//operationInstance = container.getInstance(TestOperationInstanceSet.class);
 		//assertNotNull(operationInstance);
 
+	}
+	
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		node.offline();
 	}
 
 	@Test
@@ -140,7 +146,42 @@ public class OperationTest {
 		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
 		assertEquals(ExecutionUnitState.COMPLETE, state);
 		assertEquals(1, bis.in);
+	}
 
+	@Test
+	public void testInject() throws Exception {
+		Work e = workProvider.get();
+		InExecution ex = e.inOp(new QName(OPERATION_NAMESPACE, "InjectOperation"));
+		assertNotNull(ex);
+		e.submit();
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
+	}
+
+	@Test
+	public void testQualifierInject() throws Exception {
+		Work e = workProvider.get();
+		InExecution ex = e.inOp(new QName(OPERATION_NAMESPACE, "InjectQualifierOperation"));
+		assertNotNull(ex);
+		e.submit();
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
+	}
+
+	//@Test
+	public void testWorkITem() throws Exception {
+		Work e = workProvider.get();
+		Object[] inout = new Object[1];
+		inout[0] = 1;
+		
+		InOutExecution ex = e.inOutOp(new QName(OPERATION_NAMESPACE, "WorkItemOperation"));
+		assertNotNull(ex);
+		ex.pipeIn(e.newOutput(inout));
+		ex.pipeOut(e.newInput(inout));
+		e.submit();
+		ExecutionUnitState state = e.state(3000, TimeUnit.MILLISECONDS, ExecutionUnitState.COMPLETE);
+		assertEquals(ExecutionUnitState.COMPLETE, state);
+		assertEquals(2, inout[0]);
 	}
 
 	public static class TestParam {
@@ -180,7 +221,6 @@ public class OperationTest {
 
 	//TODO not sure why fully qualified name is needed here but won't compile without it. Will work if class is extracted to new file
 	@org.apache.ode.spi.work.Operation.OperationSet(namespace = OPERATION_NAMESPACE)
-	@org.apache.ode.spi.work.Command.CommandSetRef(TestCommandSet.class)
 	public static class TestOperationSet {
 		public static final String OPERATION_NAMESPACE = "http://ode.apache.org/operations/test";
 
@@ -197,7 +237,7 @@ public class OperationTest {
 		public static void inoutOp(@IO int[] inout) throws ExecutionUnitException {
 			assertNotNull(inout);
 			assertEquals(1, inout.length);
-			inout[0] = 2;
+			inout[0] = inout[0] + 1;
 		}
 
 		@Operation(name = "ReturnOperation")
@@ -231,10 +271,16 @@ public class OperationTest {
 
 		}
 
-		@Operation(name = "CommandOperation")
-		public static void cmdOp(BufferOpOS out, BufferOpIS in) {
-			assertNotNull(out.out);
-			in.in = out.out;
+		@Operation(name = "WorkItemOperation")
+		public static void workItemOp(@IO int[] inout, WorkItem workItem) throws ExecutionUnitException {
+			assertNotNull(workItem);
+			assertNotNull(inout);
+			assertEquals(1, inout.length);
+			InOutExecution ex = workItem.inOutOp(new QName(OPERATION_NAMESPACE, "InOutOperation"));
+			assertNotNull(ex);
+			ex.pipeIn(workItem.input());
+			ex.pipeOut(workItem.output());
+			workItem.submit();
 		}
 
 		/*
@@ -278,15 +324,6 @@ public class OperationTest {
 		public static void pipe() {
 
 		}*/
-	}
-
-	@org.apache.ode.spi.work.Command.CommandSet(namespace = COMMAND_NAMESPACE)
-	public static interface TestCommandSet {
-		public static final String COMMAND_NAMESPACE = "http://ode.apache.org/command/test";
-
-		@Command(name = "BufferCommand")
-		public void operation(BufferOpOS out, BufferOpIS in);
-
 	}
 
 }

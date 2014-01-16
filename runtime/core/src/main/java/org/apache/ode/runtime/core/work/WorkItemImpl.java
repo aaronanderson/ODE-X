@@ -1,16 +1,20 @@
 package org.apache.ode.runtime.core.work;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 
-import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
 import org.apache.ode.spi.work.ExecutionUnit.WorkItem;
 
-public class WorkItemImpl extends ExecutionUnitBuilder<Frame> implements WorkItem {
+public class WorkItemImpl extends ExecutionUnitBuilder implements WorkItem {
 
-	final ThreadLocal<ExecutionStage> currentExecution = new ThreadLocal<>();
+	ExecutionStage exStage;
+	WorkItemInput input;
+	WorkItemOutput output;
 
-	public WorkItemImpl(Frame parent) {
+	public WorkItemImpl(Frame parent, ExecutionStage exStage) {
 		super(parent);
+		this.exStage = exStage;
 	}
 
 	@Override
@@ -26,14 +30,10 @@ public class WorkItemImpl extends ExecutionUnitBuilder<Frame> implements WorkIte
 
 	@Override
 	public Semaphore block() throws ExecutionUnitException {
-		ExecutionStage current = currentExecution.get();
-		if (current == null) {
-			throw new ExecutionUnitException("Unable to obtain current Execution");
+		if (exStage.block == null) {
+			exStage.block = new Semaphore(1);
 		}
-		if (current.block == null) {
-			current.block = new Semaphore(1);
-		}
-		return current.block;
+		return exStage.block;
 	}
 
 	@Override
@@ -43,21 +43,60 @@ public class WorkItemImpl extends ExecutionUnitBuilder<Frame> implements WorkIte
 	}
 
 	@Override
-	public <I extends InBuffer> I inBuffer() throws ExecutionUnitException {
-		ExecutionStage current = currentExecution.get();
-		if (current == null) {
-			throw new ExecutionUnitException("Unable to obtain current Execution");
+	public <O extends Output> O input() throws ExecutionUnitException {
+		if (input == null) {
+			input = new WorkItemInput(exStage.input);
 		}
-		return null;
+		return (O) input;
+
 	}
 
 	@Override
-	public <O extends OutBuffer> O outBuffer() throws ExecutionUnitException {
-		ExecutionStage current = currentExecution.get();
-		if (current == null) {
-			throw new ExecutionUnitException("Unable to obtain current Execution");
+	public <I extends Input> I output() throws ExecutionUnitException {
+		if (output == null) {
+			output = new WorkItemOutput(exStage);
 		}
-		return null;
+		return (I) output;
+	}
+
+	public static class WorkItemInput extends Stage implements Output {
+
+		public WorkItemInput(Object[] output) {
+			super(null, output);
+		}
+
+	}
+
+	public static class WorkItemOutput extends Stage implements Input {
+
+		public WorkItemOutput(ExecutionStage execStage) {
+			this(execStage, new Object[execStage.output.length]);
+		}
+
+		public WorkItemOutput(ExecutionStage execStage, Object[] io) {
+			super(io, io);
+			if (execStage.outPipes != null) {
+				for (Pipe p : execStage.outPipes) {
+					if (p.from != null) {
+						p.from = this;
+					} else {
+						Set current = null;
+						Set newSet = null;
+						do {
+							current = (Set) p.froms.get();
+							newSet = new HashSet<>(current);
+							newSet.remove(execStage);
+							newSet.add(this);
+						} while (!p.froms.compareAndSet(current, newSet));
+
+					}
+				}
+			}
+
+		}
+
+		//public static 
+
 	}
 
 }

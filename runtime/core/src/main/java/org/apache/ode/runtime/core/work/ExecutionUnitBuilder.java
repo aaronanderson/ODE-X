@@ -15,13 +15,15 @@ import javax.xml.namespace.QName;
 
 //import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.EnvironmentAction.EnvMode;
 import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.spi.di.CommandAnnotationScanner.CommandModel;
 import org.apache.ode.spi.di.DIContainer;
+import org.apache.ode.spi.di.OperationAnnotationScanner.BaseModel;
 import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
 import org.apache.ode.spi.work.ExecutionUnit;
 
-public abstract class ExecutionUnitBuilder<F extends Frame> implements ExecutionUnit {
+public abstract class ExecutionUnitBuilder implements ExecutionUnit {
 
-	final protected F frame;
+	final protected Frame frame;
 
 	final protected Queue<ExecutionStage> executionBuildQueue = new LinkedList<>();
 
@@ -52,14 +54,14 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 		final protected Queue<ExecutionStage> executionQueue = new ConcurrentLinkedQueue<>();
 		final protected ReentrantLock stateLock = new ReentrantLock();
 		final protected Condition changeState = stateLock.newCondition();
-		final protected Map<QName, OperationModel> operations;
+		final protected OperationRegistry registry;
 		final protected WorkScheduler scheduler;
 		final protected DIContainer dic;
 
-		public WorkContext(WorkScheduler scheduler, DIContainer dic, Map<QName, OperationModel> operations) {
+		public WorkContext(WorkScheduler scheduler, DIContainer dic, OperationRegistry registry) {
 			this.scheduler = scheduler;
 			this.dic = dic;
-			this.operations = operations;
+			this.registry = registry;
 		}
 
 		final public boolean stateChange(ExecutionUnitState currentState, ExecutionUnitState newState) {
@@ -76,7 +78,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 		}
 	}
 
-	public ExecutionUnitBuilder(F frame) {
+	public ExecutionUnitBuilder(Frame frame) {
 		this.frame = frame;
 	}
 
@@ -98,8 +100,13 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 
 	@Override
 	public Execution jobCmd(QName commandName) throws ExecutionUnitException {
-		// TODO Auto-generated method stub
-		return null;
+		OperationExec exec = frame.workCtx.registry.resolveBuildCommand(commandName, this);
+
+		if (exec.model.inputCount() != 0 || exec.model.hasReturn() || exec.model.outputCount() != 0) {
+			throw new ExecutionUnitException(String.format("Not Job command %s", commandName));
+		}
+		return exec;
+
 	}
 
 	@Override
@@ -122,7 +129,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 
 	@Override
 	public Execution jobOp(QName operationName) throws ExecutionUnitException {
-		OperationModel model = frame.workCtx.operations.get(operationName);
+		OperationModel model = frame.workCtx.registry.resolveOperation(operationName);
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
@@ -136,7 +143,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 
 	@Override
 	public InExecution inOp(QName operationName) throws ExecutionUnitException {
-		OperationModel model = frame.workCtx.operations.get(operationName);
+		OperationModel model = frame.workCtx.registry.resolveOperation(operationName);
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
@@ -150,7 +157,7 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 
 	@Override
 	public OutExecution outOp(QName operationName) throws ExecutionUnitException {
-		OperationModel model = frame.workCtx.operations.get(operationName);
+		OperationModel model = frame.workCtx.registry.resolveOperation(operationName);
 		if (model == null) {
 			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
 		}
@@ -164,10 +171,8 @@ public abstract class ExecutionUnitBuilder<F extends Frame> implements Execution
 
 	@Override
 	public InOutExecution inOutOp(QName operationName) throws ExecutionUnitException {
-		OperationModel model = frame.workCtx.operations.get(operationName);
-		if (model == null) {
-			throw new ExecutionUnitException(String.format("Unknown operation %s", operationName));
-		}
+		OperationModel model = frame.workCtx.registry.resolveOperation(operationName);
+		
 		if (model.inputCount() == 0 || (model.outputCount() == 0 && !model.hasReturn())) {
 			throw new ExecutionUnitException(String.format("Not InOut operation %s", operationName));
 		}

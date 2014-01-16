@@ -42,8 +42,17 @@ import org.apache.ode.spi.event.xml.Event;
 public @interface Component {
 
 	public String value() default "";
+	
+	public Depend[] depends() default {};
 
 	//public QName name();
+	
+	
+	@Retention(RUNTIME)
+	@Target(TYPE)
+	public @interface Depend {
+		public String value() default "";
+	}
 
 	@Retention(RUNTIME)
 	@Target(METHOD)

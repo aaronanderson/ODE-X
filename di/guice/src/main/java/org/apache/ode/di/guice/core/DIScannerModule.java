@@ -19,7 +19,9 @@
 package org.apache.ode.di.guice.core;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.apache.ode.spi.di.AnnotationScanner;
@@ -148,6 +150,29 @@ public class DIScannerModule extends AbstractModule {
 			Map<K, M> model = (Map<K, M>) scanner.scan(typeLiteral.getRawType());
 			if (model != null) {
 				models.putAll(model);
+			}
+		}
+
+	}
+	
+	public static class GuiceAnnotationSetProcessor<M> implements GuiceAnnotationProcessor {
+		AnnotationScanner<Set<M>> scanner;
+
+		public GuiceAnnotationSetProcessor(AnnotationScanner<Set<M>> scanner) {
+			this.scanner = scanner;
+		}
+
+		protected Set<M> models = new HashSet<M>();
+
+		public Set<M> getModels() {
+			return models;
+		}
+
+		@Override
+		public <T> void process(TypeLiteral<T> typeLiteral, TypeEncounter<T> typeEncounter) {
+			Set<M> model = (Set<M>) scanner.scan(typeLiteral.getRawType());
+			if (model != null) {
+				models.addAll(model);
 			}
 		}
 

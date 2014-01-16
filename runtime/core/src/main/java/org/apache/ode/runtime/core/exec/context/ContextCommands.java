@@ -16,25 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.memory.work;
+package org.apache.ode.runtime.core.exec.context;
 
-import java.util.Queue;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ode.spi.work.Command;
+import org.apache.ode.spi.work.Command.CommandSet;
+import org.apache.ode.spi.work.Operation;
 
+@CommandSet(namespace = ContextCommands.COMMAND_NAMESPACE)
+public interface ContextCommands {
+	public static final String COMMAND_NAMESPACE = "http://ode.apache.org/commands/context";
 
+	@Command(name = "CreateContext")
+	public void createContext();
 
-public class Catalyst implements Runnable {
-	
-	public static final String CATALYST_NAMESPACE = "http://ode.apache.org/runtime/memory/catalyst";
-	
-	public static enum State {
-		BLOCK, RUN, COMPLETE;
-	}
+	@Command(name = "LinkContext")
+	public void linkContext();
 
-	@Override
-	public void run() {
-		
-	}
+	@Command(name = "UnLinkContext")
+	public void unLinkContext();
+
+	@Command(name = "DestroyContext")
+	public void destroyContext();
 
 }

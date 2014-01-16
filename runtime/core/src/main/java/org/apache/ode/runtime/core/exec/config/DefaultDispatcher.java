@@ -24,17 +24,15 @@ import java.util.Queue;
 
 import javax.xml.namespace.QName;
 
-import org.apache.ode.spi.work.Dispatch;
-import org.apache.ode.spi.work.Dispatch.CommandMap;
-import org.apache.ode.spi.work.Dispatch.Dispatcher;
-import org.apache.ode.spi.work.Dispatch.OperationMap;
-import org.apache.ode.spi.work.Dispatch.Token;
+import org.apache.ode.spi.work.Dispatcher;
+import org.apache.ode.spi.work.Dispatcher.BuildDispatch;
+import org.apache.ode.spi.work.Dispatcher.Filter;
 
 @Dispatcher
 public class DefaultDispatcher {
 
-	@Dispatch()
-	public void dispatch(Queue<? extends Token> dispatchQueue, @CommandMap Map<QName, MethodHandle>  commands, @OperationMap Map<QName, MethodHandle>  operations) {
+	@BuildDispatch(@Filter(namespace=""))
+	public void dispatch() {
 
 	}
 

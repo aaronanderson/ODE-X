@@ -10,6 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.ode.runtime.core.work.ExecutionUnitBuilder.Frame;
+import org.apache.ode.runtime.core.work.Stage.IOState;
+import org.apache.ode.runtime.core.work.Stage.Pipe;
 import org.apache.ode.spi.work.ExecutionUnit.Execution;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionState;
 import org.apache.ode.spi.work.ExecutionUnit.ExecutionUnitException;
@@ -71,6 +73,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	@Override
 	public void run() {
+		 LinkedList<ExecutionStage> canidateTargets = new LinkedList<>();
 		ExecutionStage target = this;
 		ExecutionStage next = null;
 		boolean finished = false;
@@ -123,6 +126,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 					if (!target.outPipesProcessed) {
 						ExecutionStageResult res = target.transformOutAndSteal();
+						target.outPipesFinished();
 						if (res.isFinished) {
 							if (res.canidate != null) {
 								next = res.canidate;
@@ -176,27 +180,51 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 
 	}
 
-	boolean inPipesReady() {
+	@Override
+	public boolean inPipesReady() {
 		return inPipesReady(null);
 	}
 
-	boolean inPipesReady(ExecutionStage except) {
+	protected boolean inPipesReady(ExecutionStage except) {
+		IOState current = ioState.get();
+		if (current.ordinal() > IOState.BLOCK_INPUT.ordinal()) {
+			return true;
+		}
 		boolean ready = true;
 
 		if (inPipes != null) {
 			for (Pipe p : inPipes) {
-				if (p.from instanceof ExecutionStage && p.from != except) {
-					ready &= checkInDependency((ExecutionStage) p.from);
-				}
-
-				if (p.froms != null) {
-					for (Stage s : (Set<Stage>) p.froms) {
-						if (s instanceof ExecutionStage && s != except) {
-							ready &= checkInDependency((ExecutionStage) s);
+				if (p.from != null) {
+					if (p.from != except) {
+						if (p.from instanceof ExecutionStage) {
+							boolean res = p.from.ioState.get().ordinal() > IOState.BLOCK_INPUT.ordinal();
+							ready &= res;
+							if (res) {
+								checkCancel((ExecutionStage) p.from);
+							}
+						} else {
+							ready &= p.from.inPipesReady();
+						}
+					}
+				} else {
+					for (Stage s : (Set<Stage>) p.froms.get()) {
+						if (s != except) {
+							if (s instanceof ExecutionStage) {
+								boolean res = s.ioState.get().ordinal() > IOState.BLOCK_INPUT.ordinal();
+								ready &= res;
+								if (res) {
+									checkCancel((ExecutionStage) s);
+								}
+							} else {
+								ready &= s.inPipesReady();
+							}
 						}
 					}
 				}
 			}
+		}
+		if (ready && current == IOState.BLOCK_INPUT) {
+			ioState.compareAndSet(current, IOState.READY);
 		}
 		return ready;
 	}
@@ -215,45 +243,51 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		return true;
 	}
 
-	boolean outPipesFinished() {
+	public boolean outPipesFinished() {
+		IOState current = ioState.get();
+
+		if (current == IOState.COMPLETE) {
+			return true;
+		}
+
 		boolean finished = true;
 
 		if (outPipes != null) {
 			for (Pipe p : outPipes) {
-				if (p.to instanceof ExecutionStage) {
-					finished &= checkOutDependency((ExecutionStage) p.to);
-				}
+				if (p.to != null) {
+					if (p.to instanceof ExecutionStage) {
+						finished &= p.to.ioState.get() == IOState.BLOCK_OUTPUT;
+					} else {
+						finished &= p.to.outPipesFinished();
+					}
 
-				if (p.tos != null) {
-					for (Stage s : (Set<Stage>) p.tos) {
-						if (s instanceof ExecutionStage) {
-							finished &= checkOutDependency((ExecutionStage) s);
+				} else {
+					for (Stage s : (Set<Stage>) p.tos.get()) {
+						if (p.to instanceof ExecutionStage) {
+							finished &= s.ioState.get() == IOState.BLOCK_OUTPUT;
+						} else {
+							finished &= s.outPipesFinished();
 						}
 					}
 				}
 			}
 		}
+		if (finished && current == IOState.BLOCK_OUTPUT) {
+			ioState.compareAndSet(current, IOState.COMPLETE);
+		}
 		return finished;
 	}
 
-	public boolean checkInDependency(ExecutionStage dependency) {
-		if (dependency != null) {
-			switch (dependency.execState.get()) {
-			case BLOCK_OUT:
-			case COMPLETE:
-				return true;
-			case ABORT:
-			case CANCEL:
-				ExecutionState current = execState.get();
-				if (current == ExecutionState.READY || current == ExecutionState.BLOCK_IN) {
-					execState.compareAndSet(current, ExecutionState.CANCEL);
-				}
-				return false;
-			default:
-				return false;
+	public void checkCancel(ExecutionStage dependency) {
+		switch (dependency.execState.get()) {
+		case ABORT:
+		case CANCEL:
+			ExecutionState current = execState.get();
+			if (current == ExecutionState.READY || current == ExecutionState.BLOCK_IN) {
+				execState.compareAndSet(current, ExecutionState.CANCEL);
 			}
+		default:
 		}
-		return true;
 	}
 
 	public boolean checkOutDependency(ExecutionStage dependency) {
@@ -298,7 +332,7 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 					}
 				}*/
 				//for ManyToOne we only want to execute the transform once all executions have completed
-				if (p.fromsCompleted != null && p.fromsCompleted.incrementAndGet() != p.froms.size()) {
+				if (p.fromsCompleted != null && p.fromsCompleted.incrementAndGet() != ((Set) p.froms.get()).size()) {
 					continue;
 				}
 				transformInPipe(p);
@@ -313,30 +347,32 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 			for (Pipe p : outPipes) {
 
 				//for OneToMany we only want to execute the transform once all executions have completed
-				if (p.tosCompleted != null && p.tosCompleted.incrementAndGet() != p.tos.size()) {
+				if (p.tosCompleted != null && p.tosCompleted.incrementAndGet() != ((Set) p.tos.get()).size()) {
 					continue;
 				}
 
 				transformOutPipe(p);
-				/*
-								if (p.to instanceof BufferStage) {
-									BufferStage bs = (BufferStage) p.to;
+			}
+		}
+
+		/*
+						if (p.to instanceof BufferStage) {
+							BufferStage bs = (BufferStage) p.to;
+							if (!bs.write) {
+								bs.write();
+							}
+						}
+						if (p.tos != null) {
+							for (Stage s : (Set<Stage>) p.tos) {
+								if (s instanceof BufferStage) {
+									BufferStage bs = (BufferStage) s;
 									if (!bs.write) {
 										bs.write();
 									}
 								}
-								if (p.tos != null) {
-									for (Stage s : (Set<Stage>) p.tos) {
-										if (s instanceof BufferStage) {
-											BufferStage bs = (BufferStage) s;
-											if (!bs.write) {
-												bs.write();
-											}
-										}
-									}
-								}*/
-			}
-		}
+							}
+						}*/
+
 	}
 
 	protected ExecutionStageResult transformOutAndSteal() throws StageException {
@@ -344,23 +380,24 @@ public abstract class ExecutionStage extends Stage implements Execution, InExecu
 		if (outPipes != null) {
 			for (Pipe p : outPipes) {
 
-				if (p.tosCompleted != null && p.tosCompleted.incrementAndGet() != p.tos.size() - 1) {
+				if (p.tosCompleted != null && p.tosCompleted.incrementAndGet() != ((Set) p.tos.get()).size() - 1) {
 					res.isFinished = false;
 					break;
 				}
 
 				transformOutPipe(p);
 
-				if (p.to instanceof ExecutionStage) {
-					ExecutionStage es = (ExecutionStage) p.to;
-					if (res.canidate == null && es.inPipesReady(this)) {
-						res.canidate = es;
-					} else {
-						res.isFinished = false;
+				if (p.to != null) {
+					if (p.to instanceof ExecutionStage) {
+						ExecutionStage es = (ExecutionStage) p.to;
+						if (res.canidate == null && es.inPipesReady(this)) {
+							res.canidate = es;
+						} else {
+							res.isFinished = false;
+						}
 					}
-				}
-				if (p.tos != null) {
-					for (Stage s : (Set<Stage>) p.tos) {
+				} else {
+					for (Stage s : (Set<Stage>) p.tos.get()) {
 						if (s instanceof ExecutionStage) {
 							ExecutionStage es = (ExecutionStage) s;
 							if (res.canidate == null && es.inPipesReady(this)) {

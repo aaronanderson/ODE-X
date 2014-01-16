@@ -15,6 +15,7 @@ import javax.inject.Qualifier;
 
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
 import org.apache.ode.spi.runtime.Component;
+import org.apache.ode.spi.runtime.Component.Depend;
 import org.apache.ode.spi.runtime.Component.EventSets;
 import org.apache.ode.spi.runtime.Component.ExecutableSets;
 import org.apache.ode.spi.runtime.Component.ExecutionConfigSets;
@@ -42,6 +43,16 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 				}
 				if (cm.name.indexOf('$') > -1) {
 					cm.name = cm.name.substring(cm.name.lastIndexOf('$') + 1);
+				}
+			}
+			if (component.depends().length > 0) {
+				cm.depends = new String[component.depends().length];
+				for (int i = 0; i < component.depends().length; i++) {
+					cm.depends[i] = component.depends()[i].value();
+					if (cm.depends[i].length()==0){
+						log.severe(String.format("Depend annotation in Component annotation on class %s is empty, skipping component", clazz));
+						return null;
+					}
 				}
 			}
 			//TODO scan super class
@@ -86,6 +97,7 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 
 		Class<?> targetClass;
 		String name;
+		String[] depends;
 		MethodHandle executableSets;
 		MethodHandle executionContextSets;
 
@@ -104,6 +116,10 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 			return name;
 		}
 
+		public String[] getDepends() {
+			return depends;
+		}
+
 		public MethodHandle getExecutableSets() {
 			return executableSets;
 		}
@@ -119,7 +135,7 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 		public MethodHandle getExecutionConfigSets() {
 			return executionConfigSets;
 		}
-		
+
 		public MethodHandle getStart() {
 			return start;
 		}
@@ -131,7 +147,7 @@ public class ComponentAnnotationScanner implements AnnotationScanner<ComponentMo
 		public MethodHandle getStop() {
 			return stop;
 		}
-		
+
 		public MethodHandle getOffline() {
 			return offline;
 		}

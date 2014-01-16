@@ -12,6 +12,7 @@ import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 
 import org.apache.ode.spi.runtime.Component;
+import org.apache.ode.spi.runtime.Component.Depend;
 import org.apache.ode.spi.runtime.Component.EventSet;
 import org.apache.ode.spi.runtime.Component.EventSets;
 import org.apache.ode.spi.runtime.Component.ExecutableSet;

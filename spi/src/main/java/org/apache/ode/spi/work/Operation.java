@@ -64,15 +64,6 @@ public @interface Operation {
 		public String commandNamespace() default "";
 	}
 
-	@Retention(RUNTIME)
-	@Target(METHOD)
-	public @interface Command {
-
-		String namespace() default "";
-
-		String name();
-
-	}
 
 	//since java parameter names are lost at compile time a mechanism for named lookups is required. Using the stream pattern data is passed by position
 	//Operation stream order is determined by parameter order and return order. However, if a parameter matches one of the following criteria the contextual

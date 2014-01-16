@@ -159,16 +159,16 @@ public class InstanceExec extends ExecutionStage {
 
 		switch (mode) {
 		case JOB:
-			((Job) instance).run(new WorkItemImpl(frame));
+			((Job) instance).run(new WorkItemImpl(frame, this));
 			break;
 		case IN:
-			((In) instance).in(new WorkItemImpl(frame), (InBuffer) inputBuffer);
+			((In) instance).in(new WorkItemImpl(frame, this), (InBuffer) inputBuffer);
 			break;
 		case INOUT:
-			((InOut) instance).inOut(new WorkItemImpl(frame), (InBuffer) inputBuffer, (OutBuffer) outputBuffer);
+			((InOut) instance).inOut(new WorkItemImpl(frame, this), (InBuffer) inputBuffer, (OutBuffer) outputBuffer);
 			break;
 		case OUT:
-			((Out) instance).out(new WorkItemImpl(frame), (OutBuffer) outputBuffer);
+			((Out) instance).out(new WorkItemImpl(frame, this), (OutBuffer) outputBuffer);
 			break;
 		default:
 			break;

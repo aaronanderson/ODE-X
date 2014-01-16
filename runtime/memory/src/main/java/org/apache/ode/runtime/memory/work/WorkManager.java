@@ -18,7 +18,6 @@
  */
 package org.apache.ode.runtime.memory.work;
 
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -30,14 +29,12 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.xml.namespace.QName;
 
+import org.apache.ode.runtime.core.work.OperationRegistry;
 import org.apache.ode.runtime.core.work.WorkImpl;
 import org.apache.ode.runtime.core.work.WorkScheduler;
 import org.apache.ode.runtime.memory.work.xml.WorkConfig;
 import org.apache.ode.spi.di.DIContainer;
-import org.apache.ode.spi.di.OperationAnnotationScanner.OperationModel;
-import org.apache.ode.spi.di.OperationAnnotationScanner.Operations;
 import org.apache.ode.spi.runtime.Node.NodeStatus;
 import org.apache.ode.spi.runtime.Node.Offline;
 import org.apache.ode.spi.runtime.Node.Start;
@@ -62,7 +59,7 @@ public class WorkManager {
 			throw new PlatformException("Scheduler unavailable, perhaps node offline ");
 		}
 		return scheduler;
-	}
+	}	
 
 	@Start
 	public void start() throws PlatformException {
@@ -112,14 +109,13 @@ public class WorkManager {
 		DIContainer dic;
 		
 		@Inject
-		@Operations
-		Map<QName, OperationModel> operations;
+		OperationRegistry registry;
 
 		@Override
 		public Work get() {
 
 			try {
-				return new WorkImpl(wm.scheduler(),operations, dic);
+				return new WorkImpl(wm.scheduler(),registry, dic);
 			} catch (PlatformException e) {
 				log.log(Level.SEVERE, "", e);
 				return null;

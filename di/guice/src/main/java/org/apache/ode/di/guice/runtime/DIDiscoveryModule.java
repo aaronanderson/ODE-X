@@ -19,6 +19,7 @@
 package org.apache.ode.di.guice.runtime;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.xml.namespace.QName;
@@ -26,9 +27,16 @@ import javax.xml.namespace.QName;
 import org.apache.ode.di.guice.core.DIScannerModule;
 import org.apache.ode.di.guice.core.DIScannerModule.GuiceAnnotationClassProcessor;
 import org.apache.ode.di.guice.core.DIScannerModule.GuiceAnnotationMapProcessor;
+import org.apache.ode.di.guice.core.DIScannerModule.GuiceAnnotationSetProcessor;
+import org.apache.ode.spi.di.CommandAnnotationScanner;
+import org.apache.ode.spi.di.CommandAnnotationScanner.CommandModel;
+import org.apache.ode.spi.di.CommandAnnotationScanner.Commands;
 import org.apache.ode.spi.di.ComponentAnnotationScanner;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.ComponentModel;
 import org.apache.ode.spi.di.ComponentAnnotationScanner.Components;
+import org.apache.ode.spi.di.DispatchAnnotationScanner;
+import org.apache.ode.spi.di.DispatchAnnotationScanner.DispatcherModel;
+import org.apache.ode.spi.di.DispatchAnnotationScanner.Dispatches;
 import org.apache.ode.spi.di.InstructionAnnotationScanner;
 import org.apache.ode.spi.di.InstructionAnnotationScanner.InstructionModel;
 import org.apache.ode.spi.di.InstructionAnnotationScanner.Instructions;
@@ -56,6 +64,12 @@ public class DIDiscoveryModule extends AbstractModule {
 		
 		GuiceAnnotationMapProcessor<QName, OperationModel> oap = new GuiceAnnotationMapProcessor<QName, OperationModel>(new OperationAnnotationScanner());		
 		bind(new TypeLiteral<Map<QName, OperationModel>>(){}).annotatedWith(Operations.class).toInstance(oap.getModels());
+		
+		GuiceAnnotationMapProcessor<QName, CommandModel> cmap = new GuiceAnnotationMapProcessor<QName, CommandModel>(new CommandAnnotationScanner());		
+		bind(new TypeLiteral<Map<QName, CommandModel>>(){}).annotatedWith(Commands.class).toInstance(cmap.getModels());
+		
+		GuiceAnnotationSetProcessor<DispatcherModel> dset = new GuiceAnnotationSetProcessor<DispatcherModel>(new DispatchAnnotationScanner());		
+		bind(new TypeLiteral<Set<DispatcherModel>>(){}).annotatedWith(Dispatches.class).toInstance(dset.getModels());
 		
 		install(new DIScannerModule(nsap,cap,iap,oap));
 		

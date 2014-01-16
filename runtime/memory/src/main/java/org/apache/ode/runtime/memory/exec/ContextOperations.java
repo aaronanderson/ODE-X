@@ -16,15 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ode.runtime.core.exec.context;
+package org.apache.ode.runtime.memory.exec;
 
+import org.apache.ode.runtime.core.exec.context.ContextCommands;
+import org.apache.ode.spi.work.Command;
+import org.apache.ode.spi.work.Command.CommandSetRef;
 import org.apache.ode.spi.work.Operation;
-import org.apache.ode.spi.work.Operation.Command;
 import org.apache.ode.spi.work.Operation.OperationSet;
 
-@OperationSet(namespace = ContextOperations.OPERATION_NAMESPACE, commandNamespace = ContextOperations.COMMAND_NAMESPACE)
+@CommandSetRef(ContextCommands.class)
+@OperationSet(namespace = ContextOperations.OPERATION_NAMESPACE, commandNamespace = ContextCommands.COMMAND_NAMESPACE)
 public class ContextOperations {
-	public static final String COMMAND_NAMESPACE = "http://ode.apache.org/commands/context";
 	public static final String OPERATION_NAMESPACE = "http://ode.apache.org/operations/context";
 
 	@Operation(command = @Command(name = "CreateContext"))

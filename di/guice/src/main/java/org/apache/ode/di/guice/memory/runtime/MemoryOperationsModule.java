@@ -25,7 +25,7 @@ import org.apache.ode.data.core.repo.RepoCommandMap;
 import org.apache.ode.data.core.repo.RepoFileTypeMap;
 import org.apache.ode.data.memory.repo.FileRepository;
 import org.apache.ode.data.memory.repo.RepositoryImpl;
-import org.apache.ode.runtime.core.exec.context.ContextOperations;
+import org.apache.ode.runtime.core.exec.context.ContextCommands;
 import org.apache.ode.spi.repo.ArtifactDataSource;
 import org.apache.ode.spi.repo.Repository;
 
@@ -36,7 +36,7 @@ public class MemoryOperationsModule extends AbstractModule {
 	public static Logger log = Logger.getLogger(MemoryOperationsModule.class.getName());
 
 	protected void configure() {
-		bind(ContextOperations.class);
+		bind(ContextCommands.class);
 	}
 
 }
