@@ -1,0 +1,13 @@
+ode:
+  home: target/ode-test
+  tenant: test
+  ignite:    
+    discovery:
+      localAddress: 127.0.0.1
+      localPort: 48500
+      localPortRange: 20
+      finderAddresses: 
+        - 127.0.0.1:48500..48520
+    com:
+      localPort: 48100
+      localPortRange: 20

@@ -1,162 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- ~ Licensed to the Apache Software Foundation (ASF) under one ~ or more 
-	contributor license agreements. See the NOTICE file ~ distributed with this 
-	work for additional information ~ regarding copyright ownership. The ASF 
-	licenses this file ~ to you under the Apache License, Version 2.0 (the ~ 
-	"License"); you may not use this file except in compliance ~ with the License. 
-	You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 
-	~ ~ Unless required by applicable law or agreed to in writing, ~ software 
-	distributed under the License is distributed on an ~ "AS IS" BASIS, WITHOUT 
-	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
-	License for the ~ specific language governing permissions and limitations 
-	~ under the License. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.apache.ode</groupId>
-		<artifactId>ode-pom</artifactId>
+		<artifactId>ode-build-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
+		<relativePath>../build-parent/pom.xml</relativePath>
 	</parent>
-
 	<artifactId>ode-spi</artifactId>
-	<name>ODE-X SPI</name>
-	<description>ODE-X SPI.</description>
 	<packaging>jar</packaging>
+	<name>ODE-X - SPI</name>
+
 
 	<dependencies>
 
 		<dependency>
-			<groupId>org.apache.geronimo.specs</groupId>
-			<artifactId>geronimo-atinject_1.0_spec</artifactId>
-			<version>1.0</version>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-core</artifactId>
 			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.11</version>
-			<scope>test</scope>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-atinject_1.0_spec</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jcdi_2.0_spec</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-interceptor_1.2_spec</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-annotation_1.3_spec</artifactId>
+			<scope>provided</scope>
 		</dependency>
 
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.jvnet.jaxb2.maven2</groupId>
-				<artifactId>maven-jaxb2-plugin</artifactId>
-				<version>0.8.2</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>generate</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<specVersion>2.2</specVersion>
-					<schemaDirectory>src/main/resources/META-INF/xsd</schemaDirectory>
-					<schemaIncludes>
-						<schemaInclude>event.xsd</schemaInclude>
-						<schemaInclude>event-executable.xsd</schemaInclude>
-						<schemaInclude>event-junction.xsd</schemaInclude>
-						<schemaInclude>executable.xsd</schemaInclude>
-						<schemaInclude>execution-context.xsd</schemaInclude>
-						<schemaInclude>execution-config.xsd</schemaInclude>
-						<schemaInclude>platform.xsd</schemaInclude>
-						<schemaInclude>schema.xsd</schemaInclude>
-					</schemaIncludes>
-					<bindingDirectory>src/main/bindings</bindingDirectory>
-					<bindingIncludes>
-						<bindingInclude>event.xjb</bindingInclude>
-						<bindingInclude>event-executable.xjb</bindingInclude>
-						<bindingInclude>event-junction.xjb</bindingInclude>
-						<bindingInclude>executable.xjb</bindingInclude>
-						<bindingInclude>execution-context.xjb</bindingInclude>
-						<bindingInclude>execution-config.xjb</bindingInclude>
-						<bindingInclude>platform.xjb</bindingInclude>
-					</bindingIncludes>
-					<catalog>src/main/bindings/catalog.xml</catalog>
-					<extension>true</extension>
-					<plugins>
-						<plugin>
-							<groupId>org.jvnet.jaxb2_commons</groupId>
-							<artifactId>jaxb2-fluent-api</artifactId>
-							<version>3.0</version>
-						</plugin>
-						<!-- <plugin>
-							<groupId>org.apache.ode</groupId>
-							<artifactId>ode-xjc</artifactId>
-							<version>${project.version}</version>
-						</plugin>-->
-					</plugins>
-					<args>
-						<arg>-npa</arg>
-						<arg>-Xfluent-api</arg>
-						<!-- <arg>-Xode-extension</arg> -->
-					</args>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-site-plugin</artifactId>
-				<version>3.2</version>
-				<configuration>
-					<reportPlugins>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-project-info-reports-plugin</artifactId>
-							<version>2.2</version>
-							<configuration>
-								<dependencyDetailsEnabled>false</dependencyDetailsEnabled>
-								<dependencyLocationsEnabled>false</dependencyLocationsEnabled>
-							</configuration>
-						</plugin>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-javadoc-plugin</artifactId>
-							<version>2.7</version>
-						</plugin>
-					</reportPlugins>
-				</configuration>
-				<executions>
-					<execution>
-						<id>attach-descriptor</id>
-						<goals>
-							<goal>attach-descriptor</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<!--  fix for http://java.net/jira/browse/JAXB-829  -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<id>fix-episode</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<target>
-								<mkdir dir="target/generated-resources/xml/xslt" />
-								<copy file="target/generated-sources/xjc/META-INF/sun-jaxb.episode" tofile="target/generated-resources/xml/xslt/sun-jaxb.episode" overwrite="true" />
-								<!-- <replaceregexp file="target/generated-sources/xjc/META-INF/sun-jaxb.episode" match=" xmlns:tns" replace=" if-exists=&quot;&quot; xmlns:tns"
-									byline="true" /> -->
-								<xslt in="target/generated-resources/xml/xslt/sun-jaxb.episode" out="target/generated-sources/xjc/META-INF/sun-jaxb.episode" style="src/main/bindings/episode.xsl" />
-							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
+
 
 </project>
-
-

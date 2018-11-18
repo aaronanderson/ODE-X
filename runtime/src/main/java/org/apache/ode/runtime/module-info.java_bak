@@ -1,0 +1,10 @@
+module org.apache.ode.runtime { 
+	//enable modules once ignite supports them, split package error now.
+	requires ignite.core;
+	requires ignite.indexing;
+	requires snakeyaml.engine;
+	requires log4j.api;
+	//requires openwebbeans.se;
+	
+	exports org.apache.ode.runtime;
+}
