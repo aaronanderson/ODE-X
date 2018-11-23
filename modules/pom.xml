@@ -12,7 +12,9 @@
 	<packaging>pom</packaging>
 	<name>ODE-X - Modules</name>
 
-
+	<modules>
+		<module>runtime</module>	
+	</modules>
 	
 
 </project>

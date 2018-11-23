@@ -1,0 +1,203 @@
+package org.apache.ode.runtime;
+
+import java.util.Collection;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.enterprise.inject.se.SeContainer;
+import javax.enterprise.inject.se.SeContainerInitializer;
+import javax.enterprise.inject.spi.AfterBeanDiscovery;
+import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.Extension;
+import javax.enterprise.inject.spi.ProcessAnnotatedType;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.ode.runtime.owb.ODEOWBInitializer;
+import org.apache.ode.runtime.owb.ODEOWBInitializer.ContainerMode;
+import org.apache.ode.spi.config.Config;
+import org.apache.webbeans.annotation.DefaultLiteral;
+
+public class Server implements LifecycleBean, AutoCloseable, Extension {
+
+	public static final Logger LOG = LogManager.getLogger(Server.class);
+
+	private SeContainer serverContainer;
+	private ServerClassLoader cl;
+
+	@IgniteInstanceResource
+	private Ignite ignite;
+
+	private Config odeConfig;
+
+	private Server() {
+		cl = new ServerClassLoader(Thread.currentThread().getContextClassLoader());
+	}
+
+	public Server start(String configFile) {
+		// wrap in a custom classloader so that the OWB context is unique per instance.
+
+		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(cl);
+		try {
+			odeConfig = Configurator.loadConfigFile(configFile);
+
+			// CDI initialization should only do local classpath scanning and setup. Seperate ODE init/destroy events will be emitted to trigger interaction with Ignite for additional setup or teardown
+			SeContainerInitializer initializer = SeContainerInitializer.newInstance().addProperty(ODEOWBInitializer.CONTAINER_MODE, ContainerMode.SERVER).addExtensions(this);
+			serverContainer = initializer.initialize();
+
+			IgniteConfiguration serverConfig = new IgniteConfiguration();
+			serverConfig.setClientMode(false);
+			serverConfig.setClassLoader(cl);
+
+			serverConfig.setLifecycleBeans(this);
+			Configurator.configureIgnite(odeConfig, serverConfig);
+
+			Ignition.start(serverConfig);
+
+			if (odeConfig.getBool("ode.ignite.auto-cluster-activate").orElse(false)) {
+				LOG.warn("Auto activation and initial baseline setting should only be enabled on a cluster with a single node");
+				IgniteCluster igniteCluster = ignite.cluster();
+				igniteCluster.active(true);
+				igniteCluster.setBaselineTopology(1l);
+				Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
+				ignite.cluster().setBaselineTopology(nodes);
+
+			}
+
+			// serverContainer.getBeanManager().fireEvent(new IgniteConfigurationEvent(serverConfig));
+			// Configuration.initialize(serverConfig, configFile, false);
+			// String odeWorkingDirectory = (String)
+			// serverConfig.getUserAttributes().get(Configuration.ODE_WORK_DIR);
+			// https://apacheignite.readme.io/docs/distributed-persistent-store
+
+//							.setDiscoverySpi(new TcpDiscoverySpi()
+			//
+//									.setIpFinder(
+			//
+//											new TcpDiscoveryVmIpFinder()
+			//
+//													.setAddresses(Collections.singleton("127.0.0.1:47500..47502"))
+			//
+//									));
+
+			// Ignite ignite = Ignition.start(serverConfig);
+
+			// IgniteCluster cluster = ignite.cluster();
+			// ClusterGroup tenantGroup = cluster.forAttribute(Configuration.ODE_TENANT, serverConfig.getUserAttributes().get(Configuration.ODE_TENANT));
+			// tenantGroup.
+			// Isolated Ignite Clusters https://apacheignite.readme.io/docs/tcpip-discovery
+			// https://apacheignite.readme.io/docs/baseline-topology
+			// IgniteCluster.setBaseLineTopogy()
+			// try (Ignite server = Ignition.start(serverConfig);) {
+			// Ignition.stop(false);
+			// }
+
+			// WebBeansContext context = ODEWebBeansContextProvider.getInstance().createRuntimeOWBContext(false);
+			return this;
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCl);
+		}
+	}
+
+	public static Server instance() {
+		return new Server();
+//		try {
+//			Class<Server> server = (Class<Server>) cl.loadClass("org.apache.ode.runtime.Server");
+//			return server.getDeclaredConstructor().newInstance();
+//		} catch (Exception e) {
+//			LOG.error("Error initializing server", e);
+//		}
+//
+//		throw new IllegalStateException();
+	}
+	// TODO destroy classloader
+
+	public Ignite ignite() {
+		if (ignite == null) {
+			throw new IllegalStateException("Ignite unavailable");
+		}
+		return ignite;
+	}
+
+	public SeContainer container() {
+		if (serverContainer == null) {
+			throw new IllegalStateException("SeContainer unavailable");
+		}
+		return serverContainer;
+	}
+
+	public Config configuration() {
+		if (odeConfig == null) {
+			throw new IllegalStateException("Config unavailable");
+		}
+		return odeConfig;
+	}
+
+	@Override
+	public void close() throws Exception {
+		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(cl);
+		try {
+			if (ignite != null) {
+				ignite.close();
+			}
+			if (serverContainer != null) {
+				serverContainer.close();
+			}
+			ignite = null;
+			serverContainer = null;
+			odeConfig = null;
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCl);
+		}
+	}
+
+	@Override
+	public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
+		if (evt == LifecycleEventType.BEFORE_NODE_START) {
+			// ODE start event
+		} else if (evt == LifecycleEventType.AFTER_NODE_STOP) {
+			// ODE stop event
+
+		}
+
+	}
+
+	<T> void disableBeans(@Observes ProcessAnnotatedType<T> pat) {
+		//System.out.format("Found type %s\n", pat.getAnnotatedType());
+
+	}
+
+	void addBeans(@Observes final AfterBeanDiscovery afb, final BeanManager bm) {
+		// Ignite instance should be injected using IgniteResource or direct static lookup Ignite.getInstance()
+		// afb.addBean().beanClass(Ignite.class).scope(ApplicationScoped.class).types(Ignite.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
+		// return ignite();
+		// });
+
+		afb.addBean().beanClass(Config.class).scope(ApplicationScoped.class).types(Config.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
+			return configuration();
+		});
+
+	}
+
+	// gridClassLoader in IgniteUtils is set to this class's classloader.
+
+	public static class ServerClassLoader extends ClassLoader {
+
+		ServerClassLoader(ClassLoader parent) {
+			super(parent);
+		}
+
+	}
+
+}

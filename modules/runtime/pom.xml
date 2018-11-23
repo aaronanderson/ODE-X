@@ -1,0 +1,200 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.apache.ode</groupId>
+		<artifactId>ode-modules</artifactId>
+		<version>0.1-SNAPSHOT</version>
+		<relativePath>../</relativePath>
+	</parent>
+	<artifactId>ode-runtime</artifactId>
+	<packaging>jar</packaging>
+	<name>ODE-X - Runtime</name>
+
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.apache.ode</groupId>
+			<artifactId>ode-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.ode</groupId>
+			<artifactId>ode-spi</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-indexing</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-log4j2</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-jul</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-atinject_1.0_spec</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jcdi_2.0_spec</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-interceptor_1.2_spec</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-annotation_1.3_spec</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.openwebbeans</groupId>
+			<artifactId>openwebbeans-se</artifactId>
+		</dependency>
+
+		<!-- <dependency> <groupId>org.apache.tomcat.embed</groupId> <artifactId>tomcat-embed-core</artifactId> 
+			</dependency> -->
+
+		<dependency>
+			<groupId>org.snakeyaml</groupId>
+			<artifactId>snakeyaml-engine</artifactId>
+		</dependency>
+
+		<!--<dependency> <groupId>org.apache.cxf</groupId> <artifactId>cxf-rt-frontend-jaxrs</artifactId> 
+			<exclusions> <exclusion> <groupId>javax.ws.rs</groupId> <artifactId>javax.ws.rs-api</artifactId> 
+			</exclusion> <exclusion> <groupId>javax.annotation</groupId> <artifactId>javax.annotation-api</artifactId> 
+			</exclusion> <exclusion> <groupId>com.fasterxml.woodstox</groupId> <artifactId>woodstox-core</artifactId> 
+			</exclusion> <exclusion> <groupId>org.apache.ws.xmlschema</groupId> <artifactId>xmlschema-core</artifactId> 
+			</exclusion> </exclusions> </dependency> <dependency> <groupId>org.apache.cxf</groupId> 
+			<artifactId>cxf-integration-cdi</artifactId> <exclusions> <exclusion> <groupId>javax.inject</groupId> 
+			<artifactId>javax.inject</artifactId> </exclusion> <exclusion> <groupId>javax.enterprise</groupId> 
+			<artifactId>cdi-api</artifactId> </exclusion> </exclusions> </dependency> 
+			<dependency> <groupId>org.apache.cxf</groupId> <artifactId>cxf-rt-rs-client</artifactId> 
+			</dependency> <dependency> <groupId>org.apache.johnzon</groupId> <artifactId>johnzon-jaxrs</artifactId> 
+			</dependency> <dependency> <groupId>org.apache.johnzon</groupId> <artifactId>johnzon-jsonb</artifactId> 
+			</dependency> -->
+
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<mainClass>org.apache.ode.server.Main</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${basedir}/target/ode</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/cfg</directory>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- shading is required because Ignite and it's Lucene dependency has 
+				split packaging. This should be rechecked after each Ignite release to see 
+				if this issue has been resolved -->
+			<!-- On the positive side this simplifies the classpath -->
+			<!-- the unnamed module reads package org.apache.lucene.search from both 
+				lucene.sandbox and lucene.core [ERROR] the unnamed module reads package org.apache.ignite.internal.processors.cache.query 
+				from both ignite.core and ignite.indexing [ERROR] the unnamed module reads 
+				package org.apache.ignite.internal.visor.verify from both ignite.core and 
+				ignite.indexing <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-shade-plugin</artifactId> 
+				<configuration> </configuration> <executions> <execution> <phase>package</phase> 
+				<goals> <goal>shade</goal> </goals> </execution> </executions> </plugin> -->
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<!-- mvn exec:java@server or mvn exec:java@client -->
+				<executions>
+					<execution>
+						<id>server</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.apache.ode.runtime.Server</mainClass>
+							<systemProperties>
+								<systemProperty>
+									<key>ODE_HOME</key>
+									<value>target/ode</value>
+								</systemProperty>
+							</systemProperties>
+						</configuration>
+					</execution>
+					<execution>
+						<id>client</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.apache.ode.runtime.Client</mainClass>
+							<systemProperties>
+								<systemProperty>
+									<key>ODE_HOME</key>
+									<value>target/ode</value>
+								</systemProperty>
+							</systemProperties>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

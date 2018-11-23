@@ -64,7 +64,7 @@
 		<module>build-parent</module>
 		<module>api</module>
 		<module>spi</module>
-		<module>runtime</module>
+		<module>modules</module>
 		<module>testsuite</module>
 		<module>dist</module>
 	</modules>

@@ -1,6 +1,5 @@
 package org.apache.ode.junit;
 
-import org.apache.ignite.Ignite;
 import org.apache.ode.runtime.Client;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;

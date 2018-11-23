@@ -18,6 +18,10 @@ public interface Config {
 	Optional<Integer> getNumber(String path);
 
 	Config number(String path, Consumer<Integer> consumer);
+	
+	Optional<Boolean> getBool(String path);
+
+	Config bool(String path, Consumer<Boolean> consumer);
 
 	<T> Optional<Map<String, T>> getMap(String path, Class<T> type);
 

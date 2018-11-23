@@ -1,7 +1,9 @@
 ode:
   home: target/ode-test
   tenant: test
-  ignite:    
+  ignite:
+    persistence-enabled: true
+    auto-cluster-activate: true    
     discovery:
       localAddress: 127.0.0.1
       localPort: 48500
@@ -11,3 +13,7 @@ ode:
     com:
       localPort: 48100
       localPortRange: 20
+    connector:
+      host: 127.0.0.1
+      port: 13211
+      portRange: 20  

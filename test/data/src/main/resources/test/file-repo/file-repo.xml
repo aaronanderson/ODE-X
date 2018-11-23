@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<repo:repository xmlns:repo="http://ode.apache.org/data/memory/repository" index="TRANSIENT" indexPath="target/ode-file-repo-index">
-	<repo:classpath base="test/file-repo">
-		<repo:resource name="testCP.foo" />
-	</repo:classpath>
-	<repo:directory base="target/test/file-repo">
-		<repo:include include="*FS.foo" />
-	</repo:directory>
-</repo:repository>

@@ -1,20 +1,0 @@
-~~
-~~ Licensed to the Apache Software Foundation (ASF) under one
-~~ or more contributor license agreements.  See the NOTICE file
-~~ distributed with this work for additional information
-~~ regarding copyright ownership.  The ASF licenses this file
-~~ to you under the Apache License, Version 2.0 (the
-~~ "License"); you may not use this file except in compliance
-~~ with the License.  You may obtain a copy of the License at
-~~
-~~    http://www.apache.org/licenses/LICENSE-2.0
-~~
-~~ Unless required by applicable law or agreed to in writing,
-~~ software distributed under the License is distributed on an
-~~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-~~ KIND, either express or implied.  See the License for the
-~~ specific language governing permissions and limitations
-~~ under the License.
-~~
-
-Overview    The architecture of ODE-X is diagramed below[images/Runtime.png] ODE-X Architecture  In an attempt to leverage existing well known computational idioms the following terms define high level ODE components  [Platform]    [Component]    [Runtime]    [Repository]    [Interpreter]    [Executable]    [InstructionSet]    [Build System]    [Continuation]    [Scheduler]    [Compile]    [Install/uninstall]    [Start/stop]    [Cluster]    [Action]  Design Principles * Continuations    ODE-X is targeted at applications that require long running processes that cannot be practically implemented with the typical operating sytem process/ in memory only approach. ODE-X facilitates long running processes by providing a continuation feature where process state can be persisted and restored as needed based on events and IO.  Continuations also provide a level of transaction isolation in that the state of a process can be rolled back to a previous state on demand. * Dependency Injection    ODE-X relies heavily upon Dependency Inject (DI) in order to connect all the parts of ODE-X into a functional application. With the introduction of JSR 331 there is now a primative Java standard for DI that ODE-X strictly adheres to. By using a Java standard for dependency injection it will possible to flexibly embed ODE-X into a variety of containers, such as a Standalone JSR 299 container, a JavaEE 6 container, Spring, an SCA implementation such as Tuscany, etc. The ability to embed software is a key benefit of the liberal Apache software license and supporting this is a prime goal of the ODE-X prototype.* Debugging    Debug support is a critical feature of any plaform and deserves first class consideration. When developing applications developers must have the ability to directly inspect the state of an application at any point in time and then evaluate how the state changes as the application executes. In the absence of debugging tools developers must resort to network traces, debug statements, and trial-and-error approaches which destroy productivity. The debugging feature of ODE-X attempts to implement common debugging concepts such as variables, methods, stacks, and frames as much as possible in order to better integrate with mature IDEs such as Eclipse.    * Clustering    Given that business processes are often mission critical and revenue may be loss due to service disruption High Availability must be supported. As a core feature of ODE-X clustering support has been developed from the ground up tailoring it to the specific and unique needs of ODE-X.  * Security    Often times business processes interact with sensitive data which must be secure due to corporate policy or government regulation. The ODE-X supports security directives which allows ODE-X to encrypt/decrypt data as needed.  * Extensions    A key objective of the ODE-X prototype is to focus on a continuation platform and not specialize in any one concrete dialect. ODE-X provides a rich Service Provider Interface (SPI) and with the use of DI new implementations can be easily registered with the platform and executed as needed.
