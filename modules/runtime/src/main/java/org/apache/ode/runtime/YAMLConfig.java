@@ -9,8 +9,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import javax.enterprise.inject.Vetoed;
+
 import org.apache.ode.spi.config.Config;
 
+@Vetoed
 public class YAMLConfig implements Config {
 
 	private Map<String, Object> yamlConfig;
@@ -63,7 +66,7 @@ public class YAMLConfig implements Config {
 		getNumber(path).ifPresent(consumer);
 		return this;
 	}
-	
+
 	@Override
 	public Optional<Boolean> getBool(String path) {
 		return evaluatePath(path, Boolean.class);

@@ -29,7 +29,7 @@ public class CLITest {
 		assertNotNull(server.container());
 		assertNotNull(server.container().getBeanManager());
 		assertNotNull(client);
-		CommandResponse response = client.send(CLITask.class.getName(), new CommandRequest().entity("tenant").name("install").parameters(new StringParameter().name("test").value("test")));
+		CommandResponse response = client.send(CLITask.CLI_TASK_NAME, new CommandRequest().entity("tenant").name("install").parameters(new StringParameter().name("test").value("test")));
 		System.out.format("got response %s %s\n", response.status(), response.message());
 
 	}

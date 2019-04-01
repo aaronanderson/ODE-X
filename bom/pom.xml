@@ -17,16 +17,16 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<ignite.version>2.6.0</ignite.version>
-		<tomcat.version>9.0.12</tomcat.version>
-		<openwebbeans.version>2.0.7</openwebbeans.version>
+		<ignite.version>2.7.0</ignite.version>
+		<tomcat.version>9.0.17</tomcat.version>
+		<openwebbeans.version>2.0.10</openwebbeans.version>
 		<commons-cli.version>1.4</commons-cli.version>
-		<cxf.version>3.2.7</cxf.version>
-		<johnzon.version>1.1.10</johnzon.version>
+		<cxf.version>3.3.1</cxf.version>
+		<johnzon.version>1.1.11</johnzon.version>
 		<deltaspike.version>1.8.2</deltaspike.version>
 		<snakeyaml.version>1.0</snakeyaml.version>
-		<log4j2.version>2.11.1</log4j2.version>
-		<junit.version>5.3.1</junit.version>
+		<log4j2.version>2.11.2</log4j2.version>
+		<junit.version>5.3.2</junit.version>
 
 	</properties>
 

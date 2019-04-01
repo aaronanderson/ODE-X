@@ -30,7 +30,7 @@ public class ODEScannerService extends CDISeScannerService {
 	@Override
 	protected void filterExcludedJars(Set<URL> classPathUrls) {
 		super.filterExcludedJars(classPathUrls);
-		if (containerMode == ContainerMode.SERVER || containerMode == ContainerMode.CLIENT) {
+		if (containerMode == ContainerMode.SERVER) {
 			Iterator<URL> it = classPathUrls.iterator();
 			while (it.hasNext()) {
 				URL url = it.next();

@@ -17,7 +17,7 @@ public class ODEOWBInitializer extends OWBInitializer {
 	public static final String CONTAINER_MODE = "ode.container.mode";
 
 	public static enum ContainerMode {
-		SERVER, CLIENT, ASSEMBLY;
+		SERVER, ASSEMBLY;
 	}
 
 	private ContainerMode mode = ContainerMode.SERVER;

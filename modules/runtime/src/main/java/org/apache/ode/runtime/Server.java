@@ -1,6 +1,7 @@
 package org.apache.ode.runtime;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -13,6 +14,7 @@ import javax.enterprise.inject.spi.ProcessAnnotatedType;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
@@ -20,34 +22,42 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.ode.runtime.cli.CLITask;
 import org.apache.ode.runtime.owb.ODEOWBInitializer;
 import org.apache.ode.runtime.owb.ODEOWBInitializer.ContainerMode;
+import org.apache.ode.runtime.tenant.TenantImpl;
 import org.apache.ode.spi.config.Config;
+import org.apache.ode.spi.config.IgniteConfigureEvent;
+import org.apache.ode.spi.tenant.Tenant;
 import org.apache.webbeans.annotation.DefaultLiteral;
 
+/*
+ Main ODE server process
+ */
 public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	public static final Logger LOG = LogManager.getLogger(Server.class);
 
 	private SeContainer serverContainer;
-	private ServerClassLoader cl;
+	private ServerClassLoader scl;
 
-	@IgniteInstanceResource
+	//@IgniteInstanceResource
 	private Ignite ignite;
 
 	private Config odeConfig;
 
 	private Server() {
-		cl = new ServerClassLoader(Thread.currentThread().getContextClassLoader());
+		scl = new ServerClassLoader(Thread.currentThread().getContextClassLoader());
 	}
 
+	/* Start the ODE service */
 	public Server start(String configFile) {
-		// wrap in a custom classloader so that the OWB context is unique per instance.
-
+		// wrap in a custom classloader so that the OWB context is unique per server instance.
 		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(cl);
+		Thread.currentThread().setContextClassLoader(scl);
 		try {
 			odeConfig = Configurator.loadConfigFile(configFile);
 
@@ -57,12 +67,12 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 			IgniteConfiguration serverConfig = new IgniteConfiguration();
 			serverConfig.setClientMode(false);
-			serverConfig.setClassLoader(cl);
+			serverConfig.setClassLoader(scl);
 
 			serverConfig.setLifecycleBeans(this);
-			Configurator.configureIgnite(odeConfig, serverConfig);
+			serverContainer.getBeanManager().fireEvent(new IgniteConfigureEvent(odeConfig, serverConfig));
 
-			Ignition.start(serverConfig);
+			ignite = Ignition.start(serverConfig);
 
 			if (odeConfig.getBool("ode.ignite.auto-cluster-activate").orElse(false)) {
 				LOG.warn("Auto activation and initial baseline setting should only be enabled on a cluster with a single node");
@@ -73,6 +83,38 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 				ignite.cluster().setBaselineTopology(nodes);
 
 			}
+
+			// Wait for cluster singleton Tenant initialization before completing ODE service startup
+//			Tenant tenant = ignite.services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+//			tenant.awaitStart(60, TimeUnit.SECONDS);
+
+			IgniteCompute igniteCompute = ignite.compute();
+			igniteCompute.localDeployTask(CLITask.class, scl);
+
+//			TODO clean out test code below.
+//			IgniteMessaging msg = ignite.message();
+//			msg.remoteListen("MyOrderedTopic", (nodeId, imsg) -> {
+//				System.out.println("Received ordered message [msg=" + imsg + ", from=" + nodeId + ']');
+//				return true; // Return true to continue listening.
+//			});
+//			msg.sendOrdered("OrderedTopic", Integer.toString(1), 0);
+//
+//			igniteCompute.broadcast(new CDICallable<String>() {
+//
+//				@IgniteInstanceResource
+//				private Ignite ignite;
+//
+//				@Inject
+//				private Config config;
+//
+//				@Override
+//				public String callExt() throws Exception {
+//					String result = String.format("Cool %s %s", ignite, config);
+//					System.out.println(result);
+//					return result;
+//					
+//				}
+//			});
 
 			// serverContainer.getBeanManager().fireEvent(new IgniteConfigurationEvent(serverConfig));
 			// Configuration.initialize(serverConfig, configFile, false);
@@ -111,16 +153,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	public static Server instance() {
 		return new Server();
-//		try {
-//			Class<Server> server = (Class<Server>) cl.loadClass("org.apache.ode.runtime.Server");
-//			return server.getDeclaredConstructor().newInstance();
-//		} catch (Exception e) {
-//			LOG.error("Error initializing server", e);
-//		}
-//
-//		throw new IllegalStateException();
 	}
-	// TODO destroy classloader
 
 	public Ignite ignite() {
 		if (ignite == null) {
@@ -146,7 +179,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 	@Override
 	public void close() throws Exception {
 		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(cl);
+		Thread.currentThread().setContextClassLoader(scl);
 		try {
 			if (ignite != null) {
 				ignite.close();
@@ -174,21 +207,40 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 	}
 
 	<T> void disableBeans(@Observes ProcessAnnotatedType<T> pat) {
-		//System.out.format("Found type %s\n", pat.getAnnotatedType());
+		// System.out.format("Found type %s\n", pat.getAnnotatedType());
 
 	}
 
 	void addBeans(@Observes final AfterBeanDiscovery afb, final BeanManager bm) {
-		// Ignite instance should be injected using IgniteResource or direct static lookup Ignite.getInstance()
-		// afb.addBean().beanClass(Ignite.class).scope(ApplicationScoped.class).types(Ignite.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
-		// return ignite();
-		// });
+		// Ideally Ignite instance should be injected using IgniteResource or direct static lookup Ignition.localIgnite()
+		afb.addBean().beanClass(Ignite.class).scope(ApplicationScoped.class).types(Ignite.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
+			return ignite();
+		});
 
 		afb.addBean().beanClass(Config.class).scope(ApplicationScoped.class).types(Config.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
 			return configuration();
 		});
 
+//		afb.addBean().beanClass(Set.class).addType(new TypeLiteral<Map<String, Module>>() {
+//		}).scope(ApplicationScoped.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
+//			return loadModules(bm);
+//		});
+
 	}
+
+//	public static Map<String, Module> loadModules(BeanManager bm) {
+//		System.out.format("Loading modules\n");
+//		Map<String, Module> modules = new HashMap<>();
+//		Set<Bean<?>> beans = bm.getBeans(Object.class, new AnnotationLiteral<Module>() {
+//			
+//		});
+//		for (Bean bean : beans) {
+//			//CreationalContext<CrudService> ctx = bm.createCreationalContext(bean);
+//			//CrudService crudService = (CrudService) bm.getReference(bean, CrudService.class, ctx);
+//		}
+//	
+//		return modules;
+//	}
 
 	// gridClassLoader in IgniteUtils is set to this class's classloader.
 

@@ -7,34 +7,39 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Priority;
+import javax.enterprise.event.Observes;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.logger.log4j2.Log4J2Logger;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.ode.runtime.assembly.AssemblyManagerImpl;
+import org.apache.ode.runtime.tenant.TenantImpl;
+import org.apache.ode.spi.assembly.AssemblyManager;
 import org.apache.ode.spi.config.Config;
-import org.apache.ode.spi.config.IgniteConfigurator;
+import org.apache.ode.spi.config.IgniteConfigureEvent;
+import org.apache.ode.spi.tenant.Tenant;
 import org.snakeyaml.engine.v1.api.Load;
 import org.snakeyaml.engine.v1.api.LoadSettings;
 import org.snakeyaml.engine.v1.api.LoadSettingsBuilder;
 
-@Priority(value = 1)
-public class Configurator implements IgniteConfigurator {
+public class Configurator {
 
 	public static final String ODE_HOME = "ODE_HOME";
 	public static final String ODE_BASE_DIR = "ODE_BASE_DIR";
@@ -49,109 +54,10 @@ public class Configurator implements IgniteConfigurator {
 
 	public static final Logger LOG = LogManager.getLogger(Configurator.class);
 
-	public static String getProperty(String name, String defaultValue) {
-		String value = System.getenv().get(name);
-		if (value == null) {
-			value = System.getProperty(name);
-		}
-		if (value == null) {
-			value = defaultValue;
-		}
-		return value;
-	}
+	public void configure(@Observes @Priority(value = 1) IgniteConfigureEvent event) {
+		Config config = event.config();
+		IgniteConfiguration igniteConfig = event.igniteConfig();
 
-	public static Path getODEHome() {
-		String odeHome = getProperty(ODE_HOME, null);
-		if (odeHome != null) {
-			return Paths.get(odeHome).toAbsolutePath();
-		}
-		return Paths.get(System.getProperty("user.dir")).resolve("ode").toAbsolutePath();
-	}
-
-	public static String getODETenant() {
-		String odeTenant = getProperty(ODE_TENANT, null);
-		if (odeTenant != null) {
-			return odeTenant;
-		}
-		return "default";
-	}
-
-	public static Config loadConfigFile(String configFile) {
-		URL odeConfigURL = null;
-		String odeConfig = configFile;
-		if (odeConfig == null) {
-			odeConfig = getProperty(ODE_CONFIG, null);
-		}
-		if (odeConfig == null) {
-			odeConfig = "ode.yml";
-		}
-
-		Path odeConfigFile = Paths.get(odeConfig);
-		if (!odeConfigFile.isAbsolute()) {
-			odeConfigFile = getODEHome().resolve(odeConfig);
-		}
-		if (Files.exists(odeConfigFile)) {
-			try {
-				odeConfigURL = odeConfigFile.toAbsolutePath().toUri().toURL();
-			} catch (Exception e) {
-
-			}
-		}
-		if (odeConfigURL == null) {
-			odeConfigURL = Thread.currentThread().getContextClassLoader().getResource(odeConfig);
-		}
-		Map<String, Object> yamlConfig = null;
-		if (odeConfigURL != null) {
-			LoadSettings settings = new LoadSettingsBuilder().build();
-			Load load = new Load(settings);
-			try {
-				for (Object o : load.loadAllFromInputStream(odeConfigURL.openStream())) {
-					if (o instanceof Map) {
-						yamlConfig = (Map<String, Object>) o;
-						break;
-					}
-				}
-				if (yamlConfig != null) {
-					return new YAMLConfig(yamlConfig);
-				}
-			} catch (IOException e) {
-				LOG.error("ODE YAML configuation error", e);
-			}
-		}
-		return new YAMLConfig();
-	}
-
-	public static URL resolveODEUrl(String path) throws MalformedURLException {
-
-		Path filePath = Paths.get(path);
-		if (!filePath.isAbsolute()) {
-			return getODEHome().resolve(filePath).toUri().toURL();
-		}
-		Path absoluteFilePath = filePath.toAbsolutePath();
-		if (Files.exists(absoluteFilePath)) {
-			return absoluteFilePath.toUri().toURL();
-		}
-
-		return Thread.currentThread().getContextClassLoader().getResource(path);
-	}
-
-	public static void configureIgnite(Config odeConfig, IgniteConfiguration igniteConfig) {
-		ServiceLoader<IgniteConfigurator> igniteConfiguratorsLoader = ServiceLoader.load(IgniteConfigurator.class);
-		List<IgniteConfigurator> igniteConfigurators = igniteConfiguratorsLoader.stream().map(p -> p.get()).sorted((p1, p2) -> {
-			int p1p = Optional.ofNullable(p1.getClass().getAnnotation(Priority.class)).map(p -> p.value()).orElse(100);
-			int p2p = Optional.ofNullable(p2.getClass().getAnnotation(Priority.class)).map(p -> p.value()).orElse(100);
-			if (p1p == p2p) {
-				return 0;
-			}
-			return p1p > p2p ? 1 : -1;
-
-		}).collect(Collectors.toList());
-
-		igniteConfigurators.forEach(c -> c.configure(odeConfig, igniteConfig));
-	}
-
-	@Override
-	public void configure(Config config, IgniteConfiguration igniteConfig) {
 		System.setProperty(IgniteSystemProperties.IGNITE_QUIET, "true");
 		System.setProperty(IgniteSystemProperties.IGNITE_NO_ASCII, "true");
 		System.setProperty(IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED, "true");
@@ -252,5 +158,97 @@ public class Configurator implements IgniteConfigurator {
 			igniteConfig.setIgniteInstanceName("ode-server-" + odeTenant);
 		}
 
+		// Initial services
+		// Deploy tenant service singleton
+		ServiceConfiguration tenant = new ServiceConfiguration().setMaxPerNodeCount(1).setTotalCount(1).setName(Tenant.SERVICE_NAME).setService(new TenantImpl());
+		// ServiceConfiguration assemblyManager = new ServiceConfiguration().setMaxPerNodeCount(1).setName(AssemblyManager.SERVICE_NAME).setService(new AssemblyManagerImpl());
+		igniteConfig.setServiceConfiguration(tenant);
+
+	}
+
+	public static String getProperty(String name, String defaultValue) {
+		String value = System.getenv().get(name);
+		if (value == null) {
+			value = System.getProperty(name);
+		}
+		if (value == null) {
+			value = defaultValue;
+		}
+		return value;
+	}
+
+	public static Path getODEHome() {
+		String odeHome = getProperty(ODE_HOME, null);
+		if (odeHome != null) {
+			return Paths.get(odeHome).toAbsolutePath();
+		}
+		return Paths.get(System.getProperty("user.dir")).resolve("ode").toAbsolutePath();
+	}
+
+	public static String getODETenant() {
+		String odeTenant = getProperty(ODE_TENANT, null);
+		if (odeTenant != null) {
+			return odeTenant;
+		}
+		return "default";
+	}
+
+	public static Config loadConfigFile(String configFile) {
+		URL odeConfigURL = null;
+		String odeConfig = configFile;
+		if (odeConfig == null) {
+			odeConfig = getProperty(ODE_CONFIG, null);
+		}
+		if (odeConfig == null) {
+			odeConfig = "ode.yml";
+		}
+
+		Path odeConfigFile = Paths.get(odeConfig);
+		if (!odeConfigFile.isAbsolute()) {
+			odeConfigFile = getODEHome().resolve(odeConfig);
+		}
+		if (Files.exists(odeConfigFile)) {
+			try {
+				odeConfigURL = odeConfigFile.toAbsolutePath().toUri().toURL();
+			} catch (Exception e) {
+
+			}
+		}
+		if (odeConfigURL == null) {
+			odeConfigURL = Thread.currentThread().getContextClassLoader().getResource(odeConfig);
+		}
+		Map<String, Object> yamlConfig = null;
+		if (odeConfigURL != null) {
+			LoadSettings settings = new LoadSettingsBuilder().build();
+			Load load = new Load(settings);
+			try {
+				for (Object o : load.loadAllFromInputStream(odeConfigURL.openStream())) {
+					if (o instanceof Map) {
+						yamlConfig = (Map<String, Object>) o;
+						break;
+					}
+				}
+				if (yamlConfig != null) {
+					return new YAMLConfig(yamlConfig);
+				}
+			} catch (IOException e) {
+				LOG.error("ODE YAML configuation error", e);
+			}
+		}
+		return new YAMLConfig();
+	}
+
+	public static URL resolveODEUrl(String path) throws MalformedURLException {
+
+		Path filePath = Paths.get(path);
+		if (!filePath.isAbsolute()) {
+			return getODEHome().resolve(filePath).toUri().toURL();
+		}
+		Path absoluteFilePath = filePath.toAbsolutePath();
+		if (Files.exists(absoluteFilePath)) {
+			return absoluteFilePath.toUri().toURL();
+		}
+
+		return Thread.currentThread().getContextClassLoader().getResource(path);
 	}
 }

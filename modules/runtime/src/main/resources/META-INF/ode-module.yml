@@ -1,2 +1,3 @@
 ode-module:
-  id: org.apache.ode.runtime
+  id: urn:org:apache:ode:runtime
+  version: ${project.version}

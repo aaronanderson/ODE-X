@@ -1,6 +1,7 @@
 ode:
   home: target/ode-test
   tenant: test
+  auto-enable: true
   ignite:
     persistence-enabled: true
     auto-cluster-activate: true    

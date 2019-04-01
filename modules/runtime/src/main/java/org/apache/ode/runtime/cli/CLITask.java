@@ -16,13 +16,16 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ode.spi.cli.CLICommand;
 import org.apache.ode.spi.cli.CommandJob;
 import org.apache.ode.spi.cli.CommandRequest;
 import org.apache.ode.spi.cli.CommandResponse;
 
+@ComputeTaskName(CLITask.CLI_TASK_NAME)
 public class CLITask extends ComputeTaskAdapter<CommandRequest, CommandResponse> {
 
+	public static final String CLI_TASK_NAME = "urn:org:apache:ode:cli:exec";
 	private static final long serialVersionUID = 1L;
 	private CreationalContext<CommandJob> ctx;
 
