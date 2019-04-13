@@ -14,6 +14,7 @@ public class ODEServerExtension implements BeforeAllCallback, AfterAllCallback, 
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
 		server = Server.instance().start("ode-test.yml");
+
 		// context.getTestInstanceLifecycle()
 
 		// TcpDiscoverySpi serverDiscoverySPI = (TcpDiscoverySpi) server.configuration().getDiscoverySpi();

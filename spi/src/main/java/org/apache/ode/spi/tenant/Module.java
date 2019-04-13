@@ -13,14 +13,33 @@ public interface Module {
 
 	String id();
 
-	default void enable() {
+	default void enable() throws ModuleException {
 	}
 
-	default void disable() {
+	default void disable() throws ModuleException {
+	}
+
+	default String[] dependencies() {
+		return new String[0];
 	}
 
 	public static enum ModuleStatus {
 		ENABLED, DISABLED;
+	}
+
+	public static class ModuleException extends Exception {
+
+		public ModuleException(String msg) {
+			this(msg, null);
+		}
+
+		public ModuleException(Throwable t) {
+			this(null, t);
+		}
+
+		public ModuleException(String msg, Throwable t) {
+			super(msg, t);
+		}
 	}
 
 }

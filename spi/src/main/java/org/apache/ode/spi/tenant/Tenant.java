@@ -3,6 +3,7 @@ package org.apache.ode.spi.tenant;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.ode.spi.tenant.Module.ModuleException;
 import org.apache.ode.spi.tenant.Module.ModuleStatus;
 
 public interface Tenant {
@@ -11,7 +12,7 @@ public interface Tenant {
 
 	Set<String> modules();
 
-	<M> M instance(String moduleId) throws ModuleException;
+	<M extends Module> M instance(String moduleId) throws ModuleException;
 
 	ModuleStatus status(String moduleId) throws ModuleException;
 
@@ -21,25 +22,11 @@ public interface Tenant {
 
 	TenantStatus status();
 
-	void awaitStart(long timeout, TimeUnit unit);
+	void awaitInitialization(long timeout, TimeUnit unit);
 
 	public static enum TenantStatus {
 		ONLINE, OFFLINE;
 	}
-
-	public static class ModuleException extends Exception {
-
-		public ModuleException(String msg) {
-			this(msg, null);
-		}
-
-		public ModuleException(Throwable t) {
-			this(null, t);
-		}
-
-		public ModuleException(String msg, Throwable t) {
-			super(msg, t);
-		}
-	}
+	
 
 }

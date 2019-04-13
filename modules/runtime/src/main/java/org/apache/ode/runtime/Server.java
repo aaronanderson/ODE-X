@@ -1,6 +1,7 @@
 package org.apache.ode.runtime;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -21,14 +22,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.ode.runtime.cli.CLITask;
 import org.apache.ode.runtime.owb.ODEOWBInitializer;
 import org.apache.ode.runtime.owb.ODEOWBInitializer.ContainerMode;
-import org.apache.ode.runtime.tenant.TenantImpl;
 import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
 import org.apache.ode.spi.tenant.Tenant;
@@ -44,7 +43,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 	private SeContainer serverContainer;
 	private ServerClassLoader scl;
 
-	//@IgniteInstanceResource
+	// @IgniteInstanceResource
 	private Ignite ignite;
 
 	private Config odeConfig;
@@ -80,13 +79,26 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 				igniteCluster.active(true);
 				igniteCluster.setBaselineTopology(1l);
 				Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
-				ignite.cluster().setBaselineTopology(nodes);
+				igniteCluster.setBaselineTopology(nodes);
 
 			}
 
-			// Wait for cluster singleton Tenant initialization before completing ODE service startup
-//			Tenant tenant = ignite.services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
-//			tenant.awaitStart(60, TimeUnit.SECONDS);
+			// wait for service to become available. Service race conditions might be fixed in Ignite 2.8
+			long serviceStartTime = System.currentTimeMillis();
+			while (System.currentTimeMillis() <= serviceStartTime + 60000) {
+				Optional<ServiceDescriptor> tenantServiceDesc = ignite.services().serviceDescriptors().stream().filter(s -> Tenant.SERVICE_NAME.equals(s.name())).findFirst();
+				if (tenantServiceDesc.isPresent()) {
+					break;
+				}
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {					
+				}
+
+			}
+
+			Tenant tenant = ignite.services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+			tenant.awaitInitialization(60, TimeUnit.SECONDS);
 
 			IgniteCompute igniteCompute = ignite.compute();
 			igniteCompute.localDeployTask(CLITask.class, scl);
