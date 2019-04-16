@@ -6,7 +6,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -17,8 +16,6 @@ import javax.enterprise.event.Observes;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,15 +26,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.ode.runtime.assembly.AssemblyManagerImpl;
 import org.apache.ode.runtime.tenant.TenantImpl;
-import org.apache.ode.spi.assembly.AssemblyManager;
 import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
 import org.apache.ode.spi.tenant.Tenant;
 import org.snakeyaml.engine.v1.api.Load;
 import org.snakeyaml.engine.v1.api.LoadSettings;
 import org.snakeyaml.engine.v1.api.LoadSettingsBuilder;
+
 
 public class Configurator {
 
@@ -73,6 +69,9 @@ public class Configurator {
 		if (fileOdeHome.isPresent()) {
 			odeHome = Paths.get(fileOdeHome.get()).toAbsolutePath();
 		}
+		if (igniteConfig.getUserAttributes().containsKey(ODE_HOME)) {
+			odeHome = Paths.get((String) igniteConfig.getUserAttributes().get(ODE_HOME)).toAbsolutePath();
+		}
 
 		Optional<String> fileOdeTenant = odeConfig.flatMap(c -> c.getString("tenant"));
 		if (fileOdeTenant.isPresent()) {
@@ -85,7 +84,7 @@ public class Configurator {
 		// URL xml = Configuration.resolveODEUrl("ode-log4j2.xml");
 		// IgniteLogger log = new Log4J2Logger(xml);
 
-		Map<String, Object> attrs = new HashMap<>();
+		Map<String, Object> attrs = (Map<String, Object>) igniteConfig.getUserAttributes();
 		attrs.put(ODE_HOME, odeHome.toString());
 		attrs.put(ODE_TENANT, odeTenant);
 		attrs.put(ODE_BASE_DIR, odeBaseDir.toString());

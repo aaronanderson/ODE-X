@@ -1,11 +1,14 @@
 package org.apache.ode.runtime;
 
-import java.util.Collection;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
@@ -14,11 +17,9 @@ import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -30,6 +31,7 @@ import org.apache.ode.runtime.owb.ODEOWBInitializer;
 import org.apache.ode.runtime.owb.ODEOWBInitializer.ContainerMode;
 import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
+import org.apache.ode.spi.tenant.ClusterManager;
 import org.apache.ode.spi.tenant.Tenant;
 import org.apache.webbeans.annotation.DefaultLiteral;
 
@@ -40,6 +42,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	public static final Logger LOG = LogManager.getLogger(Server.class);
 
+	private SeContainerInitializer serverContainerInitializer;
 	private SeContainer serverContainer;
 	private ServerClassLoader scl;
 
@@ -50,10 +53,21 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	private Server() {
 		scl = new ServerClassLoader(Thread.currentThread().getContextClassLoader());
+		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(scl);
+		try {
+			serverContainerInitializer = SeContainerInitializer.newInstance().addProperty(ODEOWBInitializer.CONTAINER_MODE, ContainerMode.SERVER).addExtensions(this);
+		} finally {
+			Thread.currentThread().setContextClassLoader(oldCl);
+		}
+	}
+
+	public Server start(String configFile) {
+		return start(configFile, null);
 	}
 
 	/* Start the ODE service */
-	public Server start(String configFile) {
+	public Server start(String configFile, Path odeHome) {
 		// wrap in a custom classloader so that the OWB context is unique per server instance.
 		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(scl);
@@ -61,12 +75,15 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			odeConfig = Configurator.loadConfigFile(configFile);
 
 			// CDI initialization should only do local classpath scanning and setup. Seperate ODE init/destroy events will be emitted to trigger interaction with Ignite for additional setup or teardown
-			SeContainerInitializer initializer = SeContainerInitializer.newInstance().addProperty(ODEOWBInitializer.CONTAINER_MODE, ContainerMode.SERVER).addExtensions(this);
-			serverContainer = initializer.initialize();
+			serverContainer = serverContainerInitializer.initialize();
 
 			IgniteConfiguration serverConfig = new IgniteConfiguration();
 			serverConfig.setClientMode(false);
 			serverConfig.setClassLoader(scl);
+			serverConfig.setUserAttributes(new HashMap<>());
+			if (odeHome != null) {
+				((Map<String, String>) serverConfig.getUserAttributes()).put(Configurator.ODE_HOME, odeHome.toString());
+			}
 
 			serverConfig.setLifecycleBeans(this);
 			serverContainer.getBeanManager().fireEvent(new IgniteConfigureEvent(odeConfig, serverConfig));
@@ -75,30 +92,11 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 			if (odeConfig.getBool("ode.ignite.auto-cluster-activate").orElse(false)) {
 				LOG.warn("Auto activation and initial baseline setting should only be enabled on a cluster with a single node");
-				IgniteCluster igniteCluster = ignite.cluster();
-				igniteCluster.active(true);
-				igniteCluster.setBaselineTopology(1l);
-				Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
-				igniteCluster.setBaselineTopology(nodes);
-
+				ClusterManager manager = serverContainer.select(ClusterManager.class, Any.Literal.INSTANCE).get();
+				manager.activate(true);
+				manager.baselineTopology(1l);
+				awaitInitalization(60, TimeUnit.SECONDS);
 			}
-
-			// wait for service to become available. Service race conditions might be fixed in Ignite 2.8
-			long serviceStartTime = System.currentTimeMillis();
-			while (System.currentTimeMillis() <= serviceStartTime + 60000) {
-				Optional<ServiceDescriptor> tenantServiceDesc = ignite.services().serviceDescriptors().stream().filter(s -> Tenant.SERVICE_NAME.equals(s.name())).findFirst();
-				if (tenantServiceDesc.isPresent()) {
-					break;
-				}
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {					
-				}
-
-			}
-
-			Tenant tenant = ignite.services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
-			tenant.awaitInitialization(60, TimeUnit.SECONDS);
 
 			IgniteCompute igniteCompute = ignite.compute();
 			igniteCompute.localDeployTask(CLITask.class, scl);
@@ -163,6 +161,35 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 		}
 	}
 
+	public void awaitInitalization(long timeout, TimeUnit unit) {
+		if (ignite == null) {
+			throw new IllegalStateException("Ignite unavailable");
+		}
+		if (!ignite.cluster().active()) {
+			throw new IllegalStateException("Ignite cluster not activated");
+		}
+		// wait for service to become available. Service race conditions might be fixed in Ignite 2.8
+		long serviceStartTime = System.currentTimeMillis();
+		while (System.currentTimeMillis() <= serviceStartTime + 60000) {
+			Optional<ServiceDescriptor> tenantServiceDesc = ignite.services().serviceDescriptors().stream().filter(s -> Tenant.SERVICE_NAME.equals(s.name())).findFirst();
+			if (tenantServiceDesc.isPresent()) {
+				break;
+			}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+			}
+
+		}
+
+		Tenant tenant = ignite.services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+		try {
+			tenant.awaitInitialization(timeout, unit);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static Server instance() {
 		return new Server();
 	}
@@ -172,6 +199,13 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			throw new IllegalStateException("Ignite unavailable");
 		}
 		return ignite;
+	}
+
+	public SeContainerInitializer containerInitializer() {
+		if (serverContainer != null) {
+			throw new IllegalStateException("SeContainer already initialized");
+		}
+		return serverContainerInitializer;
 	}
 
 	public SeContainer container() {
@@ -239,20 +273,6 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 //		});
 
 	}
-
-//	public static Map<String, Module> loadModules(BeanManager bm) {
-//		System.out.format("Loading modules\n");
-//		Map<String, Module> modules = new HashMap<>();
-//		Set<Bean<?>> beans = bm.getBeans(Object.class, new AnnotationLiteral<Module>() {
-//			
-//		});
-//		for (Bean bean : beans) {
-//			//CreationalContext<CrudService> ctx = bm.createCreationalContext(bean);
-//			//CrudService crudService = (CrudService) bm.getReference(bean, CrudService.class, ctx);
-//		}
-//	
-//		return modules;
-//	}
 
 	// gridClassLoader in IgniteUtils is set to this class's classloader.
 

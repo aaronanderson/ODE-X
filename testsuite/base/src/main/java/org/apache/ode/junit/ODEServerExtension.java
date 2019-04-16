@@ -1,5 +1,7 @@
 package org.apache.ode.junit;
 
+import java.util.Optional;
+
 import org.apache.ode.runtime.Server;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -13,7 +15,12 @@ public class ODEServerExtension implements BeforeAllCallback, AfterAllCallback, 
 
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
-		server = Server.instance().start("ode-test.yml");
+		String configFile = "ode-test.yml";
+		OdeServer config = context.getRequiredTestClass().getAnnotation(OdeServer.class);
+		if (config != null) {
+			configFile = config.config();
+		}
+		server = Server.instance().start(configFile);
 
 		// context.getTestInstanceLifecycle()
 

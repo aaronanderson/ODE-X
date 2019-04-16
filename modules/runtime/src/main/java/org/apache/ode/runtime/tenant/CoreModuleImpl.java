@@ -10,22 +10,25 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ode.spi.tenant.ClusterManager;
 import org.apache.ode.spi.tenant.Module;
+import org.apache.ode.spi.tenant.Module.Id;
 
-@ApplicationScoped
-public class CoreModuleImpl implements Module {
+@Id(CoreModuleImpl.CORE_MODULE_ID)
+public class CoreModuleImpl implements Module, ClusterManager {
 
 	public static final String CORE_MODULE_ID = "org:apache:ode:core";
 	public static final String TENANT_CACHE_NAME = "Tenant";
@@ -34,13 +37,8 @@ public class CoreModuleImpl implements Module {
 	@Inject
 	Ignite ignite;
 
-	@Override
-	public String id() {
-		return CORE_MODULE_ID;
-	}
-
-	@Override
-	public void enable() {
+	@Enable
+	public void enable(Ignite ignite) {
 		// set IGNITE_H2_DEBUG_CONSOLE=test environment variable to launch embedded H2 DB explorer web application.
 		if (ignite.cache(TENANT_CACHE_NAME) == null) {
 			CacheConfiguration tenantCacheCfg = new CacheConfiguration(TENANT_CACHE_NAME);
@@ -76,8 +74,8 @@ public class CoreModuleImpl implements Module {
 
 	}
 
-	@Override
-	public void disable() {
+	@Disable
+	public void disable(Ignite ignite) {
 		ignite.destroyCache("Tenant");
 	}
 
@@ -207,6 +205,25 @@ public class CoreModuleImpl implements Module {
 		entity.setIndexes(eindexes);
 
 		return entity;
+	}
+
+	@Override
+	public void activate(boolean value) {
+		IgniteCluster igniteCluster = ignite.cluster();
+		igniteCluster.active(true);
+		igniteCluster.setBaselineTopology(1l);
+		Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
+		igniteCluster.setBaselineTopology(nodes);
+
+	}
+
+	@Override
+	public void baselineTopology(long version) {
+		IgniteCluster igniteCluster = ignite.cluster();
+		igniteCluster.setBaselineTopology(1l);
+		Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
+		igniteCluster.setBaselineTopology(nodes);
+
 	}
 
 }

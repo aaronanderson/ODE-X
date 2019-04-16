@@ -13,7 +13,13 @@ public class ODEClientExtension implements BeforeAllCallback, AfterAllCallback, 
 
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
-		client = Client.instance().start("ode-test.yml");
+		String configFile = "ode-test.yml";
+		OdeClient config = context.getRequiredTestClass().getAnnotation(OdeClient.class);
+		if (config != null) {
+			configFile = config.config();
+		}
+		client = Client.instance().start(configFile);
+
 		// TcpDiscoverySpi clientDiscoverySPI = (TcpDiscoverySpi) client.configuration().getDiscoverySpi();
 		// System.out.format("Client discovery address %s %d\n", clientDiscoverySPI.getLocalAddress(), clientDiscoverySPI.getLocalPort());
 

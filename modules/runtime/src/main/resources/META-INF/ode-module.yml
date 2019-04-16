@@ -1,3 +1,0 @@
-ode-module:
-  id: urn:org:apache:ode:runtime
-  version: ${project.version}

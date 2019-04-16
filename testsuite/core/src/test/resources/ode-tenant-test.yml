@@ -1,0 +1,7 @@
+ode:
+  home: target/ode-tenant-test
+  tenant: tenant-test
+  auto-enable: false
+  ignite:
+    persistence-enabled: true
+    auto-cluster-activate: false  

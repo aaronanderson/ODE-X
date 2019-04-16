@@ -2,8 +2,8 @@ package org.apache.ode.test.core;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.apache.ode.junit.ODEClientExtension;
-import org.apache.ode.junit.ODEServerExtension;
+import org.apache.ode.junit.OdeClient;
+import org.apache.ode.junit.OdeServer;
 import org.apache.ode.runtime.Client;
 import org.apache.ode.runtime.Server;
 import org.apache.ode.runtime.cli.CLITask;
@@ -11,9 +11,9 @@ import org.apache.ode.spi.cli.CommandRequest;
 import org.apache.ode.spi.cli.CommandRequest.StringParameter;
 import org.apache.ode.spi.cli.CommandResponse;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith({ ODEServerExtension.class, ODEClientExtension.class })
+@OdeServer
+@OdeClient
 public class CLITest {
 	Server server = null;
 	Client client = null;
