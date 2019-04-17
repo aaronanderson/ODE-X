@@ -1,14 +1,18 @@
 package org.apache.ode.runtime;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
@@ -17,9 +21,11 @@ import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -31,7 +37,9 @@ import org.apache.ode.runtime.owb.ODEOWBInitializer;
 import org.apache.ode.runtime.owb.ODEOWBInitializer.ContainerMode;
 import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
-import org.apache.ode.spi.tenant.ClusterManager;
+import org.apache.ode.spi.tenant.Module;
+import org.apache.ode.spi.tenant.Module.Id;
+import org.apache.ode.spi.tenant.Module.ModuleException;
 import org.apache.ode.spi.tenant.Tenant;
 import org.apache.webbeans.annotation.DefaultLiteral;
 
@@ -92,10 +100,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 			if (odeConfig.getBool("ode.ignite.auto-cluster-activate").orElse(false)) {
 				LOG.warn("Auto activation and initial baseline setting should only be enabled on a cluster with a single node");
-				ClusterManager manager = serverContainer.select(ClusterManager.class, Any.Literal.INSTANCE).get();
-				manager.activate(true);
-				manager.baselineTopology(1l);
-				awaitInitalization(60, TimeUnit.SECONDS);
+				clusterAutoOnline();
 			}
 
 			IgniteCompute igniteCompute = ignite.compute();
@@ -161,7 +166,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 		}
 	}
 
-	public void awaitInitalization(long timeout, TimeUnit unit) {
+	public Server awaitInitalization(long timeout, TimeUnit unit) {
 		if (ignite == null) {
 			throw new IllegalStateException("Ignite unavailable");
 		}
@@ -188,6 +193,50 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
+		// check consistency
+		String localTenantName = (String) ignite.configuration().getUserAttributes().get(Configurator.ODE_TENANT);
+		if (!tenant.name().equals(localTenantName)) {
+			throw new IllegalStateException(String.format("Tenant name mismatch remote: %s local: %s", tenant.name(), localTenantName));
+		}
+		Set<String> remoteModuleIds = tenant.modules();
+		Set<String> localModuleIds = new HashSet<>();
+		Instance<Module> localModules = serverContainer.select(Module.class, Any.Literal.INSTANCE);
+		for (Module m : localModules) {
+			Id id = m.getClass().getAnnotation(Id.class);
+			if (id != null) {
+				localModuleIds.add(id.value());
+			} else {
+				LOG.error(String.format("Module %s does not have required Id annotation", m.getClass()));
+			}
+		}
+		if (!remoteModuleIds.equals(localModuleIds)) {
+			throw new IllegalStateException(String.format("Tenant module id mismatch remote: %s local: %s", remoteModuleIds, localModuleIds));
+		}
+
+		return this;
+	}
+
+	public Server clusterActivate(boolean value) {
+		IgniteCluster igniteCluster = ignite.cluster();
+		igniteCluster.active(true);
+		return this;
+
+	}
+
+	public Server clusterBaselineTopology(long version) {
+		IgniteCluster igniteCluster = ignite.cluster();
+		igniteCluster.setBaselineTopology(version);
+		Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
+		igniteCluster.setBaselineTopology(nodes);
+		return this;
+
+	}
+
+	public Server clusterAutoOnline() {
+		clusterActivate(true);
+		clusterBaselineTopology(1l);
+		awaitInitalization(60, TimeUnit.SECONDS);
+		return this;
 	}
 
 	public static Server instance() {

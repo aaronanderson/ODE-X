@@ -5,10 +5,12 @@ import java.lang.reflect.Method;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -97,7 +99,7 @@ public class TenantImpl extends CDIService implements Tenant {
 		if (Object.class.equals(clazz)) {
 			return;
 		}
-		for (Method method : clazz.getMethods()) {
+		for (Method method : clazz.getDeclaredMethods()) {
 			Object enable = method.getDeclaredAnnotation(annotation);
 			if (enable != null) {
 				invoke(module, method);
@@ -149,16 +151,23 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	@Override
 	public ModuleStatus status(String moduleId) throws ModuleException {
-		getModule(moduleId);
-		Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
-		return (Boolean) moduleConfig.getValue().field("enabled") ? ModuleStatus.ENABLED : ModuleStatus.DISABLED;
+		if (tenantCacheAvailable()) {
+			getModule(moduleId);
+			Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
+			return (Boolean) moduleConfig.getValue().field("enabled") ? ModuleStatus.ENABLED : ModuleStatus.DISABLED;
+		}
+		return ModuleStatus.DISABLED;
 	}
 
 	@Override
 	public void enable(String moduleId) throws ModuleException {
-		Module m = getModule(moduleId);
-		Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
-		enable(m, moduleConfig);
+		if (Tenant.ALL_MODULES.equals(moduleId)) {
+			autoEnable();
+		} else {
+			Module m = getModule(moduleId);
+			Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
+			enable(m, moduleConfig);
+		}
 	}
 
 	private void enable(Module module, Entry<UUID, BinaryObject> moduleConfig) throws ModuleException {
@@ -176,30 +185,32 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	@Override
 	public void disable(String moduleId) throws ModuleException {
-		Module m = getModule(moduleId);
-		Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
-		disable(m, moduleConfig);
+		if (!tenantCacheAvailable()) {
+			throw new ModuleException("core module not enabled");
+		}
+		if (Tenant.ALL_MODULES.equals(moduleId)) {
+			autoDisable();
+		} else {
+			Module m = getModule(moduleId);
+			Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
+			disable(m, moduleConfig);
+		}
 	}
 
 	private void disable(Module module, Entry<UUID, BinaryObject> moduleConfig) throws ModuleException {
 		Boolean enabled = moduleConfig.getValue().field("enabled");
 		if (enabled) {
 			disable(module);
-			BinaryObjectBuilder moduleConfigBuilder = ignite.binary().builder(moduleConfig.getValue());
-			moduleConfigBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
-			moduleConfigBuilder.setField("enabled", false);
-			IgniteCache<UUID, BinaryObject> configCache = ignite.cache(CoreModuleImpl.TENANT_CACHE_NAME).withKeepBinary();
-			configCache.put(moduleConfig.getKey(), moduleConfigBuilder.build());
-		}
-		CacheEntryUpdatedListener e = new CacheEntryUpdatedListener() {
-
-			@Override
-			public void onUpdated(Iterable events) throws CacheEntryListenerException {
-				// TODO Auto-generated method stub
-
+			// Core module disable deletes the cache, can't update
+			if (!CoreModuleImpl.CORE_MODULE_ID.equals(getId(module))) {
+				BinaryObjectBuilder moduleConfigBuilder = ignite.binary().builder(moduleConfig.getValue());
+				moduleConfigBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+				moduleConfigBuilder.setField("enabled", false);
+				IgniteCache<UUID, BinaryObject> configCache = ignite.cache(CoreModuleImpl.TENANT_CACHE_NAME).withKeepBinary();
+				configCache.put(moduleConfig.getKey(), moduleConfigBuilder.build());
 			}
+		}
 
-		};
 	}
 
 	@Override
@@ -215,6 +226,7 @@ public class TenantImpl extends CDIService implements Tenant {
 	@Override
 	public synchronized void status(TenantStatus status) {
 		if (tenantStatus != status) {
+			tenantStatus = status;
 			IgniteMessaging tenantStatusMsg = ignite.message();
 			tenantStatusMsg.sendOrdered(Tenant.STATUS_TOPIC, status, 0);
 		}
@@ -240,7 +252,11 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	}
 
-	private void autoEnable() throws Exception {
+	private boolean tenantCacheAvailable() {
+		return ignite.cache(CoreModuleImpl.TENANT_CACHE_NAME) != null;
+	}
+
+	private void autoEnable() throws ModuleException {
 		Set<String> resolved = new HashSet<>();
 		LinkedList<Module> unresolved = new LinkedList<>();
 		CoreModuleImpl coreModule = null;
@@ -251,7 +267,7 @@ public class TenantImpl extends CDIService implements Tenant {
 			unresolved.add(m);
 		}
 
-		if (ignite.cache(CoreModuleImpl.TENANT_CACHE_NAME) == null) {
+		if (!tenantCacheAvailable()) {
 			enable(coreModule);
 			createModuleConfig(CoreModuleImpl.CORE_MODULE_ID, true);
 		}
@@ -289,13 +305,61 @@ public class TenantImpl extends CDIService implements Tenant {
 					}
 					msg.append(String.format("[%s -> %s]", getId(m), dependencies));
 				}
-				LOG.error("Unable to resolve all module dependencies %s", msg);
+				throw new ModuleException(String.format("Unable to resolve all module dependencies %s", msg));
+			}
+		}
+	}
+
+	private void autoDisable() throws ModuleException {
+		Set<String> resolved = new HashSet<>();
+		Map<String, Set<String>> unresolved = new HashMap<>();
+		Set<String> coreInverseDepdendencies = new HashSet<>();
+		unresolved.put(CoreModuleImpl.CORE_MODULE_ID, coreInverseDepdendencies);
+		for (Module m : modules) {
+			String id = getId(m);
+			if (!CoreModuleImpl.CORE_MODULE_ID.equals(id)) {
+				coreInverseDepdendencies.add(id);
+				unresolved.putIfAbsent(id, new HashSet<>());
+				for (String dependency : getDependencies(m)) {
+					Set<String> inverseDepdendencies = unresolved.putIfAbsent(dependency, new HashSet<>());
+					inverseDepdendencies.add(id);
+				}
+
 			}
 		}
 
-		// check configuration to see which modules are already enabled
-		resolved.add(CoreModuleImpl.CORE_MODULE_ID);
+		while (!unresolved.isEmpty()) {
+			boolean hasResolved = false;
+			for (Iterator<java.util.Map.Entry<String, Set<String>>> itr = unresolved.entrySet().iterator(); itr.hasNext();) {
+				java.util.Map.Entry<String, Set<String>> m = itr.next();
+				if (resolved.containsAll(m.getValue())) {
+					Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(m.getKey());
+					Module module = getModule(m.getKey());
+					disable(module, moduleConfig);
+					resolved.add(m.getKey());
+					itr.remove();
+					hasResolved = true;
+				}
+			}
 
+			if (!hasResolved) {
+				StringBuilder msg = new StringBuilder();
+				for (java.util.Map.Entry<String, Set<String>> m : unresolved.entrySet()) {
+					StringBuilder dependencies = new StringBuilder();
+					for (String dependency : m.getValue()) {
+						if (dependencies.length() > 0) {
+							dependencies.append(", ");
+						}
+						dependencies.append(dependency);
+					}
+					if (msg.length() > 0) {
+						msg.append(", ");
+					}
+					msg.append(String.format("[%s -> %s]", m.getKey(), dependencies));
+				}
+				throw new ModuleException(String.format("Unable to resolve all module dependencies %s", msg));
+			}
+		}
 	}
 
 	private Entry<UUID, BinaryObject> getOrCreateModuleConfig(String moduleId) {

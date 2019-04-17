@@ -14,21 +14,18 @@ import javax.inject.Inject;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ode.spi.tenant.ClusterManager;
 import org.apache.ode.spi.tenant.Module;
 import org.apache.ode.spi.tenant.Module.Id;
 
 @Id(CoreModuleImpl.CORE_MODULE_ID)
-public class CoreModuleImpl implements Module, ClusterManager {
+public class CoreModuleImpl implements Module {
 
 	public static final String CORE_MODULE_ID = "org:apache:ode:core";
 	public static final String TENANT_CACHE_NAME = "Tenant";
@@ -207,23 +204,6 @@ public class CoreModuleImpl implements Module, ClusterManager {
 		return entity;
 	}
 
-	@Override
-	public void activate(boolean value) {
-		IgniteCluster igniteCluster = ignite.cluster();
-		igniteCluster.active(true);
-		igniteCluster.setBaselineTopology(1l);
-		Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
-		igniteCluster.setBaselineTopology(nodes);
-
-	}
-
-	@Override
-	public void baselineTopology(long version) {
-		IgniteCluster igniteCluster = ignite.cluster();
-		igniteCluster.setBaselineTopology(1l);
-		Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
-		igniteCluster.setBaselineTopology(nodes);
-
-	}
+	
 
 }

@@ -15,12 +15,15 @@ public class ODEServerExtension implements BeforeAllCallback, AfterAllCallback, 
 
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
+		server = Server.instance();
+		server.containerInitializer().addBeanClasses(context.getRequiredTestClass());
+		server.containerInitializer().addBeanClasses(context.getRequiredTestClass().getDeclaredClasses());		
 		String configFile = "ode-test.yml";
 		OdeServer config = context.getRequiredTestClass().getAnnotation(OdeServer.class);
 		if (config != null) {
 			configFile = config.config();
 		}
-		server = Server.instance().start(configFile);
+		server.start(configFile);
 
 		// context.getTestInstanceLifecycle()
 

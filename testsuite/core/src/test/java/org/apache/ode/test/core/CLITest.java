@@ -33,4 +33,5 @@ public class CLITest {
 		System.out.format("got response %s %s\n", response.status(), response.message());
 
 	}
+
 }
