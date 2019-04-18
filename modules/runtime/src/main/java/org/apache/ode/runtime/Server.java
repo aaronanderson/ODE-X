@@ -71,11 +71,11 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 	}
 
 	public Server start(String configFile) {
-		return start(configFile, null);
+		return start(configFile, null, null);
 	}
 
 	/* Start the ODE service */
-	public Server start(String configFile, Path odeHome) {
+	public Server start(String configFile, String instanceName, Path odeHome) {
 		// wrap in a custom classloader so that the OWB context is unique per server instance.
 		ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(scl);
@@ -91,6 +91,9 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			serverConfig.setUserAttributes(new HashMap<>());
 			if (odeHome != null) {
 				((Map<String, String>) serverConfig.getUserAttributes()).put(Configurator.ODE_HOME, odeHome.toString());
+			}
+			if (instanceName != null) {
+				serverConfig.setIgniteInstanceName(instanceName);
 			}
 
 			serverConfig.setLifecycleBeans(this);
@@ -181,7 +184,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 				break;
 			}
 			try {
-				Thread.sleep(100);
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
 			}
 
@@ -216,25 +219,12 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 		return this;
 	}
 
-	public Server clusterActivate(boolean value) {
+	public Server clusterAutoOnline() {
 		IgniteCluster igniteCluster = ignite.cluster();
 		igniteCluster.active(true);
-		return this;
-
-	}
-
-	public Server clusterBaselineTopology(long version) {
-		IgniteCluster igniteCluster = ignite.cluster();
-		igniteCluster.setBaselineTopology(version);
-		Collection<ClusterNode> nodes = ignite.cluster().forServers().nodes();
-		igniteCluster.setBaselineTopology(nodes);
-		return this;
-
-	}
-
-	public Server clusterAutoOnline() {
-		clusterActivate(true);
-		clusterBaselineTopology(1l);
+		igniteCluster.setBaselineTopology(igniteCluster.topologyVersion());
+		// this does the same thing
+		// igniteCluster.setBaselineTopology(ignite.cluster().forServers().nodes());
 		awaitInitalization(60, TimeUnit.SECONDS);
 		return this;
 	}

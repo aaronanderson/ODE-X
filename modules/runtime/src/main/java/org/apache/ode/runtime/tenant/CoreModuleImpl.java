@@ -22,14 +22,13 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ode.spi.tenant.Module;
+import org.apache.ode.spi.tenant.Tenant;
 import org.apache.ode.spi.tenant.Module.Id;
 
 @Id(CoreModuleImpl.CORE_MODULE_ID)
 public class CoreModuleImpl implements Module {
 
 	public static final String CORE_MODULE_ID = "org:apache:ode:core";
-	public static final String TENANT_CACHE_NAME = "Tenant";
-	public static final String PROCESS_CACHE_NAME = "Process";
 
 	@Inject
 	Ignite ignite;
@@ -37,8 +36,8 @@ public class CoreModuleImpl implements Module {
 	@Enable
 	public void enable(Ignite ignite) {
 		// set IGNITE_H2_DEBUG_CONSOLE=test environment variable to launch embedded H2 DB explorer web application.
-		if (ignite.cache(TENANT_CACHE_NAME) == null) {
-			CacheConfiguration tenantCacheCfg = new CacheConfiguration(TENANT_CACHE_NAME);
+		if (ignite.cache(Tenant.TENANT_CACHE_NAME) == null) {
+			CacheConfiguration tenantCacheCfg = new CacheConfiguration(Tenant.TENANT_CACHE_NAME);
 			tenantCacheCfg.setSqlSchema("ODE");
 			tenantCacheCfg.setCacheMode(CacheMode.REPLICATED);
 			tenantCacheCfg.setSqlIndexMaxInlineSize(120);
@@ -51,14 +50,21 @@ public class CoreModuleImpl implements Module {
 			tenantCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 			IgniteCache<UUID, BinaryObject> configCache = ignite.createCache(tenantCacheCfg);
 
-			BinaryObjectBuilder repositories = ignite.binary().builder("Configuration");
-			repositories.setField("key", "modules");
-			repositories.setField("path", "/modules");
-			repositories.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
-			configCache.put(UUID.randomUUID(), repositories.build());
+			BinaryObjectBuilder modules = ignite.binary().builder("Configuration");
+			modules.setField("type", "modules");
+			modules.setField("path", "/modules");
+			modules.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+			configCache.put(UUID.randomUUID(), modules.build());
+
+			BinaryObjectBuilder tenant = ignite.binary().builder("Configuration");
+			tenant.setField("type", "tenant");
+			tenant.setField("path", "/tenant");
+			tenant.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+			tenant.setField("online", false);
+			configCache.put(UUID.randomUUID(), tenant.build());
 		}
-		if (ignite.cache(PROCESS_CACHE_NAME) == null) {
-			CacheConfiguration tenantCacheCfg = new CacheConfiguration(PROCESS_CACHE_NAME);
+		if (ignite.cache(Tenant.PROCESS_CACHE_NAME) == null) {
+			CacheConfiguration tenantCacheCfg = new CacheConfiguration(Tenant.PROCESS_CACHE_NAME);
 			tenantCacheCfg.setSqlSchema("ODE");
 			tenantCacheCfg.setCacheMode(CacheMode.PARTITIONED);
 			tenantCacheCfg.setSqlIndexMaxInlineSize(120);
@@ -85,7 +91,7 @@ public class CoreModuleImpl implements Module {
 
 		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
 		efields.put("oid", UUID.class.getName());
-		efields.put("key", String.class.getName());
+		efields.put("type", String.class.getName());
 		efields.put("path", String.class.getName());
 		efields.put("createdTime", Timestamp.class.getName());
 		efields.put("modifiedTime", Timestamp.class.getName());
@@ -96,6 +102,7 @@ public class CoreModuleImpl implements Module {
 
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
 		eindexes.add(new QueryIndex("path"));
+		eindexes.add(new QueryIndex("type"));
 
 		entity.setIndexes(eindexes);
 
@@ -203,7 +210,5 @@ public class CoreModuleImpl implements Module {
 
 		return entity;
 	}
-
-	
 
 }

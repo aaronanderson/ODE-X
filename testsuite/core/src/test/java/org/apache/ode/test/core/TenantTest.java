@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -28,8 +29,6 @@ import org.apache.ode.spi.tenant.Module.Id;
 import org.apache.ode.spi.tenant.Module.ModuleStatus;
 import org.apache.ode.spi.tenant.Tenant;
 import org.apache.ode.spi.tenant.Tenant.TenantStatus;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -43,22 +42,6 @@ public class TenantTest {
 //	@TempDir
 //	Path testPath;
 
-	@BeforeAll
-	public void init() throws Exception {
-		server1 = Server.instance();
-		server1.containerInitializer().addBeanClasses(TestModule.class);
-		server2 = Server.instance();
-		server2.containerInitializer().addBeanClasses(TestModule.class);
-		//
-	}
-
-	@AfterAll
-	public void destroy() throws Exception {
-		server1.close();
-		server2.close();
-		// "ode-tenant-test.yml"
-	}
-
 	private void deleteDirectory(Path directory) throws IOException {
 		if (Files.exists(directory)) {
 			Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
@@ -67,55 +50,108 @@ public class TenantTest {
 	}
 
 	@Test
-	public void validate() throws Exception {
-		// try {
-		// Path odeHome1 = testPath.resolve("ode-tenant-test1");
-		Path odeHome1 = Paths.get("target/ode-tenant-test1");
-		deleteDirectory(odeHome1);
-		// Path odeHome2 = testPath.resolve("ode-tenant-test2");
-		server1.start("ode-tenant-test.yml", odeHome1);
-		IgniteCluster cluster = server1.ignite().cluster();
-		server1.clusterActivate(true);
-		assertTrue(cluster.active());
-		assertEquals(1, cluster.nodes().size());
-		server1.clusterBaselineTopology(1l);
-		assertEquals(1, cluster.currentBaselineTopology().size());
-		server1.awaitInitalization(60, TimeUnit.SECONDS);
-		Tenant tenant = server1.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
-		assertNotNull(tenant);
-		assertEquals(TenantStatus.OFFLINE, tenant.status());
-		tenant.status(TenantStatus.ONLINE);
-		assertEquals(TenantStatus.ONLINE, tenant.status());
-		TestModule testModule = server1.container().select(TestModule.class, Any.Literal.INSTANCE).get();
-		assertTrue(tenant.modules().contains("TestModule"));
-		assertEquals(ModuleStatus.DISABLED, tenant.status("TestModule"));
-		assertFalse(testModule.isEnabled());
-		tenant.enable(Tenant.ALL_MODULES);
-		assertEquals(ModuleStatus.ENABLED, tenant.status("TestModule"));
-		TestService testService = server1.ignite().services().serviceProxy(TestService.SERVICE_NAME, TestService.class, false);
-		assertNotNull(testService);
-		assertTrue(testService.online());
-		assertTrue(testModule.isEnabled());
-		assertFalse(testModule.isDisabled());
-		tenant.disable(Tenant.ALL_MODULES);
-		assertEquals(ModuleStatus.DISABLED, tenant.status("TestModule"));
-		assertTrue(testModule.isDisabled());
-		for (ServiceDescriptor desc : server1.ignite().services().serviceDescriptors()) {
-			if (TestService.SERVICE_NAME.equals(desc.name())) {
-				fail(String.format("Test Service %s should have been cancelled by TestModule", TestService.SERVICE_NAME));
+	public void modules() throws Exception {
+		try (Server server1 = Server.instance();) {
+			server1.containerInitializer().addBeanClasses(TestModule.class);
+
+			// Path odeHome1 = testPath.resolve("ode-tenant-test1");
+			Path odeHome1 = Paths.get("target/tenant-test1");
+			deleteDirectory(odeHome1);
+			Path odeHome2 = Paths.get("target/tenant-test2");
+			deleteDirectory(odeHome2);
+			server1.start("ode-tenant-test.yml", "ode-server-tenant-test1", odeHome1);
+			IgniteCluster cluster = server1.ignite().cluster();
+			cluster.active(true);
+			assertTrue(cluster.active());
+			assertEquals(1, cluster.nodes().size());
+			cluster.setBaselineTopology(cluster.topologyVersion());
+			assertEquals(1, cluster.currentBaselineTopology().size());
+			server1.awaitInitalization(60, TimeUnit.SECONDS);
+			Tenant tenant = server1.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+			assertNotNull(tenant);
+			TestModule testModule = server1.container().select(TestModule.class, Any.Literal.INSTANCE).get();
+			assertTrue(tenant.modules().contains("TestModule"));
+			assertEquals(ModuleStatus.DISABLED, tenant.status("TestModule"));
+			assertFalse(testModule.isEnabled());
+			tenant.enable(Tenant.ALL_MODULES);
+			assertEquals(ModuleStatus.ENABLED, tenant.status("TestModule"));
+			TestService testService = server1.ignite().services().serviceProxy(TestService.SERVICE_NAME, TestService.class, false);
+			assertNotNull(testService);
+			assertTrue(testService.online());
+			assertTrue(testModule.isEnabled());
+			assertFalse(testModule.isDisabled());
+
+			assertEquals(TenantStatus.OFFLINE, tenant.status());
+			tenant.status(TenantStatus.ONLINE);
+			assertEquals(TenantStatus.ONLINE, tenant.status());
+
+			tenant.disable(Tenant.ALL_MODULES);
+			assertEquals(ModuleStatus.DISABLED, tenant.status("TestModule"));
+			assertTrue(testModule.isDisabled());
+			for (ServiceDescriptor desc : server1.ignite().services().serviceDescriptors()) {
+				if (TestService.SERVICE_NAME.equals(desc.name())) {
+					fail(String.format("Test Service %s should have been cancelled by TestModule", TestService.SERVICE_NAME));
+				}
 			}
+
 		}
 
-		// System.out.format("*********** Module List: %s ***********************\n", tenant.modules());
+	}
 
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
+	@Test
+	public void failover() throws Exception {
+		try (Server server1 = Server.instance(); Server server2 = Server.instance();) {
+			server1.containerInitializer().addBeanClasses(TestModule.class);
+			server2.containerInitializer().addBeanClasses(TestModule.class);
 
-//		assertNotNull(server.ignite());
-//		Tenant tenant = server.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
-//		assertNotNull(tenant);
-//		assertEquals(TenantStatus.ONLINE, tenant.status());
+			Path odeHome1 = Paths.get("target/tenant-test1");
+			deleteDirectory(odeHome1);
+			Path odeHome2 = Paths.get("target/tenant-test2");
+			deleteDirectory(odeHome2);
+			// start server one, set cluster of 1 node
+			server1.start("ode-tenant-test.yml", "ode-server-tenant-test1", odeHome1);
+			IgniteCluster cluster = server1.ignite().cluster();
+			assertEquals(1, cluster.topologyVersion());
+			assertEquals(1, cluster.nodes().size());
+			cluster.active(true);
+			assertEquals(1, cluster.currentBaselineTopology().size());
+			server1.awaitInitalization(60, TimeUnit.SECONDS);
+
+			// affirm tenant service available, start all modules
+			Tenant tenant = server1.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+			assertNotNull(tenant);
+			assertEquals(TenantStatus.OFFLINE, tenant.status());
+			tenant.enable(Tenant.ALL_MODULES);
+			tenant.status(TenantStatus.ONLINE);
+
+			// start second server, affirm cluster size updated accordingly
+			server2.start("ode-tenant-test.yml", "ode-server-tenant-test2", odeHome2);
+			assertEquals(2, cluster.nodes().size());
+			assertEquals(2, cluster.topologyVersion());
+			assertEquals(1, cluster.currentBaselineTopology().size());
+			cluster.setBaselineTopology(2l);
+			assertEquals(2, cluster.currentBaselineTopology().size());
+			server2.awaitInitalization(60, TimeUnit.SECONDS);
+//			for (ServiceDescriptor desc : server1.ignite().services().serviceDescriptors()) {
+//				System.out.format("************* Service Description: %s - %s\n", desc.name(), desc.topologySnapshot());
+//			}
+
+			tenant = server2.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+			assertNotNull(tenant);
+			assertEquals(TenantStatus.ONLINE, tenant.status());
+			TestService testService = server2.ignite().services().serviceProxy(TestService.SERVICE_NAME, TestService.class, false);
+			assertNotNull(testService);
+			assertTrue(testService.online());
+
+			// test failover
+			server1.close();
+			cluster = server2.ignite().cluster();
+			assertEquals(1, cluster.nodes().size());
+			assertEquals(2, cluster.currentBaselineTopology().size());
+			assertEquals(TenantStatus.ONLINE, tenant.status());
+			assertTrue(testService.online());
+
+		}
 
 	}
 
@@ -127,9 +163,9 @@ public class TenantTest {
 		private boolean disabled = false;
 
 		@Enable
-		public void enable(Ignite ignite) {
+		public void enable(Ignite ignite, UUID configKey) {
 			ignite.services().deployNodeSingleton(TestService.SERVICE_NAME, new TestServiceImpl());
-			enabled = true;
+			enabled = configKey != null;
 		}
 
 		@Disable
@@ -162,7 +198,7 @@ public class TenantTest {
 
 		@Override
 		public boolean online() {
-			return testModule.isEnabled();
+			return testModule != null;
 		}
 
 	}

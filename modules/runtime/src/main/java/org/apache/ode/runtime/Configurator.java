@@ -24,6 +24,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.ode.runtime.tenant.TenantImpl;
@@ -33,7 +34,6 @@ import org.apache.ode.spi.tenant.Tenant;
 import org.snakeyaml.engine.v1.api.Load;
 import org.snakeyaml.engine.v1.api.LoadSettings;
 import org.snakeyaml.engine.v1.api.LoadSettingsBuilder;
-
 
 public class Configurator {
 
@@ -76,6 +76,9 @@ public class Configurator {
 		Optional<String> fileOdeTenant = odeConfig.flatMap(c -> c.getString("tenant"));
 		if (fileOdeTenant.isPresent()) {
 			odeTenant = fileOdeTenant.get();
+		}
+		if (igniteConfig.getUserAttributes().containsKey(ODE_TENANT)) {
+			odeTenant = (String) igniteConfig.getUserAttributes().get(ODE_TENANT);
 		}
 
 		LOG.info("ODE HOME: {}", odeHome);
@@ -151,12 +154,15 @@ public class Configurator {
 		igniteConfig.setActiveOnStart(true).setAutoActivationEnabled(true)
 				// .setGridLogger(log)
 				.setUserAttributes(attrs).setWorkDirectory(odeBaseDir.resolve("work").toAbsolutePath().toString());
-		if (igniteConfig.isClientMode()) {
-			igniteConfig.setIgniteInstanceName("ode-client-" + odeTenant);
-		} else {
-			igniteConfig.setIgniteInstanceName("ode-server-" + odeTenant);
+		if (igniteConfig.getIgniteInstanceName() == null) {
+			if (igniteConfig.isClientMode()) {
+				igniteConfig.setIgniteInstanceName("ode-client-" + odeTenant);
+			} else {
+				igniteConfig.setIgniteInstanceName("ode-server-" + odeTenant);
+			}
 		}
-
+		
+		//igniteConfig.setFailoverSpi(new AlwaysFailoverSpi());
 		// Initial services
 		// Deploy tenant service singleton
 		ServiceConfiguration tenant = new ServiceConfiguration().setMaxPerNodeCount(1).setTotalCount(1).setName(Tenant.SERVICE_NAME).setService(new TenantImpl());
