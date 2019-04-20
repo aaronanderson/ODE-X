@@ -1,5 +1,7 @@
 package org.apache.ode.runtime.tenant;
 
+import static org.apache.ode.spi.config.Config.ODE_TENANT;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.ZoneId;
@@ -33,7 +35,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.ode.runtime.Configurator;
 import org.apache.ode.spi.CDIService;
 import org.apache.ode.spi.CacheEntryImpl;
 import org.apache.ode.spi.config.Config;
@@ -67,7 +68,7 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	@Override
 	public String name() {
-		return (String) ignite.configuration().getUserAttributes().get(Configurator.ODE_TENANT);
+		return (String) ignite.configuration().getUserAttributes().get(ODE_TENANT);
 	}
 
 	@Override
@@ -202,7 +203,7 @@ public class TenantImpl extends CDIService implements Tenant {
 		if (enabled) {
 			disable(module, moduleConfig.getKey());
 			// Core module disable deletes the cache, can't update
-			if (!CoreModuleImpl.CORE_MODULE_ID.equals(getId(module))) {
+			if (!CoreModule.CORE_MODULE_ID.equals(getId(module))) {
 				BinaryObjectBuilder moduleConfigBuilder = ignite.binary().builder(moduleConfig.getValue());
 				moduleConfigBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 				moduleConfigBuilder.setField("enabled", false);
@@ -274,17 +275,17 @@ public class TenantImpl extends CDIService implements Tenant {
 	private void autoEnable() throws ModuleException {
 		Set<String> resolved = new HashSet<>();
 		LinkedList<Module> unresolved = new LinkedList<>();
-		CoreModuleImpl coreModule = null;
+		CoreModule coreModule = null;
 		for (Module m : modules) {
-			if (CoreModuleImpl.CORE_MODULE_ID.equals(getId(m))) {
-				coreModule = (CoreModuleImpl) m;
+			if (CoreModule.CORE_MODULE_ID.equals(getId(m))) {
+				coreModule = (CoreModule) m;
 			}
 			unresolved.add(m);
 		}
 
 		if (!tenantCacheAvailable()) {
 			enable(coreModule, (UUID) null);
-			createModuleConfig(CoreModuleImpl.CORE_MODULE_ID, true);
+			createModuleConfig(CoreModule.CORE_MODULE_ID, true);
 
 		}
 
@@ -294,8 +295,8 @@ public class TenantImpl extends CDIService implements Tenant {
 				Module m = itr.next();
 				Set<String> dependencies = new HashSet<>();
 				Collections.addAll(dependencies, getDependencies(m));
-				if (!CoreModuleImpl.CORE_MODULE_ID.equals(getId(m))) {
-					dependencies.add(CoreModuleImpl.CORE_MODULE_ID);
+				if (!CoreModule.CORE_MODULE_ID.equals(getId(m))) {
+					dependencies.add(CoreModule.CORE_MODULE_ID);
 				}
 				if (resolved.containsAll(dependencies)) {
 					Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(getId(m));
@@ -330,10 +331,10 @@ public class TenantImpl extends CDIService implements Tenant {
 		Set<String> resolved = new HashSet<>();
 		Map<String, Set<String>> unresolved = new HashMap<>();
 		Set<String> coreInverseDepdendencies = new HashSet<>();
-		unresolved.put(CoreModuleImpl.CORE_MODULE_ID, coreInverseDepdendencies);
+		unresolved.put(CoreModule.CORE_MODULE_ID, coreInverseDepdendencies);
 		for (Module m : modules) {
 			String id = getId(m);
-			if (!CoreModuleImpl.CORE_MODULE_ID.equals(id)) {
+			if (!CoreModule.CORE_MODULE_ID.equals(id)) {
 				coreInverseDepdendencies.add(id);
 				unresolved.putIfAbsent(id, new HashSet<>());
 				for (String dependency : getDependencies(m)) {
@@ -403,7 +404,7 @@ public class TenantImpl extends CDIService implements Tenant {
 	}
 
 	private String modulePath(String moduleId) {
-		return "/modules/" + moduleId;
+		return "/ode:modules/" + moduleId;
 	}
 
 	private TenantStatus getTenantStatus(BinaryObject config) {
@@ -416,7 +417,7 @@ public class TenantImpl extends CDIService implements Tenant {
 	private BinaryObject getTenantStatusConfig() {
 		IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
 		if (tenantConfigKey == null) {
-			SqlQuery<UUID, BinaryObject> query = new SqlQuery<>("Configuration", "path = '/tenant'");
+			SqlQuery<UUID, BinaryObject> query = new SqlQuery<>("Configuration", "path = '/ode:tenant'");
 			List<Entry<UUID, BinaryObject>> existing = configCache.query(query).getAll();
 			if (!existing.isEmpty()) {
 				Entry<UUID, BinaryObject> result = existing.get(0);

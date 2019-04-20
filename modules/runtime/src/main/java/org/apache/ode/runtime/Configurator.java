@@ -1,5 +1,10 @@
 package org.apache.ode.runtime;
 
+import static org.apache.ode.spi.config.Config.ODE_BASE_DIR;
+import static org.apache.ode.spi.config.Config.ODE_CONFIG;
+import static org.apache.ode.spi.config.Config.ODE_HOME;
+import static org.apache.ode.spi.config.Config.ODE_TENANT;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -16,15 +21,18 @@ import javax.enterprise.event.Observes;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.ode.runtime.tenant.TenantImpl;
@@ -36,11 +44,6 @@ import org.snakeyaml.engine.v1.api.LoadSettings;
 import org.snakeyaml.engine.v1.api.LoadSettingsBuilder;
 
 public class Configurator {
-
-	public static final String ODE_HOME = "ODE_HOME";
-	public static final String ODE_BASE_DIR = "ODE_BASE_DIR";
-	public static final String ODE_TENANT = "ODE_TENANT";
-	public static final String ODE_CONFIG = "ODE_CONFIG";
 
 	public static final String DEFAULT_HOST = "127.0.0.1";
 	public static final int DEFAULT_PORT_RANGE = 20;
@@ -148,6 +151,22 @@ public class Configurator {
 			c.number("portRange", v -> conConfig.setPortRange(v));
 		});
 
+		// setup repository IGFS
+		CacheConfiguration repositoryMetaCacheCfg = new CacheConfiguration("RepositoryMeta");
+		repositoryMetaCacheCfg.setSqlSchema("ODE");
+		repositoryMetaCacheCfg.setCacheMode(CacheMode.REPLICATED);
+		repositoryMetaCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+		CacheConfiguration repositoryDataCacheCfg = new CacheConfiguration("RepositoryData");
+		repositoryDataCacheCfg.setSqlSchema("ODE");
+		repositoryDataCacheCfg.setCacheMode(CacheMode.REPLICATED);
+		repositoryDataCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+		FileSystemConfiguration repositoryFS = new FileSystemConfiguration();
+		repositoryFS.setName("repository");
+		repositoryFS.setDataCacheConfiguration(repositoryDataCacheCfg);
+		repositoryFS.setMetaCacheConfiguration(repositoryMetaCacheCfg);
+		igniteConfig.setFileSystemConfiguration(repositoryFS);
+
 		// Applying settings.
 		// igniteConfig.setPluginConfigurations(pluginCfgs);
 		igniteConfig.setPeerClassLoadingEnabled(false);
@@ -161,8 +180,8 @@ public class Configurator {
 				igniteConfig.setIgniteInstanceName("ode-server-" + odeTenant);
 			}
 		}
-		
-		//igniteConfig.setFailoverSpi(new AlwaysFailoverSpi());
+
+		// igniteConfig.setFailoverSpi(new AlwaysFailoverSpi());
 		// Initial services
 		// Deploy tenant service singleton
 		ServiceConfiguration tenant = new ServiceConfiguration().setMaxPerNodeCount(1).setTotalCount(1).setName(Tenant.SERVICE_NAME).setService(new TenantImpl());

@@ -6,6 +6,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface Config {
+	
+	public static final String ODE_HOME = "ODE_HOME";
+	public static final String ODE_BASE_DIR = "ODE_BASE_DIR";
+	public static final String ODE_TENANT = "ODE_TENANT";
+	public static final String ODE_CONFIG = "ODE_CONFIG";
+
 
 	Optional<Config> getConfig(String path);
 

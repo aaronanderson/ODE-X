@@ -110,6 +110,7 @@ public class TenantTest {
 			deleteDirectory(odeHome2);
 			// start server one, set cluster of 1 node
 			server1.start("ode-tenant-test.yml", "ode-server-tenant-test1", odeHome1);
+			UUID server1Id = server1.ignite().cluster().localNode().id();
 			IgniteCluster cluster = server1.ignite().cluster();
 			assertEquals(1, cluster.topologyVersion());
 			assertEquals(1, cluster.nodes().size());
@@ -126,15 +127,22 @@ public class TenantTest {
 
 			// start second server, affirm cluster size updated accordingly
 			server2.start("ode-tenant-test.yml", "ode-server-tenant-test2", odeHome2);
+			UUID server2Id = server2.ignite().cluster().localNode().id();
 			assertEquals(2, cluster.nodes().size());
 			assertEquals(2, cluster.topologyVersion());
 			assertEquals(1, cluster.currentBaselineTopology().size());
 			cluster.setBaselineTopology(2l);
 			assertEquals(2, cluster.currentBaselineTopology().size());
 			server2.awaitInitalization(60, TimeUnit.SECONDS);
-//			for (ServiceDescriptor desc : server1.ignite().services().serviceDescriptors()) {
-//				System.out.format("************* Service Description: %s - %s\n", desc.name(), desc.topologySnapshot());
-//			}
+			for (ServiceDescriptor desc : server1.ignite().services().serviceDescriptors()) {
+				if (Tenant.SERVICE_NAME.equals(desc.name())) {
+					assertEquals(1, desc.topologySnapshot().get(server1Id));
+					assertEquals(0, desc.topologySnapshot().get(server2Id));
+				} else if (TestService.SERVICE_NAME.equals(desc.name())) {
+					assertEquals(1, desc.topologySnapshot().get(server1Id));
+					assertEquals(1, desc.topologySnapshot().get(server2Id));
+				}
+			}
 
 			tenant = server2.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
 			assertNotNull(tenant);

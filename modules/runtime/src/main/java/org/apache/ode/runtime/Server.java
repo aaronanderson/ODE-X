@@ -1,7 +1,9 @@
 package org.apache.ode.runtime;
 
+import static org.apache.ode.spi.config.Config.ODE_HOME;
+import static org.apache.ode.spi.config.Config.ODE_TENANT;
+
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +27,6 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -39,10 +40,8 @@ import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
 import org.apache.ode.spi.tenant.Module;
 import org.apache.ode.spi.tenant.Module.Id;
-import org.apache.ode.spi.tenant.Module.ModuleException;
 import org.apache.ode.spi.tenant.Tenant;
 import org.apache.webbeans.annotation.DefaultLiteral;
-
 /*
  Main ODE server process
  */
@@ -90,7 +89,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			serverConfig.setClassLoader(scl);
 			serverConfig.setUserAttributes(new HashMap<>());
 			if (odeHome != null) {
-				((Map<String, String>) serverConfig.getUserAttributes()).put(Configurator.ODE_HOME, odeHome.toString());
+				((Map<String, String>) serverConfig.getUserAttributes()).put(ODE_HOME, odeHome.toString());
 			}
 			if (instanceName != null) {
 				serverConfig.setIgniteInstanceName(instanceName);
@@ -197,7 +196,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			throw new RuntimeException(e);
 		}
 		// check consistency
-		String localTenantName = (String) ignite.configuration().getUserAttributes().get(Configurator.ODE_TENANT);
+		String localTenantName = (String) ignite.configuration().getUserAttributes().get(ODE_TENANT);
 		if (!tenant.name().equals(localTenantName)) {
 			throw new IllegalStateException(String.format("Tenant name mismatch remote: %s local: %s", tenant.name(), localTenantName));
 		}

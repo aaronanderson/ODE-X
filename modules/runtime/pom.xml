@@ -117,35 +117,14 @@
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
-							<mainClass>org.apache.ode.server.Main</mainClass>
+							<mainClass>org.apache.ode.runtime.Server</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
 
 			</plugin>
 
-			<plugin>
-				<artifactId>maven-resources-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>copy-resources</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${basedir}/target/ode</outputDirectory>
-							<resources>
-								<resource>
-									<directory>src/main/cfg</directory>
-									<filtering>true</filtering>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
+			
 			<!-- shading is required because Ignite and it's Lucene dependency has 
 				split packaging. This should be rechecked after each Ignite release to see 
 				if this issue has been resolved -->

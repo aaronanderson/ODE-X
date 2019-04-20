@@ -90,6 +90,14 @@
 				<version>${cxf.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>org.apache.cxf</groupId>
+				<artifactId>cxf-rt-rs-http-sci</artifactId>
+				<version>${cxf.version}</version>
+			</dependency>
+
+
+
+			<dependency>
 				<groupId>org.apache.johnzon</groupId>
 				<artifactId>johnzon-jaxrs</artifactId>
 				<version>${johnzon.version}</version>

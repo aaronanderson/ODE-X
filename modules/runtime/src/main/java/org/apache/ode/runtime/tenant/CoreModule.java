@@ -14,6 +14,7 @@ import javax.inject.Inject;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -21,17 +22,20 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ode.spi.tenant.Module;
-import org.apache.ode.spi.tenant.Tenant;
 import org.apache.ode.spi.tenant.Module.Id;
+import org.apache.ode.spi.tenant.Tenant;
 
-@Id(CoreModuleImpl.CORE_MODULE_ID)
-public class CoreModuleImpl implements Module {
+@Id(CoreModule.CORE_MODULE_ID)
+public class CoreModule implements Module {
 
 	public static final String CORE_MODULE_ID = "org:apache:ode:core";
 
-	@Inject
-	Ignite ignite;
+	public static final String REPOSITORY_FILE_SYSTEM = "repository";
+
+	private IgfsPath assembliesDir = new IgfsPath("/assemblies");
+	private IgfsPath compositesDir = new IgfsPath("/composites");
 
 	@Enable
 	public void enable(Ignite ignite) {
@@ -51,14 +55,14 @@ public class CoreModuleImpl implements Module {
 			IgniteCache<UUID, BinaryObject> configCache = ignite.createCache(tenantCacheCfg);
 
 			BinaryObjectBuilder modules = ignite.binary().builder("Configuration");
-			modules.setField("type", "modules");
-			modules.setField("path", "/modules");
+			modules.setField("type", "ode:modules");
+			modules.setField("path", "/ode:modules");
 			modules.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			configCache.put(UUID.randomUUID(), modules.build());
 
 			BinaryObjectBuilder tenant = ignite.binary().builder("Configuration");
-			tenant.setField("type", "tenant");
-			tenant.setField("path", "/tenant");
+			tenant.setField("type", "ode:tenant");
+			tenant.setField("path", "/ode:tenant");
 			tenant.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			tenant.setField("online", false);
 			configCache.put(UUID.randomUUID(), tenant.build());
@@ -74,12 +78,20 @@ public class CoreModuleImpl implements Module {
 			tenantCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 			ignite.createCache(tenantCacheCfg);
 		}
+		IgniteFileSystem repositoryFS = ignite.fileSystem(REPOSITORY_FILE_SYSTEM);
+		repositoryFS.create(assembliesDir, false);
+		repositoryFS.create(compositesDir, false);
 
 	}
 
 	@Disable
 	public void disable(Ignite ignite) {
-		ignite.destroyCache("Tenant");
+		ignite.destroyCache(Tenant.TENANT_CACHE_NAME);
+		ignite.destroyCache(Tenant.PROCESS_CACHE_NAME);
+		IgniteFileSystem repositoryFS = ignite.fileSystem(REPOSITORY_FILE_SYSTEM);
+		repositoryFS.delete(assembliesDir, true);
+		repositoryFS.delete(compositesDir, true);
+
 	}
 
 	private QueryEntity createConfiguration() {

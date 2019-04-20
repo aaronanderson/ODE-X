@@ -15,5 +15,6 @@
 		<modules>
 		<module>base</module>	
 		<module>core</module>
+		<module>service</module>
 	</modules>
 </project>
