@@ -10,8 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.inject.Inject;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteFileSystem;
@@ -23,6 +21,10 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ode.runtime.deployment.AssemblyManagerImpl;
+import org.apache.ode.runtime.deployment.CompositeManagerImpl;
+import org.apache.ode.spi.deployment.AssemblyManager;
+import org.apache.ode.spi.deployment.CompositeManager;
 import org.apache.ode.spi.tenant.Module;
 import org.apache.ode.spi.tenant.Module.Id;
 import org.apache.ode.spi.tenant.Tenant;
@@ -78,9 +80,13 @@ public class CoreModule implements Module {
 			tenantCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 			ignite.createCache(tenantCacheCfg);
 		}
+		
 		IgniteFileSystem repositoryFS = ignite.fileSystem(REPOSITORY_FILE_SYSTEM);
 		repositoryFS.create(assembliesDir, false);
 		repositoryFS.create(compositesDir, false);
+		
+		ignite.services().deployNodeSingleton(AssemblyManager.SERVICE_NAME, new AssemblyManagerImpl());
+		ignite.services().deployNodeSingleton(CompositeManager.SERVICE_NAME, new CompositeManagerImpl());
 
 	}
 

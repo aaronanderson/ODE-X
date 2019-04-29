@@ -1,8 +1,13 @@
 package org.apache.ode.junit;
 
-import java.util.Optional;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 
 import org.apache.ode.runtime.Server;
+import org.apache.ode.spi.config.Config;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -17,23 +22,22 @@ public class ODEServerExtension implements BeforeAllCallback, AfterAllCallback, 
 	public void beforeAll(ExtensionContext context) throws Exception {
 		server = Server.instance();
 		server.containerInitializer().addBeanClasses(context.getRequiredTestClass());
-		server.containerInitializer().addBeanClasses(context.getRequiredTestClass().getDeclaredClasses());		
+		server.containerInitializer().addBeanClasses(context.getRequiredTestClass().getDeclaredClasses());
 		String configFile = "ode-test.yml";
 		OdeServer config = context.getRequiredTestClass().getAnnotation(OdeServer.class);
 		if (config != null) {
 			configFile = config.config();
 		}
 		server.start(configFile);
-
-		// context.getTestInstanceLifecycle()
-
-		// TcpDiscoverySpi serverDiscoverySPI = (TcpDiscoverySpi) server.configuration().getDiscoverySpi();
-		// System.out.format("Server discovery address %s %d\n", serverDiscoverySPI.getLocalAddress(), serverDiscoverySPI.getLocalPort());
+		server.clusterAutoOnline();
 	}
 
 	@Override
 	public void afterAll(ExtensionContext context) throws Exception {
+		String odeHome = (String) server.ignite().configuration().getUserAttributes().get(Config.ODE_HOME);
 		server.close();
+		Files.walk(Paths.get(odeHome)).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+
 	}
 
 	@Override
