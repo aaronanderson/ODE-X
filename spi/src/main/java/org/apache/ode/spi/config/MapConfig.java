@@ -1,4 +1,4 @@
-package org.apache.ode.runtime;
+package org.apache.ode.spi.config;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,27 +11,25 @@ import java.util.function.Consumer;
 
 import javax.enterprise.inject.Vetoed;
 
-import org.apache.ode.spi.config.Config;
-
 @Vetoed
-public class YAMLConfig implements Config {
+public class MapConfig implements Config {
 
-	private Map<String, Object> yamlConfig;
+	private Map<String, Object> mapConfig;
 
-	public YAMLConfig() {
-		this.yamlConfig = new HashMap<>();
+	public MapConfig() {
+		this.mapConfig = new HashMap<>();
 	}
 
-	public YAMLConfig(Map<String, Object> yamlConfig) {
-		this.yamlConfig = yamlConfig;
+	public MapConfig(Map<String, Object> mapConfig) {
+		this.mapConfig = mapConfig;
 	}
 
-	public Map<String, Object> getYamlConfig() {
-		return yamlConfig;
+	public Map<String, Object> getMapConfig() {
+		return mapConfig;
 	}
 
-	public void setYamlConfig(Map<String, Object> yamlConfig) {
-		this.yamlConfig = yamlConfig;
+	public void setMapConfig(Map<String, Object> mapConfig) {
+		this.mapConfig = mapConfig;
 	}
 
 	@Override
@@ -101,10 +99,10 @@ public class YAMLConfig implements Config {
 	}
 
 	private <T> Optional<T> evaluatePath(String path, Class<?> type) {
-		if (yamlConfig == null) {
-			throw new IllegalStateException("yamlConfig not set");
+		if (mapConfig == null) {
+			throw new IllegalStateException("mapConfig not set");
 		}
-		Object target = yamlConfig;
+		Object target = mapConfig;
 		LinkedList<String> traversal = new LinkedList(Arrays.asList(path.split("\\.")));
 		while (!traversal.isEmpty()) {
 			String currentTraversal = traversal.poll();
@@ -120,7 +118,7 @@ public class YAMLConfig implements Config {
 			return Optional.empty();
 		}
 		if (type.isAssignableFrom(Config.class) && Map.class.isAssignableFrom(target.getClass())) {
-			return Optional.of((T) new YAMLConfig((Map<String, Object>) target));
+			return Optional.of((T) new MapConfig((Map<String, Object>) target));
 		}
 		if (type.isAssignableFrom(Map.class)) {
 			return Optional.of((T) Collections.unmodifiableMap((Map<String, Object>) target));

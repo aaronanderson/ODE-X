@@ -10,6 +10,7 @@ public interface Config {
 	public static final String ODE_HOME = "ODE_HOME";
 	public static final String ODE_BASE_DIR = "ODE_BASE_DIR";
 	public static final String ODE_TENANT = "ODE_TENANT";
+	public static final String ODE_ENVIRONMENT = "ODE_ENVIRONMENT";
 	public static final String ODE_CONFIG = "ODE_CONFIG";
 
 

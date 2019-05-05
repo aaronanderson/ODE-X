@@ -4,6 +4,7 @@ import static org.apache.ode.spi.config.Config.ODE_BASE_DIR;
 import static org.apache.ode.spi.config.Config.ODE_CONFIG;
 import static org.apache.ode.spi.config.Config.ODE_HOME;
 import static org.apache.ode.spi.config.Config.ODE_TENANT;
+import static org.apache.ode.spi.config.Config.ODE_ENVIRONMENT;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.ode.runtime.tenant.TenantImpl;
 import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
+import org.apache.ode.spi.config.MapConfig;
 import org.apache.ode.spi.tenant.Tenant;
 import org.snakeyaml.engine.v1.api.Load;
 import org.snakeyaml.engine.v1.api.LoadSettings;
@@ -64,6 +66,7 @@ public class Configurator {
 
 		Path odeHome = getODEHome();
 		String odeTenant = getODETenant();
+		String odeEnvironment = "default";
 
 		Optional<Config> odeConfig = config.getConfig("ode");
 		Optional<Config> igniteFileConfig = odeConfig.flatMap(c -> c.getConfig("ignite"));
@@ -84,8 +87,15 @@ public class Configurator {
 			odeTenant = (String) igniteConfig.getUserAttributes().get(ODE_TENANT);
 		}
 
+		Optional<String> fileOdeEnvironment = odeConfig.flatMap(c -> c.getString("env"));
+		if (fileOdeEnvironment.isPresent()) {
+			odeEnvironment = fileOdeEnvironment.get();
+		}
+
 		LOG.info("ODE HOME: {}", odeHome);
 		LOG.info("ODE Tenant: {}", odeTenant);
+		LOG.info("ODE Environment: {}", odeEnvironment);
+
 		Path odeBaseDir = odeHome.resolve(odeTenant);
 		// URL xml = Configuration.resolveODEUrl("ode-log4j2.xml");
 		// IgniteLogger log = new Log4J2Logger(xml);
@@ -93,6 +103,7 @@ public class Configurator {
 		Map<String, Object> attrs = (Map<String, Object>) igniteConfig.getUserAttributes();
 		attrs.put(ODE_HOME, odeHome.toString());
 		attrs.put(ODE_TENANT, odeTenant);
+		attrs.put(ODE_ENVIRONMENT, odeEnvironment);
 		attrs.put(ODE_BASE_DIR, odeBaseDir.toString());
 
 		// Persistence
@@ -253,13 +264,13 @@ public class Configurator {
 					}
 				}
 				if (yamlConfig != null) {
-					return new YAMLConfig(yamlConfig);
+					return new MapConfig(yamlConfig);
 				}
 			} catch (IOException e) {
 				LOG.error("ODE YAML configuation error", e);
 			}
 		}
-		return new YAMLConfig();
+		return new MapConfig();
 	}
 
 	public static URL resolveODEUrl(String path) throws MalformedURLException {

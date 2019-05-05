@@ -1,5 +1,6 @@
 package org.apache.ode.runtime.tenant;
 
+import static org.apache.ode.spi.config.Config.ODE_ENVIRONMENT;
 import static org.apache.ode.spi.config.Config.ODE_TENANT;
 
 import java.lang.reflect.InvocationTargetException;
@@ -11,7 +12,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.cache.Cache;
 import javax.cache.Cache.Entry;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
@@ -30,7 +31,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.logging.log4j.LogManager;
@@ -51,6 +51,8 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	public static final Logger LOG = LogManager.getLogger(TenantImpl.class);
 
+	private transient final static ThreadLocal<Boolean> INITIALIZING = new ThreadLocal<>();
+
 	@Inject
 	@Any
 	private transient Instance<Module> modules;
@@ -62,13 +64,18 @@ public class TenantImpl extends CDIService implements Tenant {
 	private Ignite ignite;
 
 	// private IgniteCountDownLatch startupLatch;
-	private CountDownLatch startupLatch = new CountDownLatch(1);
+	private transient CountDownLatch startupLatch;
 
-	private UUID tenantConfigKey;
+	private transient boolean coreModuleEnabled;
 
 	@Override
 	public String name() {
 		return (String) ignite.configuration().getUserAttributes().get(ODE_TENANT);
+	}
+
+	@Override
+	public String environment() {
+		return (String) ignite.configuration().getUserAttributes().get(ODE_ENVIRONMENT);
 	}
 
 	@Override
@@ -152,9 +159,9 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	@Override
 	public ModuleStatus status(String moduleId) throws ModuleException {
-		if (tenantCacheAvailable()) {
+		if (coreModuleAvailable()) {
 			getModule(moduleId);
-			Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
+			Entry<BinaryObject, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
 			return (Boolean) moduleConfig.getValue().field("enabled") ? ModuleStatus.ENABLED : ModuleStatus.DISABLED;
 		}
 		return ModuleStatus.DISABLED;
@@ -166,49 +173,54 @@ public class TenantImpl extends CDIService implements Tenant {
 			autoEnable();
 		} else {
 			Module m = getModule(moduleId);
-			Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
+			Entry<BinaryObject, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
 			enable(m, moduleConfig);
 		}
 	}
 
-	private void enable(Module module, Entry<UUID, BinaryObject> moduleConfig) throws ModuleException {
+	private void enable(Module module, Entry<BinaryObject, BinaryObject> moduleConfig) throws ModuleException {
 		Boolean enabled = moduleConfig.getValue().field("enabled");
 		if (!enabled) {
-			enable(module, moduleConfig.getKey());
+			enable(module, (UUID) moduleConfig.getValue().field("oid"));
 			BinaryObjectBuilder moduleConfigBuilder = ignite.binary().builder(moduleConfig.getValue());
 			moduleConfigBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			moduleConfigBuilder.setField("enabled", true);
-			IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+			IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
 			configCache.put(moduleConfig.getKey(), moduleConfigBuilder.build());
 			LOG.info("Module {} enabled", getId(module));
+			if (CoreModule.CORE_MODULE_ID.equals(getId(module))) {
+				coreModuleEnabled = true;
+			}
 		}
 	}
 
 	@Override
 	public synchronized void disable(String moduleId) throws ModuleException {
-		if (!tenantCacheAvailable()) {
+		if (!coreModuleAvailable()) {
 			throw new ModuleException("core module not enabled");
 		}
 		if (ALL_MODULES.equals(moduleId)) {
 			autoDisable();
 		} else {
 			Module m = getModule(moduleId);
-			Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
+			Entry<BinaryObject, BinaryObject> moduleConfig = getOrCreateModuleConfig(moduleId);
 			disable(m, moduleConfig);
 		}
 	}
 
-	private void disable(Module module, Entry<UUID, BinaryObject> moduleConfig) throws ModuleException {
+	private void disable(Module module, Entry<BinaryObject, BinaryObject> moduleConfig) throws ModuleException {
 		Boolean enabled = moduleConfig.getValue().field("enabled");
 		if (enabled) {
-			disable(module, moduleConfig.getKey());
+			disable(module, (UUID) moduleConfig.getValue().field("oid"));
 			// Core module disable deletes the cache, can't update
 			if (!CoreModule.CORE_MODULE_ID.equals(getId(module))) {
 				BinaryObjectBuilder moduleConfigBuilder = ignite.binary().builder(moduleConfig.getValue());
 				moduleConfigBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 				moduleConfigBuilder.setField("enabled", false);
-				IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+				IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
 				configCache.put(moduleConfig.getKey(), moduleConfigBuilder.build());
+			} else {
+				coreModuleEnabled = false;
 			}
 		}
 
@@ -216,12 +228,13 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	@Override
 	public void init(ServiceContext ctx) throws Exception {
+		startupLatch = new CountDownLatch(1);
 		super.init(ctx);
 	}
 
 	@Override
 	public TenantStatus status() {
-		if (tenantCacheAvailable()) {
+		if (coreModuleAvailable()) {
 			BinaryObject config = getTenantStatusConfig();
 			return getTenantStatus(config);
 		}
@@ -230,15 +243,15 @@ public class TenantImpl extends CDIService implements Tenant {
 
 	@Override
 	public synchronized void status(TenantStatus status) {
-		if (tenantCacheAvailable()) {
+		if (coreModuleAvailable()) {
 			BinaryObject config = getTenantStatusConfig();
 			TenantStatus currentStatus = getTenantStatus(config);
 			if (currentStatus != status) {
 				BinaryObjectBuilder newConfig = ignite.binary().builder(config);
 				newConfig.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 				newConfig.setField("online", status == TenantStatus.ONLINE);
-				IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
-				configCache.put(tenantConfigKey, newConfig.build());
+				IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+				configCache.put(ignite.binary().builder("ConfigurationKey").setField("path", "/ode:tenant").build(), newConfig.build());
 				IgniteMessaging tenantStatusMsg = ignite.message();
 				tenantStatusMsg.sendOrdered(STATUS_TOPIC, status, 0);
 			}
@@ -253,23 +266,44 @@ public class TenantImpl extends CDIService implements Tenant {
 		startupLatch.await(timeout, unit);
 	}
 
-	// initialize tenant in execute operation since initialization in init operation can cause Ignite kernel deadlock (deployed service waiting on uninitialized kernel services)
+	// initialize tenant in execute operation since initialization in init operation can cause Ignite kernel deadlock (deployed service waiting on uninitialized kernel services i.e. cache, igfs, etc)
 	@Override
 	public void execute(ServiceContext ctx) throws Exception {
 		// startupLatch = ignite.countDownLatch(Tenant.SERVICE_NAME + ":startup", 1, true, true);
-
-		if (odeConfig.getBool("ode.auto-enable").orElse(false)) {
-			autoEnable();
-			status(TenantStatus.ONLINE);
-		}
 		// IgniteMessaging msg = ignite.message();
 		// msg.remoteListen(TOPIC, new TenantActionListener());
+		if (ignite.cacheNames().contains(TENANT_CACHE_NAME)) {
+			Cache<BinaryObject, BinaryObject> tenantCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+			//
+//			tenantCache.forEach(e -> {
+//				System.out.format("debug %s\n", e.getKey());
+//			});
+			// coreModuleEnabled = tenantCache.containsKey(ignite.binary().builder("ConfigurationKey").setField("path", "/ode:tenant").build());
+			coreModuleEnabled = tenantCache.containsKey(ignite.binary().builder("ConfigurationKey").setField("path", modulePath(CoreModule.CORE_MODULE_ID)).build());
+		}
+
+		if (!coreModuleEnabled && odeConfig.getBool("ode.auto-enable").orElse(false)) {
+			try {
+				INITIALIZING.set(true);
+				autoEnable();
+				status(TenantStatus.ONLINE);
+			} finally {
+				INITIALIZING.set(null);
+			}
+		}
+
 		startupLatch.countDown();
 
 	}
 
-	private boolean tenantCacheAvailable() {
-		return ignite.cache(TENANT_CACHE_NAME) != null;
+	private boolean coreModuleAvailable() {
+		if (INITIALIZING.get() == null || !INITIALIZING.get()) {
+			try {// This should be able to removed in Ignite 2.8 where services can't be invoked before the initializer completes.
+				startupLatch.await();
+			} catch (InterruptedException e) {
+			}
+		}
+		return coreModuleEnabled;
 	}
 
 	private void autoEnable() throws ModuleException {
@@ -283,10 +317,10 @@ public class TenantImpl extends CDIService implements Tenant {
 			unresolved.add(m);
 		}
 
-		if (!tenantCacheAvailable()) {
+		if (!coreModuleAvailable()) {
 			enable(coreModule, (UUID) null);
 			createModuleConfig(CoreModule.CORE_MODULE_ID, true);
-
+			coreModuleEnabled = true;
 		}
 
 		while (!unresolved.isEmpty()) {
@@ -299,7 +333,7 @@ public class TenantImpl extends CDIService implements Tenant {
 					dependencies.add(CoreModule.CORE_MODULE_ID);
 				}
 				if (resolved.containsAll(dependencies)) {
-					Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(getId(m));
+					Entry<BinaryObject, BinaryObject> moduleConfig = getOrCreateModuleConfig(getId(m));
 					enable(m, moduleConfig);
 					resolved.add(getId(m));
 					itr.remove();
@@ -350,7 +384,7 @@ public class TenantImpl extends CDIService implements Tenant {
 			for (Iterator<java.util.Map.Entry<String, Set<String>>> itr = unresolved.entrySet().iterator(); itr.hasNext();) {
 				java.util.Map.Entry<String, Set<String>> m = itr.next();
 				if (resolved.containsAll(m.getValue())) {
-					Entry<UUID, BinaryObject> moduleConfig = getOrCreateModuleConfig(m.getKey());
+					Entry<BinaryObject, BinaryObject> moduleConfig = getOrCreateModuleConfig(m.getKey());
 					Module module = getModule(m.getKey());
 					disable(module, moduleConfig);
 					resolved.add(m.getKey());
@@ -379,28 +413,35 @@ public class TenantImpl extends CDIService implements Tenant {
 		}
 	}
 
-	private Entry<UUID, BinaryObject> getOrCreateModuleConfig(String moduleId) {
-		IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
-		SqlQuery<UUID, BinaryObject> query = new SqlQuery<>("Configuration", "path = ?");
-		List<Entry<UUID, BinaryObject>> existing = configCache.query(query.setArgs(modulePath(moduleId))).getAll();
-		if (!existing.isEmpty()) {
-			return existing.get(0);
+	private Entry<BinaryObject, BinaryObject> getOrCreateModuleConfig(String moduleId) {
+		IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+		Entry<BinaryObject, BinaryObject> moduleConfig = configCache.getEntry(ignite.binary().builder("ConfigurationKey").setField("path", modulePath(moduleId)).build());
+		if (moduleConfig != null) {
+			return moduleConfig;
 		}
+//		SqlQuery<String, BinaryObject> query = new SqlQuery<>("Configuration", "path = ?");
+//		List<Entry<String, BinaryObject>> existing = configCache.query(query.setArgs(modulePath(moduleId))).getAll();
+//		if (!existing.isEmpty()) {
+//			return existing.get(0);
+//		}
 		return createModuleConfig(moduleId, false);
 
 	}
 
-	private Entry<UUID, BinaryObject> createModuleConfig(String moduleId, boolean enabled) {
-		IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+	private Entry<BinaryObject, BinaryObject> createModuleConfig(String moduleId, boolean enabled) {
+		IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+		String id = modulePath(moduleId);
+		BinaryObjectBuilder moduleKeyConfigBuilder = ignite.binary().builder("ConfigurationKey");
+		moduleKeyConfigBuilder.setField("path", id);
 		BinaryObjectBuilder moduleConfigBuilder = ignite.binary().builder("Configuration");
 		moduleConfigBuilder.setField("type", "module");
-		moduleConfigBuilder.setField("path", modulePath(moduleId));
+		moduleConfigBuilder.setField("oid", UUID.randomUUID());
 		moduleConfigBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 		moduleConfigBuilder.setField("enabled", enabled);
+		BinaryObject moduleKeyConfig = moduleKeyConfigBuilder.build();
 		BinaryObject moduleConfig = moduleConfigBuilder.build();
-		UUID id = UUID.randomUUID();
-		configCache.put(id, moduleConfig);
-		return new CacheEntryImpl(id, moduleConfig);
+		configCache.put(moduleKeyConfig, moduleConfig);
+		return new CacheEntryImpl(moduleKeyConfig, moduleConfig);
 	}
 
 	private String modulePath(String moduleId) {
@@ -415,19 +456,24 @@ public class TenantImpl extends CDIService implements Tenant {
 	}
 
 	private BinaryObject getTenantStatusConfig() {
-		IgniteCache<UUID, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
-		if (tenantConfigKey == null) {
-			SqlQuery<UUID, BinaryObject> query = new SqlQuery<>("Configuration", "path = '/ode:tenant'");
-			List<Entry<UUID, BinaryObject>> existing = configCache.query(query).getAll();
-			if (!existing.isEmpty()) {
-				Entry<UUID, BinaryObject> result = existing.get(0);
-				tenantConfigKey = result.getKey();
-				return result.getValue();
-			}
-		} else {
-			return configCache.get(tenantConfigKey);
+		IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(TENANT_CACHE_NAME).withKeepBinary();
+		BinaryObject tenantConfig = configCache.get(ignite.binary().builder("ConfigurationKey").setField("path", "/ode:tenant").build());
+		if (tenantConfig != null) {
+			return tenantConfig;
 		}
 		throw new IllegalStateException("Tenant configuration not found");
+
+//		if (tenantConfigKey == null) {
+//			SqlQuery<UUID, BinaryObject> query = new SqlQuery<>("Configuration", "path = '/ode:tenant'");
+//			List<Entry<UUID, BinaryObject>> existing = configCache.query(query).getAll();
+//			if (!existing.isEmpty()) {
+//				Entry<UUID, BinaryObject> result = existing.get(0);
+//				tenantConfigKey = result.getKey();
+//				return result.getValue();
+//			}
+//		} else {
+//			return configCache.get(tenantConfigKey);
+//		}
 
 	}
 

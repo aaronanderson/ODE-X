@@ -5,9 +5,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.ignite.Ignite;
@@ -17,6 +19,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,11 +37,6 @@ public class CoreModule implements Module {
 
 	public static final String CORE_MODULE_ID = "org:apache:ode:core";
 
-	public static final String REPOSITORY_FILE_SYSTEM = "repository";
-
-	private IgfsPath assembliesDir = new IgfsPath("/assemblies");
-	private IgfsPath compositesDir = new IgfsPath("/composites");
-
 	@Enable
 	public void enable(Ignite ignite) {
 		// set IGNITE_H2_DEBUG_CONSOLE=test environment variable to launch embedded H2 DB explorer web application.
@@ -46,6 +44,7 @@ public class CoreModule implements Module {
 			CacheConfiguration tenantCacheCfg = new CacheConfiguration(Tenant.TENANT_CACHE_NAME);
 			tenantCacheCfg.setSqlSchema("ODE");
 			tenantCacheCfg.setCacheMode(CacheMode.REPLICATED);
+			tenantCacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 			tenantCacheCfg.setSqlIndexMaxInlineSize(120);
 			List<QueryEntity> entities = new LinkedList<>();
 			entities.add(createConfiguration());
@@ -54,20 +53,33 @@ public class CoreModule implements Module {
 			entities.add(createComposite());
 			tenantCacheCfg.setQueryEntities(entities);
 			tenantCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-			IgniteCache<UUID, BinaryObject> configCache = ignite.createCache(tenantCacheCfg);
+			IgniteCache<BinaryObject, BinaryObject> configCache = ignite.createCache(tenantCacheCfg).withKeepBinary();
 
+			BinaryObjectBuilder modulesKey = ignite.binary().builder("ConfigurationKey");
+			modulesKey.setField("path", "/ode:modules");
 			BinaryObjectBuilder modules = ignite.binary().builder("Configuration");
+			modules.setField("oid", UUID.randomUUID());
 			modules.setField("type", "ode:modules");
-			modules.setField("path", "/ode:modules");
 			modules.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
-			configCache.put(UUID.randomUUID(), modules.build());
+			configCache.put(modulesKey.build(), modules.build());
 
+			BinaryObjectBuilder assembliesKey = ignite.binary().builder("ConfigurationKey");
+			assembliesKey.setField("path", "/ode:assemblies");
+			BinaryObjectBuilder assemblies = ignite.binary().builder("Configuration");
+			assemblies.setField("oid", UUID.randomUUID());
+			assemblies.setField("type", "ode:assemblies");
+			assemblies.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+
+			configCache.put(assembliesKey.build(), assemblies.build());
+
+			BinaryObjectBuilder tenantKey = ignite.binary().builder("ConfigurationKey");
+			tenantKey.setField("path", "/ode:tenant");
 			BinaryObjectBuilder tenant = ignite.binary().builder("Configuration");
+			tenant.setField("oid", UUID.randomUUID());
 			tenant.setField("type", "ode:tenant");
-			tenant.setField("path", "/ode:tenant");
 			tenant.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			tenant.setField("online", false);
-			configCache.put(UUID.randomUUID(), tenant.build());
+			configCache.put(tenantKey.build(), tenant.build());
 		}
 		if (ignite.cache(Tenant.PROCESS_CACHE_NAME) == null) {
 			CacheConfiguration tenantCacheCfg = new CacheConfiguration(Tenant.PROCESS_CACHE_NAME);
@@ -80,11 +92,11 @@ public class CoreModule implements Module {
 			tenantCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 			ignite.createCache(tenantCacheCfg);
 		}
-		
-		IgniteFileSystem repositoryFS = ignite.fileSystem(REPOSITORY_FILE_SYSTEM);
-		repositoryFS.create(assembliesDir, false);
-		repositoryFS.create(compositesDir, false);
-		
+
+		IgniteFileSystem repositoryFS = ignite.fileSystem(Tenant.REPOSITORY_FILE_SYSTEM);
+		repositoryFS.mkdirs(AssemblyManager.ASSEMBLY_DIR);
+		repositoryFS.mkdirs(CompositeManager.COMPOSITE_DIR);
+
 		ignite.services().deployNodeSingleton(AssemblyManager.SERVICE_NAME, new AssemblyManagerImpl());
 		ignite.services().deployNodeSingleton(CompositeManager.SERVICE_NAME, new CompositeManagerImpl());
 
@@ -94,18 +106,15 @@ public class CoreModule implements Module {
 	public void disable(Ignite ignite) {
 		ignite.destroyCache(Tenant.TENANT_CACHE_NAME);
 		ignite.destroyCache(Tenant.PROCESS_CACHE_NAME);
-		IgniteFileSystem repositoryFS = ignite.fileSystem(REPOSITORY_FILE_SYSTEM);
-		repositoryFS.delete(assembliesDir, true);
-		repositoryFS.delete(compositesDir, true);
+		IgniteFileSystem repositoryFS = ignite.fileSystem(Tenant.REPOSITORY_FILE_SYSTEM);
+		repositoryFS.delete(AssemblyManager.ASSEMBLY_DIR, true);
+		repositoryFS.delete(CompositeManager.COMPOSITE_DIR, true);
 
 	}
 
 	private QueryEntity createConfiguration() {
-		QueryEntity entity = new QueryEntity(UUID.class.getName(), "Configuration");
+		QueryEntity entity = new QueryEntity("ConfigurationKey", "Configuration");
 		entity.setTableName("CONFIGURATION");
-
-		entity.setKeyType(UUID.class.getName());
-		entity.setKeyFieldName("oid");
 
 		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
 		efields.put("oid", UUID.class.getName());
@@ -118,8 +127,12 @@ public class CoreModule implements Module {
 
 		entity.setFields(efields);
 
+		Set<String> ekfields = new HashSet<>();
+		ekfields.add("path");
+		entity.setKeyFields(ekfields);
+
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
-		eindexes.add(new QueryIndex("path"));
+		eindexes.add(new QueryIndex("oid"));
 		eindexes.add(new QueryIndex("type"));
 
 		entity.setIndexes(eindexes);
@@ -128,16 +141,13 @@ public class CoreModule implements Module {
 	}
 
 	private QueryEntity createProcess() {
-		QueryEntity entity = new QueryEntity(UUID.class.getName(), "Process");
+		QueryEntity entity = new QueryEntity("ProcessKey", "Process");
 		entity.setTableName("PROCESS");
 
-		entity.setKeyType(UUID.class.getName());
-		entity.setKeyFieldName("oid");
-
 		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
+		efields.put("processId", String.class.getName());
 		efields.put("oid", UUID.class.getName());
 		efields.put("parentOid", UUID.class.getName());
-		efields.put("processId", String.class.getName());
 		efields.put("type", String.class.getName());
 		efields.put("createdTime", Timestamp.class.getName());
 		efields.put("modifiedTime", Timestamp.class.getName());
@@ -145,8 +155,12 @@ public class CoreModule implements Module {
 
 		entity.setFields(efields);
 
+		Set<String> ekfields = new HashSet<>();
+		ekfields.add("processId");
+		entity.setKeyFields(ekfields);
+
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
-		eindexes.add(new QueryIndex("processId"));
+		eindexes.add(new QueryIndex("oid"));
 		eindexes.add(new QueryIndex("parentOid"));
 		eindexes.add(new QueryIndex("type"));
 
@@ -156,13 +170,11 @@ public class CoreModule implements Module {
 	}
 
 	private QueryEntity createAssembly() {
-		QueryEntity entity = new QueryEntity(UUID.class.getName(), "Assembly");
+		QueryEntity entity = new QueryEntity("AssemblyKey", "Assembly");
 		entity.setTableName("ASSEMBLY");
 
-		entity.setKeyType(UUID.class.getName());
-		entity.setKeyFieldName("oid");
-
 		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
+		efields.put("id", String.class.getName());
 		efields.put("oid", UUID.class.getName());
 		efields.put("type", String.class.getName());
 		efields.put("createdTime", Timestamp.class.getName());
@@ -171,7 +183,12 @@ public class CoreModule implements Module {
 
 		entity.setFields(efields);
 
+		Set<String> ekfields = new HashSet<>();
+		ekfields.add("id");
+		entity.setKeyFields(ekfields);
+
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
+		eindexes.add(new QueryIndex("oid"));
 		eindexes.add(new QueryIndex("type"));
 
 		entity.setIndexes(eindexes);
@@ -180,13 +197,11 @@ public class CoreModule implements Module {
 	}
 
 	private QueryEntity createComposite() {
-		QueryEntity entity = new QueryEntity(UUID.class.getName(), "Composite");
+		QueryEntity entity = new QueryEntity("CompositeKey", "Composite");
 		entity.setTableName("COMPOSITE");
 
-		entity.setKeyType(UUID.class.getName());
-		entity.setKeyFieldName("oid");
-
 		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
+		efields.put("id", String.class.getName());
 		efields.put("oid", UUID.class.getName());
 		efields.put("type", String.class.getName());
 		efields.put("createdTime", Timestamp.class.getName());
@@ -195,7 +210,12 @@ public class CoreModule implements Module {
 
 		entity.setFields(efields);
 
+		Set<String> ekfields = new HashSet<>();
+		ekfields.add("id");
+		entity.setKeyFields(ekfields);
+
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
+		eindexes.add(new QueryIndex("oid"));
 		eindexes.add(new QueryIndex("type"));
 
 		entity.setIndexes(eindexes);

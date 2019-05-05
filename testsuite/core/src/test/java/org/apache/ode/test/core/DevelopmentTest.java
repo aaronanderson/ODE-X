@@ -7,6 +7,7 @@ import org.apache.ode.runtime.Server;
 import org.apache.ode.spi.deployment.Assembly;
 import org.apache.ode.spi.deployment.Assembly.Id;
 import org.apache.ode.spi.deployment.AssemblyManager;
+import org.apache.ode.spi.deployment.DevelopmentManager;
 import org.junit.jupiter.api.Test;
 
 @OdeServer
@@ -19,8 +20,8 @@ public class DevelopmentTest {
 
 	@Test
 	public void lifecycle() throws Exception {
-		AssemblyManager assemblyManager = server.ignite().services().serviceProxy(AssemblyManager.SERVICE_NAME, AssemblyManager.class, false);
-		assertNotNull(assemblyManager);
+		DevelopmentManager developmentManager = server.ignite().services().service(DevelopmentManager.SERVICE_NAME);
+		assertNotNull(developmentManager);
 	}
 
 	@Id("urn:org:apache:ode:assembly:test")
@@ -29,4 +30,3 @@ public class DevelopmentTest {
 	}
 
 }
-	

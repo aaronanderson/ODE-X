@@ -12,15 +12,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import javax.cache.Cache.Entry;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
 import javax.inject.Inject;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ode.runtime.Server;
 import org.apache.ode.spi.CDIService;
@@ -35,8 +39,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class TenantTest {
-	Server server1 = null;
-	Server server2 = null;
 
 	// Ignite doesn't like the wal directory being in /tmp, files can be cleared by OS while test is running
 //	@TempDir
@@ -144,19 +146,55 @@ public class TenantTest {
 				}
 			}
 
+			assertTrue(server1.ignite().cache(Tenant.TENANT_CACHE_NAME).withKeepBinary().containsKey(server1.ignite().binary().builder("ConfigurationKey").setField("path", "/ode:tenant").build()));
+			assertTrue(server2.ignite().cache(Tenant.TENANT_CACHE_NAME).withKeepBinary().containsKey(server2.ignite().binary().builder("ConfigurationKey").setField("path", "/ode:tenant").build()));
 			tenant = server2.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
 			assertNotNull(tenant);
 			assertEquals(TenantStatus.ONLINE, tenant.status());
 			TestService testService = server2.ignite().services().serviceProxy(TestService.SERVICE_NAME, TestService.class, false);
 			assertNotNull(testService);
 			assertTrue(testService.online());
-
+			
+			Thread.sleep(100); //allow time for cache replication to complete.
 			// test failover
 			server1.close();
+			assertTrue(server2.ignite().cache(Tenant.TENANT_CACHE_NAME).withKeepBinary().containsKey(server2.ignite().binary().builder("ConfigurationKey").setField("path", "/ode:tenant").build()));
 			cluster = server2.ignite().cluster();
 			assertEquals(1, cluster.nodes().size());
 			assertEquals(2, cluster.currentBaselineTopology().size());
 			assertEquals(TenantStatus.ONLINE, tenant.status());
+			assertTrue(testService.online());
+
+		}
+
+	}
+
+	@Test
+	public void restart() throws Exception {
+		try (Server server = Server.instance();) {
+			server.containerInitializer().addBeanClasses(TestModule.class);
+
+			Path odeHome = Paths.get("target/tenant-test");
+			deleteDirectory(odeHome);
+
+			server.start("ode-test.yml", "ode-server-tenant-test", odeHome);
+			Tenant tenant = server.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+			assertNotNull(tenant);
+			assertEquals(TenantStatus.ONLINE, tenant.status());
+			TestService testService = server.ignite().services().serviceProxy(TestService.SERVICE_NAME, TestService.class, false);
+			assertNotNull(testService);
+			assertTrue(testService.online());
+
+			server.close();
+
+			server.containerInitializer().addBeanClasses(TestModule.class);
+			server.start("ode-test.yml", "ode-server-tenant-test", odeHome);
+
+			tenant = server.ignite().services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
+			assertNotNull(tenant);
+			assertEquals(TenantStatus.ONLINE, tenant.status());
+			testService = server.ignite().services().serviceProxy(TestService.SERVICE_NAME, TestService.class, false);
+			assertNotNull(testService);
 			assertTrue(testService.online());
 
 		}
@@ -173,7 +211,10 @@ public class TenantTest {
 		@Enable
 		public void enable(Ignite ignite, UUID configKey) {
 			ignite.services().deployNodeSingleton(TestService.SERVICE_NAME, new TestServiceImpl());
-			enabled = configKey != null;
+
+			List<Entry<String, BinaryObject>> moduleConfig = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary().query(new SqlQuery<String, BinaryObject>("Configuration", "oid = ?").setArgs(configKey)).getAll();
+
+			enabled = !moduleConfig.isEmpty();
 		}
 
 		@Disable

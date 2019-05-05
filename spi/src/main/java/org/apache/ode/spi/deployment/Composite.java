@@ -57,17 +57,17 @@ public interface Composite {
 		ACTIVE, INACTIVE;
 	}
 
-	public static class AssemblyException extends Exception {
+	public static class CompositeException extends Exception {
 
-		public AssemblyException(String msg) {
+		public CompositeException(String msg) {
 			this(msg, null);
 		}
 
-		public AssemblyException(Throwable t) {
+		public CompositeException(Throwable t) {
 			this(null, t);
 		}
 
-		public AssemblyException(String msg, Throwable t) {
+		public CompositeException(String msg, Throwable t) {
 			super(msg, t);
 		}
 	}

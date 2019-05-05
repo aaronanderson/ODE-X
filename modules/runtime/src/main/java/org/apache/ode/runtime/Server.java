@@ -1,5 +1,6 @@
 package org.apache.ode.runtime;
 
+import static org.apache.ode.spi.config.Config.ODE_ENVIRONMENT;
 import static org.apache.ode.spi.config.Config.ODE_HOME;
 import static org.apache.ode.spi.config.Config.ODE_TENANT;
 
@@ -42,6 +43,7 @@ import org.apache.ode.spi.tenant.Module;
 import org.apache.ode.spi.tenant.Module.Id;
 import org.apache.ode.spi.tenant.Tenant;
 import org.apache.webbeans.annotation.DefaultLiteral;
+
 /*
  Main ODE server process
  */
@@ -176,29 +178,32 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			throw new IllegalStateException("Ignite cluster not activated");
 		}
 		// wait for service to become available. Service race conditions might be fixed in Ignite 2.8
-		long serviceStartTime = System.currentTimeMillis();
-		while (System.currentTimeMillis() <= serviceStartTime + 60000) {
-			Optional<ServiceDescriptor> tenantServiceDesc = ignite.services().serviceDescriptors().stream().filter(s -> Tenant.SERVICE_NAME.equals(s.name())).findFirst();
-			if (tenantServiceDesc.isPresent()) {
-				break;
-			}
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-			}
-
-		}
-
 		Tenant tenant = ignite.services().serviceProxy(Tenant.SERVICE_NAME, Tenant.class, false);
-		try {
-			tenant.awaitInitialization(timeout, unit);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+
+		long serviceStartTime = System.currentTimeMillis();
+		boolean tenantReady = false;
+		while (!tenantReady && System.currentTimeMillis() <= serviceStartTime + 60000) {
+			try {
+				tenant.awaitInitialization(timeout, unit);
+				tenantReady = true;
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (IgniteException ie) { // service unavailable
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+				}
+			}
 		}
+		if (!tenantReady) {
+			throw new IllegalStateException("Tenant service is unavailable");
+		}
+
 		// check consistency
 		String localTenantName = (String) ignite.configuration().getUserAttributes().get(ODE_TENANT);
-		if (!tenant.name().equals(localTenantName)) {
-			throw new IllegalStateException(String.format("Tenant name mismatch remote: %s local: %s", tenant.name(), localTenantName));
+		String localTenantEnv = (String) ignite.configuration().getUserAttributes().get(ODE_ENVIRONMENT);
+		if (!tenant.name().equals(localTenantName) || !tenant.environment().equals(localTenantEnv)) {
+			throw new IllegalStateException(String.format("Tenant mismatch; remote: %s % local: %s %s ", tenant.name(), tenant.environment(), localTenantName, localTenantEnv));
 		}
 		Set<String> remoteModuleIds = tenant.modules();
 		Set<String> localModuleIds = new HashSet<>();
@@ -220,10 +225,12 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	public Server clusterAutoOnline() {
 		IgniteCluster igniteCluster = ignite.cluster();
-		igniteCluster.active(true);
-		igniteCluster.setBaselineTopology(igniteCluster.topologyVersion());
-		// this does the same thing
-		// igniteCluster.setBaselineTopology(ignite.cluster().forServers().nodes());
+		if (!igniteCluster.active()) {
+			igniteCluster.active(true);
+			igniteCluster.setBaselineTopology(igniteCluster.topologyVersion());
+			// this does the same thing
+			// igniteCluster.setBaselineTopology(ignite.cluster().forServers().nodes());
+		}
 		awaitInitalization(60, TimeUnit.SECONDS);
 		return this;
 	}
@@ -274,6 +281,7 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			ignite = null;
 			serverContainer = null;
 			odeConfig = null;
+			serverContainerInitializer = SeContainerInitializer.newInstance().addProperty(ODEOWBInitializer.CONTAINER_MODE, ContainerMode.SERVER).addExtensions(this);
 		} finally {
 			Thread.currentThread().setContextClassLoader(oldCl);
 		}
@@ -281,8 +289,8 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	@Override
 	public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
-		if (evt == LifecycleEventType.BEFORE_NODE_START) {
-			// ODE start event
+		if (evt == LifecycleEventType.AFTER_NODE_START) {
+
 		} else if (evt == LifecycleEventType.AFTER_NODE_STOP) {
 			// ODE stop event
 
