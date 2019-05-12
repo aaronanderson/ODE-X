@@ -8,9 +8,15 @@ import org.apache.ode.spi.deployment.CompositeManager;
 public class CompositeManagerImpl extends CDIService implements CompositeManager {
 
 	@Override
-	public <C> void create(URI reference, C config) {
+	public <C> void create(CompositeDeployment<C> composite) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public <C> CompositeDeployment<C> export(URI reference) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

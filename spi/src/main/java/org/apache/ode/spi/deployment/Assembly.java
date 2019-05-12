@@ -31,8 +31,18 @@ public interface Assembly {
 
 	@Target({ METHOD })
 	@Retention(RUNTIME)
-	public @interface Update {
+	public @interface Export {
 
+	}
+
+	@Target({ METHOD })
+	@Retention(RUNTIME)
+	public @interface Update {
+		UpdateType type() default UpdateType.CONFIG;
+	}
+
+	public static enum UpdateType {
+		CONFIG, FILE;
 	}
 
 	@Target({ METHOD })

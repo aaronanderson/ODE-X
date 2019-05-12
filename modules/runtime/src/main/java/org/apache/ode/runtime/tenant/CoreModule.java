@@ -179,6 +179,7 @@ public class CoreModule implements Module {
 		efields.put("type", String.class.getName());
 		efields.put("createdTime", Timestamp.class.getName());
 		efields.put("modifiedTime", Timestamp.class.getName());
+		efields.put("deployed", Boolean.class.getName());
 		efields.put("entry", byte[].class.getName());
 
 		entity.setFields(efields);

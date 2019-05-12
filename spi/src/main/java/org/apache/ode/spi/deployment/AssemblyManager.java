@@ -1,27 +1,26 @@
 package org.apache.ode.spi.deployment;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.List;
 
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ode.spi.deployment.Assembly.AssemblyException;
+import org.apache.ode.spi.deployment.Deployment.DeploymentBuilder;
+import org.apache.ode.spi.deployment.Deployment.Entry;
 
 public interface AssemblyManager {
-	public static final String SERVICE_NAME = "urn:org:apache:ode:assembly";
-	
-	public static final IgfsPath ASSEMBLY_DIR = new IgfsPath("/assemblies");
-	
 
-	public <C> void create(URI type, URI reference, C config, Entry... files) throws AssemblyException;
+	public static final String SERVICE_NAME = "urn:org:apache:ode:assembly";
+
+	public static final IgfsPath ASSEMBLY_DIR = new IgfsPath("/assemblies");
+
+	public <C> void create(AssemblyDeployment<C> assembly) throws AssemblyException;
+
+	public <C> AssemblyDeployment<C> export(URI reference) throws AssemblyException;
 
 	public <C> void update(URI reference, C file) throws AssemblyException;
 
-	public void update(URI reference, Entry... files) throws AssemblyException;
+	public void updateFiles(URI reference, List<Entry> files) throws AssemblyException;
 
 	public void delete(URI reference) throws AssemblyException;
 
@@ -35,39 +34,44 @@ public interface AssemblyManager {
 
 	public URI alias(String alias) throws AssemblyException;
 
-	public static final class Entry {
+	public static class AssemblyDeployment<C> extends Deployment<C> {
 
-		private final String path;
-		private final URL location;
+		private AssemblyDeployment() {
 
-		public Entry(Path location) throws IOException {
-			this.path = location.getFileName().toString();
-			this.location = location.toUri().toURL();
 		}
 
-		public Entry(String path, Path location) throws IOException {
-			this.path = path;
-			this.location = location.toUri().toURL();
+		protected URI type;
+		protected URI reference;
+
+		public URI type() {
+			return type;
 		}
 
-		public Entry(URL location) throws URISyntaxException {
-			this.path = Paths.get(location.toURI()).getFileName().toString();
-			this.location = location;
+		public URI reference() {
+			return reference;
 		}
 
-		public Entry(String path, URL location) {
-			this.path = path;
-			this.location = location;
+	}
+
+	public static class AssemblyDeploymentBuilder<C> extends DeploymentBuilder<AssemblyDeploymentBuilder<C>, AssemblyDeployment<C>, C> {
+
+		public static <C> AssemblyDeploymentBuilder<C> instance() {
+			return new AssemblyDeploymentBuilder<C>();
 		}
 
-		public String getPath() {
-			return path;
+		public AssemblyDeploymentBuilder() {
+			this.deployment = new AssemblyDeployment<>();
 		}
 
-		public URL getLocation() {
-			return location;
+		public AssemblyDeploymentBuilder<C> type(URI type) {
+			deployment.type = type;
+			return this;
 		}
 
+		public AssemblyDeploymentBuilder<C> reference(URI reference) {
+			deployment.reference = reference;
+			return this;
+		}
 	}
 
 }

@@ -252,25 +252,16 @@ public class Configurator {
 		if (odeConfigURL == null) {
 			odeConfigURL = Thread.currentThread().getContextClassLoader().getResource(odeConfig);
 		}
-		Map<String, Object> yamlConfig = null;
+
 		if (odeConfigURL != null) {
-			LoadSettings settings = new LoadSettingsBuilder().build();
-			Load load = new Load(settings);
 			try {
-				for (Object o : load.loadAllFromInputStream(odeConfigURL.openStream())) {
-					if (o instanceof Map) {
-						yamlConfig = (Map<String, Object>) o;
-						break;
-					}
-				}
-				if (yamlConfig != null) {
-					return new MapConfig(yamlConfig);
-				}
+				return Util.loadYAMLConfig(odeConfigURL.openStream());
 			} catch (IOException e) {
 				LOG.error("ODE YAML configuation error", e);
 			}
 		}
 		return new MapConfig();
+
 	}
 
 	public static URL resolveODEUrl(String path) throws MalformedURLException {

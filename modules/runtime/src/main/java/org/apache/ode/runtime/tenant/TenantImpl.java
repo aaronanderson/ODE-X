@@ -4,7 +4,6 @@ import static org.apache.ode.spi.config.Config.ODE_ENVIRONMENT;
 import static org.apache.ode.spi.config.Config.ODE_TENANT;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -35,6 +34,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.ode.runtime.Util;
+import org.apache.ode.runtime.Util.AnnotationFilter;
 import org.apache.ode.spi.CDIService;
 import org.apache.ode.spi.CacheEntryImpl;
 import org.apache.ode.spi.config.Config;
@@ -101,38 +102,23 @@ public class TenantImpl extends CDIService implements Tenant {
 		return id.dependencies();
 	}
 
-	public void invoke(Module module, Class clazz, Class annotation, UUID configKey) throws ModuleException {
-		if (Object.class.equals(clazz)) {
-			return;
-		}
-		for (Method method : clazz.getDeclaredMethods()) {
-			Object enable = method.getDeclaredAnnotation(annotation);
-			if (enable != null) {
-				invoke(module, configKey, method);
-			}
-		}
-		if (null != clazz.getSuperclass()) {
-			invoke(module, clazz.getSuperclass(), annotation, configKey);
-		}
-
-	}
-
-	private void invoke(Module module, UUID configKey, Method method) throws ModuleException {
-		Object[] args = new Object[method.getParameterCount()];
-		for (int i = 0; i < method.getParameterCount(); i++) {
-			if (Ignite.class.equals(method.getParameterTypes()[i])) {
-				args[i] = ignite;
-			} else if (Config.class.equals(method.getParameterTypes()[i])) {
-				args[i] = odeConfig;
-			} else if (UUID.class.equals(method.getParameterTypes()[i])) {
-				args[i] = configKey;
-			}
-		}
+	public void invoke(Module module, Class<?> clazz, Class annotationType, UUID configKey) throws ModuleException {
 		try {
-			method.invoke(module, args);
+			Util.invoke(module, clazz, new AnnotationFilter(annotationType), (args, types) -> {
+				for (int i = 0; i < args.length; i++) {
+					if (Ignite.class.equals(types[i])) {
+						args[i] = ignite;
+					} else if (Config.class.equals(types[i])) {
+						args[i] = odeConfig;
+					} else if (UUID.class.equals(types[i])) {
+						args[i] = configKey;
+					}
+				}
+			});
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			throw new ModuleException(e);
 		}
+
 	}
 
 	private void enable(Module module, UUID configKey) throws ModuleException {

@@ -6,13 +6,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface Config {
-	
+
 	public static final String ODE_HOME = "ODE_HOME";
 	public static final String ODE_BASE_DIR = "ODE_BASE_DIR";
 	public static final String ODE_TENANT = "ODE_TENANT";
 	public static final String ODE_ENVIRONMENT = "ODE_ENVIRONMENT";
 	public static final String ODE_CONFIG = "ODE_CONFIG";
-
 
 	Optional<Config> getConfig(String path);
 
@@ -25,7 +24,7 @@ public interface Config {
 	Optional<Integer> getNumber(String path);
 
 	Config number(String path, Consumer<Integer> consumer);
-	
+
 	Optional<Boolean> getBool(String path);
 
 	Config bool(String path, Consumer<Boolean> consumer);
@@ -37,5 +36,7 @@ public interface Config {
 	<T> Optional<List<T>> getList(String path, Class<T> type);
 
 	<T> Config list(String path, Class<T> type, Consumer<List<T>> consumer);
+
+	<T> Config set(String path, T instance);
 
 }

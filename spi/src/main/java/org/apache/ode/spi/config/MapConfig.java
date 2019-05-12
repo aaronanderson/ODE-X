@@ -133,6 +133,46 @@ public class MapConfig implements Config {
 		return Optional.empty();
 	}
 
+	@Override
+	public <T> Config set(String path, T instance) {
+		evaluatePath(path, instance);
+		return this;
+
+	}
+
+	private <T> void evaluatePath(String path, T instance) {
+		if (mapConfig == null) {
+			throw new IllegalStateException("mapConfig not set");
+		}
+		Map previousTarget = null;
+		Object target = mapConfig;
+		LinkedList<String> traversal = new LinkedList(Arrays.asList(path.split("\\.")));
+
+		while (!traversal.isEmpty()) {
+			String currentTraversal = traversal.poll();
+			previousTarget = (Map) target;
+			target = previousTarget.get(currentTraversal);
+			// todo support brackets for list index. Also consider using JEXL
+			if (target instanceof Map) {
+				target = previousTarget.get(currentTraversal);
+			} else if (target == null && traversal.size() > 0) { // autocreate
+				target = new HashMap<>();
+				previousTarget.put(currentTraversal, target);
+			} else if (traversal.isEmpty()) {
+				if (instance instanceof MapConfig) {
+					previousTarget.put(currentTraversal, ((MapConfig) instance).getMapConfig());
+				} else {
+					previousTarget.put(currentTraversal, instance);
+				}
+
+			} else if (target != null) {
+				throw new IllegalArgumentException(String.format("Incompatible types %s %s %s", path, instance.getClass(), target.getClass()));
+			}
+
+		}
+
+	}
+
 //	public static Optional<Map<String, Object>> lookup(Optional<Map<String, Object>> entry, String... path) {
 //		Map<String, Object> current = null;
 //		if (entry.isPresent()) {
