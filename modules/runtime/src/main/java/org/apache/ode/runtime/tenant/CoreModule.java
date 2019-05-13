@@ -50,7 +50,9 @@ public class CoreModule implements Module {
 			entities.add(createConfiguration());
 			entities.add(createEndpoint());
 			entities.add(createAssembly());
+			entities.add(createAssemblyAlias());
 			entities.add(createComposite());
+			entities.add(createCompositeAlias());
 			tenantCacheCfg.setQueryEntities(entities);
 			tenantCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 			IgniteCache<BinaryObject, BinaryObject> configCache = ignite.createCache(tenantCacheCfg).withKeepBinary();
@@ -177,6 +179,7 @@ public class CoreModule implements Module {
 		efields.put("id", String.class.getName());
 		efields.put("oid", UUID.class.getName());
 		efields.put("type", String.class.getName());
+		efields.put("dependencies", String[].class.getName());
 		efields.put("createdTime", Timestamp.class.getName());
 		efields.put("modifiedTime", Timestamp.class.getName());
 		efields.put("deployed", Boolean.class.getName());
@@ -191,6 +194,32 @@ public class CoreModule implements Module {
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
 		eindexes.add(new QueryIndex("oid"));
 		eindexes.add(new QueryIndex("type"));
+
+		entity.setIndexes(eindexes);
+
+		return entity;
+	}
+
+	private QueryEntity createAssemblyAlias() {
+		QueryEntity entity = new QueryEntity("AssemblyAliasKey", "AssemblyAlias");
+		entity.setTableName("ASSEMBLY_ALIAS");
+
+		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
+		efields.put("alias", String.class.getName());
+		efields.put("id", String.class.getName());
+		efields.put("oid", UUID.class.getName());
+		efields.put("createdTime", Timestamp.class.getName());
+		efields.put("modifiedTime", Timestamp.class.getName());
+
+		entity.setFields(efields);
+
+		Set<String> ekfields = new HashSet<>();
+		ekfields.add("alias");
+		entity.setKeyFields(ekfields);
+
+		Collection<QueryIndex> eindexes = new ArrayList<>(1);
+		eindexes.add(new QueryIndex("oid"));
+		eindexes.add(new QueryIndex("id"));
 
 		entity.setIndexes(eindexes);
 
@@ -218,6 +247,32 @@ public class CoreModule implements Module {
 		Collection<QueryIndex> eindexes = new ArrayList<>(1);
 		eindexes.add(new QueryIndex("oid"));
 		eindexes.add(new QueryIndex("type"));
+
+		entity.setIndexes(eindexes);
+
+		return entity;
+	}
+
+	private QueryEntity createCompositeAlias() {
+		QueryEntity entity = new QueryEntity("CompositeAliasKey", "CompositeAlias");
+		entity.setTableName("COMPOSITE_ALIAS");
+
+		LinkedHashMap<String, String> efields = new LinkedHashMap<>();
+		efields.put("alias", String.class.getName());
+		efields.put("id", String.class.getName());
+		efields.put("oid", UUID.class.getName());
+		efields.put("createdTime", Timestamp.class.getName());
+		efields.put("modifiedTime", Timestamp.class.getName());
+
+		entity.setFields(efields);
+
+		Set<String> ekfields = new HashSet<>();
+		ekfields.add("alias");
+		entity.setKeyFields(ekfields);
+
+		Collection<QueryIndex> eindexes = new ArrayList<>(1);
+		eindexes.add(new QueryIndex("oid"));
+		eindexes.add(new QueryIndex("id"));
 
 		entity.setIndexes(eindexes);
 

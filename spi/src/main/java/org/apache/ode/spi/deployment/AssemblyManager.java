@@ -1,7 +1,9 @@
 package org.apache.ode.spi.deployment;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ode.spi.deployment.Assembly.AssemblyException;
@@ -42,6 +44,7 @@ public interface AssemblyManager {
 
 		protected URI type;
 		protected URI reference;
+		protected Set<URI> dependencies;
 
 		public URI type() {
 			return type;
@@ -49,6 +52,10 @@ public interface AssemblyManager {
 
 		public URI reference() {
 			return reference;
+		}
+
+		public Set<URI> dependencies() {
+			return dependencies != null ? dependencies : Collections.EMPTY_SET;
 		}
 
 	}
@@ -70,6 +77,11 @@ public interface AssemblyManager {
 
 		public AssemblyDeploymentBuilder<C> reference(URI reference) {
 			deployment.reference = reference;
+			return this;
+		}
+
+		public AssemblyDeploymentBuilder<C> dependencies(Set<URI> dependencies) {
+			deployment.dependencies = dependencies;
 			return this;
 		}
 	}

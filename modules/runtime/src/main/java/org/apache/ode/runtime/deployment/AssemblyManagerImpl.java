@@ -101,6 +101,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 			assemblyBuilder.setField("createdTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			assemblyBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			assemblyBuilder.setField("deployed", false);
+			assemblyBuilder.setField("dependencies", deployment.dependencies().stream().map(u -> u.toString()).toArray(String[]::new));
 
 			try {
 				Util.invoke(assembly, assembly.getClass(), new AnnotationFilter(Create.class), (args, types) -> {
@@ -360,31 +361,79 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 
 	@Override
 	public void deploy(URI reference) throws AssemblyException {
+		// TODO dependency deployment check
 		deploymentUpdate(reference, true);
 	}
 
 	@Override
 	public void undeploy(URI reference) throws AssemblyException {
+		// TODO dependency undeployment check
 		deploymentUpdate(reference, false);
 
 	}
 
 	@Override
-	public void createAlias(String alias, URI reference) {
-		// TODO Auto-generated method stub
+	public void createAlias(String alias, URI reference) throws AssemblyException {
+		try {
+			IgniteTransactions transactions = ignite.transactions();
+			try (Transaction tx = transactions.txStart()) {
+				IgniteCache<BinaryObject, BinaryObject> tenantCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
+
+				BinaryObject assemblyAliasKey = ignite.binary().builder("AssemblyAliasKey").setField("alias", alias).build();
+
+				BinaryObjectBuilder assemblyAliasBuilder = ignite.binary().builder("AssemblyAlias");
+				assemblyAliasBuilder.setField("oid", UUID.randomUUID());
+				assemblyAliasBuilder.setField("id", reference.toString());
+				assemblyAliasBuilder.setField("createdTime", ZonedDateTime.now(ZoneId.systemDefault()));
+				assemblyAliasBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+
+				if (!tenantCache.putIfAbsent(assemblyAliasKey, assemblyAliasBuilder.build())) {
+					throw new AssemblyException(String.format("Assembly alias %s already exists", alias));
+				}
+				tx.commit();
+
+			}
+		} catch (BinaryObjectException | IllegalArgumentException e) {
+			throw new AssemblyException(e);
+		}
 
 	}
 
 	@Override
-	public void deleteAlias(String alias) {
-		// TODO Auto-generated method stub
+	public void deleteAlias(String alias) throws AssemblyException {
+		try {
+			IgniteTransactions transactions = ignite.transactions();
+			try (Transaction tx = transactions.txStart()) {
+				IgniteCache<BinaryObject, BinaryObject> tenantCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
+
+				BinaryObject assemblyAliasKey = ignite.binary().builder("AssemblyAliasKey").setField("alias", alias).build();
+
+				tenantCache.remove(assemblyAliasKey);
+				tx.commit();
+
+			}
+		} catch (BinaryObjectException | IllegalArgumentException e) {
+			throw new AssemblyException(e);
+		}
 
 	}
 
 	@Override
-	public URI alias(String alias) {
-		// TODO Auto-generated method stub
-		return null;
+	public URI alias(String alias) throws AssemblyException {
+		try {
+			IgniteCache<BinaryObject, BinaryObject> tenantCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
+
+			BinaryObject assemblyAliasKey = ignite.binary().builder("AssemblyAliasKey").setField("alias", alias).build();
+
+			BinaryObject assemblyAlias = tenantCache.get(assemblyAliasKey);
+			if (assemblyAlias == null) {
+				throw new AssemblyException(String.format("Assembly alias %s does not  exist", alias));
+			}
+			return new URI(assemblyAlias.field("id"));
+
+		} catch (BinaryObjectException | IllegalArgumentException | URISyntaxException e) {
+			throw new AssemblyException(e);
+		}
 	}
 
 }

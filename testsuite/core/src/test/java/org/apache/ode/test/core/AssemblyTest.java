@@ -3,6 +3,7 @@ package org.apache.ode.test.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ import org.apache.ode.junit.OdeServer;
 import org.apache.ode.runtime.Server;
 import org.apache.ode.spi.config.MapConfig;
 import org.apache.ode.spi.deployment.Assembly;
+import org.apache.ode.spi.deployment.Assembly.AssemblyException;
 import org.apache.ode.spi.deployment.AssemblyManager;
 import org.apache.ode.spi.deployment.AssemblyManager.AssemblyDeployment;
 import org.apache.ode.spi.deployment.AssemblyManager.AssemblyDeploymentBuilder;
@@ -64,10 +66,6 @@ public class AssemblyTest {
 
 		URI resource = new URI("urn:org:apache:ode:assembly:test#test");
 
-//		assemblyManager.createAlias("test1", resource);
-//		assertEquals(assemblyManager.alias("test1"), resource);
-//		
-//		
 		MapConfig config = new MapConfig();
 		config.set("ode.test", true);
 
@@ -110,6 +108,20 @@ public class AssemblyTest {
 
 		assemblyManager.delete(resource);
 		assertEquals(Boolean.TRUE, testAssembly.state().get("delete"));
+
+	}
+
+	@Test
+	public void alias() throws Exception {
+		AssemblyManager assemblyManager = server.ignite().services().service(AssemblyManager.SERVICE_NAME);
+
+		URI resource = new URI("urn:org:apache:ode:assembly:test#test");
+		assemblyManager.createAlias("test", resource);
+		assertEquals(resource, assemblyManager.alias("test"));
+		assemblyManager.deleteAlias("test");
+		assertThrows(AssemblyException.class, () -> {
+			assemblyManager.alias("test");
+		});
 
 	}
 
