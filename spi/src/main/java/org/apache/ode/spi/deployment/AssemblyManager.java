@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ode.spi.deployment.Assembly.AssemblyException;
+import org.apache.ode.spi.deployment.Assembler.AssemblyException;
 import org.apache.ode.spi.deployment.Deployment.DeploymentBuilder;
 import org.apache.ode.spi.deployment.Deployment.Entry;
 
@@ -23,6 +23,8 @@ public interface AssemblyManager {
 	public <C> void update(URI reference, C file) throws AssemblyException;
 
 	public void updateFiles(URI reference, List<Entry> files) throws AssemblyException;
+
+	public void assemble(URI reference) throws AssemblyException;
 
 	public void delete(URI reference) throws AssemblyException;
 

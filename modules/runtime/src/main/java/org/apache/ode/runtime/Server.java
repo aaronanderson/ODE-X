@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -20,6 +19,7 @@ import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 
@@ -31,14 +31,15 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.ode.runtime.cli.CLITask;
+import org.apache.ode.runtime.deployment.AssemblyManagerImpl.AssembleContext;
 import org.apache.ode.runtime.owb.ODEOWBInitializer;
 import org.apache.ode.runtime.owb.ODEOWBInitializer.ContainerMode;
 import org.apache.ode.spi.config.Config;
 import org.apache.ode.spi.config.IgniteConfigureEvent;
+import org.apache.ode.spi.deployment.Assembler.AssembleScoped;
 import org.apache.ode.spi.tenant.Module;
 import org.apache.ode.spi.tenant.Module.Id;
 import org.apache.ode.spi.tenant.Tenant;
@@ -303,6 +304,10 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 
 	}
 
+	void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager bm) {
+		bbd.addScope(AssembleScoped.class, false, false);
+	}
+
 	void addBeans(@Observes final AfterBeanDiscovery afb, final BeanManager bm) {
 		// Ideally Ignite instance should be injected using IgniteResource or direct static lookup Ignition.localIgnite()
 		afb.addBean().beanClass(Ignite.class).scope(ApplicationScoped.class).types(Ignite.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
@@ -312,6 +317,8 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 		afb.addBean().beanClass(Config.class).scope(ApplicationScoped.class).types(Config.class, Object.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
 			return configuration();
 		});
+
+		afb.addContext(AssembleContext.instance());
 
 //		afb.addBean().beanClass(Set.class).addType(new TypeLiteral<Map<String, Module>>() {
 //		}).scope(ApplicationScoped.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {

@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.apache.ode.junit.OdeServer;
 import org.apache.ode.runtime.Server;
-import org.apache.ode.spi.deployment.Assembly;
-import org.apache.ode.spi.deployment.Assembly.Id;
-import org.apache.ode.spi.deployment.AssemblyManager;
 import org.apache.ode.spi.deployment.DevelopmentManager;
 import org.junit.jupiter.api.Test;
 
@@ -24,9 +21,5 @@ public class DevelopmentTest {
 		assertNotNull(developmentManager);
 	}
 
-	@Id("urn:org:apache:ode:assembly:test")
-	public static class TestAssembly implements Assembly {
-
-	}
 
 }

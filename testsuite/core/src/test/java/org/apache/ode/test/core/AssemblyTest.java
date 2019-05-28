@@ -2,8 +2,8 @@ package org.apache.ode.test.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -24,11 +24,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ode.junit.OdeServer;
 import org.apache.ode.runtime.Server;
 import org.apache.ode.spi.config.MapConfig;
-import org.apache.ode.spi.deployment.Assembly;
-import org.apache.ode.spi.deployment.Assembly.AssemblyException;
+import org.apache.ode.spi.deployment.Assembler;
+import org.apache.ode.spi.deployment.Assembler.AssembleScoped;
+import org.apache.ode.spi.deployment.Assembler.AssemblyException;
 import org.apache.ode.spi.deployment.AssemblyManager;
 import org.apache.ode.spi.deployment.AssemblyManager.AssemblyDeployment;
 import org.apache.ode.spi.deployment.AssemblyManager.AssemblyDeploymentBuilder;
@@ -42,19 +44,20 @@ import org.junit.jupiter.api.Test;
 public class AssemblyTest {
 
 	public static final String TEST_ASSEMBLY = "urn:org:apache:ode:test";
+	public static final String TEST_CONTENT_TYPE = "application/ode-test";
 	Server server = null;
+	Path resourceDirectory = null;
 
 	public AssemblyTest(Server server) {
 		this.server = server;
+		this.resourceDirectory = Paths.get("src/test/resources/ode/assembly/test");
 	}
 
 	@Test
 	public void lifecycle() throws Exception {
 		AssemblyManager assemblyManager = server.ignite().services().service(AssemblyManager.SERVICE_NAME);
 		assertNotNull(assemblyManager);
-		TestAssembly testAssembly = server.container().select(TestAssembly.class, Any.Literal.INSTANCE).get();
-
-		Path resourceDirectory = Paths.get("src/test/resources/ode/assembly/test");
+		TestAssembler testAssembly = server.container().select(TestAssembler.class, Any.Literal.INSTANCE).get();
 
 //		Path targetDirectory = Paths.get("target");
 //		Path testAssembly = targetDirectory.resolve("assembly-test.zip");
@@ -64,7 +67,7 @@ public class AssemblyTest {
 //			Files.copy(resourceDirectory.resolve("test.txt"), zipFS.getPath("test.txt"));
 //		}
 
-		URI resource = new URI("urn:org:apache:ode:assembly:test#test");
+		URI resource = new URI("urn:org:apache:ode:assembly:test#lifecycle");
 
 		MapConfig config = new MapConfig();
 		config.set("ode.test", true);
@@ -125,9 +128,28 @@ public class AssemblyTest {
 
 	}
 
-	@Assembly.Id(TEST_ASSEMBLY)
+	@Test
+	public void assembly() throws Exception {
+		AssemblyManager assemblyManager = server.ignite().services().service(AssemblyManager.SERVICE_NAME);
+
+		URI resource = new URI("urn:org:apache:ode:assembly:test#assemble");
+
+		MapConfig config = new MapConfig();
+		config.set("ode.test", true);
+
+		assemblyManager.create(AssemblyDeploymentBuilder.instance().type(new URI(TEST_ASSEMBLY)).config(config).reference(resource).file(new FileEntry(resourceDirectory.resolve("assembler.test"))).build());
+		assemblyManager.assemble(resource);
+
+		TestAssembler testAssembly = server.container().select(TestAssembler.class, Any.Literal.INSTANCE).get();
+		assertEquals(Boolean.TRUE, testAssembly.state().get("inspect"));
+		assertEquals(Boolean.TRUE, testAssembly.state().get("validate"));
+		assertEquals(Boolean.TRUE, testAssembly.state().get("compile"));
+
+	}
+
 	@ApplicationScoped
-	public static class TestAssembly implements Assembly {
+	@Assembler.AssemblyType(TEST_ASSEMBLY)
+	public static class TestAssembler implements Assembler {
 
 		private Map<String, Boolean> access = new HashMap<>();
 
@@ -178,6 +200,32 @@ public class AssemblyTest {
 			access.put("delete", true);
 		}
 
+		@Stage("init")
+		public void init(IgfsPath assemblyDir, TestAssembleContext context) {
+			context.setSourcePath(assemblyDir);
+			access.put("init", true);
+		}
+
+		@Stage("inspect")
+		public void inspect(TestAssembleContext context) {
+			access.put("inspect", context.getSourcePath() != null);
+		}
+
+		@Stage("validate")
+		public void validate() {
+			access.put("validate", true);
+		}
+
+		@Stage("compile")
+		public void compile() {
+			access.put("compile", true);
+		}
+
+		@Stage("complete")
+		public void complete() {
+			access.put("complete", true);
+		}
+
 	}
 
 	@ApplicationScoped
@@ -186,18 +234,54 @@ public class AssemblyTest {
 
 		@Enable
 		public void enable(Ignite ignite, UUID configKey) {
-			IgniteCache<String, BinaryObject> configCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
-			BinaryObjectBuilder assemblies = ignite.binary().builder("Configuration");
-			assemblies.setField("oid", UUID.randomUUID());
-			assemblies.setField("type", "ode:assembly");
-			assemblies.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
-			configCache.put("/ode:assemblies/" + TEST_ASSEMBLY, assemblies.build());
+			IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
+
+			BinaryObjectBuilder contentType = ignite.binary().builder("Configuration");
+			contentType.setField("oid", UUID.randomUUID());
+			contentType.setField("type", "ode:contentType");
+			contentType.setField("fileExtensions", new String[] { ".test" });
+			contentType.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+			configCache.put(Assembler.contentTypeConfigPath(ignite, TEST_CONTENT_TYPE), contentType.build());
+
+			BinaryObjectBuilder assembly = ignite.binary().builder("Configuration");
+			assembly.setField("oid", UUID.randomUUID());
+			assembly.setField("type", "ode:assembly");
+			assembly.setField("mode", "auto");
+			assembly.setField("stages", new String[] { "init", "inspect", "validate", "compile", "complete" });
+			assembly.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+			configCache.put(Assembler.assemblyConfigPath(ignite, TEST_ASSEMBLY), assembly.build());
+
 		}
 
 		@Disable
 		public void disable(Ignite ignite) {
-			IgniteCache<String, BinaryObject> configCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
-			configCache.remove("/ode:assemblies/" + TEST_ASSEMBLY);
+			IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
+			configCache.remove(Assembler.assemblyConfigPath(ignite, TEST_ASSEMBLY));
+			configCache.remove(Assembler.contentTypeConfigPath(ignite, TEST_CONTENT_TYPE));
+		}
+
+	}
+
+	@AssembleScoped
+	public static class TestAssembleContext {
+
+		IgfsPath sourcePath;
+		IgfsPath targetPath;
+
+		public IgfsPath getSourcePath() {
+			return sourcePath;
+		}
+
+		public void setSourcePath(IgfsPath sourcePath) {
+			this.sourcePath = sourcePath;
+		}
+
+		public IgfsPath getTargetPath() {
+			return targetPath;
+		}
+
+		public void setTargetPath(IgfsPath targetPath) {
+			this.targetPath = targetPath;
 		}
 
 	}

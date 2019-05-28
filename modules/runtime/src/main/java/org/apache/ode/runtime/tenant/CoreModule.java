@@ -9,10 +9,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.binary.BinaryObject;
@@ -23,7 +25,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ode.runtime.deployment.AssemblyManagerImpl;
 import org.apache.ode.runtime.deployment.CompositeManagerImpl;
 import org.apache.ode.spi.deployment.AssemblyManager;
@@ -71,8 +72,15 @@ public class CoreModule implements Module {
 			assemblies.setField("oid", UUID.randomUUID());
 			assemblies.setField("type", "ode:assemblies");
 			assemblies.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
-
 			configCache.put(assembliesKey.build(), assemblies.build());
+			
+			BinaryObjectBuilder contentTypesKey = ignite.binary().builder("ConfigurationKey");
+			assembliesKey.setField("path", "/ode:contentTypes");
+			BinaryObjectBuilder contentTypes = ignite.binary().builder("Configuration");
+			assemblies.setField("oid", UUID.randomUUID());
+			assemblies.setField("type", "ode:contentTypes");
+			assemblies.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
+			configCache.put(contentTypesKey.build(), contentTypes.build());
 
 			BinaryObjectBuilder tenantKey = ignite.binary().builder("ConfigurationKey");
 			tenantKey.setField("path", "/ode:tenant");
@@ -81,6 +89,7 @@ public class CoreModule implements Module {
 			tenant.setField("type", "ode:tenant");
 			tenant.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			tenant.setField("online", false);
+			tenant.setField("endpointIdKey", new Random().nextInt());
 			configCache.put(tenantKey.build(), tenant.build());
 		}
 		if (ignite.cache(Tenant.PROCESS_CACHE_NAME) == null) {
@@ -102,6 +111,9 @@ public class CoreModule implements Module {
 		ignite.services().deployNodeSingleton(AssemblyManager.SERVICE_NAME, new AssemblyManagerImpl());
 		ignite.services().deployNodeSingleton(CompositeManager.SERVICE_NAME, new CompositeManagerImpl());
 
+		IgniteAtomicSequence seq = ignite.atomicSequence("endpointId", 0, true);
+
+		// seq.incrementAndGet()
 	}
 
 	@Disable
@@ -184,6 +196,7 @@ public class CoreModule implements Module {
 		efields.put("modifiedTime", Timestamp.class.getName());
 		efields.put("deployed", Boolean.class.getName());
 		efields.put("entry", byte[].class.getName());
+		efields.put("stage", String.class.getName());
 
 		entity.setFields(efields);
 
@@ -224,7 +237,7 @@ public class CoreModule implements Module {
 		entity.setIndexes(eindexes);
 
 		return entity;
-	}
+	}	
 
 	private QueryEntity createComposite() {
 		QueryEntity entity = new QueryEntity("CompositeKey", "Composite");
