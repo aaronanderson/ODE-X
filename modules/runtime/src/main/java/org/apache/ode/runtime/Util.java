@@ -5,12 +5,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import javax.enterprise.inject.Instance;
 
@@ -96,15 +102,17 @@ public class Util {
 	public static class Invocation<I> {
 		private final I instance;
 		private final Method method;
+		private final MethodHandle methodHandle;
 		private final int priority;
 
-		public Invocation(I instance, Method method) {
+		public Invocation(I instance, Method method) throws IllegalAccessException {
 			this(instance, method, 10);
 		}
 
-		public Invocation(I instance, Method method, int priority) {
+		public Invocation(I instance, Method method, int priority) throws IllegalAccessException {
 			this.instance = instance;
 			this.method = method;
+			this.methodHandle = MethodHandles.lookup().unreflect(method);
 			this.priority = priority;
 		}
 
@@ -116,22 +124,33 @@ public class Util {
 			return method;
 		}
 
+		public MethodHandle getMethodHandle() {
+			return methodHandle;
+		}
+
+		public int getPriority() {
+			return priority;
+		}
+
 	}
 
 	@FunctionalInterface
 	public static interface MethodIndexer<I, K> {
 
-		public void index(I instance, Method method, Map<K, List<Invocation<I>>> methodCache) throws IllegalArgumentException;
+		public void index(I instance, Method method, Map<K, List<Invocation<I>>> methodCache) throws IllegalArgumentException, IllegalAccessException;
 
 	}
 
-	public static <I, K, R> R invoke(K key, Map<K, List<Invocation<I>>> methodCache, ParameterInitializer paramInitializer) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public static <I, K, R> R invoke(K key, Map<K, List<Invocation<I>>> methodCache, ParameterInitializer paramInitializer) throws Throwable {
 		List<Invocation<I>> invocations = methodCache.get(key);
 		if (invocations != null) {
 			for (Invocation<I> invocation : invocations) {
 				Object[] args = new Object[invocation.getMethod().getParameterCount()];
 				paramInitializer.initialize(args, invocation.getMethod().getParameterTypes());
-				Object returnValue = invocation.getMethod().invoke(invocation.getInstance(), args);
+				Object[] invokArgs = new Object[invocation.getMethod().getParameterCount() + 1];
+				invokArgs[0] = invocation.getInstance();
+				System.arraycopy(args, 0, invokArgs, 1, args.length);
+				Object returnValue = invocation.getMethodHandle().invokeWithArguments(invokArgs);
 				if (returnValue != null) {
 					return (R) returnValue;
 				}
@@ -140,6 +159,14 @@ public class Util {
 		}
 		return null;
 
+	}
+
+	public static <I, K, R, E extends Exception> R invoke(K key, Map<K, List<Invocation<I>>> methodCache, ParameterInitializer paramInitializer, Function<Throwable, E> errorHandler) throws E {
+		try {
+			return invoke(key, methodCache, paramInitializer);
+		} catch (Throwable t) {
+			throw errorHandler.apply(t);
+		}
 	}
 
 	public static <I, R> R invoke(I instance, Class<?> clazz, InvocationFilter filter, ParameterInitializer paramInitializer) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -196,6 +223,38 @@ public class Util {
 	public static interface ParameterInitializer {
 
 		public void initialize(Object[] parameters, Class<?>[] parameterTypes);
+
+	}
+
+	public static class DefaultParameterInitializer implements ParameterInitializer {
+
+		private final Set<Object> parameterCache = new HashSet<>();
+		private final Function<Class<?>, Object> defaultHandler;
+
+		public DefaultParameterInitializer(Function<Class<?>, Object> defaultHandler, Object... parameters) {
+			this.defaultHandler = defaultHandler;
+			for (Object parameter : parameters) {
+				parameterCache.add(parameter);
+			}
+		}
+
+		@Override
+		public void initialize(Object[] parameters, Class<?>[] parameterTypes) {
+			for (int i = 0; i < parameters.length; i++) {
+				Iterator<?> parameterIterator = parameterCache.iterator();
+				while (parameterIterator.hasNext()) {
+					Object candidate = parameterIterator.next();
+					if (parameterTypes[i].isAssignableFrom(candidate.getClass())) {
+						parameters[i] = candidate;
+						parameterIterator.remove();
+						break;
+					}
+				}
+				if (parameters[i] == null && defaultHandler != null) {
+					parameters[i] = defaultHandler.apply(parameterTypes[i]);
+				}
+			}
+		}
 
 	}
 

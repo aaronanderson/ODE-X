@@ -20,11 +20,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
-import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 
 import org.apache.ignite.Ignite;
@@ -40,6 +37,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.ode.runtime.Util;
+import org.apache.ode.runtime.Util.DefaultParameterInitializer;
 import org.apache.ode.runtime.Util.IgfsPathEntry;
 import org.apache.ode.runtime.Util.Invocation;
 import org.apache.ode.runtime.Util.MethodIndexer;
@@ -74,9 +72,6 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 	@Any
 	private transient Instance<Assembler> assemblies;
 
-	@Inject
-	private BeanManager manager;
-
 	private transient Map<AssemblyOperation, List<Invocation<Assembler>>> assemblyCache;
 
 	@PostConstruct
@@ -95,7 +90,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 	@Override
 	public <C> void create(AssemblyDeployment<C> deployment) throws AssemblyException {
 		String assemblyType = deployment.type().toString();
-		BinaryObject assemblyConfig = assemblyConfig(ignite, assemblyType);
+		BinaryObject assemblyTypeConfig = assemblyTypeConfig(ignite, assemblyType);
 
 		IgniteTransactions transactions = ignite.transactions();
 		try (Transaction tx = transactions.txStart()) {
@@ -117,28 +112,8 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 			assemblyBuilder.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			assemblyBuilder.setField("deployed", false);
 			assemblyBuilder.setField("dependencies", deployment.dependencies().stream().map(u -> u.toString()).toArray(String[]::new));
-
-			try {
-				Util.invoke(new AssemblyOperation(Create.class, assemblyType), assemblyCache, (args, types) -> {
-					for (int i = 0; i < args.length; i++) {
-						if (Ignite.class.equals(types[i])) {
-							args[i] = ignite;
-						} else if (BinaryObject.class.equals(types[i])) {
-							args[i] = assemblyConfig;
-						} else if (BinaryObjectBuilder.class.equals(types[i])) {
-							args[i] = assemblyBuilder;
-						} else if (URI.class.equals(types[i])) {
-							args[i] = deployment.reference();
-						} else if (IgfsPath.class.equals(types[i])) {
-							args[i] = assemblyPath;
-						} else if (deployment.config().getClass().isAssignableFrom(types[i])) {
-							args[i] = deployment.config();
-						}
-					}
-				});
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				throw new AssemblyException(e);
-			}
+			ParameterInitializer initializer = new DefaultParameterInitializer(null, ignite, assemblyTypeConfig, assemblyBuilder, deployment.reference(), assemblyPath, deployment.config());
+			Util.invoke(new AssemblyOperation(Create.class, assemblyType), assemblyCache, initializer, e -> new AssemblyException(e));
 
 			if (!tenantCache.putIfAbsent(assemblyKey, assemblyBuilder.build())) {
 				if (repositoryFS.exists(assemblyPath)) {
@@ -208,23 +183,12 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				builder.file(file);
 			}
 
-			C config = Util.invoke(new AssemblyOperation(Export.class, assemblyType.toString()), assemblyCache, (args, types) -> {
-				for (int i = 0; i < args.length; i++) {
-					if (Ignite.class.equals(types[i])) {
-						args[i] = ignite;
-					} else if (URI.class.equals(types[i])) {
-						args[i] = reference;
-					} else if (IgfsPath.class.equals(types[i])) {
-						args[i] = assemblyPath;
-					} else if (BinaryObject.class.equals(types[i])) {
-						args[i] = assembly;
-					}
-				}
-			});
+			ParameterInitializer initializer = new DefaultParameterInitializer(null, ignite, reference, assemblyPath, assembly);
+			C config = Util.invoke(new AssemblyOperation(Export.class, assemblyType.toString()), assemblyCache, initializer, e -> new AssemblyException(e));
 			builder.config(config);
 
 			return builder.build();
-		} catch (BinaryObjectException | URISyntaxException | IOException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (BinaryObjectException | URISyntaxException | IOException | IllegalArgumentException e) {
 			throw new AssemblyException(e);
 		}
 	}
@@ -242,20 +206,11 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				copyFiles(repositoryFS, assemblyPath, files);
 			}
 
+			ParameterInitializer initializer = new DefaultParameterInitializer(null, ignite, reference, assemblyPath, assemblyBuilder);
 			Boolean assemblyUpdate = Util.invoke(new AssemblyOperation(assemblyType.toString(), updateType), assemblyCache, (args, types) -> {
-				for (int i = 0; i < args.length; i++) {
-					if (Ignite.class.equals(types[i])) {
-						args[i] = ignite;
-					} else if (URI.class.equals(types[i])) {
-						args[i] = reference;
-					} else if (IgfsPath.class.equals(types[i])) {
-						args[i] = assemblyPath;
-					} else if (BinaryObjectBuilder.class.equals(types[i])) {
-						args[i] = assemblyBuilder;
-					}
-				}
+				initializer.initialize(args, types);
 				secondaryInitializer.initialize(args, types);
-			});
+			}, e -> new AssemblyException(e));
 
 			if (assemblyUpdate != null && assemblyUpdate) {
 				IgniteCache<BinaryObject, BinaryObject> tenantCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
@@ -263,7 +218,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				tenantCache.put(assemblyKey, assemblyBuilder.build());
 				tx.commit();
 			}
-		} catch (BinaryObjectException | URISyntaxException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (BinaryObjectException | URISyntaxException | IllegalArgumentException e) {
 			throw new AssemblyException(e);
 		}
 
@@ -314,9 +269,9 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 			URI assemblyType = new URI((String) assembly.field("type"));
 			IgfsPath assemblyPath = new IgfsPath(ASSEMBLY_DIR, ((UUID) assembly.field("oid")).toString());
 
-			BinaryObject assemblyConfig = assemblyConfig(ignite, assemblyType.toString());
-			String mode = assemblyConfig.field("mode");
-			String[] stages = assemblyConfig.field("stages");
+			BinaryObject assemblyTypeConfig = assemblyTypeConfig(ignite, assemblyType.toString());
+			String mode = assemblyTypeConfig.field("mode");
+			String[] stages = assemblyTypeConfig.field("stages");
 
 			if (stages != null) {
 				AssembleContext assembleContext = AssembleContext.instance();
@@ -329,29 +284,8 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 							assembly = tenantCache.get(assemblyKey);
 							BinaryObjectBuilder assemblyBuilder = ignite.binary().builder(assembly);
 
-							Util.invoke(new AssemblyOperation(assemblyType.toString(), stage), assemblyCache, (args, types) -> {
-								for (int i = 0; i < args.length; i++) {
-									if (Ignite.class.equals(types[i])) {
-										args[i] = ignite;
-									} else if (URI.class.equals(types[i])) {
-										args[i] = reference;
-									} else if (IgfsPath.class.equals(types[i])) {
-										args[i] = assemblyPath;
-									} else if (BinaryObjectBuilder.class.equals(types[i])) {
-										args[i] = assemblyBuilder;
-									} else {
-										Set<Bean<?>> beans = manager.getBeans(types[i], Any.Literal.INSTANCE);
-										if (!beans.isEmpty()) {
-											Bean bean = beans.iterator().next();
-											CreationalContext cc = manager.createCreationalContext(bean);
-											args[i] = manager.getReference(bean, types[i], cc);
-											// args[i] = beans.iterator().next().
-										}
-
-									}
-								}
-
-							});
+							ParameterInitializer initializer = new DefaultParameterInitializer(t -> assembleContext.instance(t, Any.Literal.INSTANCE), ignite, reference, assemblyPath, assemblyBuilder);
+							Util.invoke(new AssemblyOperation(assemblyType.toString(), stage), assemblyCache, initializer, e -> new AssemblyException(e));
 							tenantCache.put(assemblyKey, assemblyBuilder.build());
 							tx.commit();
 						}
@@ -361,7 +295,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				}
 			}
 
-		} catch (BinaryObjectException | URISyntaxException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (BinaryObjectException | URISyntaxException | IllegalArgumentException e) {
 			throw new AssemblyException(e);
 		}
 	}
@@ -378,19 +312,8 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				IgniteFileSystem repositoryFS = ignite.fileSystem(Tenant.REPOSITORY_FILE_SYSTEM);
 				IgfsPath assemblyPath = new IgfsPath(ASSEMBLY_DIR, ((UUID) assembly.field("oid")).toString());
 
-				Util.invoke(new AssemblyOperation(Delete.class, assemblyType.toString()), assemblyCache, (args, types) -> {
-					for (int i = 0; i < args.length; i++) {
-						if (Ignite.class.equals(types[i])) {
-							args[i] = ignite;
-						} else if (URI.class.equals(types[i])) {
-							args[i] = reference;
-						} else if (BinaryObject.class.equals(types[i])) {
-							args[i] = assembly;
-						} else if (IgfsPath.class.equals(types[i])) {
-							args[i] = assemblyPath;
-						}
-					}
-				});
+				ParameterInitializer initializer = new DefaultParameterInitializer(null, ignite, reference, assemblyPath, assembly);
+				Util.invoke(new AssemblyOperation(Delete.class, assemblyType.toString()), assemblyCache, initializer, e -> new AssemblyException(e));
 				if (repositoryFS.exists(assemblyPath)) {
 					repositoryFS.delete(assemblyPath, true);
 				}
@@ -399,7 +322,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				tenantCache.remove(assemblyKey);
 				tx.commit();
 			}
-		} catch (BinaryObjectException | URISyntaxException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (BinaryObjectException | URISyntaxException | IllegalArgumentException e) {
 			throw new AssemblyException(e);
 		}
 	}
@@ -414,20 +337,8 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				BinaryObjectBuilder assemblyBuilder = ignite.binary().builder(assembly);
 				assemblyBuilder.setField("deployed", deploy);
 
-				Util.invoke(new AssemblyOperation(deploy ? Deploy.class : Undeploy.class, assemblyType.toString()), assemblyCache, (args, types) -> {
-					for (int i = 0; i < args.length; i++) {
-						if (Ignite.class.equals(types[i])) {
-							args[i] = ignite;
-						} else if (URI.class.equals(types[i])) {
-							args[i] = reference;
-						} else if (IgfsPath.class.equals(types[i])) {
-							IgfsPath assemblyPath = new IgfsPath(ASSEMBLY_DIR, ((UUID) assembly.field("oid")).toString());
-							args[i] = assemblyPath;
-						} else if (BinaryObjectBuilder.class.equals(types[i])) {
-							args[i] = assemblyBuilder;
-						}
-					}
-				});
+				ParameterInitializer initializer = new DefaultParameterInitializer(null, ignite, reference, assemblyBuilder);
+				Util.invoke(new AssemblyOperation(deploy ? Deploy.class : Undeploy.class, assemblyType.toString()), assemblyCache, initializer, e -> new AssemblyException(e));
 
 				IgniteCache<BinaryObject, BinaryObject> tenantCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
 				BinaryObject assemblyKey = ignite.binary().builder("AssemblyKey").setField("id", reference.toString()).build();
@@ -435,7 +346,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				tx.commit();
 
 			}
-		} catch (BinaryObjectException | URISyntaxException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (BinaryObjectException | URISyntaxException | IllegalArgumentException e) {
 			throw new AssemblyException(e);
 		}
 
@@ -604,11 +515,11 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 
 	}
 
-	private BinaryObject assemblyConfig(Ignite ignite, String assemblyType) throws AssemblyException {
+	private BinaryObject assemblyTypeConfig(Ignite ignite, String assemblyType) throws AssemblyException {
 		IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
-		BinaryObject assemblyConfig = configCache.get(Assembler.assemblyConfigPath(ignite, assemblyType));
-		if (assemblyConfig != null) {
-			return assemblyConfig;
+		BinaryObject assemblyTypeConfig = configCache.get(Assembler.assemblyTypeConfigPath(ignite, assemblyType));
+		if (assemblyTypeConfig != null) {
+			return assemblyTypeConfig;
 		}
 		throw new AssemblyException(String.format("Assembly configuration %s not found", assemblyType));
 
@@ -641,7 +552,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 	private static class AssemblyOperationIndexer implements MethodIndexer<Assembler, AssemblyOperation> {
 
 		@Override
-		public void index(Assembler instance, Method method, Map<AssemblyOperation, List<Invocation<Assembler>>> methodCache) throws IllegalArgumentException {
+		public void index(Assembler instance, Method method, Map<AssemblyOperation, List<Invocation<Assembler>>> methodCache) throws IllegalArgumentException, IllegalAccessException {
 			for (Class annotationClass : Set.of(Create.class, Export.class, Update.class, Delete.class, Deploy.class, Undeploy.class, Stage.class)) {
 				Annotation annotation = method.getDeclaredAnnotation(annotationClass);
 				if (annotation != null) {

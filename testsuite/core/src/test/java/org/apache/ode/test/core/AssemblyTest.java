@@ -158,7 +158,7 @@ public class AssemblyTest {
 		}
 
 		@Create
-		public void create(MapConfig config, BinaryObjectBuilder assemblyBuilder) {
+		public void create(Ignite ignite, BinaryObject assemblyTypeConfig, BinaryObjectBuilder assemblyBuilder, URI deploymentReference, IgfsPath path, MapConfig config) {
 			assemblyBuilder.setField("test", config.getBool("ode.test").get());
 			access.put("create", true);
 		}
@@ -249,14 +249,14 @@ public class AssemblyTest {
 			assembly.setField("mode", "auto");
 			assembly.setField("stages", new String[] { "init", "inspect", "validate", "compile", "complete" });
 			assembly.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
-			configCache.put(Assembler.assemblyConfigPath(ignite, TEST_ASSEMBLY), assembly.build());
+			configCache.put(Assembler.assemblyTypeConfigPath(ignite, TEST_ASSEMBLY), assembly.build());
 
 		}
 
 		@Disable
 		public void disable(Ignite ignite) {
 			IgniteCache<BinaryObject, BinaryObject> configCache = ignite.cache(Tenant.TENANT_CACHE_NAME).withKeepBinary();
-			configCache.remove(Assembler.assemblyConfigPath(ignite, TEST_ASSEMBLY));
+			configCache.remove(Assembler.assemblyTypeConfigPath(ignite, TEST_ASSEMBLY));
 			configCache.remove(Assembler.contentTypeConfigPath(ignite, TEST_CONTENT_TYPE));
 		}
 

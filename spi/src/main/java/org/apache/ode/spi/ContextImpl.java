@@ -1,30 +1,38 @@
 package org.apache.ode.spi;
 
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import javax.enterprise.context.spi.AlterableContext;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanManager;
 
-import org.apache.ode.spi.ContextImpl.ThreadLocalState;
+//scopes should be isolated to a single thread execution so scope exists entirely in memory with no locking required
+public abstract class ContextImpl implements AlterableContext {
 
-public abstract class ContextImpl implements Context {
+	protected BeanManager manager;
 
 	protected abstract ThreadLocal<ThreadLocalState> state();
 
+	public void setBeanManager(BeanManager manager) {
+		this.manager = manager;
+	}
+
 	@Override
-	public <T> T get(Contextual<T> component, CreationalContext<T> creationalContext) {
-		Bean bean = (Bean) component;
+	public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
 		ThreadLocalState tscope = state().get();
-		ScopedInstance si = tscope.instances.get(bean.getBeanClass());
+		ScopedInstance si = tscope.instances.get(contextual);
 		if (si == null) {
 			si = new ScopedInstance();
-			si.bean = bean;
-			si.ctx = creationalContext;
-			si.instance = bean.create(creationalContext);
-			tscope.instances.put(bean.getBeanClass(), si);
+			si.contextual = contextual;
+			si.context = creationalContext;
+			si.instance = contextual.create(creationalContext);
+			tscope.instances.put(contextual, si);
 		}
 
 		return (T) si.instance;
@@ -40,6 +48,17 @@ public abstract class ContextImpl implements Context {
 		return state().get() != null ? true : false;
 	}
 
+	@Override
+	public void destroy(Contextual<?> contextual) {
+		ThreadLocalState tscope = state().get();
+		ScopedInstance si = tscope.instances.get(contextual);
+		if (si != null) {
+			si.contextual.destroy(si.instance, si.context);
+			tscope.instances.remove(contextual);
+		}
+
+	}
+
 	public void start() {
 		if (state().get() != null) {
 			throw new IllegalAccessError("Already in scope");
@@ -53,23 +72,34 @@ public abstract class ContextImpl implements Context {
 		}
 
 		// normal scope handled by container
-		for (ScopedInstance entry2 : state().get().instances.values()) {
-			entry2.bean.destroy(entry2.instance, entry2.ctx);
+		for (ScopedInstance si : state().get().instances.values()) {
+			si.contextual.destroy(si.instance, si.context);
 		}
 
 		state().remove();
 
 	}
 
+	public <T> T instance(Class<T> type, Annotation... annotations) {
+		Set<Bean<?>> beans = manager.getBeans(type, annotations);
+		if (!beans.isEmpty()) {
+			Bean bean = beans.iterator().next();
+			CreationalContext cc = manager.createCreationalContext(bean);
+			// Context ctx = manager.getContext(getScope());
+			// return (T) ctx.get(bean, cc);
+			return (T) manager.getReference(bean, type, cc);
+		}
+		return null;
+	}
+
 	public static class ScopedInstance<T> {
-		Class<T> clazz;
-		Bean<T> bean;
-		CreationalContext<T> ctx;
+		Contextual<T> contextual;
+		CreationalContext<T> context;
 		T instance;
 	}
 
 	public static class ThreadLocalState {
-		Map<Class<?>, ScopedInstance<?>> instances = new HashMap<>();
+		Map<Contextual<?>, ScopedInstance<?>> instances = new HashMap<>();
 
 	}
 

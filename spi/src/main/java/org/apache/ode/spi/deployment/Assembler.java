@@ -78,7 +78,7 @@ public interface Assembler {
 		int value();
 	}
 
-	public static BinaryObject assemblyConfigPath(Ignite ignite, String assemblyType) {
+	public static BinaryObject assemblyTypeConfigPath(Ignite ignite, String assemblyType) {
 		return ignite.binary().builder("ConfigurationKey").setField("path", "/ode:assemblies/" + assemblyType).build();
 	}
 
@@ -105,14 +105,12 @@ public interface Assembler {
 		}
 	}
 
-	//@NormalScope(passivating = false)
+	// @NormalScope(passivating = false)
 	@Scope
 	@Inherited
 	@Retention(RUNTIME)
 	@Target({ TYPE, METHOD, FIELD })
 	public @interface AssembleScoped {
 	}
-
-	
 
 }

@@ -318,7 +318,10 @@ public class Server implements LifecycleBean, AutoCloseable, Extension {
 			return configuration();
 		});
 
-		afb.addContext(AssembleContext.instance());
+		AssembleContext assemblyContext = AssembleContext.instance();
+		assemblyContext.setBeanManager(bm);
+		afb.addContext(assemblyContext);
+
 
 //		afb.addBean().beanClass(Set.class).addType(new TypeLiteral<Map<String, Module>>() {
 //		}).scope(ApplicationScoped.class).qualifiers(DefaultLiteral.INSTANCE).createWith(cc -> {
