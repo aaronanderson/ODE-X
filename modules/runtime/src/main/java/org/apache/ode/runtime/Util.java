@@ -112,7 +112,7 @@ public class Util {
 		public Invocation(I instance, Method method, int priority) throws IllegalAccessException {
 			this.instance = instance;
 			this.method = method;
-			this.methodHandle = MethodHandles.lookup().unreflect(method);
+			this.methodHandle = MethodHandles.lookup().unreflect(method).asSpreader(Object[].class, method.getParameterCount()).bindTo(instance);
 			this.priority = priority;
 		}
 
@@ -147,10 +147,10 @@ public class Util {
 			for (Invocation<I> invocation : invocations) {
 				Object[] args = new Object[invocation.getMethod().getParameterCount()];
 				paramInitializer.initialize(args, invocation.getMethod().getParameterTypes());
-				Object[] invokArgs = new Object[invocation.getMethod().getParameterCount() + 1];
-				invokArgs[0] = invocation.getInstance();
-				System.arraycopy(args, 0, invokArgs, 1, args.length);
-				Object returnValue = invocation.getMethodHandle().invokeWithArguments(invokArgs);
+				// Object[] invokArgs = new Object[invocation.getMethod().getParameterCount() + 1];
+				// invokArgs[0] = invocation.getInstance();
+				// System.arraycopy(args, 0, invokArgs, 1, args.length);
+				Object returnValue = invocation.getMethodHandle().invoke(args);
 				if (returnValue != null) {
 					return (R) returnValue;
 				}

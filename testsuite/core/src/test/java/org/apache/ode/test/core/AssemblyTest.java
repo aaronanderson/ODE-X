@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -36,6 +37,7 @@ import org.apache.ode.spi.deployment.AssemblyManager.AssemblyDeployment;
 import org.apache.ode.spi.deployment.AssemblyManager.AssemblyDeploymentBuilder;
 import org.apache.ode.spi.deployment.Deployment.Entry;
 import org.apache.ode.spi.deployment.Deployment.FileEntry;
+import org.apache.ode.spi.deployment.PathScanner;
 import org.apache.ode.spi.tenant.Module;
 import org.apache.ode.spi.tenant.Tenant;
 import org.junit.jupiter.api.Test;
@@ -207,8 +209,12 @@ public class AssemblyTest {
 		}
 
 		@Stage("inspect")
-		public void inspect(TestAssembleContext context) {
-			access.put("inspect", context.getSourcePath() != null);
+		public void inspect(TestAssembleContext context, PathScanner pathScanner) {
+			pathScanner.setIncludes("**/*.test");
+			Set<IgfsPath> testFiles = pathScanner.scan(context.getSourcePath());
+			if (testFiles.size() == 1 && "assembler.test".contentEquals(testFiles.iterator().next().name())) {
+				access.put("inspect", true);
+			}
 		}
 
 		@Stage("validate")
@@ -240,6 +246,7 @@ public class AssemblyTest {
 			contentType.setField("oid", UUID.randomUUID());
 			contentType.setField("type", "ode:contentType");
 			contentType.setField("fileExtensions", new String[] { ".test" });
+			contentType.setField("contentType", TEST_CONTENT_TYPE);
 			contentType.setField("modifiedTime", ZonedDateTime.now(ZoneId.systemDefault()));
 			configCache.put(Assembler.contentTypeConfigPath(ignite, TEST_CONTENT_TYPE), contentType.build());
 

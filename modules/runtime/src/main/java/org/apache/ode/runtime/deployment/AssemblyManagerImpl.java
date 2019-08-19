@@ -154,7 +154,7 @@ public class AssemblyManagerImpl extends CDIService implements AssemblyManager {
 				repositoryFS.mkdirs(parentPath);
 				filePath = new IgfsPath(parentPath, entry.path().substring(endPathIndex + 1));
 			} else {
-				filePath = assemblyPath.suffix(entry.path());
+				filePath = new IgfsPath(assemblyPath, entry.path());
 			}
 
 			try (InputStream is = entry.input().open(); OutputStream os = repositoryFS.create(filePath, false);) {

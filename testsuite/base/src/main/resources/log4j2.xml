@@ -14,7 +14,7 @@
 	</Appenders>
 
 	<Loggers>
-		<!-- <Logger name="com.mercer.digital.wd.intlibrary.artifact.war.Archiver" 
+		<!-- <Logger name="org.apache.ode.runtime.Server" 
 			level="DEBUG" additivity="false"> <AppenderRef ref="Console"/> <AppenderRef 
 			ref="File"/> </Logger> -->
 		<Root level="INFO">
