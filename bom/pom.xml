@@ -18,7 +18,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<ignite.version>2.7.5</ignite.version>
-		<tomcat.version>9.0.21</tomcat.version>
+		<tomcat.version>9.0.30</tomcat.version>
 		<openwebbeans.version>2.0.11</openwebbeans.version>
 		<commons-cli.version>1.4</commons-cli.version>
 		<cxf.version>3.3.2</cxf.version>
